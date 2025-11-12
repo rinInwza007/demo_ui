@@ -47,10 +47,32 @@
         <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-300">
           บันทึก
         </button>
-        <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300">กลับ</button>
+        <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-400">กลับ</button>
       </div>
     </div>
+
+    <div>
+    <inputAdd />
+    </div>
+  <div class="p-6">
+    <button @click="show = true" class="px-4 py-2 bg-blue-600 text-white rounded">เลือกหลายกองทุน</button>
+
+    <div class="mt-4">
+      ค่าเลือก: <span v-if="selectedList.length">{{ selectedList.join(', ') }}</span><span v-else>-</span>
+    </div>
+
+    <PopupList
+      v-model:visible="show"
+      v-model:selected="selectedList"
+      :items="funds"
+      option-label="name"
+      option-value="id"
+      title="เลือกกองทุน (หลายค่า)"
+      :multiple="true"
+    />
   </div>
+  </div>
+
 </template>
 
 <script setup>
@@ -58,6 +80,20 @@ import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import inputtext from '@/components/input/inputtext.vue'
 import Selects from '@/components/input/select.vue'
+import inputAdd from '@/components/input/input+add.vue'
+import PopupList from '@/components/bar/listpopup.vue'
+import { ref } from 'vue'
+
+const show = ref(false)
+const selectedList = ref([]) // array for multi-select
+
+const funds = [
+  { id: 'F001', name: 'กองทุน A' },
+  { id: 'F002', name: 'กองทุน B' },
+  { id: 'F003', name: 'กองทุน C' },
+  'Other' // also supports primitives
+]
+
 </script>
 
 <style scoped></style>

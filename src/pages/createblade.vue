@@ -1,11 +1,11 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-[#061022]">
     <!-- Navbar / second navbar -->
-    <Navbar />
-    <SecondNavbar class="mt-8" />
+    <Navbar class="fixed top-0 left-0 w-full z-50" />
+    <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
 
     <!-- container หลัก -->
-    <div class="max-w-4xl mx-auto p-6 pt-8 mt-20">
+    <div class="max-w-4xl mx-auto pt-32 px-6 mt-10">
       <!-- grid: mobile 1 col, md+ 2 cols -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <!-- input fields (ใช้ component เดียวกันหลายครั้ง) -->

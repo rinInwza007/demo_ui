@@ -188,9 +188,12 @@
             <td class="px-1 py-2 text-center">เอกสาร (กระดาษ)</td>
             <td class="px-1 py-2 text-center">8,900 บาท</td>
             <td class="px-1 py-2 text-center">
-              <button class="px-3 py-1 bg-purple-200 text-purple-700 rounded-md">
-                ✓ ดูข้อมูล
-              </button>
+              <button
+  @click="goToPdf(item.id)"
+  class="px-3 py-1 bg-purple-200 text-purple-700 rounded-md"
+>
+  ✓ ดูข้อมูล
+</button>
             </td>
           </tr>
         </tbody>
@@ -198,3 +201,11 @@
     </div>
   </div>
 </template>
+<script>
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
+const goToPdf = (id) => {
+  router.push(`/viewpdf/${id}`)
+}
+</script>

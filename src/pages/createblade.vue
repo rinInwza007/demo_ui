@@ -60,4 +60,11 @@ import inputtext from '@/components/input/inputtext.vue'
 import Selects from '@/components/input/select.vue'
 </script>
 
-<style scoped></style>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+
+body, * {
+  font-family: 'Kanit', sans-serif;
+}
+</style>

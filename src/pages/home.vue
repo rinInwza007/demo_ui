@@ -9,8 +9,11 @@
         ใบนำส่งเงิน
       </h1>
     </main>
-    <div>
-    <div class="mb-4">
+    <div class="flex flex-col gap-3
+            md:flex-row md:items-center md:gap-4
+            md:justify-between md:space-x-3
+            [&>*]:flex-1">
+    <div class="mb-4 w-full md:w-56">
           <Select
             v-model="category"
             :options="['11/11/2025-12/12/2025','11/11/2025-12/12/2025','11/11/2025-12/12/2025','11/11/2025-12/12/2025']"
@@ -43,6 +46,18 @@
   </div>
         </div>
 
+        <div class="pt-10 px-6 mt-1">
+          <list />
+          </div>
+          <div class="flex items-center justify-between mt-6">
+          <nextpage />
+
+            <div class="mt-6 flex justify-end gap-3">
+        <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300">กลับ</button>
+      </div>
+
+          </div>
+
   </div>
 </template>
 
@@ -52,12 +67,15 @@ import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Select from '@/components/input/select.vue';
 import search from '@/components/input/search.vue';
 import phillbutton from '@/components/input/PillButton.vue'
+import list  from '@/components/list/list.vue';
+import nextpage from '@/components/list/nextpage.vue';
+
 
 const actions = [
-  { key: 'export', label: 'export',  handler: () => {/*...*/} },
-  { key: 'main', label: 'ใบนำส่ง',  handler: () => {/*...*/} },
-  { key: 'research', label: 'ใบนำส่งวิจัย',  handler: () => {/*...*/} },
-  { key: 'debtor', label: 'ใบนำส่งลูกหนี้',  handler: () => {/*...*/} },
+  { key: 'export', label: 'export', icon:"★", handler: () => {/*...*/} },
+  { key: 'main', label: 'ใบนำส่ง',icon:"+ ",  handler: () => {/*...*/} },
+  { key: 'research', label: 'ใบนำส่งวิจัย',icon:"+ ",  handler: () => {/*...*/} },
+  { key: 'debtor', label: 'ใบนำส่งลูกหนี้', icon:"+ ", handler: () => {/*...*/} },
 ]
 
 </script>

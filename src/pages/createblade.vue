@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-[#061022]">
+  <div class="min-h-screen bg-gray-50 dark:bg-[#ffffff]">
     <!-- Navbar / second navbar -->
     <Navbar class="fixed top-0 left-0 w-full z-50" />
     <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
@@ -11,7 +11,7 @@
         <!-- input fields (ใช้ component เดียวกันหลายครั้ง) -->
         <div>
           ข้าพเจ้า*
-          <inputtext label="Example Input 1" placeholder="name@example.com" />
+          <inputtext label="Example Input 1" placeholder="name@example.com" class="bg" />
         </div>
         <div>
           เบอร์โทรติดต่อ *
@@ -21,11 +21,11 @@
           สังกัด *
           <inputtext label="Example Input 1" placeholder="name@example.com" />
         </div>
-        <div class="mb-4">
+        <div class="mt-3.">
+          กองทุน *
           <Selects
             v-model="category"
             :options="['กอง1', 'กอง2', 'กอง3', 'กอง4']"
-            label="กองทุน *"
             placeholder="เลือกหมวดหมู่"
             value-type="string"
           />
@@ -49,6 +49,49 @@
         </button>
         <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300">กลับ</button>
       </div>
+      <section class="mt-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <div class="flex flex-col gap-1.5">
+              <span>สังกัด *</span>
+              <input class="border border-gray-500 rounded" type="text" />
+            </div>
+          </div>
+          <div>
+            <div class="flex flex-col gap-1.5">
+              <span>สังกัด *</span>
+              <input class="border border-gray-500 rounded" type="text" />
+            </div>
+          </div>
+          <div>
+            <div class="flex flex-col gap-1.5">
+              <span>สังกัด *</span>
+              <div class="flex flex-col gap-0.5">
+                <input class="border border-gray-500 rounded" type="text" />
+                <span class="text-xs text-red-500">error</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="flex flex-col gap-1.5">
+              <span>สังกัด *</span>
+              <input class="border border-gray-500 rounded" type="text" />
+            </div>
+          </div>
+          <div>
+            <div class="flex flex-col gap-1.5">
+              <span>สังกัด *</span>
+              <input class="border border-gray-500 rounded" type="text" />
+            </div>
+          </div>
+          <div>
+            <div class="flex flex-col gap-1.5">
+              <span>สังกัด *</span>
+              <input class="border border-gray-500 rounded" type="text" />
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>

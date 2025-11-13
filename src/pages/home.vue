@@ -62,22 +62,29 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
+
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Select from '@/components/input/select.vue';
-import search from '@/components/input/search.vue';
+import Select from '@/components/input/select.vue'
+import search from '@/components/input/search.vue'
 import phillbutton from '@/components/input/PillButton.vue'
-import list  from '@/components/list/list.vue';
-import nextpage from '@/components/list/nextpage.vue';
+import list from '@/components/list/list.vue'
+import nextpage from '@/components/list/nextpage.vue'
 
+const router = useRouter()
+
+// ฟังก์ชันสำหรับปุ่ม "ใบนำส่ง"
+const goToCreateBlade = () => {
+  router.push('/createblade')
+}
 
 const actions = [
-  { key: 'export', label: 'export', icon:"★", handler: () => {/*...*/} },
-  { key: 'main', label: 'ใบนำส่ง',icon:"+ ",  handler: () => {/*...*/} },
-  { key: 'research', label: 'ใบนำส่งวิจัย',icon:"+ ",  handler: () => {/*...*/} },
-  { key: 'debtor', label: 'ใบนำส่งลูกหนี้', icon:"+ ", handler: () => {/*...*/} },
+  { key: 'export', label: 'export', icon:"★", handler: () => {} },
+  { key: 'main', label: 'ใบนำส่ง', icon:"+ ", handler: goToCreateBlade },
+  { key: 'research', label: 'ใบนำส่งวิจัย', icon:"+ ", handler: () => {} },
+  { key: 'debtor', label: 'ใบนำส่งลูกหนี้', icon:"+ ", handler: () => {} },
 ]
-
 </script>
 
 <style>

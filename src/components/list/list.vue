@@ -201,11 +201,21 @@
     </div>
   </div>
 </template>
-<script>
+<script setup>
 import { useRouter } from 'vue-router'
+import { ref } from 'vue'
+
 const router = useRouter()
 
+const items = ref([
+  { id: 1, status: 'สำเร็จ' },
+  { id: 2, status: 'รอตรวจสอบ' },
+])
+
 const goToPdf = (id) => {
-  router.push(`/viewpdf/${id}`)
+  console.log('goToPdf clicked with id =', id)
+  router.push({ name: 'viewpdf', params: { id } })
+  // หรือ: router.push(`/viewpdf/${id}`)
 }
+
 </script>

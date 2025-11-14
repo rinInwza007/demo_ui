@@ -30,3 +30,11 @@ import Navbar from '@/components/bar/navbar.vue'
 
 const router = useRouter()
 </script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+
+body, * {
+  font-family: 'Kanit', sans-serif;
+}
+</style>

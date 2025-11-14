@@ -34,7 +34,7 @@
         <div>
           <search />
         </div>
-        <div class="flex flex-wrap gap-4">
+        <div class="grid grid-cols-4 gap-4">
     <phillbutton
       v-for="btn in actions"
       :key="btn.key"

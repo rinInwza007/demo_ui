@@ -1,17 +1,4 @@
 <template>
-  <div>
-
-  </div>
-</template>
-
-<script setup>
-
-</script>
-
-<style lang="scss" scoped>
-
-</style>
-a<template>
   <div >
     <!-- Navbar / second navbar -->
     <Navbar class="fixed top-0 left-0 w-full z-50" />
@@ -116,7 +103,6 @@ a<template>
 
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import inputtext from '@/components/input/inputtext.vue'
 import Selects from '@/components/input/select.vue'
 
 </script>

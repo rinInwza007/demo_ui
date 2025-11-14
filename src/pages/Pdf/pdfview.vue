@@ -19,13 +19,13 @@
 <script setup>
 import { reactive, defineProps } from 'vue'
 import pdfMake from 'pdfmake/build/pdfmake'
-import { vfs, fonts } from '../assets/fonts.js'
+import { vfs, fonts } from '../../assets/fonts.js'
 
 pdfMake.vfs = vfs
 pdfMake.fonts = fonts
 
 // ถ้าต่อไปจะใช้ค่าจากหน้าก่อนหน้า ก็เอา props นี้ไปต่อได้เลย
-const props = defineProps({
+const props = defineProps(    {
   ktb1Amount: Number,
   ktb2Amount: Number,
   ktb3Amount: Number,

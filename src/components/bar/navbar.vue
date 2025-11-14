@@ -49,40 +49,17 @@
           </svg>
         </div>
 
-        <!-- Mobile menu button -->
-        <div class="md:hidden">
-          <button @click="toggleMenu">
-            <svg
-              class="w-10 h-10 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
+
       </div>
     </div>
 
-    <!-- Mobile Menu -->
-    <div v-if="isOpen" class="md:hidden bg-white border-t">
-      <a href="#" class="mobile-nav-link">Home</a>
-      <a href="#" class="mobile-nav-link">About</a>
-      <a href="#" class="mobile-nav-link">Services</a>
-      <a href="#" class="mobile-nav-link">Contact</a>
-      <div class="p-4">
-        <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg">Sign In</button>
-      </div>
-    </div>
+
   </nav>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-const isOpen = ref(false)
-const toggleMenu = () => (isOpen.value = !isOpen.value)
+
+
 </script>
 
 <style scoped>

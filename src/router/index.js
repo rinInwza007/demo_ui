@@ -1,14 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import Home from '@/pages/home.vue'
-import CreateBlade from '@/pages/createblade.vue'
-import pdfview from '@/pages/pdf.vue'
-
+import Main from '@/pages/Main/index.vue'
+import Waybill from '@/pages/Document/Waybill/index.vue'
+import pdfview from '@/pages/Pdf/pdfview.vue'
+import WaybillDebtor from '@/pages/Document/WaybillDebtor/index.vue'
+import SaveDebtor from '@/pages/Document/SaveDebtor/index.vue'
 
 const routes = [
-  { path: '/', name: 'home', component: Home },
-  { path: '/createblade', name: 'createblade', component: CreateBlade },
+  { path: '/', name: 'mmain', component: Main },
+  { path: '/waybill', name: 'waybill', component: Waybill },
   { path: '/viewpdf/:id', name: 'viewpdf', component: pdfview },
+  { path: '/waybilldebtor', name: 'waybilldebtor', component: WaybillDebtor },
+  { path: '/savedebtor', name: 'savedebtor', component: SaveDebtor },
 ]
 
 const router = createRouter({

@@ -7,7 +7,7 @@
     <select
       :value="modelValueString"
       @change="onChange"
-      class="h-14 rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-4 block w-full outline-none cursor-pointer transition-all focus:border-primary-500"
+      class="h-[39px] rounded-md border border-gray-500 bg-white dark:bg-[#ffffff] px-4 block w-full outline-none cursor-pointer transition-all focus:border-primary-500"
     >
       <!-- ถ้ามี placeholder ให้แสดงเป็น option แรก ค่าจะเป็น empty string -->
       <option v-if="placeholder" value="">{{ placeholder }}</option>

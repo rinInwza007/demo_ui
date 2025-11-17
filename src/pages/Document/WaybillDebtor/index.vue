@@ -216,7 +216,7 @@
       <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-300">
         บันทึก
       </button>
-      <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300">กลับ</button>
+      <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300" @click="gotomainpage()">กลับ</button>
     </div>
   </div>
 </template>
@@ -225,6 +225,7 @@
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select.vue'
+import router from '@/router'
 import { ref } from 'vue'
 
 const morelist = ref([
@@ -246,6 +247,11 @@ const debtorlist = ref([
     type: '',
   },
 ])
+
+const gotomainpage  =()=>{
+  router.push("/")
+}
+
 </script>
 
 <style scoped></style>

@@ -9,42 +9,59 @@
         ใบนำส่งเงิน
       </h1>
     </main>
-    <div class="flex flex-col gap-3
-            md:flex-row md:items-center md:gap-4
-            md:justify-between md:space-x-3
-            [&>*]:flex-1">
-    <div class="mb-4 w-full md:w-56">
-          <Select
-            v-model="category"
-            :options="['11/11/2025-12/12/2025','11/11/2025-12/12/2025','11/11/2025-12/12/2025','11/11/2025-12/12/2025']"
-            label=""
-            placeholder="11/11/2025-12/12/2025"
-            value-type="time"
-          />
-        </div>
-        <div class="mb-4">
-          <Select
-            v-model="category"
-            :options="['กองแผน','กองคลัง','โรงพยาบาลมอพะเยา']"
-            label=""
-            placeholder="หน่วยงาน"
-            value-type="string"
-          />
-        </div>
-        <div>
-          <search />
-        </div>
-        <div class="grid grid-cols-4 gap-4">
+    <div
+  class="
+    flex flex-col gap-4
+    md:flex-row md:items-end md:gap-6
+    md:justify-between
+  "
+>
+  <!-- กล่อง Select 1 -->
+
+  <div class="w-full md:w-56">
+    <Select
+      v-model="category"
+      :options="['11/11/2025-12/12/2025','11/11/2025-12/12/2025','11/11/2025-12/12/2025','11/11/2025-12/12/2025']"
+      placeholder="11/11/2025-12/12/2025"
+      value-type="time"
+    />
+  </div>
+
+  <!-- กล่อง Select 2 -->
+  <div class="w-full md:w-56">
+    <Select
+      v-model="category"
+      :options="['กองแผน','กองคลัง','โรงพยาบาลมอพะเยา']"
+      placeholder="หน่วยงาน"
+      value-type="string"
+    />
+  </div>
+
+
+  <!-- Search box -->
+  <div class="w-full md:flex-1">
+    <search />
+  </div>
+
+  <!-- ปุ่มต่างๆ -->
+  <div
+    class="
+      grid grid-cols-2 gap-3
+      md:grid-cols-4 md:gap-4
+    "
+  >
     <phillbutton
       v-for="btn in actions"
       :key="btn.key"
       @click="btn.handler"
+      grow
     >
       <template #icon>{{ btn.icon }}</template>
       {{ btn.label }}
     </phillbutton>
   </div>
-        </div>
+</div>
+
 
         <div class="pt-10 px-6 mt-1">
           <list />
@@ -75,15 +92,21 @@ import nextpage from '@/components/list/nextpage.vue'
 const router = useRouter()
 
 // ฟังก์ชันสำหรับปุ่ม "ใบนำส่ง"
-const goToCreateBlade = () => {
-  router.push('/createblade')
+const goTowaybill = () => {
+  router.push('/waybill')
 }
+
+const goTowaybilldebtor = () =>{
+  router.push('/waybilldebtor')
+}
+
+
 
 const actions = [
   { key: 'export', label: 'export', icon:"★", handler: () => {} },
-  { key: 'main', label: 'ใบนำส่ง', icon:"+ ", handler: goToCreateBlade },
+  { key: 'main', label: 'ใบนำส่ง', icon:"+ ", handler: goTowaybill },
   { key: 'research', label: 'ใบนำส่งวิจัย', icon:"+ ", handler: () => {} },
-  { key: 'debtor', label: 'ใบนำส่งลูกหนี้', icon:"+ ", handler: () => {} },
+  { key: 'debtor', label: 'ใบนำส่งลูกหนี้', icon:"+ ", handler: goTowaybilldebtor},
 ]
 </script>
 

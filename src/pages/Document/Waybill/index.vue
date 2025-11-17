@@ -7,7 +7,7 @@
     <section class="mt-40 mx-20">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 ">
         <div>
-          <div class="flex flex-col gap-1.5">   
+          <div class="flex flex-col gap-1.5">
             <span>ข้าพเจ้า *</span>
             <input
               class="border border-gray-500 rounded-md h-10 shadow-md shadow-gray-500 px-2 text-xs placeholder:text-xs"
@@ -73,7 +73,7 @@
       <div class="gap-2 flex flex-col mt-5">
         <div>นำส่งเงิน</div>
 
-        <div class="flex flex-col gap-2">  
+        <div class="flex flex-col gap-2">
           <div
             v-for="(row, index) in morelist"
             :key="index"
@@ -152,7 +152,7 @@
       <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-300">
         บันทึก
       </button>
-      <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300">กลับ</button>
+      <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300" @click="gotomainpage()">กลับ</button>
     </div>
   </div>
 </template>
@@ -161,6 +161,7 @@
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select.vue'
+import router from '@/router'
 import { ref } from 'vue'
 
 const morelist = ref([
@@ -172,6 +173,11 @@ const morelist = ref([
     type: '',
   },
 ])
+
+const gotomainpage = ()=> {
+  router.push ('/')
+}
+
 </script>
 
 <style scoped></style>

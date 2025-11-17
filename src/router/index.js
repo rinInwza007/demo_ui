@@ -12,6 +12,7 @@ const routes = [
   { path: '/viewpdf/:id', name: 'viewpdf', component: pdfview },
   { path: '/waybilldebtor', name: 'waybilldebtor', component: WaybillDebtor },
   { path: '/savedebtor', name: 'savedebtor', component: SaveDebtor },
+  { path: '/pdfview', name: 'pdfview', component: pdfview },
 ]
 
 const router = createRouter({

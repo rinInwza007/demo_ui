@@ -5,35 +5,29 @@
     <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
 
     <section class="mt-40 mx-20">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 ">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4">
         <div>
-          <div class="flex flex-col gap-1.5">
+          <div class="flex flex-col gap-1.5 ">
             <span>ข้าพเจ้า *</span>
-            <InputText
-              type="text"
-            />
+            <InputText type="text" />
           </div>
         </div>
         <div>
-          <div class="flex flex-col gap-1.5 w-8/12" >
+          <div class="flex flex-col gap-1.5 ">
             <span>เบอร์โทรติดต่อ *</span>
-            <InputText
-              type="text"
-            />
+            <InputText type="text" />
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5">
             <span>สังกัด *</span>
             <div class="flex flex-col gap-0.5">
-              <InputText
-                type="text"
-              />
+              <InputText type="text" />
             </div>
           </div>
         </div>
         <div>
-          <div class="flex flex-col gap-1.5 w-8/12">
+          <div class="flex flex-col gap-1.5">
             <span>กองทุน *</span>
             <Selects
               type="text"
@@ -47,19 +41,13 @@
         <div>
           <div class="flex flex-col gap-1.5">
             <span>ขอนำส่งเงิน *</span>
-            <InputText
-              type="text"
-              placeholder="รายได้/เงินโครงการ "
-            />
+            <InputText type="text" placeholder="รายได้/เงินโครงการ " />
           </div>
         </div>
         <div>
-          <div class="flex flex-col gap-1.5 w-8/12">
+          <div class="flex flex-col gap-1.5 ">
             <span>รหัสโครงงาน *</span>
-            <InputText
-              type="text"
-              placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
-            />
+            <InputText type="text" placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ" />
           </div>
         </div>
       </div>
@@ -71,33 +59,30 @@
           <div
             v-for="(row, index) in morelist"
             :key="index"
-            class="grid grid-cols-1 xl:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 h-9"
+            class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2"
           >
-            <InputText
-              v-model="row.item"
-              type="text"
-              placeholder="ชื่อรายการ"
-            />
-              <InputText
-              v-model="row.ref"
-              type="text"
-              placeholder="เลขที่เอกสารอ้างอิง"
+            <InputText v-model="row.item" type="text" placeholder="ชื่อรายการ" />
+            <InputText v-model="row.ref" type="text" placeholder="เลขที่เอกสารอ้างอิง" />
+            
+  <div>
+    <button class="w-full px-4 py-2 bg-blue-500 text-white rounded" @click="openModalForRow(index)">
+      จำนวนงินรวม
+    </button>
+
+              <Modal
+                v-if="showModal === index"
+                :show="true"
+                :items="rowItems[index]"
+                @close="showModal = null"
+                @update:selected="(selected) => morelist[index].selectedItems = selected"
               />
-              <InputText
-              v-model="row.amount"
-              type="number"
-              placeholder="จำนวนเงิน"
-              />
-              <InputText
-              v-model="row.note"
-              type="text"
-              />
-              <InputText
-              v-model="row.type"
-              type="text"
-              placeholder="ภายใน,ภายนอก"
-              class="placeholder"
-            />
+
+  </div>
+
+
+            <InputText v-model="row.note" type="text" placeholder="keyword" />
+            <InputText v-model="row.note" type="text" placeholder="ภายนอก/ภายใน" />
+
           </div>
         </div>
       </div>
@@ -113,6 +98,7 @@
                 amount: '',
                 note: '',
                 type: '',
+                selectedItems: []
               })
             "
           >
@@ -123,26 +109,33 @@
 
       <div class="mt-5">
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-2 items-start">
-          <div>นำส่งเป็น * checkbox</div>
+          <div></div>
           <div>
             <div>จำนวนเงินรวม</div>
-            <input class="mt-2 bg-gray-300 border border-gray-500 px-5 rounded-md shadow-md shadow-gray-500" type="number" placeholder="xx,xxx" />
+            <input
+              class="mt-2 bg-gray-300 border border-gray-500 px-5 rounded-md shadow-md shadow-gray-500"
+              type="number"
+              placeholder="xx,xxx"
+            />
           </div>
         </div>
       </div>
 
       <div class="mt-5">
-        <div>กรุณากรอกช่อง*ทุกช่อง
-        </div>
+        <div>กรุณากรอกช่อง*ทุกช่อง</div>
       </div>
-
     </section>
 
     <div class="mt-6 flex justify-end gap-3 mx-20">
       <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-300">
         บันทึก
       </button>
-      <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300" @click="gotomainpage()">กลับ</button>
+      <button
+        class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300"
+        @click="gotomainpage()"
+      >
+        กลับ
+      </button>
     </div>
   </div>
 </template>
@@ -154,6 +147,7 @@ import Selects from '@/components/input/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
 import { ref } from 'vue'
+import Modal from '@/components/modal/modal.vue'
 
 const morelist = ref([
   {
@@ -162,13 +156,26 @@ const morelist = ref([
     amount: '',
     note: '',
     type: '',
+    selectedItems: []
   },
 ])
-
-const gotomainpage = ()=> {
-  router.push ('/')
+const showModal= ref(null)
+const rowItems = ref([])
+const openModalForRow = (index) => {
+  // ถ้ายังไม่มี items สำหรับแถวนี้ ให้สร้างใหม่
+  if (!rowItems.value[index]) {
+    rowItems.value[index] = [
+      { name: 'เงินสด', checked: false, amount: '' },
+      { name: 'เช็คธนาคาร', checked: false, amount: '', NumCheck: '' },
+      { name: 'ฝากเข้าบัญชีธนาคาร', checked: false, amount: '', AccountNum: '', AccountName: '' },
+    ]
+  }
+  showModal.value = index
 }
 
+const gotomainpage = () => {
+  router.push('/')
+}
 </script>
 
 <style scoped></style>

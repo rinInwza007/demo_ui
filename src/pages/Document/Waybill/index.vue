@@ -9,8 +9,7 @@
         <div>
           <div class="flex flex-col gap-1.5">
             <span>ข้าพเจ้า *</span>
-            <input
-              class="border border-gray-500 rounded-md h-10 shadow-md shadow-gray-500 px-2 text-xs placeholder:text-xs"
+            <InputText
               type="text"
             />
           </div>
@@ -18,8 +17,7 @@
         <div>
           <div class="flex flex-col gap-1.5 w-8/12" >
             <span>เบอร์โทรติดต่อ *</span>
-            <input
-              class="border border-gray-500 rounded-md h-10 shadow-md shadow-gray-500 px-2 text-xs placeholder:text-xs"
+            <InputText
               type="text"
             />
           </div>
@@ -28,8 +26,7 @@
           <div class="flex flex-col gap-1.5">
             <span>สังกัด *</span>
             <div class="flex flex-col gap-0.5">
-              <input
-                class="border border-gray-500 rounded-md h-10 shadow-md shadow-gray-500 px-2 text-xs placeholder:text-xs"
+              <InputText
                 type="text"
               />
             </div>
@@ -39,7 +36,6 @@
           <div class="flex flex-col gap-1.5 w-8/12">
             <span>กองทุน *</span>
             <Selects
-              class="border border-gray-500 rounded-md h-10 shadow-md shadow-gray-500"
               type="text"
               v-model="category"
               :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
@@ -51,8 +47,7 @@
         <div>
           <div class="flex flex-col gap-1.5">
             <span>ขอนำส่งเงิน *</span>
-            <input
-              class="border border-gray-500 rounded-md h-10 shadow-md shadow-gray-500 px-2 text-xs placeholder:text-xs"
+            <InputText
               type="text"
               placeholder="รายได้/เงินโครงการ "
             />
@@ -61,8 +56,7 @@
         <div>
           <div class="flex flex-col gap-1.5 w-8/12">
             <span>รหัสโครงงาน *</span>
-            <input
-              class="border border-gray-500 rounded-md h-10 shadow-md shadow-gray-500 px-2 text-xs placeholder:text-xs"
+            <InputText
               type="text"
               placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
             />
@@ -79,34 +73,30 @@
             :key="index"
             class="grid grid-cols-1 xl:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 h-9"
           >
-            <input
-              class="border border-gray-500 px-2 rounded-md shadow-md shadow-gray-500 text-xs placeholder:text-xs ;"
+            <InputText
               v-model="row.item"
               type="text"
               placeholder="ชื่อรายการ"
             />
-              <input
-              class="border border-gray-500 px-2 rounded-md shadow-md shadow-gray-500 text-xs placeholder:text-xs ;"
+              <InputText
               v-model="row.ref"
               type="text"
               placeholder="เลขที่เอกสารอ้างอิง"
               />
-              <input
-              class="border border-gray-500 px-2 rounded-md shadow-md shadow-gray-500 text-xs placeholder:text-xs "
+              <InputText
               v-model="row.amount"
               type="number"
               placeholder="จำนวนเงิน"
               />
-              <input
-              class="border border-gray-500 px-2 rounded-md shadow-md shadow-gray-500 text-xs placeholder:text-xs"
+              <InputText
               v-model="row.note"
               type="text"
               />
-            <input
-              class="border border-gray-500 px-2 rounded-md shadow-md shadow-gray-500 text-xs placeholder:text-xs"
+              <InputText
               v-model="row.type"
               type="text"
               placeholder="ภายใน,ภายนอก"
+              class="placeholder"
             />
           </div>
         </div>
@@ -162,6 +152,7 @@ import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select.vue'
 import router from '@/router'
+import InputText from '@/components/input/inputtext.vue'
 import { ref } from 'vue'
 
 const morelist = ref([

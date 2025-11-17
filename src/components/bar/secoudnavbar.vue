@@ -1,49 +1,67 @@
 <template>
-  <nav class="fixed top-0 left-0 w-full z-50 bg-pink-100 shadow-md">
+  <div
+    class="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md"
+  >
+    <div class="trezo-card-content">
+      <ul
+  class="navs mb-[20px] border-b border-gray-200 dark:border-[#172036] grid grid-cols-4 ml-16"
+>
+  <!-- เพิ่มใบนำส่งใหม่ -->
+  <li>
+    <RouterLink
+      to="/waybill"
+      class="tab-link"
+    >
+      เพิ่มใบนำส่งใหม่
+    </RouterLink>
+  </li>
 
-  <div class="grid max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <!-- ใบนำส่งที่อยู่ในขั้นตอนดำเนินงาน -->
+  <li>
+    <RouterLink
+      to="/"
+      class="tab-link"
+    >
+      ใบนำส่งที่อยู่ในขั้นตอนดำเนินงาน
+    </RouterLink>
+  </li>
 
-    <!-- ความสูงของ bar -->
-    <div class="flex items-center justify-between h-16">
+  <!-- รายการผลการนำส่ง -->
+  <li>
+    <RouterLink
+      to="/"
+      class="tab-link"
+    >
+      รายการผลการนำส่ง
+    </RouterLink>
+  </li>
 
-      <!-- Desktop Menu -->
-      <div class="hidden md:flex items-center justify-between w-full gap-8">
-
-        <a href="#"
-           class="text-blue-600 font-medium hover:text-pink-700 transition">
-          เพิ่มใบนำส่งใหม่
-        </a>
-
-        <a href="#"
-           class="text-blue-600 font-medium hover:text-pink-700 transition">
-          ใบนำส่งที่อยู่ในขั้นตอนดำเนินงาน
-        </a>
-
-        <a href="#"
-           class="text-blue-600 font-medium hover:text-pink-700 transition">
-          รายการผลการนำส่ง
-        </a>
-
-      </div>
+  <!-- บันทึกลูกหนี้ -->
+  <li>
+    <RouterLink
+      to="/savedebtor"
+      class="tab-link"
+    >
+      บันทึกลูกหนี้
+    </RouterLink>
+  </li>
+</ul>
 
     </div>
-
   </div>
-
-</nav>
-
 </template>
 
 <script setup>
-
-
-
 </script>
 
 <style scoped>
-.nav-link {
-  @apply text-gray-700 hover:text-blue-600 font-medium transition duration-150;
+/* สไตล์พื้นฐานของแท็บ */
+.tab-link {
+  @apply block pb-2 font-medium transition-all border-b-2 border-transparent text-gray-500 hover:text-blue-600;
 }
 
-
+/* เวลา active → ให้เส้นอยู่เฉพาะข้อความ */
+:deep(.router-link-exact-active.tab-link) {
+  @apply text-blue-600 border-blue-600;
+}
 </style>

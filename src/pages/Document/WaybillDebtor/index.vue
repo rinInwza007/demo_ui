@@ -10,20 +10,21 @@
         <div>
           <div class="flex flex-col gap-1.5 ">
             <span>ข้าพเจ้า *</span>
-            <InputText type="text" />
+            <InputText v-model="formData.name" type="text" />
+            
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5 ">
             <span>เบอร์โทรติดต่อ *</span>
-            <InputText type="text" />
+            <InputText v-model="formData.phone" type="text" />
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5">
             <span>สังกัด *</span>
             <div class="flex flex-col gap-0.5">
-              <InputText type="text" />
+              <InputText v-model="formData.department" type="text" />
             </div>
           </div>
         </div>
@@ -32,7 +33,7 @@
             <span>กองทุน *</span>
             <Selects
               type="text"
-              v-model="category"
+               v-model="formData.fund"
               :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
               placeholder="เลือกหมวดหมู่"
               value-type="string"
@@ -42,13 +43,13 @@
         <div>
           <div class="flex flex-col gap-1.5">
             <span>ขอนำส่งเงิน *</span>
-            <InputText type="text" placeholder="รายได้/เงินโครงการ " />
+            <InputText v-model="formData.moneyType" type="text" placeholder="รายได้/เงินโครงการ " />
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5 ">
             <span>รหัสโครงงาน *</span>
-            <InputText type="text" placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ" />
+            <InputText type="text" placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ" v-model="formData.projectCode" />
           </div>
         </div>
       </div>
@@ -82,7 +83,7 @@
 
 
             <InputText v-model="row.note" type="text" placeholder="keyword" />
-            <InputText v-model="row.note" type="text" placeholder="ภายนอก/ภายใน" />
+            <InputText v-model="row.type" type="text" placeholder="ภายนอก/ภายใน" />
 
           </div>
         </div>
@@ -123,14 +124,10 @@
           </div>
         </div>
       </div>
-
-      <div class="mt-5">
-        <div>กรุณากรอกช่อง*ทุกช่อง</div>
-      </div>
     </section>
 
     <div class="mt-6 flex justify-end gap-3 mx-20">
-      <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-300">
+      <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-300" @click="saveData">
         บันทึก
       </button>
       <button
@@ -139,7 +136,11 @@
       >
         กลับ
       </button>
-    </div></div>
+    </div>
+        <div v-if="errorMessage" class="mt-5 text-red-600">
+          {{ errorMessage }}
+        </div>
+  </div>
   </div>
 </template>
 
@@ -152,6 +153,15 @@ import InputText from '@/components/input/inputtext.vue'
 import { ref,computed } from 'vue'
 import Modal from '@/components/modal/modal.vue'
 
+const formData = ref({
+  name: '',
+  phone: '',
+  department: '',
+  fund: '',
+  moneyType: '',
+  projectCode: ''
+})
+
 const morelist = ref([
   {
     item: '',
@@ -162,6 +172,8 @@ const morelist = ref([
     selectedItems: []
   },
 ])
+
+const errorMessage = ref('')
 
 const totalAmount = computed(() => {
   return morelist.value.reduce((sum, row) => {
@@ -184,7 +196,6 @@ const updateSelectedItems = (rowIndex, selected) => {
 const showModal= ref(null)
 const rowItems = ref([])
 const openModalForRow = (index) => {
-  // ถ้ายังไม่มี items สำหรับแถวนี้ ให้สร้างใหม่
 if (!rowItems.value[index]) {
   rowItems.value[index] = JSON.parse(JSON.stringify([
     { name: 'เงินสด', checked: false, amount: '' },
@@ -193,6 +204,74 @@ if (!rowItems.value[index]) {
   ]))
 }
   showModal.value = index
+}
+const saveData = () => {
+  errorMessage.value = ''
+
+  // ตรวจสอบฟอร์มหลัก
+  if (!formData.value.name) {
+    errorMessage.value = 'กรุณากรอก "ชื่อ"'
+    return
+  }
+  if (!formData.value.phone) {
+    errorMessage.value = 'กรุณากรอก "เบอร์โทรติดต่อ"'
+    return
+  }
+  if (!formData.value.department) {
+    errorMessage.value = 'กรุณากรอก "สังกัด"'
+    return
+  }
+  if (!formData.value.fund) {
+    errorMessage.value = 'กรุณาเลือก "กองทุน"'
+    return
+  }
+  if (!formData.value.moneyType) {
+    errorMessage.value = 'กรุณากรอก "ขอนำส่งเงิน"'
+    return
+  }
+  if (!formData.value.projectCode) {
+    errorMessage.value = 'กรุณากรอก "รหัสโครงงาน"'
+    return
+  }
+
+  // ตรวจสอบรายการนำส่งเงิน
+  for (let i = 0; i < morelist.value.length; i++) {
+    const row = morelist.value[i]
+
+    if (!row.item) {
+      errorMessage.value = `รายการที่ ${i + 1}: กรุณากรอก "ชื่อรายการ"`
+      return
+    }
+    if (!row.ref) {
+      errorMessage.value = `รายการที่ ${i + 1}: กรุณากรอก "เลขที่เอกสารอ้างอิง"`
+      return
+    }
+    if (!row.note) {
+      errorMessage.value = `รายการที่ ${i + 1}: กรุณากรอก "keyword"`
+      return
+    }
+    if (!row.type) {
+      errorMessage.value = `รายการที่ ${i + 1}: กรุณากรอก "ภายนอก/ภายใน"`
+      return
+    }
+    if (!row.selectedItems || row.selectedItems.length === 0) {
+      errorMessage.value = `รายการที่ ${i + 1}: กรุณาเลือกและกรอก "จำนวนเงิน"`
+      return
+    }
+  }
+
+  // ถ้าผ่านการตรวจสอบทั้งหมด
+  const dataToSave = {
+    formData: formData.value,
+    morelist: morelist.value,
+    totalAmount: totalAmount.value
+  }
+
+  console.log('=== ข้อมูลที่บันทึก ===')
+  console.log(JSON.stringify(dataToSave, null, 2))
+  
+  alert('บันทึกข้อมูลสำเร็จ! ดูข้อมูลใน Console')
+  errorMessage.value = ''
 }
 
 const gotomainpage = () => {

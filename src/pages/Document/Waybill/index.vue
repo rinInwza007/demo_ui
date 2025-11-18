@@ -3,8 +3,9 @@
     <!-- Navbar / second navbar -->
     <Navbar class="fixed top-0 left-0 w-full z-50" />
     <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
+<div class="max-w-4xl mx-auto p-6 pt-8 mt-20">
 
-    <section class="mt-40 mx-20">
+    <section class="mt-8">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4">
         <div>
           <div class="flex flex-col gap-1.5 ">
@@ -66,7 +67,7 @@
             
   <div>
     <button class="w-full px-4 py-2 bg-blue-500 text-white rounded" @click="openModalForRow(index)">
-      จำนวนงินรวม
+      จำนวนเงินรวม
     </button>
 
               <Modal
@@ -74,7 +75,7 @@
                 :show="true"
                 :items="rowItems[index]"
                 @close="showModal = null"
-                @update:selected="(selected) => morelist[index].selectedItems = selected"
+                  @update:selected="(selected) => updateSelectedItems(index, selected)"
               />
 
   </div>
@@ -116,6 +117,8 @@
               class="mt-2 bg-gray-300 border border-gray-500 px-5 rounded-md shadow-md shadow-gray-500"
               type="number"
               placeholder="xx,xxx"
+                :value="totalAmount"
+              readonly
             />
           </div>
         </div>
@@ -136,7 +139,7 @@
       >
         กลับ
       </button>
-    </div>
+    </div></div>
   </div>
 </template>
 
@@ -146,7 +149,7 @@ import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
-import { ref } from 'vue'
+import { ref,computed } from 'vue'
 import Modal from '@/components/modal/modal.vue'
 
 const morelist = ref([
@@ -159,17 +162,36 @@ const morelist = ref([
     selectedItems: []
   },
 ])
+
+const totalAmount = computed(() => {
+  return morelist.value.reduce((sum, row) => {
+    if (!row.selectedItems) return sum
+
+    const rowTotal = row.selectedItems.reduce((s, item) => {
+      const amount = Number(item.amount) || 0
+      return s + amount
+    }, 0)
+
+    return sum + rowTotal
+  }, 0)
+})
+
+const updateSelectedItems = (rowIndex, selected) => {
+  morelist.value[rowIndex].selectedItems = selected.filter(i => i.checked)
+
+}
+
 const showModal= ref(null)
 const rowItems = ref([])
 const openModalForRow = (index) => {
   // ถ้ายังไม่มี items สำหรับแถวนี้ ให้สร้างใหม่
-  if (!rowItems.value[index]) {
-    rowItems.value[index] = [
-      { name: 'เงินสด', checked: false, amount: '' },
-      { name: 'เช็คธนาคาร', checked: false, amount: '', NumCheck: '' },
-      { name: 'ฝากเข้าบัญชีธนาคาร', checked: false, amount: '', AccountNum: '', AccountName: '' },
-    ]
-  }
+if (!rowItems.value[index]) {
+  rowItems.value[index] = JSON.parse(JSON.stringify([
+    { name: 'เงินสด', checked: false, amount: '' },
+    { name: 'เช็คธนาคาร', checked: false, amount: '', NumCheck: '' },
+    { name: 'ฝากเข้าบัญชีธนาคาร', checked: false, amount: '', AccountNum: '', AccountName: '' },
+  ]))
+}
   showModal.value = index
 }
 

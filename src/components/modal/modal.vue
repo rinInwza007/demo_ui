@@ -126,6 +126,7 @@ const savedData = ref({}) // เก็บข้อมูลที่บันท
 // Restore ข้อมูลตอนเปิด modal
 watch(() => props.show, (newVal) => {
   if (newVal && props.items) {
+    restoreSavedData()
     // Restore ข้อมูลที่เคยบันทึกไว้
     props.items.forEach(item => {
       const saved = savedData.value[item.name]
@@ -186,21 +187,26 @@ const confirmSelection = () => {
   
   const selected = props.items.filter(i => i.checked).map(i => ({...i}))
   
-  if (selected.length === 0) {
-    errorMessage.value = 'กรุณาเลือกอย่างน้อย 1 รายการ'
-    return
-  }
   
   // บันทึกข้อมูลไว้
-  props.items.forEach(item => {
-    savedData.value[item.name] = {
-      checked: item.checked,
-      amount: item.amount,
-      NumCheck: item.NumCheck,
-      AccountNum: item.AccountNum,
-      AccountName: item.AccountName
-    }
-  })
+props.items.forEach(item => {
+  const data = {
+    checked: item.checked,
+    amount: item.amount,
+  }
+
+  if (item.NumCheck !== undefined) {
+    data.NumCheck = item.NumCheck
+  }
+
+  if (item.AccountNum !== undefined) {
+    data.AccountNum = item.AccountNum
+    data.AccountName = item.AccountName
+  }
+
+  savedData.value[item.name] = data
+})
+
   
   errorMessage.value = ''
   hasConfirmed.value = true
@@ -208,15 +214,12 @@ const confirmSelection = () => {
   emit('close')
 }
 
-// ฟังก์ชั่นปิด + ล้างข้อมูลเฉพาะตอนที่ยังไม่ได้บันทึก
 const closeModal = () => {
-  if (!hasConfirmed.value) {
-    clearAllData()
-  }
-  
+
   errorMessage.value = ''
   emit('close')
 }
+
 
 const clearItemData = (item) => {
   item.amount = ''
@@ -230,22 +233,44 @@ const clearItemData = (item) => {
     item.AccountName = ''
   }
 }
+const restoreSavedData = () => {
+  props.items?.forEach(item => {
+    const saved = savedData.value[item.name]
 
-const clearAllData = () => {
-  props.items?.forEach((item) => {
-    item.checked = false
-    clearItemData(item)
-    // ลบข้อมูลที่เก็บไว้ด้วย
-    delete savedData.value[item.name]
+    if (saved) {
+      item.checked = saved.checked
+      item.amount = saved.amount ?? ''
+
+      if (item.NumCheck !== undefined) {
+        item.NumCheck = saved.NumCheck ?? ''
+      }
+
+      if (item.AccountNum !== undefined) {
+        item.AccountNum = saved.AccountNum ?? ''
+        item.AccountName = saved.AccountName ?? ''
+      }
+
+    } else {
+      item.checked = false
+      item.amount = ''
+      if (item.NumCheck !== undefined) item.NumCheck = ''
+      if (item.AccountNum !== undefined) {
+        item.AccountNum = ''
+        item.AccountName = ''
+      }
+    }
   })
 }
+
 
 const handleCheckboxChange = (item) => {
   if (!item.checked) {
     clearItemData(item)
   }
-  hasConfirmed.value = false
+  // emit event ให้ parent update selectedItems
+  emit('update:selected', props.items.filter(i => i.checked))
 }
+
 </script>
 
 <style scoped>

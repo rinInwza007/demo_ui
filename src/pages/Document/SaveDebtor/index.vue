@@ -9,22 +9,21 @@
 
 
       <section class="mt-8">
-       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+       <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4">
 
   <div class="flex flex-col gap-1.5">
     <span>ข้าพเจ้า</span>
-    <input class="border border-gray-500 rounded shadow-md shadow-gray-500 " type="text" />
+    <InputText  />
   </div>
 
   <div class="flex flex-col gap-1.5">
     <span>เบอร์โทรติดต่อ</span>
-    <input class="border border-gray-500 rounded shadow-md shadow-gray-500" type="phone" />
+    <InputText />
   </div>
 
   <div class="flex flex-col gap-1.5">
     <span>สังกัด</span>
       <Selects
-              class="border border-gray-500 rounded-md  shadow-md shadow-gray-500"
               type="text"
               v-model="category"
               :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
@@ -35,7 +34,7 @@
 
   <div class="flex flex-col gap-1.5">
     <span>จำนวนเงิน</span>
-    <input class="border border-gray-500 rounded shadow-md shadow-gray-500" type="number" placeholder="xxxxx" />
+    <InputText  />
   </div>
 
 </div>
@@ -44,16 +43,15 @@
           <span class="mt-5" >ล้างลูกหนี้</span>
        <div class="grid grid-cols-2 lg:grid-cols-4   gap-4 ">
    <Selects
-              class="border border-gray-500 rounded-md  shadow-md shadow-gray-500 "
               type="text"
               v-model="category"
               :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
               placeholder="เพิ่มรายการ"
               value-type="string"
             />
-  <input type="text" placeholder="เลขที่เอกสารอ้างอิง" class="border border-gray-500 rounded shadow-md shadow-gray-500" />
-  <input type="text" placeholder="จำนวนเงิน" class="border border-gray-500 rounded shadow-md shadow-gray-500" />
-  <input type="text" placeholder="หมายเหตุ" class="border border-gray-500 rounded shadow-md shadow-gray-500" />
+  <InputText type="text" placeholder="เลขที่เอกสารอ้างอิง"  />
+  <InputText type="text" placeholder="จำนวนเงิน" />
+  <InputText type="text" placeholder="หมายเหตุ"  />
 
 
         </div>
@@ -105,7 +103,7 @@ import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select.vue'
 import router from '@/router'
-
+import InputText from '@/components/input/inputtext.vue'
 
 const gotomainpage = ()=> {
   router.push ('/')

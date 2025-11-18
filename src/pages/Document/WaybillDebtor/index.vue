@@ -3,6 +3,7 @@
     <!-- Navbar / second navbar -->
     <Navbar class="fixed top-0 left-0 w-full z-50" />
     <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
+
 <div class="max-w-4xl mx-auto p-6 pt-8 mt-20">
 
     <section class="mt-8">
@@ -64,7 +65,7 @@
           >
             <InputText v-model="row.item" type="text" placeholder="ชื่อรายการ" />
             <InputText v-model="row.ref" type="text" placeholder="เลขที่เอกสารอ้างอิง" />
-            
+
   <div>
     <button class="w-full px-4 py-2 bg-blue-500 text-white rounded" @click="openModalForRow(index)">
       จำนวนเงินรวม
@@ -141,6 +142,7 @@
       </button>
     </div></div>
   </div>
+  
 </template>
 
 <script setup>

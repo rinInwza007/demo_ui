@@ -14,10 +14,10 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "@heroicons/react": "^2.2.0",
     "@heroicons/vue": "^2.2.0",
     "pdfmake": "^0.2.20",
     "pinia": "^3.0.3",
+    "preline": "^3.2.3",
     "prismjs": "^1.30.0",
     "vue": "^3.5.22",
     "vue-router": "^4.6.3"

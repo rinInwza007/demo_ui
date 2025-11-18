@@ -7,18 +7,24 @@
     <select
       :value="modelValueString"
       @change="onChange"
-      class="h-10 shadow-md shadow-gray-500 rounded-md border border-gray-500 bg-white dark:bg-[#ffffff] px-4 block w-full outline-none cursor-pointer transition-all focus:border-primary-500"
+      class="h-[44px] rounded-md border border-gray-500 px-2 block w-full
+             outline-none cursor-pointer transition-all focus:border-primary-500"
     >
-      <!-- ถ้ามี placeholder ให้แสดงเป็น option แรก ค่าจะเป็น empty string -->
+      <!-- ถ้ามี placeholder -->
       <option v-if="placeholder" value="">{{ placeholder }}</option>
 
-      <!-- รองรับ options ที่เป็น primitive (string/number) หรือ object -->
-      <option v-for="(opt, idx) in options" :key="idx" :value="getOptionValueString(opt)">
+      <!-- options -->
+      <option
+        v-for="(opt, idx) in options"
+        :key="idx"
+        :value="getOptionValueString(opt)"
+      >
         {{ getOptionLabel(opt) }}
       </option>
     </select>
   </div>
 </template>
+
 
 <script setup>
 import { computed } from 'vue'

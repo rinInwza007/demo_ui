@@ -11,7 +11,7 @@
       :placeholder="placeholder"
       v-model="modelValueLocal"
       @input="$emit('update:modelValue', modelValueLocal)"
-      class="border w-full border-gray-500 rounded-md h-10 shadow-md shadow-gray-500 px-2 text-xs placeholder:text-xs"
+      class="border w-full border-gray-500 rounded-md h-10 shadow-md shadow-gray-500 px-2  "
     />
 
     <!-- textarea -->

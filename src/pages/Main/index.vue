@@ -1,19 +1,23 @@
 <template>
   <div>
-    <Navbar class="fixed top-0 left-0 w-full z-50" />
-    <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
+    <Navbar/>
+    <SecondNavbar />
 
-
-     <main class="pt-32 px-6 mt-10">
+    <div class="ml-12">
+     <main >
       <h1 class="text-4xl font-extrabold text-gray-900 mb-6 mx-auto text-left ">
         ใบนำส่งเงิน
       </h1>
     </main>
+    </div>
     <div
   class="
-    flex flex-col gap-4
+    flex  flex-col gap-4
     md:flex-row md:items-end md:gap-6
     md:justify-between
+    ml-12
+    mr-12
+
   "
 >
   <!-- กล่อง Select 1 -->
@@ -60,6 +64,8 @@
       {{ btn.label }}
     </phillbutton>
   </div>
+
+
 </div>
 
 
@@ -70,11 +76,9 @@
           <nextpage />
 
             <div class="mt-6 flex justify-end gap-3">
-        <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300">กลับ</button>
+        <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-300 mr-10">กลับ</button>
       </div>
-
           </div>
-
   </div>
 </template>
 
@@ -88,6 +92,8 @@ import search from '@/components/input/search.vue'
 import phillbutton from '@/components/input/PillButton.vue'
 import list from '@/components/list/list.vue'
 import nextpage from '@/components/list/nextpage.vue'
+
+
 
 const router = useRouter()
 

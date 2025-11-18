@@ -1,30 +1,30 @@
 <template>
-  <div>
-    <!-- Navbar -->
+  <div class="min-h-screen bg-gray-50 dark:bg-[#ffffff]">
+    <!-- Navbar / second navbar -->
     <Navbar class="fixed top-0 left-0 w-full z-50" />
     <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
 
     <!-- Main container -->
-    <div class="max-w-4xl mx-auto p-6 pt-8 mt-32">
+    <div class="max-w-5xl mx-auto p-6 pt-5 mt-32">
 
       <!-- 🔲 กล่องใหญ่ครอบทุกอย่าง -->
-      <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-8 space-y-10">
+      <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
 
-      
-       <div>
-    <h1 class="text-center text-3xl  mb-4">
+       
+    <h1 class="text-center text-3xl  mb-">
       บันทึกลูกหนี้
     </h1>
-  </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4">
+    <div class="max-w-4xl mx-auto p-6 pt-8 mt-10">
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4 ">
           <div class="flex flex-col gap-1.5">
             <span>ข้าพเจ้า</span>
-            <InputText />
+            <InputText type="text" />
           </div>
 
           <div class="flex flex-col gap-1.5">
             <span>เบอร์โทรติดต่อ</span>
-            <InputText />
+            <InputText type="text" />
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -87,7 +87,7 @@
             กลับ
           </button>
         </div>
-
+       </div>
       </div>
 
     </div>

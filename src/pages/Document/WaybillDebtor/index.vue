@@ -3,21 +3,15 @@
     <!-- Navbar / second navbar -->
     <Navbar class="fixed top-0 left-0 w-full z-50" />
     <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
+<div class="max-w-5xl mx-auto p-6 pt-5 mt-32">
+  <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
 
-    <!-- Main container -->
-    <div class="max-w-5xl mx-auto p-6 pt-5 mt-32">
-
-      <!-- 🔲 กล่องใหญ่ครอบทุกอย่าง -->
-      <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
-         <div>
-    <h1 class="text-center text-3xl  mb--">
+    <h1 class="text-center text-3xl  ">
       เพิ่มใบนำส่งลูกหนี้
     </h1>
-  </div>
 
-<div class="max-w-4xl mx-auto p-6 pt-8 mt-20">
-
-    <section class="mt-3">
+<div class="max-w-4xl mx-auto p-6 pt-8 mt-10">
+    <section >
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4">
         <div>
           <div class="flex flex-col gap-1.5 ">
@@ -76,7 +70,7 @@
           >
             <InputText v-model="row.item" type="text" placeholder="ชื่อรายการ" />
             <InputText v-model="row.ref" type="text" placeholder="เลขที่เอกสารอ้างอิง" />
-
+            
   <div>
     <button class="w-full px-4 py-2 bg-blue-500 text-white rounded" @click="openModalForRow(index)">
       จำนวนเงินรวม
@@ -151,12 +145,10 @@
       >
         กลับ
       </button>
+    </div></div>
     </div>
-</div>
+    </div>
   </div>
-  </div>
-  </div>
-
 </template>
 
 <script setup>

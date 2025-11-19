@@ -91,24 +91,11 @@
         ============================ -->
           <div>
             <div class="mt-10">
-              <input type="checkbox" v-model="check1" />
-              นำฝากเข้าธนาคาร
-            </div>
-            <div v-if="check1">Description</div>
-          </div>
-          <div>
-            <div>
-              <input type="checkbox" v-model="check2" class="mt-3" />
-              นำฝากเข้าธนาคาร
-            </div>
-            <div v-if="check2">Description</div>
-          </div>
-          <div>
             <div>
               <input type="checkbox" v-model="check3" class="mt-3" />
               นำฝากเข้าธนาคาร
             </div>
-            <div v-if="check3">Description</div>
+          </div>
           </div>
 
           <div class="flex justify-end gap-3 pt-4">
@@ -153,8 +140,7 @@ const formData = ref({
   note: '',
 })
 
-const check1 = ref(false)
-const check2 = ref(false)
+
 const check3 = ref(false)
 
 const errors = ref({})

@@ -12,29 +12,29 @@
        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4">
 
   <div class="flex flex-col gap-1.5">
-    <span>ข้าพเจ้า</span>
+    <span>ข้าพเจ้า *</span>
     <InputText  v-model="formData.name"  /><span v-if="errors.name" class="text-red-600 text-xs -mt-2 -mb-6">{{ errors.name }}</span> 
   </div>
 
   <div class="flex flex-col gap-1.5">
-    <span>เบอร์โทรติดต่อ</span>
+    <span>เบอร์โทรติดต่อ *</span>
     <InputText v-model="formData.phone" /><span v-if="errors.phone" class="text-red-600 text-xs -mt-2 -mb-6">{{ errors.phone}}</span> 
   </div>
 
   <div class="flex flex-col gap-1.5">
-    <span>สังกัด</span>
+    <span>สังกัด *</span>
       <Selects
               type="text"
               v-model="formData.department"
               :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
               placeholder=""
               value-type="string"
-            /><span v-if="errors.department" class="text-red-600 text-xs -mt-2 -mb-6">{{ errors.department }}</span> 
+            /><span v-if="errors.department" class="text-red-600 text-xs  -mb-6">{{ errors.department }}</span> 
   </div>
 
   <div class="flex flex-col gap-1.5">
-    <span>จำนวนเงิน</span>
-    <InputText v-model="formData.fund" /><span v-if="errors.fund" class="text-red-600 text-xs -mt-2 -mb-6">{{ errors.fund }}</span> 
+    <span>จำนวนเงิน *</span>
+    <InputText v-model="formData.fund" /><span v-if="errors.fund" class="text-red-600 text-xs -mt-2 -mb-[14px]">{{ errors.fund }}</span> 
   </div>
 
 </div>
@@ -44,7 +44,7 @@
        <div class="grid grid-cols-2 lg:grid-cols-4   gap-4 ">
 <div class="grid grid-cols-1 gap-1 justify-items-center">
   <InputText v-model="formData.moneyType" placeholder="เพิ่มรายการ" />
-  <span v-if="errors.moneyType" class="text-red-600 text-xs">
+  <span v-if="errors.moneyType" class="text-red-600 text-xs ">
     {{ errors.moneyType }}
   </span>
 </div>

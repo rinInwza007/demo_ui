@@ -64,10 +64,14 @@
             :key="index"
             class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2"
           >
+          <div>
             <InputText v-model="row.item" type="text" placeholder="ชื่อรายการ" />
             <span v-if="errors.item" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.item }}</span> 
+            </div>
+            <div>
             <InputText v-model="row.ref" type="text" placeholder="เลขที่เอกสารอ้างอิง" />
             <span v-if="errors.ref" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.ref }}</span> 
+            </div>
   <div>
     <button class="w-full px-4 py-2 bg-blue-500 text-white rounded" @click="openModalForRow(index)">
       จำนวนเงินรวม
@@ -83,12 +87,14 @@
 
   </div>
 
-
+<div>
             <InputText v-model="row.note" type="text" placeholder="keyword" />
             <span v-if="errors.note" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.note }}</span> 
+            </div>
+            <div>
             <InputText v-model="row.type" type="text" placeholder="ภายนอก/ภายใน" />
             <span v-if="errors.type" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.type }}</span> 
-
+</div>
           </div>
         </div>
       </div>
@@ -247,16 +253,16 @@ const saveData = () => {
       errors.value.ref = `รายการที่ ${i + 1}: กรุณากรอก "เลขที่เอกสารอ้างอิง"`
       return
     }
+    if (!row.selectedItems || row.selectedItems.length === 0) {
+      errors.value.selectedItems = `รายการที่ ${i + 1}: กรุณาเลือกและกรอก "จำนวนเงิน"`
+      return
+    }
     if (!row.note) {
       errors.value.note = `รายการที่ ${i + 1}: กรุณากรอก "keyword"`
       return
     }
     if (!row.type) {
       errors.value.type = `รายการที่ ${i + 1}: กรุณากรอก "ภายนอก/ภายใน"`
-      return
-    }
-    if (!row.selectedItems || row.selectedItems.length === 0) {
-      errors.value.selectedItems = `รายการที่ ${i + 1}: กรุณาเลือกและกรอก "จำนวนเงิน"`
       return
     }
   }

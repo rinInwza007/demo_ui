@@ -11,21 +11,20 @@
           <div class="flex flex-col gap-1.5 ">
             <span>ข้าพเจ้า *</span>
             <InputText v-model="formData.name" type="text" />
+            <span v-if="errors.name" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.name }}</span> 
             
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5 ">
             <span>เบอร์โทรติดต่อ *</span>
-            <InputText v-model="formData.phone" type="text" />
+            <InputText v-model="formData.phone" type="text" />  <span v-if="errors.phone" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.phone }}</span> 
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5">
             <span>สังกัด *</span>
-            <div class="flex flex-col gap-0.5">
-              <InputText v-model="formData.department" type="text" />
-            </div>
+              <InputText v-model="formData.department" type="text" /><span v-if="errors.department" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.department }}</span> 
           </div>
         </div>
         <div>
@@ -37,19 +36,21 @@
               :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
               placeholder="เลือกหมวดหมู่"
               value-type="string"
-            />
+            /><span v-if="errors.fund" class="text-red-600 text-xs  -mb-[14px] ">{{ errors.fund }}</span> 
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5">
             <span>ขอนำส่งเงิน *</span>
             <InputText v-model="formData.moneyType" type="text" placeholder="รายได้/เงินโครงการ " />
+            <span v-if="errors.moneyType" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.moneyType }}</span> 
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5 ">
             <span>รหัสโครงงาน *</span>
             <InputText type="text" placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ" v-model="formData.projectCode" />
+            <span v-if="errors.projectCode" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.projectCode }}</span> 
           </div>
         </div>
       </div>
@@ -63,14 +64,18 @@
             :key="index"
             class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2"
           >
+          <div>
             <InputText v-model="row.item" type="text" placeholder="ชื่อรายการ" />
+            <span v-if="errors.item" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.item }}</span> 
+            </div>
+            <div>
             <InputText v-model="row.ref" type="text" placeholder="เลขที่เอกสารอ้างอิง" />
-            
+            <span v-if="errors.ref" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.ref }}</span> 
+            </div>
   <div>
     <button class="w-full px-4 py-2 bg-blue-500 text-white rounded" @click="openModalForRow(index)">
       จำนวนเงินรวม
     </button>
-
               <Modal
                 v-if="showModal === index"
                 :show="true"
@@ -78,13 +83,18 @@
                 @close="showModal = null"
                   @update:selected="(selected) => updateSelectedItems(index, selected)"
               />
+              <span v-if="errors.selectedItems" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.selectedItems }}</span> 
 
   </div>
 
-
+<div>
             <InputText v-model="row.note" type="text" placeholder="keyword" />
+            <span v-if="errors.note" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.note }}</span> 
+            </div>
+            <div>
             <InputText v-model="row.type" type="text" placeholder="ภายนอก/ภายใน" />
-
+            <span v-if="errors.type" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.type }}</span> 
+</div>
           </div>
         </div>
       </div>
@@ -137,9 +147,6 @@
         กลับ
       </button>
     </div>
-        <div v-if="errorMessage" class="mt-5 text-red-600">
-          {{ errorMessage }}
-        </div>
   </div>
   </div>
 </template>
@@ -173,7 +180,7 @@ const morelist = ref([
   },
 ])
 
-const errorMessage = ref('')
+const errors = ref({})
 
 const totalAmount = computed(() => {
   return morelist.value.reduce((sum, row) => {
@@ -206,31 +213,31 @@ if (!rowItems.value[index]) {
   showModal.value = index
 }
 const saveData = () => {
-  errorMessage.value = ''
+  errors.value = {}
 
   // ตรวจสอบฟอร์มหลัก
   if (!formData.value.name) {
-    errorMessage.value = 'กรุณากรอก "ชื่อ"'
+    errors.value.name = 'กรุณากรอก "ชื่อ"'
     return
   }
   if (!formData.value.phone) {
-    errorMessage.value = 'กรุณากรอก "เบอร์โทรติดต่อ"'
+    errors.value.phone = 'กรุณากรอก "เบอร์โทรติดต่อ"'
     return
   }
   if (!formData.value.department) {
-    errorMessage.value = 'กรุณากรอก "สังกัด"'
+    errors.value.department = 'กรุณากรอก "สังกัด"'
     return
   }
   if (!formData.value.fund) {
-    errorMessage.value = 'กรุณาเลือก "กองทุน"'
+    errors.value.fund = 'กรุณาเลือก "กองทุน"'
     return
   }
   if (!formData.value.moneyType) {
-    errorMessage.value = 'กรุณากรอก "ขอนำส่งเงิน"'
+    errors.value.moneyType = 'กรุณากรอก "ขอนำส่งเงิน"'
     return
   }
   if (!formData.value.projectCode) {
-    errorMessage.value = 'กรุณากรอก "รหัสโครงงาน"'
+    errors.value.projectCode = 'กรุณากรอก "รหัสโครงงาน"'
     return
   }
 
@@ -239,23 +246,23 @@ const saveData = () => {
     const row = morelist.value[i]
 
     if (!row.item) {
-      errorMessage.value = `รายการที่ ${i + 1}: กรุณากรอก "ชื่อรายการ"`
+      errors.value.item = `รายการที่ ${i + 1}: กรุณากรอก "ชื่อรายการ"`
       return
     }
     if (!row.ref) {
-      errorMessage.value = `รายการที่ ${i + 1}: กรุณากรอก "เลขที่เอกสารอ้างอิง"`
-      return
-    }
-    if (!row.note) {
-      errorMessage.value = `รายการที่ ${i + 1}: กรุณากรอก "keyword"`
-      return
-    }
-    if (!row.type) {
-      errorMessage.value = `รายการที่ ${i + 1}: กรุณากรอก "ภายนอก/ภายใน"`
+      errors.value.ref = `รายการที่ ${i + 1}: กรุณากรอก "เลขที่เอกสารอ้างอิง"`
       return
     }
     if (!row.selectedItems || row.selectedItems.length === 0) {
-      errorMessage.value = `รายการที่ ${i + 1}: กรุณาเลือกและกรอก "จำนวนเงิน"`
+      errors.value.selectedItems = `รายการที่ ${i + 1}: กรุณาเลือกและกรอก "จำนวนเงิน"`
+      return
+    }
+    if (!row.note) {
+      errors.value.note = `รายการที่ ${i + 1}: กรุณากรอก "keyword"`
+      return
+    }
+    if (!row.type) {
+      errors.value.type = `รายการที่ ${i + 1}: กรุณากรอก "ภายนอก/ภายใน"`
       return
     }
   }
@@ -271,7 +278,7 @@ const saveData = () => {
   console.log(JSON.stringify(dataToSave, null, 2))
   
   alert('บันทึกข้อมูลสำเร็จ! ดูข้อมูลใน Console')
-  errorMessage.value = ''
+  errors.value = ''
 }
 
 const gotomainpage = () => {

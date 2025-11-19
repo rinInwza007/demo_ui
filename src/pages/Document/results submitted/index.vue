@@ -6,7 +6,7 @@
   <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
 
     <h1 class="text-center text-3xl  ">
-      เพิ่มใบนำส่งลูกหนี้
+      รายการผลการนำส่ง
     </h1>
 
 <div class="max-w-4xl mx-auto p-6 pt-8 mt-10">
@@ -158,6 +158,7 @@ import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
 import { ref,computed } from 'vue'
 import Modal from '@/components/modal/modal.vue'
+
 
 const morelist = ref([
   {

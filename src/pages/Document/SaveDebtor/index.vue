@@ -76,11 +76,11 @@
              4) ปุ่มอยู่ในกรอบเดียวกัน
         ============================ -->
         <div class="flex justify-end gap-3 pt-4">
-          <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-gray-400">
+          <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-500">
             บันทึก
           </button>
           <button
-            class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-gray-700"
+            class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-700"
             @click="gotomainpage"
           >
             กลับ

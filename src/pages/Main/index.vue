@@ -15,13 +15,12 @@
   <!-- กลุ่มซ้าย: วันที่และหน่วยงาน -->
 
     <!-- กล่องวันที่ (ซ้าย + ขวา) -->
-    <div class="flex">
+    <div>
       <selectdatetime />
-
     </div>
 
     <!-- หน่วยงาน -->
-    <div >
+    <div>
       <Select
         v-model="category"
         :options="['กองแผน','กองคลัง','โรงพยาบาลมอพะเยา']"
@@ -56,11 +55,13 @@
           <nextpage />
 
             <div class="mt-6 flex justify-end mb-4">
-        <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-500 mr-10">กลับ</button>
+        <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-700 mr-10">กลับ</button>
       </div>
           </div>
   </div>
   </div>
+
+
 </template>
 
 <script setup>
@@ -74,6 +75,8 @@ import list from '@/components/list/list.vue'
 import nextpage from '@/components/list/nextpage.vue'
 import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 
+
+
 const router = useRouter()
 
 // ฟังก์ชันสำหรับปุ่ม "ใบนำส่ง"
@@ -85,13 +88,21 @@ const goTowaybilldebtor = () =>{
   router.push('/waybilldebtor')
 }
 
+const goTowaybillResearch = () =>{
+  router.push('/waybillresearch')
+}
+
+const gotoresultsubmit = ()=>{
+  router.push('/resultsubmit')
+}
 
 
 const actions = [
   { key: 'export', label: 'export', icon:"🖫", handler: () => {} },
   { key: 'main', label: 'ใบนำส่ง', icon:"🞢", handler: goTowaybill },
-  { key: 'research', label: 'ใบนำส่งวิจัย', icon:"🞢", handler: () => {} },
+  { key: 'research', label: 'ใบนำส่งวิจัย', icon:"🞢",  handler: goTowaybillResearch },
   { key: 'debtor', label: 'ใบนำส่งลูกหนี้', icon:"🞢", handler: goTowaybilldebtor},
+
 ]
 </script>
 

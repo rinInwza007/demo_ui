@@ -36,9 +36,7 @@
                 :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
                 placeholder=""
                 value-type="string"
-              /><span v-if="errors.department" class="text-red-600 text-xs -mb-6">{{
-                errors.department
-              }}</span>
+              /><span v-if="errors.department" class="text-red-600 text-xs -mb-6">{{errors.department}}</span>
             </div>
 
             <div class="flex flex-col gap-1.5">

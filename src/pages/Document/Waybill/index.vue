@@ -3,9 +3,15 @@
     <!-- Navbar / second navbar -->
     <Navbar class="fixed top-0 left-0 w-full z-50" />
     <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
-<div class="max-w-4xl mx-auto p-6 pt-8 mt-20">
+<div class="max-w-5xl mx-auto p-6 pt-5 mt-32">
+  <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
 
-    <section class="mt-8">
+    <h1 class="text-center text-3xl  ">
+      เพิ่มใบนำส่ง
+    </h1>
+
+<div class="max-w-4xl mx-auto p-6 pt-8 mt-10">
+    <section >
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4">
         <div>
           <div class="flex flex-col gap-1.5 ">
@@ -140,6 +146,8 @@
         กลับ
       </button>
     </div></div>
+    </div>
+    </div>
   </div>
 </template>
 

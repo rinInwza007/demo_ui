@@ -11,7 +11,7 @@
       <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
 
        
-    <h1 class="text-center text-3xl  mb-">
+    <h1 class="text-center text-3xl ">
       บันทึกลูกหนี้
     </h1>
     <div class="max-w-4xl mx-auto p-6 pt-8 mt-10">

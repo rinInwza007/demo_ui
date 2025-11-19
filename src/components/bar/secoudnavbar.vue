@@ -1,10 +1,10 @@
 <template>
   <div
-    class="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md"
+    class="trezo-card bg-white  p-[20px] md:p-[25px] rounded-md"
   >
     <div class="trezo-card-content">
       <ul
-  class="navs mb-[20px] border-b border-gray-200 dark:border-[#172036] grid grid-cols-4 ml-16"
+  class="navs mb-[20px] border-b border-gray-200  grid grid-cols-4 ml-16"
 >
   <!-- เพิ่มใบนำส่งใหม่ -->
   <li>

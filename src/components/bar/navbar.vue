@@ -1,20 +1,21 @@
 <template>
-  <nav class="relative bg-white-100">
-  <div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-    <div class="relative flex h-16 items-center justify-between">
-      <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
+  <nav class="relative bg-purple-700">
+    <div class="mx-auto  px-2 sm:px-6 lg:px-8 ml-6 mr-6">
+      <div class="relative flex h-16 items-center justify-between">
 
-        <div class="hidden sm:ml-6 sm:block">
-          <div class="flex flex-row-4 gap-4">
-            <a href="#" class="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-700 hover:text-white">Dashboard</a>
-            <a href="#" class="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-700 hover:text-white">Team</a>
-            <a href="#" class="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-700 hover:text-white">Projects</a>
-            <a href="#" class="rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-700 hover:text-white">Calendar</a>
-          </div>
+        <!-- ฝั่งซ้าย -->
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-4xl text-white hover:text-gray-700">home</span>
         </div>
-      </div>
 
+        <!-- ฝั่งขวา -->
+        <div class="flex items-center gap-4">
+          <span class="material-symbols-outlined text-4xl text-white hover:text-gray-700">notifications</span>
+          <span class="material-symbols-outlined text-4xl text-white hover:text-gray-700">account_circle</span>
+          <span class="material-symbols-outlined text-4xl text-white hover:text-gray-700">menu</span>
+        </div>
+
+      </div>
     </div>
-  </div>
-</nav>
-  </template>
+  </nav>
+</template>

@@ -1,16 +1,15 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-[#ffffff]">
-    <!-- Navbar / second navbar -->
-    <Navbar class="fixed top-0 left-0 w-full z-50" />
-    <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
+  <div >
+    <Navbar/>
+    <SecondNavbar />
 
     <!-- Main container -->
-    <div class="max-w-5xl mx-auto p-6 pt-5 mt-32">
+    <div class="max-w-5xl mx-auto p-6 pt-5 ">
 
       <!-- 🔲 กล่องใหญ่ครอบทุกอย่าง -->
       <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
 
-       
+
     <h1 class="text-center text-3xl ">
       บันทึกลูกหนี้
     </h1>

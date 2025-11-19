@@ -1,9 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-[#ffffff]">
-    <!-- Navbar / second navbar -->
-    <Navbar class="fixed top-0 left-0 w-full z-50" />
-    <SecondNavbar class="fixed top-16 left-0 w-full z-40" />
-<div class="max-w-5xl mx-auto p-6 pt-5 mt-32">
+  <div >
+    <Navbar/>
+    <SecondNavbar />
+<div class="max-w-5xl mx-auto p-6 pt-5 ">
   <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
 
     <h1 class="text-center text-3xl  ">
@@ -70,7 +69,7 @@
           >
             <InputText v-model="row.item" type="text" placeholder="ชื่อรายการ" />
             <InputText v-model="row.ref" type="text" placeholder="เลขที่เอกสารอ้างอิง" />
-            
+
   <div>
     <button class="w-full px-4 py-2 bg-blue-500 text-white rounded" @click="openModalForRow(index)">
       จำนวนเงินรวม

@@ -17,8 +17,7 @@
     <!-- กล่องวันที่ (ซ้าย + ขวา) -->
     <div class="flex">
       <selectdatetime />
-      <span class="text-gray-500">-</span>
-      <selectdatetime />
+
     </div>
 
     <!-- หน่วยงาน -->

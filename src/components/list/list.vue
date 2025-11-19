@@ -3,7 +3,7 @@
     <div class="table-responsive overflow-x-auto">
       <table class="w-full table-fixed">
         <thead>
-          <tr>
+          <tr class="border-b">
             <th class="w-[90px] px-1 py-2 bg-primary-50 dark:bg-[#15203c]">สถานะ</th>
             <th class="w-[90px] px-1 py-2 bg-primary-50 dark:bg-[#15203c]">สังกัด</th>
             <th class="w-[90px] px-1 py-2 bg-primary-50 dark:bg-[#15203c]">รายได้/เงินโครงการ</th>
@@ -19,7 +19,7 @@
 
         <tbody>
           <!-- แถวที่ 1 -->
-          <tr class="border-b ">
+          <tr class="border ">
             <td class="px-1 py-2 flex justify-center items-center">
               <span class="mt-3 w-3 h-3 rounded-full bg-green-400"></span>
             </td>
@@ -62,7 +62,7 @@
           </tr>
 
           <!-- แถวที่ 2 -->
-          <tr class="border-b">
+          <tr class="border">
             <td class="px-1 py-2 flex justify-center items-center">
               <span class="mt-3 w-3 h-3 rounded-full bg-yellow-400"></span>
             </td>
@@ -105,7 +105,7 @@
           </tr>
 
           <!-- แถวที่ 3 -->
-          <tr class="border-b">
+          <tr class="border ">
             <td class="px-1 py-2 flex justify-center items-center">
               <span class=" mt-3 w-3 h-3 rounded-full bg-red-500"></span>
             </td>
@@ -146,7 +146,7 @@
                 </div>
               </td>
           </tr>
-          <tr class="border-b">
+          <tr class="border">
             <td class="px-1 py-2 flex justify-center items-center">
               <span class="mt-3 w-3 h-3 rounded-full bg-red-500"></span>
             </td>

@@ -6,8 +6,7 @@
       class="bg-gray-50 border border-gray-300 h-[44px] rounded-full w-full block
              text-black px-[13px] md:px-[16px]
              placeholder:text-gray-500 outline-0
-             dark:bg-[#15203c] dark:text-white dark:border-[#15203c]
-             dark:placeholder:text-gray-400"
+             rounded-md  "
     />
     <button
       type="button"

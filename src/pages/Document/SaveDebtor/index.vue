@@ -3,9 +3,9 @@
     <Navbar />
     <SecondNavbar />
 
-    <!-- Main container -->
+
     <div class="max-w-5xl mx-auto p-6 pt-5">
-      <!-- 🔲 กล่องใหญ่ครอบทุกอย่าง -->
+
       <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
         <h1 class="text-center text-3xl">บันทึกลูกหนี้</h1>
         <div class="max-w-4xl mx-auto p-6 pt-8 mt-10">
@@ -49,54 +49,55 @@
             </div>
           </div>
 
-          <!-- ==========================
-             2) ฟอร์มล้างลูกหนี้
-        ============================ -->
-          <div class="space-y-4 mt-5">
-            <span class="font-medium text-lg ">ล้างลูกหนี้</span>
 
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-<div class="grid grid-cols-1 gap-1 justify-items-center">
-  <InputText v-model="formData.moneyType" placeholder="เพิ่มรายการ" />
-  <span v-if="errors.moneyType" class="text-red-600 text-xs ">
-    {{ errors.moneyType }}
-  </span>
-</div>
+     <div class="gap-2 flex flex-col mt-5">
+        <div>ล้างลูกหนี้</div>
 
-<div class="grid grid-cols-1 gap-1 justify-items-center">
-  <InputText v-model="formData.projectCode" placeholder="เลขที่เอกสารอ้างอิง" />
-  <span v-if="errors.projectCode" class="text-red-600 text-xs">
-    {{ errors.projectCode }}
-  </span>
-</div>
+        <div class="flex flex-col gap-2">
+          <div
+            v-for="(row, index) in morelist"
+            :key="index"
+            class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr] gap-2"
+          >
 
-<div class="grid grid-cols-1 gap-1 justify-items-center">
-  <InputText v-model="formData.amount" placeholder="จำนวนเงิน" />
-  <span v-if="errors.amount" class="text-red-600 text-xs">
-    {{ errors.amount }}
-  </span>
-</div>
-
-<div class="grid grid-cols-1 gap-1 justify-items-center">
-  <InputText v-model="formData.note" placeholder="หมายเหตุ" />
-  <span v-if="errors.note" class="text-red-600 text-xs justify-center">
-    {{ errors.note }}
-  </span>
-</div>
-            </div>
-          </div>
-
-          <!-- ==========================
-             3) checkbox ต่าง ๆ
-        ============================ -->
           <div>
-            <div class="mt-10">
-            <div>
-              <input type="checkbox" v-model="check3" class="mt-3" />
-              นำฝากเข้าธนาคาร
+            <InputText v-model="row.item" type="text" placeholder="เพิ่มรายการ" />
+            <span v-if="errors.rows?.[index]?.item" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.rows[index].item }}</span>
             </div>
+            <div>
+            <InputText v-model="row.ref" type="text" placeholder="เลขที่เอกสารอ้างอิง" />
+            <span v-if="errors.rows?.[index]?.ref" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.rows[index].ref }}</span>
+            </div>
+<div>
+            <InputText v-model="row.amount" type="text" placeholder="จำนวนเงิน" />
+            <span v-if="errors.rows?.[index]?.amount" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.rows[index].amount }}</span>
+            </div>
+            <div>
+            <InputText v-model="row.type" type="text" placeholder="หมายเหตุ" />
+            <span v-if="errors.rows?.[index]?.type" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.rows[index].type }}</span>
+</div>
           </div>
-          </div>
+        </div>
+      </div>
+    <div>
+        <div>
+          <button
+            class="mt-3 text-gray-500"
+            @click="
+              morelist.push({
+                item: '',
+                ref: '',
+                amount: '',
+                note: '',
+                type: '',
+                selectedItems: []
+              })
+            "
+          >
+            [+] เพิ่มรายการ
+          </button>
+        </div>
+      </div>
 
           <div class="flex justify-end gap-3 pt-4">
             <button
@@ -134,23 +135,27 @@ const formData = ref({
   phone: '',
   department: '',
   fund: '',
-  moneyType: '',
-  projectCode: '',
-  amount: '',
-  note: '',
+
 })
 
+const morelist = ref([
+  {
+    item: '',
+    ref: '',
+    amount: '',
+    type: '',
+  },
+])
 
-const check3 = ref(false)
 
 const errors = ref({})
 
 const saveData = () => {
   errors.value = {} // reset
 
-  // เช็คทีละฟิลด์
+
   if (!formData.value.name) {
-    errors.value.name = 'กรุณากรอก "ข้าพเจ้า"'
+    errors.value.name = 'กรุณากรอก "ชื่อ"'
     return
   }
   if (!formData.value.phone) {
@@ -165,26 +170,36 @@ const saveData = () => {
     errors.value.fund = 'กรุณากรอก "จำนวนเงิน"'
     return
   }
-  if (!formData.value.moneyType) {
-    errors.value.moneyType = 'กรุณาเลือกรายการ'
-    return
-  }
-  if (!formData.value.projectCode) {
-    errors.value.projectCode = 'กรุณากรอก "เลขที่เอกสารอ้างอิง"'
-    return
-  }
-  if (!formData.value.amount) {
-    errors.value.amount = 'กรุณากรอก "จำนวนเงิน"'
-    return
-  }
-  if (!formData.value.note) {
-    errors.value.note = 'กรุณากรอก "หมายเหตุ"'
-    return
+  errors.value.rows = {}
+  for (let i = 0; i < morelist.value.length; i++) {
+    const row = morelist.value[i]
+    errors.value.rows[i] = {}
+
+    if (!row.item) {
+      errors.value.rows[i].item = 'กรุณากรอก "ชื่อรายการ"'
+      return
+    }
+
+    if (!row.ref) {
+      errors.value.rows[i].ref = 'กรุณากรอก "เลขที่เอกสารอ้างอิง"'
+      return
+    }
+
+    if (!row.amount) {
+      errors.value.rows[i].amount = 'กรุณากรอก "จำนวนเงิน"'
+      return
+    }
+
+    if (!row.type) {
+      errors.value.rows[i].type = 'กรุณากรอก "หมายเหตุ"'
+      return
+    }
   }
 
   // ถ้าไม่มี error ถึงจะบันทึก
   const dataToSave = {
     formData: formData.value,
+    morelist: morelist.value
   }
 
   console.log('=== ข้อมูลที่บันทึก ===')

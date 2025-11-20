@@ -1,367 +1,369 @@
 <template>
-  <div>
-    <Navbar />
-    <SecondNavbar />
-
-    <!-- Container หลัก -->
-    <div class="bg-gray-50 min-h-screen py-6 px-4">
-      <div class="max-w-6xl mx-auto">
-        <!-- Card หลัก -->
-        <div class="bg-white border border-gray-300 rounded shadow-md">
-          
-          <!-- Header -->
-          <div class="bg-blue-900 px-8 py-5 border-b-4 border-blue-800">
-            <h1 class="text-2xl font-semibold text-white m-0">
-              แบบฟอร์มเพิ่มใบนำส่งใหม่
-            </h1>
-            <p class="text-blue-100 text-sm mt-1">ระบบจัดการใบนำส่งเงิน</p>
+  <div class="min-h-screen bg-gray-50 py-8 px-4">
+    <div class="max-w-4xl mx-auto">
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="text-center">
+          <div class="flex justify-center mb-4">
+            <!-- โลโก้หน่วยงาน -->
+            <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+              </svg>
+            </div>
           </div>
+          <h1 class="text-2xl font-bold text-gray-800 mb-2">แบบฟอร์มลงทะเบียน</h1>
+          <p class="text-gray-600">กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง</p>
+          <p class="text-sm text-gray-500 mt-2">เลขที่อ้างอิง: FM-2024-001</p>
+        </div>
+      </div>
 
-          <!-- เนื้อหาฟอร์ม -->
-          <div class="p-8">
-            
-            <!-- ข้อมูลพนักงาน -->
-            <section class="mb-8">
-              <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">
-                ข้อมูลพนักงาน
-              </h2>
-              
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <div class="flex flex-col gap-1.5">
-                  <label class="text-sm font-medium text-gray-700">
-                    ชื่อพนักงาน <span class="text-red-600">*</span>
-                  </label>
-                  <InputText v-model="formData.name" type="text" placeholder="กรอกชื่อ-นามสกุล" />
-                  <span v-if="errors.name" class="text-red-600 text-xs">{{ errors.name }}</span>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                  <label class="text-sm font-medium text-gray-700">
-                    เบอร์โทรศัพท์ติดต่อ <span class="text-red-600">*</span>
-                  </label>
-                  <InputText v-model="formData.phone" type="text" placeholder="0XX-XXX-XXXX" />
-                  <span v-if="errors.phone" class="text-red-600 text-xs">{{ errors.phone }}</span>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                  <label class="text-sm font-medium text-gray-700">
-                    สังกัด <span class="text-red-600">*</span>
-                  </label>
-                  <InputText v-model="formData.department" type="text" placeholder="ระบุหน่วยงาน/สังกัด" />
-                  <span v-if="errors.department" class="text-red-600 text-xs">{{ errors.department }}</span>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                  <label class="text-sm font-medium text-gray-700">
-                    กองทุน <span class="text-red-600">*</span>
-                  </label>
-                  <Selects
-                    v-model="formData.fund"
-                    :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
-                    placeholder="-- เลือกกองทุน --"
-                    value-type="string"
-                  />
-                  <span v-if="errors.fund" class="text-red-600 text-xs">{{ errors.fund }}</span>
-                </div>
-              </div>
-            </section>
-
-            <!-- ข้อมูลโครงการ -->
-            <section class="mb-8">
-              <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">
-                ข้อมูลโครงการ
-              </h2>
-              
-              <div class="grid grid-cols-1 gap-5">
-                <div class="flex flex-col gap-1.5">
-                  <label class="text-sm font-medium text-gray-700">
-                    ชื่อนำส่งเงิน <span class="text-red-600">*</span>
-                  </label>
-                  <InputText 
-                    v-model="formData.moneyType" 
-                    type="text" 
-                    placeholder="ระบุชื่อโครงการหรือแหล่งเงิน เช่น รายได้เงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ" 
-                  />
-                  <span v-if="errors.moneyType" class="text-red-600 text-xs">{{ errors.moneyType }}</span>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                  <label class="text-sm font-medium text-gray-700">
-                    รหัสโครงงาน <span class="text-red-600">*</span>
-                  </label>
-                  <InputText 
-                    v-model="formData.projectCode" 
-                    type="text" 
-                    placeholder="ระบุรหัสโครงการ (กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ)" 
-                  />
-                  <span v-if="errors.projectCode" class="text-red-600 text-xs">{{ errors.projectCode }}</span>
-                </div>
-              </div>
-            </section>
-
-            <!-- รายการนำส่งเงิน -->
-            <section class="mb-8">
-              <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">
-                รายการนำส่งเงิน
-              </h2>
-
-              <!-- รายการ -->
-              <div class="space-y-4 mb-4">
-                <div 
-                  v-for="(row, index) in morelist" 
-                  :key="index" 
-                  class="bg-gray-50 border border-gray-200 rounded p-5 relative"
-                >
-                  <!-- หัวข้อรายการ -->
-                  <div class="flex justify-between items-center mb-4">
-                    <span class="text-sm font-semibold text-gray-700">รายการที่ {{ index + 1 }}</span>
-                    <button 
-                      v-if="morelist.length > 1"
-                      @click="morelist.splice(index, 1)"
-                      class="bg-white border border-red-600 text-red-600 px-3 py-1 rounded text-xs font-medium hover:bg-red-50 transition"
-                    >
-                      ลบรายการ
-                    </button>
-                  </div>
-
-                  <!-- ฟิลด์รายการ -->
-                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div class="flex flex-col gap-1.5">
-                      <label class="text-sm font-medium text-gray-700">ชื่อรายการ</label>
-                      <InputText v-model="row.item" type="text" placeholder="ระบุชื่อรายการ" />
-                      <span v-if="errors.rows?.[index]?.item" class="text-red-600 text-xs">{{ errors.rows[index].item }}</span>
-                    </div>
-
-                    <div class="flex flex-col gap-1.5">
-                      <label class="text-sm font-medium text-gray-700">เลขที่เอกสารอ้างอิง</label>
-                      <InputText v-model="row.ref" type="text" placeholder="ระบุเลขที่เอกสาร" />
-                      <span v-if="errors.rows?.[index]?.ref" class="text-red-600 text-xs">{{ errors.rows[index].ref }}</span>
-                    </div>
-
-                    <div class="flex flex-col gap-1.5">
-                      <label class="text-sm font-medium text-gray-700">จำนวนเงิน (บาท)</label>
-                      <button 
-                        @click="openModalForRow(index)"
-                        class="w-full px-4 py-2 bg-blue-900 text-white rounded text-sm font-medium hover:bg-blue-800 transition"
-                      >
-                        เลือกประเภทเงิน
-                      </button>
-                      <Modal
-                        v-if="showModal === index"
-                        :show="true"
-                        :items="rowItems[index]"
-                        @close="showModal = null"
-                        @update:selected="(selected) => updateSelectedItems(index, selected)"
-                      />
-                      <span v-if="errors.rows?.[index]?.selectedItems" class="text-red-600 text-xs">{{ errors.rows[index].selectedItems }}</span>
-                    </div>
-
-                    <div class="flex flex-col gap-1.5">
-                      <label class="text-sm font-medium text-gray-700">Keyword</label>
-                      <InputText v-model="row.note" type="text" placeholder="คำค้นหา" />
-                      <span v-if="errors.rows?.[index]?.note" class="text-red-600 text-xs">{{ errors.rows[index].note }}</span>
-                    </div>
-
-                    <div class="flex flex-col gap-1.5">
-                      <label class="text-sm font-medium text-gray-700">ภาษีนอก/ภายใน</label>
-                      <InputText v-model="row.type" type="text" placeholder="ระบุประเภทภาษี" />
-                      <span v-if="errors.rows?.[index]?.type" class="text-red-600 text-xs">{{ errors.rows[index].type }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ปุ่มเพิ่มรายการ -->
-              <button
-                @click="morelist.push({ item: '', ref: '', amount: '', note: '', type: '', selectedItems: [] })"
-                class="w-full border border-dashed border-gray-400 bg-white text-blue-900 py-3 rounded text-sm font-medium hover:bg-gray-50 hover:border-blue-900 transition"
+      <!-- Form -->
+      <form @submit.prevent="handleSubmit" class="bg-white rounded-lg shadow-md p-6 md:p-8">
+        <!-- ข้อมูลส่วนตัว -->
+        <div class="mb-8">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-blue-600">
+            ข้อมูลส่วนตัว
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- คำนำหน้า -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">
+                คำนำหน้า <span class="text-red-500">*</span>
+              </label>
+              <select 
+                v-model="formData.prefix" 
+                required
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                + เพิ่มรายการใหม่
-              </button>
-            </section>
-
-            <!-- สรุปยอดรวม -->
-            <div class="bg-blue-50 border border-blue-200 rounded p-6 mb-6">
-              <div class="flex justify-between items-center">
-                <span class="text-base font-semibold text-blue-900">จำนวนเงินรวมทั้งหมด</span>
-                <span class="text-3xl font-bold text-blue-900">{{ formatNumber(totalAmount) }} บาท</span>
-              </div>
+                <option value="">-- เลือกคำนำหน้า --</option>
+                <option value="นาย">นาย</option>
+                <option value="นาง">นาง</option>
+                <option value="นางสาว">นางสาว</option>
+              </select>
             </div>
 
-            <!-- หมายเหตุ -->
-            <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-6">
-              <p class="text-sm text-yellow-900 m-0">
-                <strong>หมายเหตุ:</strong> กรุณาตรวจสอบข้อมูลให้ถูกต้องและครบถ้วนก่อนกดปุ่มบันทึกข้อมูล (ช่องที่มีเครื่องหมาย * จำเป็นต้องกรอก)
-              </p>
+            <!-- ชื่อ -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">
+                ชื่อ <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.firstName"
+                type="text" 
+                required
+                placeholder="กรอกชื่อ"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
 
-            <!-- ปุ่มดำเนินการ -->
-            <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
-              <button
-                @click="gotomainpage()"
-                class="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50 transition"
-              >
-                ยกเลิก
-              </button>
-              <button
-                @click="saveData"
-                class="px-6 py-2 bg-blue-900 border border-blue-900 text-white rounded text-sm font-medium hover:bg-blue-800 transition"
-              >
-                บันทึกข้อมูล
-              </button>
+            <!-- นามสกุล -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">
+                นามสกุล <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.lastName"
+                type="text" 
+                required
+                placeholder="กรอกนามสกุล"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <!-- เลขบัตรประชาชน -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">
+                เลขบัตรประชาชน <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.idCard"
+                type="text" 
+                required
+                maxlength="13"
+                pattern="[0-9]{13}"
+                placeholder="0-0000-00000-00-0"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <!-- อีเมล -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">
+                อีเมล <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.email"
+                type="email" 
+                required
+                placeholder="example@mail.com"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <!-- เบอร์โทรศัพท์ -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">
+                เบอร์โทรศัพท์ <span class="text-red-500">*</span>
+              </label>
+              <input 
+                v-model="formData.phone"
+                type="tel" 
+                required
+                maxlength="10"
+                pattern="[0-9]{10}"
+                placeholder="0812345678"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
           </div>
         </div>
+
+        <!-- ที่อยู่ -->
+        <div class="mb-8">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-blue-600">
+            ที่อยู่
+          </h2>
+          
+          <div class="grid grid-cols-1 gap-6">
+            <!-- ที่อยู่ -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">
+                ที่อยู่ <span class="text-red-500">*</span>
+              </label>
+              <textarea 
+                v-model="formData.address"
+                required
+                rows="3"
+                placeholder="บ้านเลขที่ หมู่ ซอย ถนน"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              ></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- จังหวัด -->
+              <div>
+                <label class="block text-gray-700 font-medium mb-2">
+                  จังหวัด <span class="text-red-500">*</span>
+                </label>
+                <select 
+                  v-model="formData.province"
+                  required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">-- เลือกจังหวัด --</option>
+                  <option value="กรุงเทพมหานคร">กรุงเทพมหานคร</option>
+                  <option value="เชียงใหม่">เชียงใหม่</option>
+                  <option value="ภูเก็ต">ภูเก็ต</option>
+                  <!-- เพิ่มจังหวัดอื่นๆ -->
+                </select>
+              </div>
+
+              <!-- รหัสไปรษณีย์ -->
+              <div>
+                <label class="block text-gray-700 font-medium mb-2">
+                  รหัสไปรษณีย์ <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  v-model="formData.zipCode"
+                  type="text" 
+                  required
+                  maxlength="5"
+                  pattern="[0-9]{5}"
+                  placeholder="10100"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ข้อมูลเพิ่มเติม -->
+        <div class="mb-8">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-blue-600">
+            ข้อมูลเพิ่มเติม
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- ประเภทการสมัคร -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">
+                ประเภทการสมัคร <span class="text-red-500">*</span>
+              </label>
+              <select 
+                v-model="formData.type"
+                required
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">-- เลือกประเภท --</option>
+                <option value="บุคคลทั่วไป">บุคคลทั่วไป</option>
+                <option value="ข้าราชการ">ข้าราชการ</option>
+                <option value="พนักงานรัฐวิสาหกิจ">พนักงานรัฐวิสาหกิจ</option>
+              </select>
+            </div>
+
+            <!-- หน่วยงาน -->
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">
+                หน่วยงาน
+              </label>
+              <input 
+                v-model="formData.organization"
+                type="text" 
+                placeholder="ระบุหน่วยงาน (ถ้ามี)"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <!-- หมายเหตุ -->
+          <div class="mt-6">
+            <label class="block text-gray-700 font-medium mb-2">
+              หมายเหตุ
+            </label>
+            <textarea 
+              v-model="formData.note"
+              rows="4"
+              placeholder="ข้อมูลเพิ่มเติม (ถ้ามี)"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- ข้อกำหนดและเงื่อนไข -->
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex items-start">
+            <input 
+              v-model="formData.acceptTerms"
+              type="checkbox" 
+              id="terms"
+              required
+              class="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label for="terms" class="ml-3 text-sm text-gray-700">
+              <span class="font-medium">ข้าพเจ้ายินยอมและรับทราบ</span> 
+              ว่าข้อมูลที่ให้ไว้ถูกต้องตามความเป็นจริง และข้าพเจ้ายินยอมให้หน่วยงานเก็บรักษาข้อมูลส่วนบุคคล
+              ตาม <span class="font-medium">พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562</span>
+              <span class="text-red-500">*</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Privacy Notice -->
+        <div class="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <p class="text-xs text-gray-600 leading-relaxed">
+            <strong>นโยบายความเป็นส่วนตัว:</strong> 
+            ข้อมูลส่วนบุคคลของท่านจะถูกเก็บรักษาเป็นความลับและใช้เพื่อวัตถุประสงค์ทางราชการเท่านั้น 
+            ท่านมีสิทธิ์เข้าถึง แก้ไข ลบ หรือระงับการใช้ข้อมูลได้ตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล
+          </p>
+        </div>
+
+        <!-- ปุ่ม -->
+        <div class="flex flex-col sm:flex-row gap-4">
+          <button
+            type="submit"
+            :disabled="isSubmitting"
+            class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center"
+          >
+            <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
+          </button>
+          
+          <button
+            type="button"
+            @click="resetForm"
+            :disabled="isSubmitting"
+            class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-700 font-medium py-3 px-6 rounded-lg transition duration-200"
+          >
+            ล้างข้อมูล
+          </button>
+        </div>
+
+        <!-- Success Message -->
+        <div v-if="showSuccess" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center">
+            <svg class="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="text-green-800 font-medium">บันทึกข้อมูลสำเร็จ!</span>
+          </div>
+        </div>
+      </form>
+
+      <!-- Footer -->
+      <div class="text-center mt-6 text-sm text-gray-600">
+        <p>หากมีข้อสงสัยติดต่อ: support@example.go.th | โทร. 02-xxx-xxxx</p>
+        <p class="mt-2">© 2024 ชื่อหน่วยงาน. สงวนลิขสิทธิ์.</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import Navbar from '@/components/bar/navbar.vue'
-import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Selects from '@/components/input/select.vue'
-import router from '@/router'
-import InputText from '@/components/input/inputtext.vue'
-import { ref, computed } from 'vue'
-import Modal from '@/components/modal/modal.vue'
+import { ref, reactive } from 'vue'
 
-const formData = ref({
-  name: '',
+const isSubmitting = ref(false)
+const showSuccess = ref(false)
+
+const formData = reactive({
+  prefix: '',
+  firstName: '',
+  lastName: '',
+  idCard: '',
+  email: '',
   phone: '',
-  department: '',
-  fund: '',
-  moneyType: '',
-  projectCode: ''
+  address: '',
+  province: '',
+  zipCode: '',
+  type: '',
+  organization: '',
+  note: '',
+  acceptTerms: false
 })
 
-const morelist = ref([
-  {
-    item: '',
-    ref: '',
-    amount: '',
-    note: '',
-    type: '',
-    selectedItems: []
+const handleSubmit = async () => {
+  isSubmitting.value = true
+  
+  try {
+    // จำลองการส่งข้อมูล
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    console.log('Form Data:', formData)
+    
+    showSuccess.value = true
+    setTimeout(() => {
+      showSuccess.value = false
+      resetForm()
+    }, 3000)
+    
+  } catch (error) {
+    console.error('Error:', error)
+    alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+  } finally {
+    isSubmitting.value = false
   }
-])
-
-const errors = ref({})
-
-const totalAmount = computed(() => {
-  return morelist.value.reduce((sum, row) => {
-    if (!row.selectedItems) return sum
-
-    const rowTotal = row.selectedItems.reduce((s, item) => {
-      const amount = Number(item.amount) || 0
-      return s + amount
-    }, 0)
-
-    return sum + rowTotal
-  }, 0)
-})
-
-const formatNumber = (num) => {
-  return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-const updateSelectedItems = (rowIndex, selected) => {
-  morelist.value[rowIndex].selectedItems = selected.filter(i => i.checked)
-}
-
-const showModal = ref(null)
-const rowItems = ref([])
-
-const openModalForRow = (index) => {
-  if (!rowItems.value[index]) {
-    rowItems.value[index] = JSON.parse(JSON.stringify([
-      { name: 'เงินสด', checked: false, amount: '' },
-      { name: 'เช็คธนาคาร', checked: false, amount: '', NumCheck: '' },
-      { name: 'ฝากเข้าบัญชีธนาคาร', checked: false, amount: '', AccountNum: '', AccountName: '' }
-    ]))
-  }
-  showModal.value = index
-}
-
-const saveData = () => {
-  errors.value = {}
-
-  // ตรวจสอบฟอร์มหลัก
-  if (!formData.value.name) {
-    errors.value.name = 'กรุณากรอก "ชื่อ"'
-    return
-  }
-  if (!formData.value.phone) {
-    errors.value.phone = 'กรุณากรอก "เบอร์โทรติดต่อ"'
-    return
-  }
-  if (!formData.value.department) {
-    errors.value.department = 'กรุณากรอก "สังกัด"'
-    return
-  }
-  if (!formData.value.fund) {
-    errors.value.fund = 'กรุณาเลือก "กองทุน"'
-    return
-  }
-  if (!formData.value.moneyType) {
-    errors.value.moneyType = 'กรุณากรอก "ขอนำส่งเงิน"'
-    return
-  }
-  if (!formData.value.projectCode) {
-    errors.value.projectCode = 'กรุณากรอก "รหัสโครงงาน"'
-    return
-  }
-
-  errors.value.rows = {}
-  for (let i = 0; i < morelist.value.length; i++) {
-    const row = morelist.value[i]
-    errors.value.rows[i] = {}
-
-    if (!row.item) {
-      errors.value.rows[i].item = 'กรุณากรอก "ชื่อรายการ"'
-      return
+const resetForm = () => {
+  Object.keys(formData).forEach(key => {
+    if (typeof formData[key] === 'boolean') {
+      formData[key] = false
+    } else {
+      formData[key] = ''
     }
-
-    if (!row.ref) {
-      errors.value.rows[i].ref = 'กรุณากรอก "เลขที่เอกสารอ้างอิง"'
-      return
-    }
-
-    if (!row.selectedItems || row.selectedItems.length === 0) {
-      errors.value.rows[i].selectedItems = 'กรุณาเลือกและกรอก "จำนวนเงิน"'
-      return
-    }
-
-    if (!row.note) {
-      errors.value.rows[i].note = 'กรุณากรอก "keyword"'
-      return
-    }
-
-    if (!row.type) {
-      errors.value.rows[i].type = 'กรุณากรอก "ภายนอก/ภายใน"'
-      return
-    }
-  }
-
-  // ถ้าผ่านการตรวจสอบทั้งหมด
-  const dataToSave = {
-    formData: formData.value,
-    morelist: morelist.value,
-    totalAmount: totalAmount.value
-  }
-
-  console.log('=== ข้อมูลที่บันทึก ===')
-  console.log(JSON.stringify(dataToSave, null, 2))
-
-  alert('บันทึกข้อมูลสำเร็จ! ดูข้อมูลใน Console')
-  errors.value = {}
-}
-
-const gotomainpage = () => {
-  router.push('/')
+  })
 }
 </script>
 
 <style scoped>
-/* Custom styles ถ้าจำเป็น */
+/* Custom styles ถ้าต้องการ */
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+* {
+  font-family: 'Sarabun', sans-serif;
+}
 </style>

@@ -9,7 +9,7 @@ import WaybillResearch from '@/pages/Document/WaybillResearch/index.vue'
 import resultsubmit from "@/pages/Document/results submitted/index.vue"
 import pdfpage from "@/pages/Document/Pdfpage/index.vue"
 import testui from "@/pages/Document/testui/index.vue"
-import testui1 from "@/pages/Document/testui/index1.vue"
+import testui1 from "@/pages/Document/testui/index.vue"
 
 const routes = [
   { path: '/', name: 'mmain', component: Main },

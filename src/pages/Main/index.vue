@@ -36,16 +36,21 @@
 
   <!-- ปุ่มต่างๆ -->
   <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-    <phillbutton
-      v-for="btn in actions"
-      :key="btn.key"
-      @click="btn.handler"
-      grow
-    >
-      <template #icon>{{ btn.icon }}</template>
-      {{ btn.label }}
-    </phillbutton>
-  </div>
+  <phillbutton
+    v-for="btn in actions"
+    :key="btn.key"
+    @click="btn.handler"
+    grow
+  >
+    <template #icon>
+      <i class="material-symbols-outlined text-[22px] leading-none">
+        {{ btn.icon }}
+      </i>
+    </template>
+
+    {{ btn.label }}
+  </phillbutton>
+</div>
 </div>
 
         <div class="pt-10 px-6 mt-1">
@@ -76,7 +81,6 @@ import nextpage from '@/components/list/nextpage.vue'
 import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 
 
-
 const router = useRouter()
 
 // ฟังก์ชันสำหรับปุ่ม "ใบนำส่ง"
@@ -97,13 +101,13 @@ const gotoresultsubmit = ()=>{
 }
 
 
-const actions = [
-  { key: 'export', label: 'export', icon:"🖫", handler: () => {} },
-  { key: 'main', label: 'ใบนำส่ง', icon:"🞢", handler: goTowaybill },
-  { key: 'research', label: 'ใบนำส่งวิจัย', icon:"🞢",  handler: goTowaybillResearch },
-  { key: 'debtor', label: 'ใบนำส่งลูกหนี้', icon:"🞢", handler: goTowaybilldebtor},
 
-]
+const actions = [
+  { key: 'export', label: 'Export', icon: "file_export", handler: () => {} },
+  { key: 'main', label: 'ใบนำส่ง', icon: "add", handler: goTowaybill },
+  { key: 'research', label: 'ใบนำส่งวิจัย', icon: "add", handler: goTowaybillResearch },
+  { key: 'debtor', label: 'ใบนำส่งลูกหนี้', icon: "add", handler: goTowaybilldebtor },
+];
 </script>
 
 <style>

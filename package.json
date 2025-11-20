@@ -14,8 +14,10 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.2.0",
     "@vuepic/vue-datepicker": "^12.0.5",
+    "axios": "^1.13.2",
     "pdfmake": "^0.2.20",
     "pinia": "^3.0.3",
     "preline": "^3.2.3",

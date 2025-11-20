@@ -3,20 +3,21 @@
     <Navbar  />
     <SecondNavbar  />
 
-    <div class="flex justify-center items-center -mt-12">
+    <div class="flex justify-center items-center -mt-6">
       <iframe
         :src="pdfUrl"
         type="application/pdf"
         class="w-[1000px] h-[760px] border border-gray-300 shadow-md"
       ></iframe>
     </div>
-    <div class=" flex justify-end  -mt-12 mr-5">
+    <div class=" flex justify-end  -mt-12 mr-8">
     <button
         class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-700"
         @click="gotomainpage()"
       >
         กลับ
       </button>
+ 
   </div>
   </div>
 </template>

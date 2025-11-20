@@ -43,11 +43,13 @@
             <td
               class="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]"
             >
-              <div class="flex items-center gap-[9px]">
+              <div class="flex items-center gap-[12px]">
                 <button
   type="button"
   class="text-primary-500"
   v-tippy="'ดูข้อมูล'"
+  @click="gotopdfpage"
+
 >
   <i class="material-symbols-outlined !text-md text-blue-500">
     visibility
@@ -59,20 +61,23 @@
   class="text-gray-500"
   v-tippy="'แก้ไข'"
 >
-  <i class="material-symbols-outlined !text-md">
+  <i class="material-symbols-outlined !text-md text-indigo-500">
     edit
   </i>
 </button>
- <button
-      type="button"
-      class="text-gray-500 leading-none"
-      v-tippy="item.isLocked ? 'ปลดล็อกรายการ' : 'ล็อกรายการ'"
-      @click="toggleLock(item)"
-    >
-      <i class="material-symbols-outlined !text-md">
-        {{ item.isLocked ? 'lock' : 'lock_open_right' }}
-      </i>
-    </button>
+<button
+  type="button"
+  class="leading-none"
+  v-tippy="item.isLocked ? 'ปลดล็อกรายการ' : 'ล็อกรายการ'"
+  @click="toggleLock(item)"
+>
+  <i
+    class="material-symbols-outlined !text-md"
+    :class="item.isLocked ? 'text-amber-600' : 'text-green-600'"
+  >
+    {{ item.isLocked ? 'lock' : 'lock_open_right' }}
+  </i>
+</button>
 
                 <!-- ✅ ปุ่มลบ: ผูก SweetAlert2 -->
                 <button
@@ -104,6 +109,9 @@
 <script setup>
 import { ref } from 'vue'
 import Swal from 'sweetalert2'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // ✅ ข้อมูลตัวอย่าง (เอาไปแทนที่ด้วยข้อมูลจาก API ภายหลังได้)
 const items = ref([
@@ -169,6 +177,10 @@ const handleDelete = async (item) => {
     icon: 'success'
   })
 }
+const gotopdfpage = ()=>{
+  router.push('/pdfpage')
+}
+
 
 const toggleLock = (item) => {
   item.isLocked = !item.isLocked

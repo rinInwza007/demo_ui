@@ -14,7 +14,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4">
         <div>
           <div class="flex flex-col gap-1.5 ">
-            <span>ข้าพเจ้า *</span>
+            <span>ข้าพเจ้า <span class="text-red-600">*</span></span>
             <InputText v-model="formData.name" type="text" />
             <span v-if="errors.name" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.name }}</span>
 
@@ -22,38 +22,38 @@
         </div>
         <div>
           <div class="flex flex-col gap-1.5 ">
-            <span>เบอร์โทรติดต่อ *</span>
+            <span>เบอร์โทรติดต่อ <span class="text-red-600">*</span></span>
             <InputText v-model="formData.phone" type="text" />  <span v-if="errors.phone" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.phone }}</span>
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5">
-            <span>สังกัด *</span>
+            <span>สังกัด <span class="text-red-600">*</span></span>
               <InputText v-model="formData.department" type="text" /><span v-if="errors.department" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.department }}</span>
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5">
-            <span>กองทุน *</span>
+            <span>กองทุน <span class="text-red-600">*</span></span>
             <Selects
               type="text"
                v-model="formData.fund"
               :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
-              placeholder="เลือกหมวดหมู่"
+              placeholder="เลือกกองทุน"
               value-type="string"
             /><span v-if="errors.fund" class="text-red-600 text-xs  -mb-[18px] ">{{ errors.fund }}</span>
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5">
-            <span>ขอนำส่งเงิน *</span>
+            <span>ขอนำส่งเงิน <span class="text-red-600">*</span></span>
             <InputText v-model="formData.moneyType" type="text" placeholder="รายได้/เงินโครงการ " />
             <span v-if="errors.moneyType" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.moneyType }}</span>
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5 ">
-            <span>รหัสโครงงาน *</span>
+            <span>รหัสโครงงาน <span class="text-red-600">*</span></span>
             <InputText type="text" placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ" v-model="formData.projectCode" />
             <span v-if="errors.projectCode" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.projectCode }}</span>
             </div>

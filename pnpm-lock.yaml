@@ -17,6 +17,9 @@ importers:
       '@vuepic/vue-datepicker':
         specifier: ^12.0.5
         version: 12.0.5(vue@3.5.24)
+      apexcharts:
+        specifier: ^5.3.6
+        version: 5.3.6
       axios:
         specifier: ^1.13.2
         version: 1.13.2
@@ -47,6 +50,9 @@ importers:
       vue-router:
         specifier: ^4.6.3
         version: 4.6.3(vue@3.5.24)
+      vue3-apexcharts:
+        specifier: ^1.10.0
+        version: 1.10.0(apexcharts@5.3.6)(vue@3.5.24)
     devDependencies:
       '@eslint/js':
         specifier: ^9.37.0
@@ -916,6 +922,9 @@ packages:
 
   apexcharts@4.7.0:
     resolution: {integrity: sha512-iZSrrBGvVlL+nt2B1NpqfDuBZ9jX61X9I2+XV0hlYXHtTwhwLTHDKGXjNXAgFBDLuvSYCB/rq2nPWVPRv2DrGA==}
+
+  apexcharts@5.3.6:
+    resolution: {integrity: sha512-sVEPw+J0Gp0IHQabKu8cfdsxlfME0e36Wid7RIaPclGM2OUt+O7O4+6mfAmTUYhy5bDk8cNHzEhPfVtLCIXEJA==}
 
   arg@5.0.2:
     resolution: {integrity: sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg==}
@@ -2235,6 +2244,12 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
+  vue3-apexcharts@1.10.0:
+    resolution: {integrity: sha512-sBma2In4rU5n/JBrv8KVb8if+IoY019Dse2yRDD/eRU1WGZHK07zuy9erefKzbJ7T3wP9+Jsy9bH6Vdjy85HZg==}
+    peerDependencies:
+      apexcharts: '>=4.0.0'
+      vue: '>=3.0.0'
+
   vue@3.5.24:
     resolution: {integrity: sha512-uTHDOpVQTMjcGgrqFPSb8iO2m1DUvo+WbGqoXQz8Y1CeBYQ0FXf2z1gLRaBtHjlRz7zZUBHxjVB5VTLzYkvftg==}
     peerDependencies:
@@ -3082,6 +3097,15 @@ snapshots:
       picomatch: 2.3.1
 
   apexcharts@4.7.0:
+    dependencies:
+      '@svgdotjs/svg.draggable.js': 3.0.6(@svgdotjs/svg.js@3.2.5)
+      '@svgdotjs/svg.filter.js': 3.0.9
+      '@svgdotjs/svg.js': 3.2.5
+      '@svgdotjs/svg.resize.js': 2.0.5(@svgdotjs/svg.js@3.2.5)(@svgdotjs/svg.select.js@4.0.3(@svgdotjs/svg.js@3.2.5))
+      '@svgdotjs/svg.select.js': 4.0.3(@svgdotjs/svg.js@3.2.5)
+      '@yr/monotone-cubic-spline': 1.0.3
+
+  apexcharts@5.3.6:
     dependencies:
       '@svgdotjs/svg.draggable.js': 3.0.6(@svgdotjs/svg.js@3.2.5)
       '@svgdotjs/svg.filter.js': 3.0.9
@@ -4371,6 +4395,11 @@ snapshots:
   vue-router@4.6.3(vue@3.5.24):
     dependencies:
       '@vue/devtools-api': 6.6.4
+      vue: 3.5.24
+
+  vue3-apexcharts@1.10.0(apexcharts@5.3.6)(vue@3.5.24):
+    dependencies:
+      apexcharts: 5.3.6
       vue: 3.5.24
 
   vue@3.5.24:

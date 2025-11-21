@@ -50,7 +50,7 @@
                     :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
                     placeholder="เลือกกองทุน"
                     value-type="string"
-                  /><span v-if="errors.fund" class="text-red-600 text-xs -mb-[18px]">{{
+                  /><span v-if="errors.fund" class="text-red-600 text-xs -mt-2 -mb-10 ">{{
                     errors.fund
                   }}</span>
                 </div>
@@ -64,7 +64,7 @@
                     <option value="เงินโครงการ">เงินโครงการ</option>
                   </select>
 
-                  <span v-if="errors.moneyType" class="text-red-600 text-xs -mt-2 -mb-[14px]">{{
+                  <span v-if="errors.moneyType" class="text-red-600 text-xs mt-[3px] ">{{
                     errors.moneyType
                   }}</span>
                 </div>
@@ -77,14 +77,14 @@
                     placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
                     v-model="formData.projectCode"
                   />
-                  <span v-if="errors.projectCode" class="text-red-600 text-xs -mt-2 -mb-[14px]">{{
+                  <span v-if="errors.projectCode" class="text-red-600 text-xs -mt-1 ">{{
                     errors.projectCode
                   }}</span>
                 </div>
               </div>
             </div>
 
-            <div class="bg-gray-100 rounded-xl p-6 mt-5">
+            <div class="bg-gray-100 rounded-xl p-6 mt-7">
               <div class="gap-2 flex flex-col">
                 <div>นำส่งเงิน <span class="text-red-600">*</span></div>
                 <div class="flex flex-col gap-2 divide-y-4 divide-[#ffffff] rounded-xl ">
@@ -232,7 +232,6 @@ const morelist = ref([
   {
     item: '',
     ref: '',
-    amount: '',
     keyword: '',
     type: '',
     selectedItems: [],
@@ -243,16 +242,18 @@ const keywordInputs = [] // array ref เก็บ element ของแต่ล
 
 onMounted(() => {
   const selectEl = document.getElementById("moneyType");
-  new TomSelect(selectEl, {
-    create: true,
-    sortField: { field: "text", direction: "asc" },
-    allowEmptyOption: true,
-    placeholder: "รายได้/เงินโครงการ",
-    onChange(value) {
-      formData.value.moneyType = value;
-    }
-  });
 
+  if (!selectEl.tomselect) { // เช็คว่า init ไปแล้วหรือยัง
+    new TomSelect(selectEl, {
+      create: true,
+      sortField: { field: "text", direction: "asc" },
+      allowEmptyOption: true,
+      placeholder: "รายได้/เงินโครงการ",
+      onChange(value) {
+        formData.value.moneyType = value;
+      }
+    });
+  }
   // กำหนด style ให้ control
   const control = selectEl.tomselect.control;
   control.style.height = "2.5rem"; // เปลี่ยนเป็น 3rem, 3.5rem, 4rem
@@ -268,6 +269,8 @@ onMounted(() => {
     input.style.height = "1rem"; // ความสูงของ input
     input.style.padding = "0.5rem"; // padding ข้างใน
   }
+
+  
   
   morelist.value.forEach((_, i) => initTomSelect(i))
 })
@@ -290,11 +293,6 @@ const initTomSelect = (index) => {
     })
   })
 }
-
-// init แถวเริ่มต้น
-onMounted(() => {
-  morelist.value.forEach((_, i) => initTomSelect(i))
-})
 
 // watch ตอนเพิ่มแถวใหม่
 watch(morelist, (newVal, oldVal) => {
@@ -364,27 +362,27 @@ const saveData = () => {
 
   // ตรวจสอบฟอร์มหลัก
   if (!formData.value.name) {
-    errors.value.name = 'กรุณากรอก "ชื่อ"'
+    errors.value.name = 'กรุณากรอก ชื่อ'
     hasError = true
   }
   if (!formData.value.phone) {
-    errors.value.phone = 'กรุณากรอก "เบอร์โทรติดต่อ"'
+    errors.value.phone = 'กรุณากรอก เบอร์โทรติดต่อ'
     hasError = true
   }
   if (!formData.value.department) {
-    errors.value.department = 'กรุณากรอก "สังกัด"'
+    errors.value.department = 'กรุณากรอก สังกัด'
     hasError = true
   }
   if (!formData.value.fund) {
-    errors.value.fund = 'กรุณาเลือก "กองทุน"'
+    errors.value.fund = 'กรุณาเลือก กองทุน'
     hasError = true
   }
   if (!formData.value.moneyType) {
-    errors.value.moneyType = 'กรุณากรอก "ขอนำส่งเงิน"'
+    errors.value.moneyType = 'กรุณากรอก ขอนำส่งเงิน'
     hasError = true
   }
   if (!formData.value.projectCode) {
-    errors.value.projectCode = 'กรุณากรอก "รหัสโครงงาน"'
+    errors.value.projectCode = 'กรุณากรอก รหัสโครงงาน'
     hasError = true
   }
 
@@ -395,27 +393,27 @@ const saveData = () => {
     errors.value.rows[i] = {}
 
     if (!row.item) {
-      errors.value.rows[i].item = 'กรุณากรอก "ชื่อรายการ"'
+      errors.value.rows[i].item = 'กรุณากรอก ชื่อรายการ'
       hasError = true
     }
 
     if (!row.ref) {
-      errors.value.rows[i].ref = 'กรุณากรอก "เลขที่เอกสารอ้างอิง"'
+      errors.value.rows[i].ref = 'กรุณากรอก เลขที่เอกสารอ้างอิง'
       hasError = true
     }
 
-    if (!row.selectedItems || row.selectedItems.length === 0) {
-      errors.value.rows[i].selectedItems = 'กรุณาเลือกและกรอก "จำนวนเงิน"'
+    if (!row.selectedItems || row.selectedItems.length === 0 || row.selectedItems.some(item => item.checked && !item.amount)) {
+      errors.value.rows[i].selectedItems = 'กรุณากรอก จำนวนเงินให้ครบถ้วน'
       hasError = true
     }
 
     if (!row.keyword) {
-      errors.value.rows[i].keyword = 'กรุณากรอก "keyword"'
+      errors.value.rows[i].keyword = 'กรุณากรอก keyword'
       hasError = true
     }
 
     if (!row.type) {
-      errors.value.rows[i].type = 'กรุณากรอก "ภายนอก/ภายใน"'
+      errors.value.rows[i].type = 'กรุณากรอก ภายนอกหรือภายใน'
       hasError = true
     }
   }

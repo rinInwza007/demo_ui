@@ -1,14 +1,14 @@
 <template>
   <div>
-    <label v-if="label" class="mb-2 font-medium block text-gray-700 dark:text-gray-200">
+    <label v-if="label" >
       {{ label }}
     </label>
 
     <select
       :value="modelValueString"
       @change="onChange"
-      class="h-[44px] rounded-md border border-gray-500 px-2 block w-full
-             outline-none cursor-pointer transition-all focus:border-primary-500"
+      class="h-[44px] rounded-md border border-gray-500 px-[18px] block w-full
+             outline-none cursor-pointer transition-all focus:border-gray-700 focus:ring-1 focus:ring-gray-700 "
     >
       <!-- ถ้ามี placeholder -->
       <option v-if="placeholder" value="">{{ placeholder }}</option>

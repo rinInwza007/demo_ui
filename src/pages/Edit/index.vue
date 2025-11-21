@@ -1,12 +1,12 @@
 <template>
   <div >
     <Navbar/>
-    <SecondNavbar class="bg-gray-100 "/>
+    <SecondNavbar />
 <div class="max-w-5xl mx-auto p-6 pt-5 ">
   <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
 
     <h1 class="text-center text-3xl  ">
-      รายการผลการนำส่ง
+      แก้ไข
     </h1>
 
 <div class="max-w-4xl mx-auto p-6 pt-8 mt-10">
@@ -15,21 +15,21 @@
         <div>
           <div class="flex flex-col gap-1.5 ">
             <span>ข้าพเจ้า *</span>
-            <InputText type="text" />
+            <InputText v-model="formData.name" type="text" />
+            <span v-if="errors.name" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.name }}</span>
+
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5 ">
             <span>เบอร์โทรติดต่อ *</span>
-            <InputText type="text" />
+            <InputText v-model="formData.phone" type="text" />  <span v-if="errors.phone" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.phone }}</span>
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5">
             <span>สังกัด *</span>
-            <div class="flex flex-col gap-0.5">
-              <InputText type="text" />
-            </div>
+              <InputText v-model="formData.department" type="text" /><span v-if="errors.department" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.department }}</span>
           </div>
         </div>
         <div>
@@ -37,29 +37,33 @@
             <span>กองทุน *</span>
             <Selects
               type="text"
-              v-model="category"
+               v-model="formData.fund"
               :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
               placeholder="เลือกหมวดหมู่"
               value-type="string"
-            />
+            /><span v-if="errors.fund" class="text-red-600 text-xs  -mb-[18px] ">{{ errors.fund }}</span>
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5">
             <span>ขอนำส่งเงิน *</span>
-            <InputText type="text" placeholder="รายได้/เงินโครงการ " />
+            <InputText v-model="formData.moneyType" type="text" placeholder="รายได้/เงินโครงการ " />
+            <span v-if="errors.moneyType" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.moneyType }}</span>
           </div>
         </div>
         <div>
           <div class="flex flex-col gap-1.5 ">
             <span>รหัสโครงงาน *</span>
-            <InputText type="text" placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ" />
-          </div>
+            <InputText type="text" placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ" v-model="formData.projectCode" />
+            <span v-if="errors.projectCode" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.projectCode }}</span>
+            </div>
         </div>
+
+
       </div>
 
       <div class="gap-2 flex flex-col mt-5">
-        <div>รายการลูกหนี้</div>
+        <div>นำส่งเงิน</div>
 
         <div class="flex flex-col gap-2">
           <div
@@ -67,14 +71,19 @@
             :key="index"
             class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2"
           >
-            <InputText v-model="row.item" type="text" placeholder="ชื่อรายการ" />
-            <InputText v-model="row.ref" type="text" placeholder="เลขที่เอกสารอ้างอิง" />
 
+          <div>
+            <InputText v-model="row.item" type="text" placeholder="ชื่อรายการ" />
+            <span v-if="errors.rows?.[index]?.item" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.rows[index].item }}</span>
+            </div>
+            <div>
+            <InputText v-model="row.ref" type="text" placeholder="เลขที่เอกสารอ้างอิง" />
+            <span v-if="errors.rows?.[index]?.ref" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.rows[index].ref }}</span>
+            </div>
   <div>
     <button class="w-full px-4 py-2 bg-blue-500 text-white rounded" @click="openModalForRow(index)">
       จำนวนเงินรวม
     </button>
-
               <Modal
                 v-if="showModal === index"
                 :show="true"
@@ -82,13 +91,18 @@
                 @close="showModal = null"
                   @update:selected="(selected) => updateSelectedItems(index, selected)"
               />
+              <span v-if="errors.rows?.[index]?.selectedItems" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.rows[index].selectedItems }}</span>
 
   </div>
 
-
+<div>
             <InputText v-model="row.note" type="text" placeholder="keyword" />
-            <InputText v-model="row.note" type="text" placeholder="ภายนอก/ภายใน" />
-
+            <span v-if="errors.rows?.[index]?.note" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.rows[index].note }}</span>
+            </div>
+            <div>
+            <InputText v-model="row.type" type="text" placeholder="ภายนอก/ภายใน" />
+            <span v-if="errors.rows?.[index]?.type" class="text-red-600 text-xs -mt-2 -mb-[14px] ">{{ errors.rows[index].type }}</span>
+</div>
           </div>
         </div>
       </div>
@@ -134,8 +148,8 @@
       </div>
     </section>
 
-    <div class="flex justify-end gap-3 pt-4">
-      <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-500">
+    <div class="mt-6 flex justify-end gap-3 ">
+      <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-300" @click="saveData">
         บันทึก
       </button>
       <button
@@ -159,6 +173,14 @@ import InputText from '@/components/input/inputtext.vue'
 import { ref,computed } from 'vue'
 import Modal from '@/components/modal/modal.vue'
 
+const formData = ref({
+  name: '',
+  phone: '',
+  department: '',
+  fund: '',
+  moneyType: '',
+  projectCode: ''
+})
 
 const morelist = ref([
   {
@@ -170,6 +192,8 @@ const morelist = ref([
     selectedItems: []
   },
 ])
+
+const errors = ref({})
 
 const totalAmount = computed(() => {
   return morelist.value.reduce((sum, row) => {
@@ -192,7 +216,6 @@ const updateSelectedItems = (rowIndex, selected) => {
 const showModal= ref(null)
 const rowItems = ref([])
 const openModalForRow = (index) => {
-  // ถ้ายังไม่มี items สำหรับแถวนี้ ให้สร้างใหม่
 if (!rowItems.value[index]) {
   rowItems.value[index] = JSON.parse(JSON.stringify([
     { name: 'เงินสด', checked: false, amount: '' },
@@ -201,6 +224,79 @@ if (!rowItems.value[index]) {
   ]))
 }
   showModal.value = index
+}
+const saveData = () => {
+  errors.value = {}
+
+  // ตรวจสอบฟอร์มหลัก
+  if (!formData.value.name) {
+    errors.value.name = 'กรุณากรอก "ชื่อ"'
+    return
+  }
+  if (!formData.value.phone) {
+    errors.value.phone = 'กรุณากรอก "เบอร์โทรติดต่อ"'
+    return
+  }
+  if (!formData.value.department) {
+    errors.value.department = 'กรุณากรอก "สังกัด"'
+    return
+  }
+  if (!formData.value.fund) {
+    errors.value.fund = 'กรุณาเลือก "กองทุน"'
+    return
+  }
+  if (!formData.value.moneyType) {
+    errors.value.moneyType = 'กรุณากรอก "ขอนำส่งเงิน"'
+    return
+  }
+  if (!formData.value.projectCode) {
+    errors.value.projectCode = 'กรุณากรอก "รหัสโครงงาน"'
+    return
+  }
+  errors.value.rows = {}
+  for (let i = 0; i < morelist.value.length; i++) {
+    const row = morelist.value[i]
+    errors.value.rows[i] = {}
+
+    if (!row.item) {
+      errors.value.rows[i].item = 'กรุณากรอก "ชื่อรายการ"'
+      return
+    }
+
+    if (!row.ref) {
+      errors.value.rows[i].ref = 'กรุณากรอก "เลขที่เอกสารอ้างอิง"'
+      return
+    }
+
+    if (!row.selectedItems || row.selectedItems.length === 0) {
+      errors.value.rows[i].selectedItems = 'กรุณาเลือกและกรอก "จำนวนเงิน"'
+      return
+    }
+
+    if (!row.note) {
+      errors.value.rows[i].note = 'กรุณากรอก "keyword"'
+      return
+    }
+
+    if (!row.type) {
+      errors.value.rows[i].type = 'กรุณากรอก "ภายนอก/ภายใน"'
+      return
+    }
+  }
+
+// ถ้ามี error ไหนเลย ไม่บันทึก
+  // ถ้าผ่านการตรวจสอบทั้งหมด
+  const dataToSave = {
+    formData: formData.value,
+    morelist: morelist.value,
+    totalAmount: totalAmount.value
+  }
+
+  console.log('=== ข้อมูลที่บันทึก ===')
+  console.log(JSON.stringify(dataToSave, null, 2))
+
+  alert('บันทึกข้อมูลสำเร็จ! ดูข้อมูลใน Console')
+  errors.value = {}
 }
 
 const gotomainpage = () => {

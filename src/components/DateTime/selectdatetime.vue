@@ -3,7 +3,7 @@
     <!-- label -->
     <label
       v-if="label"
-      class="text-sm font-medium text-gray-700 dark:text-gray-200"
+      class="text-sm font-medium text-gray-700 flex"
     >
       {{ label }}
     </label>
@@ -18,7 +18,7 @@
         format="dd/MM/yyyy HH:mm"
         :clearable="true"
         :auto-apply="true"
-        placeholder="เลือกช่วงวันและเวลา"
+        placeholder="เลือกช่วงวัน"
         :input-class="`
           h-[44px] w-full rounded-md border border-gray-1000 px-2 text-sm
           bg-white
@@ -42,13 +42,10 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: [string, string] | null): void
 }>()
 
-// เก็บค่าภายในเป็น Date range ของ VueDatePicker
-// รูปแบบ: [Date, Date] หรือ null
+
 const internalValue = ref<[Date | null, Date | null] | null>(null)
 
-// ---------- helper แปลง string <-> Date ----------
 
-// format ที่จะส่งออกไปให้ parent: 'YYYY-MM-DD HH:mm'
 const formatDateTime = (d: Date | null): string => {
   if (!d) return ''
   const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
@@ -62,10 +59,10 @@ const formatDateTime = (d: Date | null): string => {
   return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
-// parse กลับจาก string 'YYYY-MM-DD HH:mm' -> Date
+
 const parseDateTime = (s: string | null | undefined): Date | null => {
   if (!s) return null
-  // รองรับทั้ง 'YYYY-MM-DD HH:mm' และ 'YYYY-MM-DDTHH:mm'
+
   const cleaned = s.replace('T', ' ')
   const [datePart, timePart] = cleaned.split(' ')
   if (!datePart) return null
@@ -92,7 +89,6 @@ const parseDateTime = (s: string | null | undefined): Date | null => {
   return new Date(year, month, day, hour, minute)
 }
 
-// ---------- sync จาก parent -> internal ----------
 
 watch(
   () => props.modelValue,
@@ -113,8 +109,6 @@ watch(
   { immediate: true }
 )
 
-// ---------- sync จาก internal -> parent ----------
-
 watch(
   () => internalValue.value,
   (val) => {
@@ -129,9 +123,24 @@ watch(
 </script>
 
 <style scoped>
+
 :deep(.dp__input) {
   width: 360px !important;
   height: 44px !important;
-  border-color: gray ;
+  border-color: gray;
+}
+
+
+@media (max-width: 768px) {
+  :deep(.dp__input) {
+    width: 260px !important;
+  }
+}
+
+
+@media (max-width: 640px) {
+  :deep(.dp__input) {
+    width: 100% !important;
+  }
 }
 </style>

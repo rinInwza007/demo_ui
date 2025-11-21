@@ -1,54 +1,67 @@
 <template>
-  <div
-    class="trezo-card bg-white p-[20px] md:p-[25px] rounded-md"
-  >
+  <div class="trezo-card bg-gray p-[20px] md:p-[25px]">
     <div class="trezo-card-content">
-      <ul
-        class="navs mb-[20px] border-b border-gray-200 grid grid-cols-4 ml-16"
-      >
-        <!-- เพิ่มใบนำส่งใหม่ -->
-        <li>
+      <ul class="mb-[20px] border-b border-purple-500 grid grid-cols-4 text-center">
+
+        <!-- ตัวอย่าง tab -->
+        <li class="relative group">
           <RouterLink
             to="/waybill"
             :class="tabClass(isStatus1)"
+            class="flex items-center justify-center h-[48px] px-4"
           >
-            เพิ่มใบนำส่งใหม่
+            <span class="md:hidden">เพิ่มใบนำส่งใหม่</span>
+            <span class="hidden md:inline">เพิ่มใบนำส่งใหม่</span>
           </RouterLink>
+
+          <!-- เส้นใต้ hover -->
+          <span
+            class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"
+          ></span>
         </li>
 
-        <!-- ใบนำส่งที่อยู่ในขั้นตอนดำเนินงาน -->
-        <li>
+        <!-- ช่องอื่น copy เหมือนกัน -->
+        <li class="relative group">
           <RouterLink
             to="/"
             :class="tabClass(isStatus2)"
+            class="flex items-center justify-center h-[48px] px-4"
           >
-            ใบนำส่งที่อยู่ในขั้นตอนดำเนินงาน
+            <span class="md:hidden">ดำเนินงาน</span>
+            <span class="hidden md:inline">ใบนำส่งที่อยู่ในขั้นตอนดำเนินงาน</span>
           </RouterLink>
+          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
         </li>
 
-        <!-- รายการผลการนำส่ง -->
-        <li>
+        <li class="relative group">
           <RouterLink
             to="/resultsubmit"
             :class="tabClass(isStatus3)"
+            class="flex items-center justify-center h-[48px] px-4"
           >
-            รายการผลการนำส่ง
+            <span class="md:hidden">ผลการนำส่ง</span>
+            <span class="hidden md:inline">รายการผลการนำส่ง</span>
           </RouterLink>
+          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
         </li>
 
-        <!-- บันทึกลูกหนี้ -->
-        <li>
+        <li class="relative group">
           <RouterLink
             to="/savedebtor"
             :class="tabClass(isStatus4)"
+            class="flex items-center justify-center h-[48px] px-4"
           >
-            บันทึกลูกหนี้
+            <span class="md:hidden">บันทึกลูกหนี้</span>
+            <span class="hidden md:inline">บันทึกลูกหนี้</span>
           </RouterLink>
+          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
         </li>
+
       </ul>
     </div>
   </div>
 </template>
+
 
 
 <script setup>
@@ -72,8 +85,8 @@ const isStatus4 = computed(() => route.name === 'savedebtor')
 // ✔ ฟังก์ชันกำหนด class ตาม active
 const tabClass = (active) => {
   return active
-    ? 'tab-link border-b-2 border-blue-600 text-blue-600 '
-    : 'tab-link text-gray-600'
+    ? 'text-purple-600 font-semibold border-b-2 border-purple-600'
+    : 'text-gray-600'
 }
 </script>
 
@@ -81,6 +94,6 @@ const tabClass = (active) => {
 
 
 :deep(.router-link-exact-active.tab-link) {
-  @apply text-blue-600 border-blue-600;
+  @apply text-purple-600 border-purple-600;
 }
 </style>

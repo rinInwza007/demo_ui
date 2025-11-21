@@ -6,7 +6,7 @@ import router from './router'
 import tippyDirective from './directives/tippy'
 import { VueDatePicker } from "@vuepic/vue-datepicker";
 import '@vuepic/vue-datepicker/dist/main.css'
-
+import "hover.css";
 
 const app = createApp(App)
 

@@ -2,7 +2,7 @@
   <div >
     <Navbar/>
     <SecondNavbar />
-<div class="border border-gray-200 rounded-xl shadow  m-6">
+<div class="border border-gray-300 rounded-xl shadow  m-6 bg-white">
     <div class="ml-12 mt-8 flex">
   <main>
     <h1 class="text-4xl font-extrabold text-gray-900 mb-6 mx-auto text-left">
@@ -12,56 +12,55 @@
 </div>
 
     <div class="flex flex-col gap-4 px-12 w-full md:flex-row md:items-end">
-  <!-- กลุ่มซ้าย: วันที่และหน่วยงาน -->
 
-    <!-- กล่องวันที่ (ซ้าย + ขวา) -->
-    <div>
-      <selectdatetime />
-    </div>
+  <!-- วันที่ -->
+  <div>
+    <selectdatetime />
+  </div>
 
-    <!-- หน่วยงาน -->
-    <div>
-      <Select
-        v-model="category"
-        :options="['กองแผน','กองคลัง','โรงพยาบาลมอพะเยา']"
-        placeholder="หน่วยงาน"
-      />
-    </div>
+  <!-- หน่วยงาน -->
+  <div>
+    <Select
+      v-model="category"
+      :options="['กองแผน','กองคลัง','โรงพยาบาลมอพะเยา']"
+      placeholder="หน่วยงาน"
+    />
+  </div>
 
   <!-- ช่องค้นหา -->
-  <div >
+  <div>
     <search />
   </div>
 
+  <!-- ปุ่มต่างๆ = ชิดขวาสุดด้วย ml-auto  -->
+  <div class="ml-auto grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+    <phillbutton
+      v-for="btn in actions"
+      :key="btn.key"
+      @click="btn.handler"
+      grow
+    >
+      <template #icon>
+        <i class="material-symbols-outlined text-[22px] leading-none">
+          {{ btn.icon }}
+        </i>
+      </template>
 
-  <!-- ปุ่มต่างๆ -->
-  <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-  <phillbutton
-    v-for="btn in actions"
-    :key="btn.key"
-    @click="btn.handler"
-    grow
-  >
-    <template #icon>
-      <i class="material-symbols-outlined text-[22px] leading-none">
-        {{ btn.icon }}
-      </i>
-    </template>
+      {{ btn.label }}
+    </phillbutton>
+  </div>
 
-    {{ btn.label }}
-  </phillbutton>
-</div>
 </div>
 
         <div class="pt-10 px-6 mt-1">
           <list />
           </div>
-          <div class="flex items-center justify-between mt-6">
+          <div class="flex items-center justify-between mt-6 ml-5">
           <nextpage />
 
-            <div class="mt-6 flex justify-end mb-4">
-        <button class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-700 mr-10">กลับ</button>
-      </div>
+            <div>
+              <goback />
+</div>
           </div>
   </div>
   </div>
@@ -79,7 +78,7 @@ import phillbutton from '@/components/input/PillButton.vue'
 import list from '@/components/list/list.vue'
 import nextpage from '@/components/list/nextpage.vue'
 import selectdatetime from '@/components/DateTime/selectdatetime.vue'
-
+import goback from '@/components/Goback/goback.vue'
 
 const router = useRouter()
 
@@ -116,6 +115,9 @@ const actions = [
 body, * {
   font-family: 'Sarabun', 'sans-serif';
 }
+
+
+
 </style>
 
 

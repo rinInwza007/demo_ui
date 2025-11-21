@@ -84,7 +84,7 @@
               </div>
             </div>
 
-            <div class="bg-gray-100 rounded-xl p-6 mt-7">
+            <div class="bg-gray-50 rounded-xl p-6 mt-7">
               <div class="gap-2 flex flex-col">
                 <div>นำส่งเงิน <span class="text-red-600">*</span></div>
                 <div class="flex flex-col gap-2 divide-y-4 divide-[#ffffff] rounded-xl ">
@@ -468,11 +468,11 @@ const gotomainpage = () => {
   border: 1px solid #6b7280 !important;
   width: 100%;
   border-radius: 0.375rem !important;
-  padding: 0.25rem 0.5rem !important;
+  padding: 0.19rem 0.5rem !important;
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: flex-start !important; /* เปลี่ยนจาก center เป็น flex-start */
-  gap: 0.25rem !important;
+  gap: 0.15rem !important;
   background-color: #ffffff !important;
   font-size: medium;
 }

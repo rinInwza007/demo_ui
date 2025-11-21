@@ -2,12 +2,16 @@
   <div class="min-h-screen bg-gray-50">
     <Navbar />
     <SecondNavbar />
-    <div class="max-w-5xl mx-auto p-6 pt-5">
-      <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-9">
+    <div class="max-w-6xl mx-auto p-4 sm:p-6 pt-5">
+      <div class="bg-white border border-gray-300 rounded-xl shadow-sm p-10 space-y-1">
         <h1 class="text-center text-3xl">เพิ่มใบนำส่ง</h1>
 
         <div class="max-w-4xl mx-auto p-6 pt-8 mt-10">
           <section>
+            <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2 mb-5">
+              <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
+              ข้อมูลผู้บันทึก
+            </h2>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-20 gap-y-4">
               <div>
                 <div class="flex flex-col gap-1.5">
@@ -83,8 +87,13 @@
                 </div>
               </div>
             </div>
-
-            <div class="bg-gray-50 rounded-xl p-6 mt-7">
+            <div class="mt-5">
+              <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2 ">
+              <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
+              ข้อมูลรายการ
+            </h2>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-6 mt-">
               <div class="gap-2 flex flex-col">
                 <div>นำส่งเงิน <span class="text-red-600">*</span></div>
                 <div class="flex flex-col gap-2 divide-y-4 divide-[#ffffff] rounded-xl ">

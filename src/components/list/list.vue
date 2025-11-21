@@ -3,7 +3,7 @@
     <div class="table-responsive overflow-x-auto">
       <table class="w-full table-fixed">
         <thead>
-          <tr class="border-b">
+          <tr >
             <th class="w-[90px] px-1 py-2 bg-primary-50 dark:bg-[#15203c]">สถานะ</th>
             <th class="w-[90px] px-1 py-2 bg-primary-50 dark:bg-[#15203c]">สังกัด</th>
             <th class="w-[90px] px-1 py-2 bg-primary-50 dark:bg-[#15203c]">รายได้/เงินโครงการ</th>
@@ -15,23 +15,23 @@
             <th class="w-[110px] px-1 py-2 bg-primary-50 dark:bg-[#15203c]"></th>
           </tr>
         </thead>
-
         <tbody>
           <!-- ✅ วนแถวจาก items -->
           <tr
             v-for="item in items"
             :key="item.id"
-            class="border"
+            class="border border-gray-300"
           >
             <!-- จุดสถานะ -->
-            <td class="px-1 py-2 flex justify-center items-center">
-              <span
-                class="mt-3 w-3 h-3 rounded-full"
-                :class="item.statusDotClass"
-              ></span>
-            </td>
-
-            <td class="px-1 py-2 text-center">{{ item.org }}</td>
+            <td class="px-1 py-2 text-center">
+  <span
+    class="material-symbols-outlined text-[24px]"
+    :class="item.statusColorClass"
+  >
+radio_button_unchecked
+  </span>
+</td>
+            <td class="px-1 py-2 text-center ">{{ item.org }}</td>
             <td class="px-1 py-2 text-center">{{ item.project }}</td>
             <td class="px-1 py-2 text-center">{{ item.year }}</td>
             <td class="px-1 py-2 text-center">{{ item.owner }}</td>
@@ -41,56 +41,81 @@
 
             <!-- ปุ่ม Action -->
             <td
-              class="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]"
+              class="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] "
             >
               <div class="flex items-center gap-[12px]">
-                <button
-  type="button"
-  class="text-primary-500"
-  v-tippy="'ดูข้อมูล'"
-  @click="gotopdfpage"
 
->
-  <i class="material-symbols-outlined !text-md text-blue-500">
-    visibility
-  </i>
-</button>
-
-                <button
-  type="button"
-  class="text-gray-500"
-  v-tippy="'แก้ไข'"
->
-  <i class="material-symbols-outlined !text-md text-indigo-500">
-    edit
-  </i>
-</button>
-<button
-  type="button"
-  class="leading-none"
-  v-tippy="item.isLocked ? 'ปลดล็อกรายการ' : 'ล็อกรายการ'"
-  @click="toggleLock(item)"
->
-  <i
-    class="material-symbols-outlined !text-md"
-    :class="item.isLocked ? 'text-amber-600' : 'text-green-600'"
+  <!-- ดูข้อมูล -->
+  <button
+    type="button"
+    class="text-primary-500 group"
+    v-tippy="'ดูข้อมูล'"
+    @click="gotopdfpage"
   >
-    {{ item.isLocked ? 'lock' : 'lock_open_right' }}
-  </i>
-</button>
+    <i
+      class="material-symbols-outlined !text-md text-blue-500
+             transition-all duration-300 ease-out
+             group-hover:-translate-y-1 group-hover:scale-110
+             group-hover:drop-shadow-md"
+    >
+      visibility
+    </i>
+  </button>
 
-                <!-- ✅ ปุ่มลบ: ผูก SweetAlert2 -->
-                <button
-  type="button"
-  class="text-danger-500 leading-none"
-  v-tippy="'ลบรายการ'"
-  @click="handleDelete(item)"
->
-  <i class="material-symbols-outlined !text-md text-red-500">
-    delete
-  </i>
-</button>
-              </div>
+  <!-- แก้ไข -->
+  <button
+    type="button"
+    class="text-gray-500 group"
+    v-tippy="'แก้ไข'"
+    @click="gottoedit()"
+  >
+    <i
+      class="material-symbols-outlined !text-md text-indigo-500
+             transition-all duration-300 ease-out
+             group-hover:-translate-y-1 group-hover:scale-110
+             group-hover:drop-shadow-md"
+    >
+      edit
+    </i>
+  </button>
+
+  <!-- ล็อก -->
+  <button
+    type="button"
+    class="leading-none group"
+    v-tippy="item.isLocked ? 'ปลดล็อกรายการ' : 'ล็อกรายการ'"
+    @click="toggleLock(item)"
+  >
+    <i
+      class="material-symbols-outlined !text-md
+             transition-all duration-300 ease-out
+             group-hover:-translate-y-1 group-hover:scale-110
+             group-hover:drop-shadow-md"
+      :class="item.isLocked ? 'text-amber-600' : 'text-green-600'"
+    >
+      {{ item.isLocked ? 'lock' : 'lock_open_right' }}
+    </i>
+  </button>
+
+  <!-- ลบ -->
+  <button
+    type="button"
+    class="text-danger-500 leading-none group"
+    v-tippy="'ลบรายการ'"
+    @click="handleDelete(item)"
+  >
+    <i
+      class="material-symbols-outlined !text-md text-red-500
+             transition-all duration-300 ease-out
+             group-hover:-translate-y-1 group-hover:scale-110
+             group-hover:drop-shadow-md"
+    >
+      delete
+    </i>
+  </button>
+
+</div>
+
             </td>
           </tr>
 
@@ -113,11 +138,11 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// ✅ ข้อมูลตัวอย่าง (เอาไปแทนที่ด้วยข้อมูลจาก API ภายหลังได้)
+
 const items = ref([
   {
     id: 1,
-    statusDotClass: 'bg-green-400',
+    statusColorClass: "text-green-600",
     org: 'กองคลัง',
     project: 'ค่าบริการผู้ป่วยนอก',
     year: '2568',
@@ -128,8 +153,7 @@ const items = ref([
     isLocked: true,
   },
   {
-    id: 2,
-    statusDotClass: 'bg-yellow-400',
+    id: 2,statusColorClass: "text-yellow-600",
     org: 'โรงพยาบาล',
     project: 'เงินสนับสนุนโครงการแพทย์',
     year: '2567',
@@ -141,7 +165,7 @@ const items = ref([
   },
   {
     id: 3,
-    statusDotClass: 'bg-red-500',
+    statusColorClass: "text-red-600",
     org: 'กองแผนงาน',
     project: 'ค่าบริหารจัดการ',
     year: '2566',
@@ -181,6 +205,9 @@ const gotopdfpage = ()=>{
   router.push('/pdfpage')
 }
 
+const gottoedit=()=> {
+ router.push("/edit")
+}
 
 const toggleLock = (item) => {
   item.isLocked = !item.isLocked

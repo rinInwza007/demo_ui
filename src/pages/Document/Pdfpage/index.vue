@@ -1,7 +1,7 @@
 <template>
   <div>
     <Navbar  />
-    <SecondNavbar  />
+    <SecondNavbar class="bg-gray-100 "/>
 
     <div class="flex justify-center items-center -mt-6">
       <iframe
@@ -17,7 +17,7 @@
       >
         กลับ
       </button>
- 
+
   </div>
   </div>
 </template>

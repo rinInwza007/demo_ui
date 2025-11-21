@@ -148,17 +148,22 @@
       </div>
     </section>
 
-    <div class="mt-6 flex justify-end gap-3 ">
-      <button class="px-4 py-2 rounded-md bg-gray-300 text-gray-700 hover:bg-green-300" @click="saveData">
-        บันทึก
-      </button>
-      <button
-        class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-red-700"
-        @click="gotomainpage()"
-      >
-        กลับ
-      </button>
-    </div></div>
+    <div class="mt-6 flex justify-end gap-3 mb-4">
+  <button
+    @click="gotomainpage"
+    class="px-6 py-2 rounded-md bg-gray-600 text-white btn-back"
+  >
+    กลับ
+  </button>
+
+  <button
+    @click="saveData"
+    class="px-6 py-2 rounded-md bg-gray-600 text-white btn-save"
+  >
+    บันทึก
+  </button>
+</div>
+  </div>
     </div>
     </div>
   </div>
@@ -304,4 +309,22 @@ const gotomainpage = () => {
 }
 </script>
 
-<style scoped></style>
+<style lang="scss" scoped>
+.btn-back,
+.btn-save {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.btn-back:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  background-color: #b91c1c; /* แดง */
+}
+
+.btn-save:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  background-color: green; /* เขียว */
+}
+</style>
+

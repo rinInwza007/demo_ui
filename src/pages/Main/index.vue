@@ -78,7 +78,7 @@ import phillbutton from '@/components/input/PillButton.vue'
 import list from '@/components/list/list.vue'
 import nextpage from '@/components/list/nextpage.vue'
 import selectdatetime from '@/components/DateTime/selectdatetime.vue'
-import goback from '@/components/Goback/goback.vue'
+import goback from '@/components/Button/goback.vue'
 
 const router = useRouter()
 

@@ -42,28 +42,48 @@
                 </label>
                 <InputText
                   v-model="formData.phone"
-                  placeholder="กรอกเบอร์โทรศัพท์"
+                  placeholder="xxx-xxxx-xxx"
                   class="transition-all duration-200"
                 />
                 <span v-if="errors.phone" class="text-red-600 text-xs">
                   {{ errors.phone }}
                 </span>
               </div>
-
-              <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">
-                  สังกัด <span class="text-red-500">*</span>
+              <div>
+      <label class="text-sm font-medium text-gray-700">
+                  หน่วยงาน <span class="text-red-500">*</span>
                 </label>
-                <Selects
-                  v-model="formData.department"
-                  :options="['สังกัดที่ 1', 'สังกัดที่ 2', 'สังกัดที่ 3', 'สังกัดที่ 4']"
-                  placeholder="เลือกสังกัด"
-                  value-type="string"
-                />
-                <span v-if="errors.department" class="text-red-600 text-xs">
-                  {{ errors.department }}
-                </span>
-              </div>
+      <select
+        v-model="mainCategory"
+        class="h-[44px] w-full rounded-md border border-gray-500 px-2 text-sm"
+      >
+        <option value="">-- เลือกหน่วยงาน --</option>
+        <option v-for="(sub, key) in options" :key="key" :value="key">
+          {{ key }}
+        </option>
+      </select>
+
+    </div>
+    <div>
+      <label class="text-sm font-medium text-gray-700">
+                  หน่วยงานย่อย <span class="text-red-500">*</span>
+                </label>
+      <select
+        v-model="subCategory"
+        :disabled="!mainCategory"
+        class="h-[44px] w-full rounded-md border border-gray-500 px-2 text-sm disabled:bg-gray-200 disabled:text-gray-400"
+      >
+        <option value="">-- เลือกหัวข้อย่อย --</option>
+        <option
+          v-for="item in subOptions"
+          :key="item"
+          :value="item"
+        >
+          {{ item }}
+        </option>
+      </select>
+    </div>
+
 
               <div class="flex flex-col gap-2">
                 <label class="text-sm font-medium text-gray-700">
@@ -71,15 +91,15 @@
                 </label>
                 <Selects
                   v-model="formData.fund"
-                  :options="['กองทุนที่ 1', 'กองทุนที่ 2', 'กองทุนที่ 3', 'กองทุนที่ 4']"
-                  placeholder="เลือกกองทุน"
+                  :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
+                  placeholder="-- เลือกกองทุน --"
                   value-type="string"
                 />
-                <span v-if="errors.fund" class="text-red-600 text-xs">
-                  {{ errors.fund }}
+                <span v-if="errors.department" class="text-red-600 text-xs">
+                  {{ errors.department }}
                 </span>
               </div>
-
+              
               <div class="flex flex-col gap-2">
                 <label class="text-sm font-medium text-gray-700">
                   ขอนำส่งเงิน <span class="text-red-500">*</span>
@@ -380,6 +400,34 @@ onMounted(() => {
   morelist.value.forEach((_, i) => initTomSelect(i))
 })
 
+const options = {
+  คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ: ["ศูนย์ศึกษาเศรษฐกิจพอเพียงและความอยู่รอดของมนุษยชาติ", "ศูนย์ฝึกอบรมวิชาชีพและบริการนานาชาติด้านเกษตรและอาหาร"],
+  คณะทันตแพทยศาสตร์: ["โรงพยาบาลทันตกรรมมหาวิทยาลัยพะเยา"],
+  คณะพยาบาลศาสตร์ : ["ศูนย์พัฒนาเด็กเล็ก"],
+  คณะพลังงานและสิ่งแวดล้อม: ["1.ศูนย์วิจัยพลังงานทดแทนและสิ่งแวดล้อม","1.1หน่วยปฏิบัติการทดสอบทางสิ่งแวดล้อม","1.2 หน่วยรับรองการจัดการก๊าซเรือนกระจก"],
+  คณะแพทยศาสตร์: ["โรงพยาบาลมหาวิทยาลัยพะเยา"],
+  คณะเภสัชศาสตร์: ["สถานปฏิบัติการเภสัชกรรมชุมชน"],
+  คณะวิทยาศาสตร์: ["ศูนย์การเรียนรู้ความเป็นเลิศทางวิทยาศาสตร์และบริการวิชาการ"],
+  คณะวิศวกรรมศาสตร์: ["ศูนย์วิจัยและบริการวิชาการวิศวกรรม","ศูนย์เทคโนโลยียานยนต์และขนส่ง"],
+  คณะสถาปัตยกรรมศาสตร์และศิลปกรรมศาสตร์: ["ศูนย์บริการวิชาการงานสร้างสรรค์"],
+  คณะศิลปศาสตร์: ["ศูนย์ภาษา"],
+  คณะสหเวชศาสตร์: ["ศูนย์บริการสุขภาพสหเวชศาสตร์"],
+  วิทยาลัยการจัดการ: [],
+  กองทรัพย์สิน: ["งานบริหารพื้นที่","งานโรงแรมฟ้ามุ่ยและเอื้องคำ","งานร้านค้าสวัสดิการ"],
+  โรงเรียนสาธิตมหาวิทยาลัยพะเยา: [],
+  วิทยาเขตเชียงราย: [],
+  สถาบันนวัตกรรมและถ่ายทอดเทคโนโลยี: [],
+  สถาบันนวัตกรรมการเรียนรู้: [],
+};
+
+const mainCategory = ref("");
+const subCategory = ref("");
+
+// list หัวข้อย่อยตามหมวดใหญ่
+const subOptions = computed(() => {
+  return mainCategory.value ? options[mainCategory.value] : [];
+});
+
 const initTomSelect = (index) => {
   nextTick(() => {
     const input = keywordInputs[index]
@@ -479,12 +527,12 @@ const saveData = () => {
     hasError = true
   }
   if (!formData.value.department) {
-    errors.value.department = 'กรุณาเลือก "สังกัด"'
+    errors.value.department = 'กรุณาเลือก "กองทุน"'
     hasError = true
   }
-  if (!formData.value.fund) {
-    errors.value.fund = 'กรุณาเลือก "กองทุน"'
-    hasError = true
+  if (!mainCategory.value.fund) {
+    errors.value.fund = 'กรุณาเลือก "หน่วยงาน"';
+    hasError = true;
   }
   if (!formData.value.moneyType) {
     errors.value.moneyType = 'กรุณาเลือก "ขอนำส่งเงิน"'

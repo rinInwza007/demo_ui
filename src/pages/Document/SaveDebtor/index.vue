@@ -110,6 +110,7 @@
                   :key="index"
                   class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-200"
                 >
+                <div>
                   <div class="grid grid-cols-1 sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 items-start">
 
                     <!-- รายการ -->
@@ -171,7 +172,6 @@
                         {{ errors.rows[index].type }}
                       </span>
                     </div>
-
                     <!-- Delete Button -->
                     <button
                       v-if="morelist.length > 1"
@@ -184,6 +184,23 @@
                       </svg>
                     </button>
                   </div>
+                     <div class="mt-2">
+                      <input
+                        :ref="(el) => (keywordInputs[index] = el)"
+                        v-model="row.keyword"
+                        type="text"
+                        placeholder="keyword"
+                        class="mb-2 mr-3"
+                        @input="() => clearRowError(index, 'keyword')"
+                      />
+                      <span
+                        v-if="errors.rows?.[index]?.keyword"
+                        class="text-red-600 text-xs -mt-2 -mb-[14px]"
+                        >{{ errors.rows[index].keyword }}</span
+                      >
+                    </div>
+
+                </div>
                 </div>
               </div>
 
@@ -248,7 +265,9 @@ import Selects from '@/components/input/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
 import { ref, computed, watch } from 'vue'
-
+import TomSelect from 'tom-select'
+import 'tom-select/dist/css/tom-select.css'
+import { nextTick,onMounted} from 'vue'
 const gotomainpage = () => {
   router.push('/')
 }
@@ -267,10 +286,60 @@ const morelist = ref([
     ref: '',
     amount: '',
     type: '',
+     keyword: '',
   },
 ])
 
 const errors = ref({})
+
+const keywordInputs = [] // array ref เก็บ element ของแต่ละแถว
+
+onMounted(() => {
+  // ลบส่วนนี้ออกทั้งหมด เพราะไม่มี element moneyType ใน template
+  // const selectEl = document.getElementById("moneyType");
+  // ...
+
+  // เหลือแค่ init TomSelect สำหรับ keyword
+  morelist.value.forEach((_, i) => initTomSelect(i))
+})
+
+const initTomSelect = (index) => {
+  nextTick(() => {
+    const input = keywordInputs[index]
+    console.log('Init TomSelect for index:', index, 'input:', input) // debug
+
+    if (!input) {
+      console.log('Input not found for index:', index)
+      return
+    }
+
+    // เช็คว่า init ไปแล้วหรือยัง
+    if (input.tomselect) {
+      console.log('TomSelect already initialized for index:', index)
+      return
+    }
+
+    new TomSelect(input, {
+      persist: false,
+      createOnBlur: true,
+      create: true,
+      controlClass: 'Style-Tom',
+      dropdownClass: 'custom-dropdown',
+      options: [],
+      onChange(value) {
+        morelist.value[index].keyword = value
+        console.log('Keyword changed for row', index, ':', value) // debug
+      },
+    })
+  })
+}
+
+// watch ตอนเพิ่มแถวใหม่
+watch(morelist, (newVal, oldVal) => {
+  if (newVal.length > oldVal.length) {
+    initTomSelect(newVal.length - 1)
+  }
+})
 
 const addRow = () => {
   morelist.value.push({
@@ -278,6 +347,11 @@ const addRow = () => {
     ref: '',
     amount: '',
     type: '',
+    keyword: '', // เพิ่มฟิลด์ keyword
+  })
+
+  nextTick(() => {
+    initTomSelect(morelist.value.length - 1)
   })
 }
 
@@ -384,4 +458,50 @@ const saveData = () => {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   background-color: green; /* เขียว */
 }
+
+:deep(.Style-Tom) {
+  border: 1px solid #6b7280 !important;
+  width: 100%;
+  border-radius: 0.375rem !important;
+  padding: 0.19rem 0.5rem !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important; /* เปลี่ยนจาก center เป็น flex-start */
+  gap: 0.15rem !important;
+  background-color: #ffffff !important;
+  font-size: medium;
+}
+
+:deep(.Style-Tom input) {
+  flex: none !important; /* ไม่ให้ขยาย */
+  min-width: 50px !important;
+  width: 100px !important; /* กำหนดความกว้างแน่นอน */
+  padding: 0.25rem !important;
+  text-align: center;
+}
+:deep(.Style-Tom .item) {
+  background-color: #f3f4f6; /* เทาอ่อน */
+  border: 1px solid #d1d5db; /* เส้นกรอบ */
+  border-radius: 0.375rem; /* โค้งนิดๆ */
+  padding: 2px 8px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+
+:deep(#moneyType.tom-select) {
+  width: 100%;
+  height: 2.5rem; /* h-10 */
+}
+
+:deep(#moneyType.tom-select .ts-control) {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem; /* px-2 */
+}
+
+
 </style>

@@ -5,16 +5,13 @@
 
     <div class="max-w-6xl mx-auto p-4 sm:p-6 pt-5">
       <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 sm:p-10 space-y-8">
-
         <!-- Header Section -->
         <div class="text-center space-y-2 pb-4 border-b border-gray-200">
-          <h1 class=" text-3xl sm:text-4xl font-bold text-gray-800">บันทึกลูกหนี้</h1>
-
+          <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">บันทึกลูกหนี้</h1>
         </div>
 
         <!-- Form Section -->
         <div class="max-w-5xl mx-auto space-y-8">
-
           <!-- ข้อมูลผู้บันทึก -->
           <div class="space-y-4">
             <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
@@ -51,7 +48,7 @@
                 </span>
               </div>
 
-              <div class="flex flex-col gap-2 ">
+              <div class="flex flex-col gap-2">
                 <label class="text-sm font-medium text-gray-700">
                   สังกัด <span class="text-red-500">*</span>
                 </label>
@@ -94,9 +91,11 @@
               </span>
             </div>
 
-            <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4 ">
+            <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4">
               <!-- Header Labels (Hidden on mobile) -->
-              <div class="hidden sm:grid sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 px-2 pb-2 border-b border-gray-300">
+              <div
+                class="hidden sm:grid sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 px-2 pb-2 border-b border-gray-300"
+              >
                 <div class="text-xs font-semibold text-gray-600 uppercase">รายการ</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">เลขที่อ้างอิง</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">จำนวนเงิน</div>
@@ -106,85 +105,72 @@
               <!-- Dynamic Rows -->
               <div class="space-y-4">
                 <div
-                  v-for="(row, index) in morelist"
-                  :key="index"
-                  class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-200"
-                >
-                <div>
-                  <div class="grid grid-cols-1 sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 items-start">
-
-                    <!-- รายการ -->
-                    <div class="flex flex-col gap-1.5">
-                      <label class="text-xs font-medium text-gray-600 sm:hidden">
-                        รายการ <span class="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        v-model="row.item"
-                        placeholder="ระบุรายการ"
-                        class="w-full"
-                      />
-                      <span v-if="errors.rows?.[index]?.item" class="text-red-600 text-xs">
-                        {{ errors.rows[index].item }}
-                      </span>
-                    </div>
-
-                    <!-- เลขที่อ้างอิง -->
-                    <div class="flex flex-col gap-1.5">
-                      <label class="text-xs font-medium text-gray-600 sm:hidden">
-                        เลขที่อ้างอิง <span class="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        v-model="row.ref"
-                        placeholder="เลขที่เอกสาร"
-                        class="w-full"
-                      />
-                      <span v-if="errors.rows?.[index]?.ref" class="text-red-600 text-xs">
-                        {{ errors.rows[index].ref }}
-                      </span>
-                    </div>
-
-                    <!-- จำนวนเงิน -->
-                    <div class="flex flex-col gap-1.5 ">
-                      <label class="text-xs font-medium text-gray-600 sm:hidden">
-                        จำนวนเงิน <span class="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        v-model="row.amount"
-                        placeholder="0.00"
-                        class="w-full"
-                      />
-                      <span v-if="errors.rows?.[index]?.amount" class="text-red-600 text-xs">
-                        {{ errors.rows[index].amount }}
-                      </span>
-                    </div>
-
-                    <!-- หมายเหตุ -->
-                    <div class="flex flex-col gap-1.5">
-                      <label class="text-xs font-medium text-gray-600 sm:hidden">
-                        หมายเหตุ <span class="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        v-model="row.type"
-                        placeholder="หมายเหตุ"
-                        class="w-full"
-                      />
-                      <span v-if="errors.rows?.[index]?.type" class="text-red-600 text-xs">
-                        {{ errors.rows[index].type }}
-                      </span>
-                    </div>
-                    <!-- Delete Button -->
-                    <button
-                      v-if="morelist.length > 1"
-                      @click="removeRow(index)"
-                      class="mt-0 sm:mt-0 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start sm:self-center"
-                      title="ลบรายการ"
+                  v-for="(row, index) in morelist" :key="row.id" class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-200">
+                  <div>
+                    <div
+                      class="grid grid-cols-1 sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 items-start"
                     >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                     <div class="mt-2">
+                      <!-- รายการ -->
+                      <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-medium text-gray-600 sm:hidden">
+                          รายการ <span class="text-red-500">*</span>
+                        </label>
+                        <InputText v-model="row.item" placeholder="ระบุรายการ" class="w-full" />
+                        <span v-if="errors.rows?.[index]?.item" class="text-red-600 text-xs">
+                          {{ errors.rows[index].item }}
+                        </span>
+                      </div>
+
+                      <!-- เลขที่อ้างอิง -->
+                      <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-medium text-gray-600 sm:hidden">
+                          เลขที่อ้างอิง <span class="text-red-500">*</span>
+                        </label>
+                        <InputText v-model="row.ref" placeholder="เลขที่เอกสาร" class="w-full" />
+                        <span v-if="errors.rows?.[index]?.ref" class="text-red-600 text-xs">
+                          {{ errors.rows[index].ref }}
+                        </span>
+                      </div>
+
+                      <!-- จำนวนเงิน -->
+                      <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-medium text-gray-600 sm:hidden">
+                          จำนวนเงิน <span class="text-red-500">*</span>
+                        </label>
+                        <InputText v-model="row.amount" placeholder="0.00" class="w-full" />
+                        <span v-if="errors.rows?.[index]?.amount" class="text-red-600 text-xs">
+                          {{ errors.rows[index].amount }}
+                        </span>
+                      </div>
+
+                      <!-- หมายเหตุ -->
+                      <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-medium text-gray-600 sm:hidden">
+                          หมายเหตุ <span class="text-red-500">*</span>
+                        </label>
+                        <InputText v-model="row.type" placeholder="หมายเหตุ" class="w-full" />
+                        <span v-if="errors.rows?.[index]?.type" class="text-red-600 text-xs">
+                          {{ errors.rows[index].type }}
+                        </span>
+                      </div>
+                      <!-- Delete Button -->
+                      <button
+                        v-if="morelist.length > 1"
+                        @click="removeRow(index)"
+                        class="mt-0 sm:mt-0 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start sm:self-center"
+                        title="ลบรายการ"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="mt-2">
                       <input
                         :ref="(el) => (keywordInputs[index] = el)"
                         v-model="row.keyword"
@@ -199,59 +185,58 @@
                         >{{ errors.rows[index].keyword }}</span
                       >
                     </div>
-
-                </div>
+                  </div>
                 </div>
               </div>
 
               <!-- Add Row Button -->
               <button
                 @click="addRow"
-                class="w-120  py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
+                class="w-120 py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 เพิ่มรายการ
               </button>
             </div>
-
           </div>
           <div class="mt-5">
-              <div class="bg-[#7E22CE] border border-blue-200 rounded p-6 mb-6">
-                <div class="flex justify-between items-center">
-                  <span class="text-2xl font-bold text-white">จำนวนเงินรวมทั้งหมด</span>
-                  <span class="text-3xl font-bold text-white"
-                    >{{ formatNumber(totalAmount) }} บาท</span
-                  >
-                </div>
+            <div class="bg-[#7E22CE] border border-blue-200 rounded p-6 mb-6">
+              <div class="flex justify-between items-center">
+                <span class="text-2xl font-bold text-white">จำนวนเงินรวมทั้งหมด</span>
+                <span class="text-3xl font-bold text-white"
+                  >{{ formatNumber(totalAmount) }} บาท</span
+                >
               </div>
             </div>
-          <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-6 mt-6 ">
-              <p class="text-sm text-yellow-900 m-0">
-                <strong>หมายเหตุ:</strong>
-                กรุณาตรวจสอบข้อมูลให้ถูกต้องและครบถ้วนก่อนกดปุ่มบันทึกข้อมูล (ช่องที่มีเครื่องหมาย *
-                จำเป็นต้องกรอก)
-              </p>
-            </div>
+          </div>
+          <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-6 mt-6">
+            <p class="text-sm text-yellow-900 m-0">
+              <strong>หมายเหตุ:</strong>
+              กรุณาตรวจสอบข้อมูลให้ถูกต้องและครบถ้วนก่อนกดปุ่มบันทึกข้อมูล (ช่องที่มีเครื่องหมาย *
+              จำเป็นต้องกรอก)
+            </p>
+          </div>
 
           <!-- Action Buttons -->
-   <div class="mt-6 flex justify-end gap-3 mb-4">
-  <button
-    @click="gotomainpage"
-    class="px-6 py-2 rounded-md bg-gray-600 text-white btn-back"
-  >
-    กลับ
-  </button>
+          <div class="mt-6 flex justify-end gap-3 mb-4">
+            <button
+              @click="gotomainpage"
+              class="px-6 py-2 rounded-md bg-gray-600 text-white btn-back"
+            >
+              กลับ
+            </button>
 
-  <button
-    @click="saveData"
-    class="px-6 py-2 rounded-md bg-gray-600 text-white btn-save"
-  >
-    บันทึก
-  </button>
-</div>
-
+            <button @click="saveData" class="px-6 py-2 rounded-md bg-gray-600 text-white btn-save">
+              บันทึก
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -267,11 +252,11 @@ import InputText from '@/components/input/inputtext.vue'
 import { ref, computed, watch } from 'vue'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
-import { nextTick,onMounted} from 'vue'
+import { nextTick, onMounted } from 'vue'
+import '@/components/Css/TomSelect.css'
 const gotomainpage = () => {
   router.push('/')
 }
-
 
 const formData = ref({
   name: '',
@@ -282,11 +267,12 @@ const formData = ref({
 
 const morelist = ref([
   {
+    id: Date.now(), 
     item: '',
     ref: '',
     amount: '',
     type: '',
-     keyword: '',
+    keyword: '',
   },
 ])
 
@@ -341,8 +327,10 @@ watch(morelist, (newVal, oldVal) => {
   }
 })
 
+
 const addRow = () => {
   morelist.value.push({
+    id: Date.now() + Math.random(), 
     item: '',
     ref: '',
     amount: '',
@@ -363,7 +351,7 @@ const removeRow = (index) => {
 const formatNumber = (num) => {
   return Number(num).toLocaleString('th-TH', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   })
 }
 const totalAmount = computed(() => {
@@ -375,8 +363,6 @@ const totalAmount = computed(() => {
 watch(totalAmount, (newVal) => {
   formData.value.fund = newVal.toFixed(2)
 })
-
-
 
 const saveData = () => {
   errors.value = {}
@@ -431,7 +417,7 @@ const saveData = () => {
   // Save data
   const dataToSave = {
     formData: formData.value,
-    morelist: morelist.value
+    morelist: morelist.value,
   }
 
   console.log('=== ข้อมูลที่บันทึก ===')
@@ -439,69 +425,7 @@ const saveData = () => {
 
   alert('บันทึกข้อมูลสำเร็จ! ✓')
 }
-
 </script>
 <style lang="scss" scoped>
-.btn-back,
-.btn-save {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.btn-back:hover {
-  transform: scale(1.06);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  background-color: #b91c1c; /* แดง */
-}
-
-.btn-save:hover {
-  transform: scale(1.06);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  background-color: green; /* เขียว */
-}
-
-:deep(.Style-Tom) {
-  border: 1px solid #6b7280 !important;
-  width: 100%;
-  border-radius: 0.375rem !important;
-  padding: 0.19rem 0.5rem !important;
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: flex-start !important; /* เปลี่ยนจาก center เป็น flex-start */
-  gap: 0.15rem !important;
-  background-color: #ffffff !important;
-  font-size: medium;
-}
-
-:deep(.Style-Tom input) {
-  flex: none !important; /* ไม่ให้ขยาย */
-  min-width: 50px !important;
-  width: 100px !important; /* กำหนดความกว้างแน่นอน */
-  padding: 0.25rem !important;
-  text-align: center;
-}
-:deep(.Style-Tom .item) {
-  background-color: #f3f4f6; /* เทาอ่อน */
-  border: 1px solid #d1d5db; /* เส้นกรอบ */
-  border-radius: 0.375rem; /* โค้งนิดๆ */
-  padding: 2px 8px;
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-
-:deep(#moneyType.tom-select) {
-  width: 100%;
-  height: 2.5rem; /* h-10 */
-}
-
-:deep(#moneyType.tom-select .ts-control) {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  padding: 0 0.5rem; /* px-2 */
-}
-
 
 </style>

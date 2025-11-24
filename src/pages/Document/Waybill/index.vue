@@ -142,7 +142,7 @@
               <div class="space-y-4">
                 <div
                   v-for="(row, index) in morelist"
-                  :key="index"
+                  :key="row.id"
                   class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-200"
                 >
                   <div>
@@ -315,10 +315,13 @@ import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted,  watch } from 'vue'
 import Modal from '@/components/modal/modal.vue'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
+import { useRowManager } from '@/components/Function/useRowManager'
+import '@/components/Css/TomSelect.css'
+const {morelist,addRow,removeRow,openModalForRow,updateSelectedItems,showModal,rowItems,keywordInputs,initTomSelect,} = useRowManager()
 
 const gotomainpage = () => {
   router.push('/')
@@ -333,18 +336,9 @@ const formData = ref({
   projectCode: '',
 })
 
-const morelist = ref([
-  {
-    item: '',
-    ref: '',
-    keyword: '',
-    type: '',
-    selectedItems: [],
-  },
-])
+
 
 const errors = ref({})
-const keywordInputs = []
 
 onMounted(() => {
   const selectEl = document.getElementById("moneyType");
@@ -380,24 +374,6 @@ onMounted(() => {
   morelist.value.forEach((_, i) => initTomSelect(i))
 })
 
-const initTomSelect = (index) => {
-  nextTick(() => {
-    const input = keywordInputs[index]
-    if (!input || input.tomselect) return
-
-    new TomSelect(input, {
-      persist: false,
-      createOnBlur: true,
-      create: true,
-      controlClass: 'Style-Tom',
-      dropdownClass: 'custom-dropdown',
-      options: [],
-      onChange(value) {
-        morelist.value[index].keyword = value
-      },
-    })
-  })
-}
 
 watch(morelist, (newVal, oldVal) => {
   if (newVal.length > oldVal.length) {
@@ -405,25 +381,6 @@ watch(morelist, (newVal, oldVal) => {
   }
 })
 
-const addRow = () => {
-  morelist.value.push({
-    item: '',
-    ref: '',
-    keyword: '',
-    type: '',
-    selectedItems: [],
-  })
-
-  nextTick(() => {
-    initTomSelect(morelist.value.length - 1)
-  })
-}
-
-const removeRow = (index) => {
-  if (morelist.value.length > 1) {
-    morelist.value.splice(index, 1)
-  }
-}
 
 const formatNumber = (num) => {
   return Number(num).toLocaleString('th-TH', {
@@ -444,26 +401,6 @@ const totalAmount = computed(() => {
     return sum + rowTotal
   }, 0)
 })
-
-const showModal = ref(null)
-const rowItems = ref([])
-
-const openModalForRow = (index) => {
-  if (!rowItems.value[index]) {
-    rowItems.value[index] = JSON.parse(
-      JSON.stringify([
-        { name: 'เงินสด', checked: false, amount: '' },
-        { name: 'เช็คธนาคาร', checked: false, amount: '', NumCheck: '' },
-        { name: 'ฝากเข้าบัญชีธนาคาร', checked: false, amount: '', AccountNum: '', AccountName: '' },
-      ]),
-    )
-  }
-  showModal.value = index
-}
-
-const updateSelectedItems = (rowIndex, selected) => {
-  morelist.value[rowIndex].selectedItems = selected.filter((i) => i.checked)
-}
 
 const saveData = () => {
   errors.value = {}
@@ -558,64 +495,4 @@ watch(formData, (newVal) => {
 </script>
 
 <style lang="scss" scoped>
-.btn-back,
-.btn-save {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.btn-back:hover {
-  transform: scale(1.06);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  background-color: #b91c1c; /* แดง */
-}
-
-.btn-save:hover {
-  transform: scale(1.06);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  background-color: green; /* เขียว */
-}
-
-:deep(.Style-Tom) {
-  border: 1px solid #6b7280 !important;
-  width: 100%;
-  border-radius: 0.375rem !important;
-  padding: 0.19rem 0.5rem !important;
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: flex-start !important;
-  gap: 0.15rem !important;
-  background-color: #ffffff !important;
-  font-size: medium;
-}
-
-:deep(.Style-Tom input) {
-  flex: none !important;
-  min-width: 50px !important;
-  width: 100px !important;
-  padding: 0.25rem !important;
-  text-align: center;
-}
-
-:deep(.Style-Tom .item) {
-  background-color: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  padding: 2px 8px;
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-:deep(#moneyType.tom-select) {
-  width: 100%;
-  height: 2.5rem;
-}
-
-:deep(#moneyType.tom-select .ts-control) {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  padding: 0 0.5rem;
-}
 </style>

@@ -10,6 +10,7 @@ import pdfpage from "@/pages/Document/Pdfpage/index.vue"
 import edit from "@/pages/Edit/index.vue"
 
 
+
 const routes = [
   { path: '/', name: 'mmain', component: Main },
   { path: '/waybill', name: 'waybill', component: Waybill },
@@ -18,7 +19,7 @@ const routes = [
   { path: '/waybillresearch', name: 'waybillresearch', component: WaybillResearch },
   { path: '/Report_submit', name: 'Report_submit',component:Report_submit},
   { path: '/pdfpage', name: 'pdfpage',component:pdfpage},
-  { path: '/edit', name: 'edit',component:edit}
+  { path: '/edit', name: 'edit',component:edit},
 ]
 
 const router = createRouter({

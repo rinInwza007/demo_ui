@@ -6,10 +6,15 @@
     <div class="max-w-6xl mx-auto p-4 sm:p-6 pt-5">
       <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 sm:p-10 space-y-8">
 
+        <!-- Header Section -->
         <div class="text-center space-y-2 pb-4 border-b border-gray-200">
           <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">เพิ่มใบนำส่งลูกหนี้</h1>
         </div>
+
+        <!-- Form Section -->
         <div class="max-w-5xl mx-auto space-y-8">
+
+          <!-- ข้อมูลผู้บันทึก -->
           <div class="space-y-4">
             <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
               <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
@@ -111,6 +116,7 @@
             </div>
           </div>
 
+          <!-- รายการนำส่งเงิน -->
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
@@ -123,6 +129,7 @@
             </div>
 
             <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4">
+              <!-- Header Labels (Hidden on mobile) -->
               <div class="hidden sm:grid sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 px-2 pb-2 border-b border-gray-300">
                 <div class="text-xs font-semibold text-gray-600 uppercase">รายการ</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">เลขที่อ้างอิง</div>
@@ -131,15 +138,17 @@
                 <div class="text-xs font-semibold text-gray-600 uppercase w-10"></div>
               </div>
 
+              <!-- Dynamic Rows -->
               <div class="space-y-4">
                 <div
                   v-for="(row, index) in morelist"
-                  :key="index"
+                  :key="row.id"
                   class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-200"
                 >
                   <div>
                     <div class="grid grid-cols-1 sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 items-start">
 
+                      <!-- รายการ -->
                       <div class="flex flex-col gap-1.5">
                         <label class="text-xs font-medium text-gray-600 sm:hidden">
                           รายการ <span class="text-red-500">*</span>
@@ -154,6 +163,8 @@
                           {{ errors.rows[index].item }}
                         </span>
                       </div>
+
+                      <!-- เลขที่อ้างอิง -->
                       <div class="flex flex-col gap-1.5">
                         <label class="text-xs font-medium text-gray-600 sm:hidden">
                           เลขที่อ้างอิง <span class="text-red-500">*</span>
@@ -168,12 +179,14 @@
                           {{ errors.rows[index].ref }}
                         </span>
                       </div>
+
+                      <!-- จำนวนเงิน -->
                       <div class="flex flex-col gap-1.5">
                         <label class="text-xs font-medium text-gray-600 sm:hidden">
                           จำนวนเงิน <span class="text-red-500">*</span>
                         </label>
                         <button
-                          class="h-flex  px-4 py-2 bg-[#7E22CE] text-white rounded-md hover:bg-[#6B21A8] transition-colors duration-200"
+                          class="w-full px-4 py-2 bg-[#7E22CE] text-white rounded-md hover:bg-[#6B21A8] transition-colors duration-200"
                           @click="openModalForRow(index)"
                         >
                           จำนวนเงินรวม
@@ -191,6 +204,7 @@
                         </span>
                       </div>
 
+                      <!-- ประเภท -->
                       <div class="flex flex-col gap-1.5">
                         <label class="text-xs font-medium text-gray-600 sm:hidden">
                           ประเภท <span class="text-red-500">*</span>
@@ -206,6 +220,7 @@
                         </span>
                       </div>
 
+                      <!-- Delete Button -->
                       <button
                         v-if="morelist.length > 1"
                         @click="removeRow(index)"
@@ -217,7 +232,9 @@
                         </svg>
                       </button>
                     </div>
-                    <div class="mt-2 ">
+
+                    <!-- Keyword -->
+                    <div class="mt-2">
                       <input
                         :ref="(el) => (keywordInputs[index] = el)"
                         v-model="row.keyword"
@@ -237,6 +254,7 @@
                 </div>
               </div>
 
+              <!-- Add Row Button -->
               <button
                 @click="addRow"
                 class=" py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
@@ -249,6 +267,7 @@
             </div>
           </div>
 
+          <!-- Total Amount -->
           <div class="mt-5">
             <div class="bg-[#7E22CE] border border-blue-200 rounded p-6 mb-6">
               <div class="flex justify-between items-center">
@@ -258,6 +277,7 @@
             </div>
           </div>
 
+          <!-- Note -->
           <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-6 mt-6">
             <p class="text-sm text-yellow-900 m-0">
               <strong>หมายเหตุ:</strong>
@@ -266,6 +286,7 @@
             </p>
           </div>
 
+          <!-- Action Buttons -->
           <div class="mt-6 flex justify-end gap-3 mb-4">
             <button
               @click="gotomainpage"
@@ -294,10 +315,13 @@ import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted,  watch } from 'vue'
 import Modal from '@/components/modal/modal.vue'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
+import { useRowManager } from '@/components/Function/useRowManager'
+import '@/components/Css/TomSelect.css'
+const {morelist,addRow,removeRow,openModalForRow,updateSelectedItems,showModal,rowItems,keywordInputs,initTomSelect,} = useRowManager()
 
 const gotomainpage = () => {
   router.push('/')
@@ -312,18 +336,9 @@ const formData = ref({
   projectCode: '',
 })
 
-const morelist = ref([
-  {
-    item: '',
-    ref: '',
-    keyword: '',
-    type: '',
-    selectedItems: [],
-  },
-])
+
 
 const errors = ref({})
-const keywordInputs = []
 
 onMounted(() => {
   const selectEl = document.getElementById("moneyType");
@@ -359,24 +374,6 @@ onMounted(() => {
   morelist.value.forEach((_, i) => initTomSelect(i))
 })
 
-const initTomSelect = (index) => {
-  nextTick(() => {
-    const input = keywordInputs[index]
-    if (!input || input.tomselect) return
-
-    new TomSelect(input, {
-      persist: false,
-      createOnBlur: true,
-      create: true,
-      controlClass: 'Style-Tom',
-      dropdownClass: 'custom-dropdown',
-      options: [],
-      onChange(value) {
-        morelist.value[index].keyword = value
-      },
-    })
-  })
-}
 
 watch(morelist, (newVal, oldVal) => {
   if (newVal.length > oldVal.length) {
@@ -384,25 +381,6 @@ watch(morelist, (newVal, oldVal) => {
   }
 })
 
-const addRow = () => {
-  morelist.value.push({
-    item: '',
-    ref: '',
-    keyword: '',
-    type: '',
-    selectedItems: [],
-  })
-
-  nextTick(() => {
-    initTomSelect(morelist.value.length - 1)
-  })
-}
-
-const removeRow = (index) => {
-  if (morelist.value.length > 1) {
-    morelist.value.splice(index, 1)
-  }
-}
 
 const formatNumber = (num) => {
   return Number(num).toLocaleString('th-TH', {
@@ -423,26 +401,6 @@ const totalAmount = computed(() => {
     return sum + rowTotal
   }, 0)
 })
-
-const showModal = ref(null)
-const rowItems = ref([])
-
-const openModalForRow = (index) => {
-  if (!rowItems.value[index]) {
-    rowItems.value[index] = JSON.parse(
-      JSON.stringify([
-        { name: 'เงินสด', checked: false, amount: '' },
-        { name: 'เช็คธนาคาร', checked: false, amount: '', NumCheck: '' },
-        { name: 'ฝากเข้าบัญชีธนาคาร', checked: false, amount: '', AccountNum: '', AccountName: '' },
-      ]),
-    )
-  }
-  showModal.value = index
-}
-
-const updateSelectedItems = (rowIndex, selected) => {
-  morelist.value[rowIndex].selectedItems = selected.filter((i) => i.checked)
-}
 
 const saveData = () => {
   errors.value = {}
@@ -474,6 +432,7 @@ const saveData = () => {
     hasError = true
   }
 
+  // Validate rows
   errors.value.rows = {}
   morelist.value.forEach((row, index) => {
     errors.value.rows[index] = {}
@@ -536,64 +495,4 @@ watch(formData, (newVal) => {
 </script>
 
 <style lang="scss" scoped>
-.btn-back,
-.btn-save {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.btn-back:hover {
-  transform: scale(1.06);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  background-color: #b91c1c; /* แดง */
-}
-
-.btn-save:hover {
-  transform: scale(1.06);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  background-color: green; /* เขียว */
-}
-
-:deep(.Style-Tom) {
-  border: 1px solid #6b7280 !important;
-  width: 100%;
-  border-radius: 0.375rem !important;
-  padding: 0.19rem 0.5rem !important;
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: flex-start !important;
-  gap: 0.15rem !important;
-  background-color: #ffffff !important;
-  font-size: medium;
-}
-
-:deep(.Style-Tom input) {
-  flex: none !important;
-  min-width: 50px !important;
-  width: 100px !important;
-  padding: 0.25rem !important;
-  text-align: center;
-}
-
-:deep(.Style-Tom .item) {
-  background-color: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  padding: 2px 8px;
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-:deep(#moneyType.tom-select) {
-  width: 100%;
-  height: 2.5rem;
-}
-
-:deep(#moneyType.tom-select .ts-control) {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  padding: 0 0.5rem;
-}
 </style>

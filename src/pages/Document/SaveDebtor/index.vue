@@ -286,6 +286,7 @@ const morelist = ref([
     ref: '',
     amount: '',
     type: '',
+     keyword: '',
   },
 ])
 
@@ -294,54 +295,40 @@ const errors = ref({})
 const keywordInputs = [] // array ref เก็บ element ของแต่ละแถว
 
 onMounted(() => {
-  const selectEl = document.getElementById("moneyType");
-
-  if (!selectEl.tomselect) { // เช็คว่า init ไปแล้วหรือยัง
-    new TomSelect(selectEl, {
-      create: true,
-      sortField: { field: "text", direction: "asc" },
-      allowEmptyOption: true,
-      placeholder: "รายได้/เงินโครงการ",
-      onChange(value) {
-        formData.value.moneyType = value;
-      }
-    });
-  }
-  // กำหนด style ให้ control
-  const control = selectEl.tomselect.control;
-  control.style.height = "2.5rem"; // เปลี่ยนเป็น 3rem, 3.5rem, 4rem
-  control.style.padding = "1 0.5rem";
-  control.style.display = "flex";
-  control.style.alignItems = "center";
-  control.style.borderRadius = "0.375rem"; // rounded-md
-  control.style.border = "1px solid #6b7280"; // gray-500
-  control.style.fontSize = "1rem";
-    const input = control.querySelector('input');
-  if (input) {
-    input.style.fontSize = "1.01rem"; // ขนาดฟอนต์
-    input.style.height = "1rem"; // ความสูงของ input
-    input.style.padding = "0.5rem"; // padding ข้างใน
-  }
-
+  // ลบส่วนนี้ออกทั้งหมด เพราะไม่มี element moneyType ใน template
+  // const selectEl = document.getElementById("moneyType");
+  // ...
   
-  
+  // เหลือแค่ init TomSelect สำหรับ keyword
   morelist.value.forEach((_, i) => initTomSelect(i))
 })
 
 const initTomSelect = (index) => {
   nextTick(() => {
     const input = keywordInputs[index]
-    if (!input) return
+    console.log('Init TomSelect for index:', index, 'input:', input) // debug
+    
+    if (!input) {
+      console.log('Input not found for index:', index)
+      return
+    }
+    
+    // เช็คว่า init ไปแล้วหรือยัง
+    if (input.tomselect) {
+      console.log('TomSelect already initialized for index:', index)
+      return
+    }
 
     new TomSelect(input, {
       persist: false,
       createOnBlur: true,
       create: true,
-      controlClass:'Style-Tom',
-            dropdownClass: 'custom-dropdown',
+      controlClass: 'Style-Tom',
+      dropdownClass: 'custom-dropdown',
       options: [],
       onChange(value) {
         morelist.value[index].keyword = value
+        console.log('Keyword changed for row', index, ':', value) // debug
       },
     })
   })
@@ -360,10 +347,9 @@ const addRow = () => {
     ref: '',
     amount: '',
     type: '',
-    selectedItems: [],
+    keyword: '', // เพิ่มฟิลด์ keyword
   })
 
-  // ให้ Vue รัน DOM update ก่อน แล้ว init TomSelect
   nextTick(() => {
     initTomSelect(morelist.value.length - 1)
   })

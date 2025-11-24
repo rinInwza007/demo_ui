@@ -35,7 +35,7 @@
 
         <li class="relative group">
           <RouterLink
-            to="/resultsubmit"
+            to="/Report_submit"
             :class="tabClass(isStatus3)"
             class="flex items-center justify-center h-[48px] px-4"
           >

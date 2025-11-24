@@ -6,15 +6,10 @@
     <div class="max-w-6xl mx-auto p-4 sm:p-6 pt-5">
       <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 sm:p-10 space-y-8">
 
-        <!-- Header Section -->
         <div class="text-center space-y-2 pb-4 border-b border-gray-200">
           <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">เพิ่มใบนำส่งลูกหนี้</h1>
         </div>
-
-        <!-- Form Section -->
         <div class="max-w-5xl mx-auto space-y-8">
-
-          <!-- ข้อมูลผู้บันทึก -->
           <div class="space-y-4">
             <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
               <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
@@ -116,7 +111,6 @@
             </div>
           </div>
 
-          <!-- รายการนำส่งเงิน -->
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
@@ -129,7 +123,6 @@
             </div>
 
             <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4">
-              <!-- Header Labels (Hidden on mobile) -->
               <div class="hidden sm:grid sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 px-2 pb-2 border-b border-gray-300">
                 <div class="text-xs font-semibold text-gray-600 uppercase">รายการ</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">เลขที่อ้างอิง</div>
@@ -138,7 +131,6 @@
                 <div class="text-xs font-semibold text-gray-600 uppercase w-10"></div>
               </div>
 
-              <!-- Dynamic Rows -->
               <div class="space-y-4">
                 <div
                   v-for="(row, index) in morelist"
@@ -148,7 +140,6 @@
                   <div>
                     <div class="grid grid-cols-1 sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 items-start">
 
-                      <!-- รายการ -->
                       <div class="flex flex-col gap-1.5">
                         <label class="text-xs font-medium text-gray-600 sm:hidden">
                           รายการ <span class="text-red-500">*</span>
@@ -163,8 +154,6 @@
                           {{ errors.rows[index].item }}
                         </span>
                       </div>
-
-                      <!-- เลขที่อ้างอิง -->
                       <div class="flex flex-col gap-1.5">
                         <label class="text-xs font-medium text-gray-600 sm:hidden">
                           เลขที่อ้างอิง <span class="text-red-500">*</span>
@@ -179,14 +168,12 @@
                           {{ errors.rows[index].ref }}
                         </span>
                       </div>
-
-                      <!-- จำนวนเงิน -->
                       <div class="flex flex-col gap-1.5">
                         <label class="text-xs font-medium text-gray-600 sm:hidden">
                           จำนวนเงิน <span class="text-red-500">*</span>
                         </label>
                         <button
-                          class="w-full px-4 py-2 bg-[#7E22CE] text-white rounded-md hover:bg-[#6B21A8] transition-colors duration-200"
+                          class="h-flex  px-4 py-2 bg-[#7E22CE] text-white rounded-md hover:bg-[#6B21A8] transition-colors duration-200"
                           @click="openModalForRow(index)"
                         >
                           จำนวนเงินรวม
@@ -204,7 +191,6 @@
                         </span>
                       </div>
 
-                      <!-- ประเภท -->
                       <div class="flex flex-col gap-1.5">
                         <label class="text-xs font-medium text-gray-600 sm:hidden">
                           ประเภท <span class="text-red-500">*</span>
@@ -220,7 +206,6 @@
                         </span>
                       </div>
 
-                      <!-- Delete Button -->
                       <button
                         v-if="morelist.length > 1"
                         @click="removeRow(index)"
@@ -232,8 +217,6 @@
                         </svg>
                       </button>
                     </div>
-
-                    <!-- Keyword -->
                     <div class="mt-2 ">
                       <input
                         :ref="(el) => (keywordInputs[index] = el)"
@@ -254,7 +237,6 @@
                 </div>
               </div>
 
-              <!-- Add Row Button -->
               <button
                 @click="addRow"
                 class=" py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
@@ -267,7 +249,6 @@
             </div>
           </div>
 
-          <!-- Total Amount -->
           <div class="mt-5">
             <div class="bg-[#7E22CE] border border-blue-200 rounded p-6 mb-6">
               <div class="flex justify-between items-center">
@@ -277,7 +258,6 @@
             </div>
           </div>
 
-          <!-- Note -->
           <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-6 mt-6">
             <p class="text-sm text-yellow-900 m-0">
               <strong>หมายเหตุ:</strong>
@@ -286,7 +266,6 @@
             </p>
           </div>
 
-          <!-- Action Buttons -->
           <div class="mt-6 flex justify-end gap-3 mb-4">
             <button
               @click="gotomainpage"
@@ -495,7 +474,6 @@ const saveData = () => {
     hasError = true
   }
 
-  // Validate rows
   errors.value.rows = {}
   morelist.value.forEach((row, index) => {
     errors.value.rows[index] = {}

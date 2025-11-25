@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 
+// import ฟังก์ชันจาก service ให้ถูกต้อง
 import {
   FindOneRecipt,
   GetRecipt,
@@ -12,62 +13,82 @@ export const useReciptStore = defineStore("Recipt", {
     pedding: null,
     send: null,
     overrule: null,
-    commit:null,
+    commit: null,
+
     reciptUser: {},
-    reciptItems:[],
-    reciptList:[],
+    reciptItems: [],
+    reciptList: [],
 
-    loading:false,
-
+    loading: false,
     error: null,
-    // logs
+
     logs: [],
-        // timer
+
+    // timer
     targetDate: new Date('2025-10-01T16:30:00').getTime(),
     currentTime: new Date().getTime(),
-
   }),
+
   actions: {
 
-    async getReciptList(param:string) {
+    // ฟังก์ชันดึงรายการใบเสร็จ
+    async getReciptList(param: any) {
 
       try {
-       const parsedData = await getReciptList(param);
+        
+        const parsedData = await GetRecipt(param);
 
         console.log("Parsed data:", parsedData);
+
         if (!parsedData) {
-          return "fail"; // Return fail status if token is empty or not found
+          return "fail";
         }
 
-         this.logs = parsedData
+        // เก็บข้อมูลลง store
+        this.logs = parsedData;
 
-        return "pass"; // Return pass status if  successful
-      } catch (error:any) {
+        return "pass";
+
+      } catch (error: any) {
         this.error = error;
-        return "fail"; // Return fail status if an error occurs
+        return "fail";
       }
     },
 
+    // ดึงใบเสร็จตาม id
+    async getOneRecipt(id: any) {
+      try {
+        const result = await FindOneRecipt(id);
+        this.reciptUser = result;
+        return 'pass';
+      } catch (error: any) {
+        this.error = error;
+        return 'fail';
+      }
+    },
 
   },
+
   getters: {
-    timeRemaining  (state)  {
+    timeRemaining(state) {
       const distance = state.targetDate - state.currentTime;
+
       if (distance < 0) {
-            return {
-            days:0,
-            hours:0,
-            minutes:0,
-            seconds:0,
-            eventEnd:true
-          };
+        return {
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          eventEnd: true
+        };
       }
 
       const days = Math.floor(distance / (1000 * 60 * 60 * 24));
       const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-      const eventEnd = (days == 0 && hours == 0 && minutes == 0 && seconds == 0)
+      const eventEnd = (days == 0 && hours == 0 && minutes == 0 && seconds == 0);
+
       return {
         days,
         hours,
@@ -76,6 +97,6 @@ export const useReciptStore = defineStore("Recipt", {
         eventEnd
       };
     },
-
   },
 });
+

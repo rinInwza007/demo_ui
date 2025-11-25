@@ -1,0 +1,281 @@
+{
+  "receipts": [
+    {
+      "id": "f855",
+      "name": "Et dolor reprehender",
+      "phone": "Praesentium aut amet",
+      "fund": "กองทุนพิเศษ",
+      "department": "คณะพยาบาลศาสตร์",
+      "subDepartment": "ศูนย์พัฒนาเด็กเล็ก",
+      "moneyType": "เงินโครงการ",
+      "projectCode": "Est aliquam ut non s",
+      "items": [
+        {
+          "item": "Dolorum possimus qu",
+          "ref": "Maiores sunt accusan",
+          "keyword": "Mollitia cillum veli",
+          "type": "Aperiam quia rem ear",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "amount": 10,
+              "checked": true
+            }
+          ]
+        }
+      ],
+      "totalAmount": 10,
+      "createdAt": "2025-11-25T04:25:51.501Z"
+    },
+    {
+      "id": "3ac6",
+      "name": "Do tenetur et dolore",
+      "phone": "Amet lorem ab dolor",
+      "department": "กองทุนทั่วไป",
+      "fund": "",
+      "subfund": "",
+      "moneyType": "Neque inventore simi",
+      "projectCode": "Velit dolorem et od",
+      "list": [
+        {
+          "item": "Dolor velit volupta",
+          "ref": "Blanditiis impedit ",
+          "keyword": "Necessitatibus volup",
+          "type": "Labore explicabo Et",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e96d",
+      "name": "กฟกฟไ",
+      "phone": "กฟไกฟไ",
+      "department": "กองทุนพิเศษ",
+      "fund": "",
+      "subfund": "",
+      "moneyType": "รายได้",
+      "projectCode": "กฟไกไฟกไฟกฟ",
+      "list": [
+        {
+          "item": "ฟไกฟไก",
+          "ref": "ฟไกฟไกฟไ",
+          "keyword": "ฟกฟไกฟกฟก",
+          "type": "กฟไกฟไก",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Aliquid harum rerum ",
+      "phone": "Voluptas adipisci ne",
+      "department": "กองทุนพิเศษ",
+      "fund": "",
+      "subfund": "",
+      "moneyType": "เงินโครงการ",
+      "projectCode": "Eaque eos quos quod ",
+      "list": [
+        {
+          "item": "Ab ducimus obcaecat",
+          "ref": "Veniam debitis maio",
+          "keyword": "Tempora odit sequi d",
+          "type": "Excepteur sit magna",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "dawdadad",
+      "phone": "dwadwad",
+      "department": "กองทุนทั่วไป",
+      "fund": "คณะทันตแพทยศาสตร์",
+      "subfund": "โรงพยาบาลทันตกรรมมหาวิทยาลัยพะเยา",
+      "moneyType": "aw",
+      "projectCode": "dwadwa",
+      "list": [
+        {
+          "item": "dwadaw",
+          "ref": "dwadwad",
+          "keyword": "wadadadad,dwadad",
+          "type": "awdawd",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 132
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "กหฟกฟ",
+      "phone": "กฟหก",
+      "department": "กองทุนพิเศษ",
+      "fund": "คณะสหเวชศาสตร์",
+      "subfund": "ศูนย์บริการสุขภาพสหเวชศาสตร์",
+      "moneyType": "รายได้",
+      "projectCode": "กฟหกฟกฟหก",
+      "list": [
+        {
+          "item": "กฟหกหฟ",
+          "ref": "กหฟกฟหกหฟ",
+          "keyword": "กฟหกฟหกฟ,หกฟกหฟก,ฟหกหก,ฟกฟ,ก",
+          "type": "กฟหก",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 50
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Id placeat dolor q",
+      "phone": "Vel nihil rerum sapi",
+      "department": "กองทุนทั่วไป",
+      "fund": "คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ",
+      "subfund": "ศูนย์ศึกษาเศรษฐกิจพอเพียงและความอยู่รอดของมนุษยชาติ",
+      "moneyType": "รายได้",
+      "projectCode": "Cupiditate laborum ",
+      "list": [
+        {
+          "item": "Qui distinctio Duci",
+          "ref": "Aut voluptate volupt",
+          "keyword": "Velit in vero nisi o",
+          "type": "Dolore omnis quis ve",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "กหฟกฟก",
+      "phone": "กหฟกฟหกกหฟ",
+      "department": "กองทุนทั่วไป",
+      "fund": "คณะพยาบาลศาสตร์",
+      "subfund": "ศูนย์พัฒนาเด็กเล็ก",
+      "moneyType": "เงินโครงการ",
+      "projectCode": "หกฟกฟก",
+      "list": [
+        {
+          "item": "กฟหกฟก",
+          "ref": "กฟกฟหกฟห",
+          "keyword": "ฟหกฟหกฟ",
+          "type": "กฟหกฟหก",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 50
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Ab quas dolorem non ",
+      "phone": "Aut ut hic nulla qui",
+      "department": "กองทุนทั่วไป",
+      "fund": "คณะแพทยศาสตร์",
+      "subfund": "โรงพยาบาลมหาวิทยาลัยพะเยา",
+      "moneyType": "s",
+      "projectCode": "Corporis incidunt v",
+      "list": [
+        {
+          "item": "Mollit minus dolore ",
+          "ref": "Voluptatem velit lab",
+          "keyword": "Molestias praesentiu",
+          "type": "Et incidunt sint es",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "sADX",
+      "phone": "DdX",
+      "department": "กองทุนทั่วไป",
+      "fund": "คณะศิลปศาสตร์",
+      "subfund": "ศูนย์ภาษา",
+      "moneyType": "เงินโครงการ",
+      "projectCode": "SDASD",
+      "list": [
+        {
+          "item": "SADAD",
+          "ref": "ASDASD",
+          "keyword": "TEST",
+          "type": "ASDASD",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "d",
+      "phone": "d",
+      "department": "กองทุนทั่วไป",
+      "fund": "คณะทันตแพทยศาสตร์",
+      "subfund": "โรงพยาบาลทันตกรรมมหาวิทยาลัยพะเยา",
+      "moneyType": "รายได้",
+      "projectCode": "กฟกห",
+      "list": [
+        {
+          "item": "กกก",
+          "ref": "กกก",
+          "keyword": "กกกก,,กฟหกฟก",
+          "type": "กกก",
+          "selectedItems": [
+            {
+              "name": "เงินสด",
+              "checked": true,
+              "amount": 20
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

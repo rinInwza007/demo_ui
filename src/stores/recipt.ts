@@ -6,6 +6,23 @@ import {
   GetRecipt,
 } from '@/services/ReciptService';
 
+export const getReciptStore = defineStore("Recipt", {
+  state: () => ({
+    logs: [],       // เอาไว้เก็บข้อมูลใบเสร็จ
+    error: null,
+  }),
+  actions: {
+    async getReciptList() {
+      try {
+        const data = await GetRecipt();
+        this.logs = data || [];
+      } catch (err) {
+        this.error = err;
+      }
+    },
+  },
+});
+
 export const useReciptStore = defineStore("Recipt", {
   state: () => ({
     // dashboard

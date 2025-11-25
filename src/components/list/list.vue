@@ -15,169 +15,102 @@
             <th class="w-[110px] px-1 py-2 bg-primary-50 dark:bg-[#15203c]"></th>
           </tr>
         </thead>
-        <tbody>
-          <!-- ✅ วนแถวจาก items -->
-          <tr
-            v-for="item in items"
-            :key="item.id"
-            class="border border-gray-300"
-          >
-            <!-- จุดสถานะ -->
-            <td class="px-1 py-2 text-center">
-  <span
-    class="material-symbols-outlined text-[24px]"
-    :class="item.statusColorClass"
-  >
-radio_button_unchecked
-  </span>
-</td>
-            <td class="px-1 py-2 text-center ">{{ item.org }}</td>
-            <td class="px-1 py-2 text-center">{{ item.project }}</td>
-            <td class="px-1 py-2 text-center">{{ item.year }}</td>
-            <td class="px-1 py-2 text-center">{{ item.owner }}</td>
-            <td class="px-1 py-2 text-center">{{ item.time }}</td>
-            <td class="px-1 py-2 text-center">{{ item.fileType }}</td>
-            <td class="px-1 py-2 text-center">{{ item.amount }}</td>
+<tbody>
+  <tr v-for="item in items" :key="item.id" class="border border-gray-300">
+    <td class="px-1 py-2 text-center">
+      <span class="material-symbols-outlined text-[24px]" :class="item.statusColorClass">
+        radio_button_unchecked
+      </span>
+    </td>
+    <td class="px-1 py-2 text-center">{{ item.org || '–' }}</td>
+    <td class="px-1 py-2 text-center">{{ item.project || '–' }}</td>
+    <td class="px-1 py-2 text-center">{{ item.year || '–' }}</td>
+    <td class="px-1 py-2 text-center">{{ item.owner || '–' }}</td>
+    <td class="px-1 py-2 text-center">{{ item.time || '–' }}</td>
+    <td class="px-1 py-2 text-center">{{ item.fileType || '–' }}</td>
+    <td class="px-1 py-2 text-center">{{ item.amount || '–' }}</td>
+    <td class="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px]">
+      <div class="flex items-center gap-[12px]">
+        <!-- ดูข้อมูล -->
+        <button type="button" class="text-primary-500 group" v-tippy="'ดูข้อมูล'" @click="gotopdfpage">
+          <i class="material-symbols-outlined !text-md text-blue-500 transition-all duration-300 ease-out
+                    group-hover:-translate-y-1 group-hover:scale-110 group-hover:drop-shadow-md">
+            visibility
+          </i>
+        </button>
+        <!-- แก้ไข -->
+        <button type="button" class="text-gray-500 group" v-tippy="'แก้ไข'" @click="gottoedit()">
+          <i class="material-symbols-outlined !text-md text-indigo-500 transition-all duration-300 ease-out
+                    group-hover:-translate-y-1 group-hover:scale-110 group-hover:drop-shadow-md">
+            edit
+          </i>
+        </button>
+        <!-- ล็อก -->
+        <button type="button" class="leading-none group" v-tippy="item.isLocked ? 'ปลดล็อกรายการ' : 'ล็อกรายการ'" @click="toggleLock(item)">
+          <i class="material-symbols-outlined !text-md transition-all duration-300 ease-out
+                    group-hover:-translate-y-1 group-hover:scale-110 group-hover:drop-shadow-md"
+             :class="item.isLocked ? 'text-amber-600' : 'text-green-600'">
+            {{ item.isLocked ? 'lock' : 'lock_open_right' }}
+          </i>
+        </button>
+        <!-- ลบ -->
+        <button type="button" class="text-danger-500 leading-none group" v-tippy="'ลบรายการ'" @click="handleDelete(item)">
+          <i class="material-symbols-outlined !text-md text-red-500 transition-all duration-300 ease-out
+                    group-hover:-translate-y-1 group-hover:scale-110 group-hover:drop-shadow-md">
+            delete
+          </i>
+        </button>
+      </div>
+    </td>
+  </tr>
 
-            <!-- ปุ่ม Action -->
-            <td
-              class="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] "
-            >
-              <div class="flex items-center gap-[12px]">
+  <!-- ถ้าไม่มีข้อมูล -->
+  <tr v-if="items.length === 0">
+    <td colspan="9" class="text-center py-4 text-gray-400">
+      ไม่มีข้อมูลใบนำส่ง
+    </td>
+  </tr>
+</tbody>
 
-  <!-- ดูข้อมูล -->
-  <button
-    type="button"
-    class="text-primary-500 group"
-    v-tippy="'ดูข้อมูล'"
-    @click="gotopdfpage"
-  >
-    <i
-      class="material-symbols-outlined !text-md text-blue-500
-             transition-all duration-300 ease-out
-             group-hover:-translate-y-1 group-hover:scale-110
-             group-hover:drop-shadow-md"
-    >
-      visibility
-    </i>
-  </button>
-
-  <!-- แก้ไข -->
-  <button
-    type="button"
-    class="text-gray-500 group"
-    v-tippy="'แก้ไข'"
-    @click="gottoedit()"
-  >
-    <i
-      class="material-symbols-outlined !text-md text-indigo-500
-             transition-all duration-300 ease-out
-             group-hover:-translate-y-1 group-hover:scale-110
-             group-hover:drop-shadow-md"
-    >
-      edit
-    </i>
-  </button>
-
-  <!-- ล็อก -->
-  <button
-    type="button"
-    class="leading-none group"
-    v-tippy="item.isLocked ? 'ปลดล็อกรายการ' : 'ล็อกรายการ'"
-    @click="toggleLock(item)"
-  >
-    <i
-      class="material-symbols-outlined !text-md
-             transition-all duration-300 ease-out
-             group-hover:-translate-y-1 group-hover:scale-110
-             group-hover:drop-shadow-md"
-      :class="item.isLocked ? 'text-amber-600' : 'text-green-600'"
-    >
-      {{ item.isLocked ? 'lock' : 'lock_open_right' }}
-    </i>
-  </button>
-
-  <!-- ลบ -->
-  <button
-    type="button"
-    class="text-danger-500 leading-none group"
-    v-tippy="'ลบรายการ'"
-    @click="handleDelete(item)"
-  >
-    <i
-      class="material-symbols-outlined !text-md text-red-500
-             transition-all duration-300 ease-out
-             group-hover:-translate-y-1 group-hover:scale-110
-             group-hover:drop-shadow-md"
-    >
-      delete
-    </i>
-  </button>
-
-</div>
-
-            </td>
-          </tr>
-
-          <!-- ถ้าไม่มีข้อมูล -->
-          <tr v-if="items.length === 0">
-            <td colspan="9" class="text-center py-4 text-gray-400">
-              ไม่มีข้อมูลใบนำส่ง
-            </td>
-          </tr>
-        </tbody>
       </table>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { getReciptStore } from '@/stores/recipt'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const store = getReciptStore()
+const items = ref([])
+
+onMounted(async () => {
+  await store.getReciptList() // ดึงข้อมูลจาก backend
+
+  items.value = store.logs.map((recipt) => {
+    // ถ้า receiptList มีข้อมูล ให้เอา selectedItems ตัวแรก
+    let firstItem = recipt.receiptList?.[0]?.selectedItems?.[0] || {}
+
+    return {
+      id: recipt.id,
+      org: recipt.MainAffiliationName || null,       // สังกัด
+      project: recipt.fundName || null,              // รายได้/โครงการ
+      fileType: firstItem.name || null,              // รูปแบบ เอา name ของ selectedItems
+      amount: firstItem.amount || null,              // ยอดเงิน เอา amount ของ selectedItems
+      year: null,                                    // รอ backend เติม
+      owner: null,
+      time: null,
+      statusColorClass: 'text-gray-400',             // default สีสถานะ
+      isLocked: true,
+    }
+  })
+})
 
 
-const items = ref([
-  {
-    id: 1,
-    statusColorClass: "text-green-600",
-    org: 'กองคลัง',
-    project: 'ค่าบริการผู้ป่วยนอก',
-    year: '2568',
-    owner: 'นางสาวพิมพ์ลดา',
-    time: '10:35 น.',
-    fileType: 'เอกสาร',
-    amount: '12,500 บาท',
-    isLocked: true,
-  },
-  {
-    id: 2,statusColorClass: "text-yellow-600",
-    org: 'โรงพยาบาล',
-    project: 'เงินสนับสนุนโครงการแพทย์',
-    year: '2567',
-    owner: 'นายภัทรพล',
-    time: '14:20 น.',
-    fileType: 'ไฟล์ PDF',
-    amount: '35,000 บาท',
-    isLocked: true,
-  },
-  {
-    id: 3,
-    statusColorClass: "text-red-600",
-    org: 'กองแผนงาน',
-    project: 'ค่าบริหารจัดการ',
-    year: '2566',
-    owner: 'นางสุชาดา',
-    time: '09:10 น.',
-    fileType: 'เอกสาร (กระดาษ)',
-    amount: '8,900 บาท',
-    isLocked: false,
-  }
-])
-
-// ✅ ฟังก์ชันลบ พร้อม SweetAlert2
+// ฟังก์ชันลบ
 const handleDelete = async (item) => {
   const result = await Swal.fire({
     title: 'คุณแน่ใจหรือไม่?',
@@ -192,7 +125,6 @@ const handleDelete = async (item) => {
 
   if (!result.isConfirmed) return
 
-  // ลบออกจาก list ในหน้า (ถ้ามี backend ก็ call API ตรงนี้เพิ่ม)
   items.value = items.value.filter((row) => row.id !== item.id)
 
   await Swal.fire({
@@ -201,17 +133,12 @@ const handleDelete = async (item) => {
     icon: 'success'
   })
 }
-const gotopdfpage = ()=>{
-  router.push('/pdfpage')
-}
 
-const gottoedit=()=> {
- router.push("/edit")
-}
-
+// ฟังก์ชันอื่นเหมือนเดิม
+const gotopdfpage = () => router.push('/pdfpage')
+const gottoedit = () => router.push('/edit')
 const toggleLock = (item) => {
   item.isLocked = !item.isLocked
-
   Swal.fire({
     position: 'top-end',
     icon: 'success',
@@ -220,4 +147,5 @@ const toggleLock = (item) => {
     timer: 1500,
   })
 }
+
 </script>

@@ -25,12 +25,12 @@
                   ข้าพเจ้า <span class="text-red-500">*</span>
                 </label>
                 <InputText
-                  v-model="formData.name"
+                  v-model="formData.fullName"
                   placeholder="กรอกชื่อ-นามสกุล"
                   class="transition-all duration-200"
                 />
-                <span v-if="errors.name" class="text-red-600 text-xs">
-                  {{ errors.name }}
+                <span v-if="errors.fullName" class="text-red-600 text-xs">
+                  {{ errors.fullName }}
                 </span>
               </div>
 
@@ -87,13 +87,13 @@
                   กองทุน <span class="text-red-500">*</span>
                 </label>
                 <Selects
-                  v-model="formData.department"
+                  v-model="formData.fundName"
                   :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
                   placeholder="-- เลือกกองทุน --"
                   value-type="string"
                 />
-                <span v-if="errors.department" class="text-red-600 text-xs">
-                  {{ errors.department }}
+                <span v-if="errors.fundName" class="text-red-600 text-xs">
+                  {{ errors.fundName }}
                 </span>
               </div>
 
@@ -173,13 +173,13 @@
                           รายการ <span class="text-red-500">*</span>
                         </label>
                         <InputText
-                          v-model="row.item"
+                          v-model="row.itemName"
                           placeholder="ระบุรายการ"
                           class="w-full"
-                          @input="() => clearRowError(index, 'item')"
+                          @input="() => clearRowError(index, 'itemName')"
                         />
-                        <span v-if="errors.rows?.[index]?.item" class="text-red-600 text-xs">
-                          {{ errors.rows[index].item }}
+                        <span v-if="errors.rows?.[index]?.itemName" class="text-red-600 text-xs">
+                          {{ errors.rows[index].itemName }}
                         </span>
                       </div>
 
@@ -189,13 +189,13 @@
                           เลขที่อ้างอิง <span class="text-red-500">*</span>
                         </label>
                         <InputText
-                          v-model="row.ref"
+                          v-model="row.referenceNo"
                           placeholder="เลขที่เอกสาร"
                           class="w-full"
-                          @input="() => clearRowError(index, 'ref')"
+                          @input="() => clearRowError(index, 'referenceNo')"
                         />
-                        <span v-if="errors.rows?.[index]?.ref" class="text-red-600 text-xs">
-                          {{ errors.rows[index].ref }}
+                        <span v-if="errors.rows?.[index]?.referenceNo" class="text-red-600 text-xs">
+                          {{ errors.rows[index].referenceNo }}
                         </span>
                       </div>
 
@@ -232,13 +232,13 @@
                           ประเภท <span class="text-red-500">*</span>
                         </label>
                         <InputText
-                          v-model="row.type"
+                          v-model="row.MoneySouce"
                           placeholder="ภายนอก/ภายใน"
                           class="w-full"
-                          @input="() => clearRowError(index, 'type')"
+                          @input="() => clearRowError(index, 'MoneySouce')"
                         />
-                        <span v-if="errors.rows?.[index]?.type" class="text-red-600 text-xs">
-                          {{ errors.rows[index].type }}
+                        <span v-if="errors.rows?.[index]?.MoneySouce" class="text-red-600 text-xs">
+                          {{ errors.rows[index].MoneySouce }}
                         </span>
                       </div>
 
@@ -362,13 +362,14 @@ const {
   initTomSelect,
 } = useRowManager()
 const formData = ref({
-  name: '',
+  fullName: '',
   phone: '',
-  department: '',
-  fund: '',
-  subfund: '',
-  moneyType: '',
+  MainAffiliationName: '',
+  subAffiliationName: '',
+  fundName: '',
   projectCode: '',
+  moneyType:'',
+  receiptList: '',
 })
 const errors = ref({})
 onMounted(() => {
@@ -467,16 +468,16 @@ const saveData = async () => {
   let hasError = false
 
   // ---------- Validation ฟอร์มหลัก ----------
-  if (!formData.value.name) {
-    errors.value.name = 'กรุณากรอก "ชื่อ"'
+  if (!formData.value.fullName) {
+    errors.value.fullName = 'กรุณากรอก "ชื่อ"'
     hasError = true
   }
   if (!formData.value.phone) {
     errors.value.phone = 'กรุณากรอก "เบอร์โทรติดต่อ"'
     hasError = true
   }
-  if (!formData.value.department) {
-    errors.value.department = 'กรุณาเลือก "กองทุน"'
+  if (!formData.value.fundName) {
+    errors.value.fundName = 'กรุณาเลือก "กองทุน"'
     hasError = true
   }
   if (!mainCategory.value) {
@@ -498,9 +499,9 @@ const saveData = async () => {
   errors.value.rows = {}
   morelist.value.forEach((row, index) => {
     const rowErrors = {}
-    if (!row.item) rowErrors.item = 'กรุณากรอก "ชื่อรายการ"'
-    if (!row.ref) rowErrors.ref = 'กรุณากรอก "เลขที่เอกสารอ้างอิง"'
-    if (!row.type) rowErrors.type = 'กรุณากรอก "ประเภท"'
+    if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
+    if (!row.referenceNo) rowErrors.referenceNo = 'กรุณากรอก "เลขที่เอกสารอ้างอิง"'
+    if (!row.MoneySouce) rowErrors.MoneySouce = 'กรุณากรอก "ประเภท"'
     if (!row.keyword) rowErrors.keyword = 'กรุณากรอก "keyword"'
 
     // เช็ค selectedItems
@@ -520,9 +521,9 @@ const saveData = async () => {
 
   const payload = {
     ...formData.value,
-    fund: mainCategory.value,
-    subfund: subCategory.value,
-    list: morelist.value,
+    MainAffiliationName: mainCategory.value,
+    subAffiliationName: subCategory.value,
+    receiptList: morelist.value,
   }
   const credentials = {
     Authorization: 'Bearer your-token-here',
@@ -554,23 +555,14 @@ const clearRowError = (rowIndex, field) => {
 
 watch(
   [formData, mainCategory, subCategory],
-  ([newFormData, newMainCategory, newSubCategory]) => {
+  ([newFormData,]) => {
     // Clear errors สำหรับ formData
     for (const key in newFormData) {
       if (errors.value[key] && newFormData[key]) {
         delete errors.value[key]
       }
     }
-    
-    // Clear errors สำหรับ mainCategory
-    if (errors.value.mainCategory && newMainCategory) {
-      delete errors.value.mainCategory
-    }
-    
-    // Clear errors สำหรับ subCategory
-    if (errors.value.subCategory && newSubCategory) {
-      delete errors.value.subCategory
-    }
+  
   },
   { deep: true }
 )

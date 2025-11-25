@@ -5,11 +5,11 @@ export function useRowManager() {
 
 const morelist = ref([
   {
-     id: Date.now(),   // 👈 เพิ่ม id
-    item: '',
-    ref: '',
+     id: 1,   // 👈 เพิ่ม id
+    itemName: '',
+    referenceNo: '',
     keyword: null,
-    type: '',
+    MoneySouce: '',
     selectedItems: [],
   },
 ])
@@ -35,11 +35,11 @@ const initTomSelect = (index) => {
 
 const addRow = () => {
   morelist.value.push({
-    id: Date.now() + Math.random(), 
-    item: '',
-    ref: '',
+    id: morelist.value.length + 1, 
+    itemName: '',
+    referenceNo: '',
+    MoneySouce: '',
     keyword: null,
-    type: '',
     selectedItems: [],
   })
 
@@ -61,9 +61,9 @@ const openModalForRow = (index) => {
   if (!rowItems.value[index]) {
     rowItems.value[index] = JSON.parse(
       JSON.stringify([
-        { name: 'เงินสด', checked: false, amount: '' },
-        { name: 'เช็คธนาคาร', checked: false, amount: '', NumCheck: '' },
-        { name: 'ฝากเข้าบัญชีธนาคาร', checked: false, amount: '', AccountNum: '', AccountName: '' },
+        { name: 'cash', checked: false, amount: '' },
+        { name: 'bank', checked: false, amount: '', NumCheck: '' },
+        { name: 'transfer', checked: false, amount: '', AccountNum: '', AccountName: '' },
       ]),
     )
   }

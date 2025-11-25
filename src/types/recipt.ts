@@ -1,4 +1,4 @@
-export type MoneySouce = 'internal' | 'external';
+export type moneySource = 'internal' | 'external';
 
 
 
@@ -20,10 +20,10 @@ export interface ReceiptItem {
   moneyTypeNote?: string;
 
  /** internal or external */
-  MoneySouce: MoneySouce;
+  moneySource: moneySource;
 
   /** Keyword for tagging or searching */
-  keyword?: string;
+  keyword?: string[];
 }
 
 export interface Receipt {
@@ -50,4 +50,33 @@ export interface Receipt {
 
   /** List of receipt items */
   receiptList: ReceiptItem[];
+}
+
+export interface user {
+  /** User ID */
+  id: string;
+  /** User full name */
+  fullName: string;
+  /** User affiliation */
+  affiliation: string;
+  /** User affiliation ID */
+  affiliation_ID: string;
+  // User role */
+  role: string;
+  // User email */
+  email: string;
+  // User phone */
+  phone: string;
+}
+
+
+export interface ReceiptTemplate {
+  /** Template ID */
+  id: string;
+  /** Template name */
+  name: string;
+  /** Template description */
+  description?: string;
+  /** List of receipt items in the template */
+  receiptItems: ReceiptItem[];
 }

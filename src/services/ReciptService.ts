@@ -1,29 +1,30 @@
-import axios from 'axios';
+import axios, { type AxiosResponse } from 'axios';
 
 import {BaseURL} from '@/services/config'
-import type { Receipt  } from '@/types/recipt';
+import type { Receipt, ReceiptItem  } from '@/types/recipt';
 
-export const FindOneRecipt = async ( id:any) => {
-    const response = await axios.get(`${BaseURL}/GetOneRecipt/${id}` );
+export const findOneReceipt = async ( id:any, headers:any): Promise<Receipt> => {
+    const response: AxiosResponse<Receipt> = await axios.get(`${BaseURL}/findOneReceipt/${id}`, { headers: headers }  );
     return response.data; // Assuming the response contains the token
 };
 
-export const GetRecipt = async ( param:any) => {
-    const response = await axios.get(`${BaseURL}/GetRecipt`,param  );
+export const getReceipt = async ( params:any, headers:any): Promise<Receipt[]> => {
+    const response: AxiosResponse<Receipt[]> = await axios.get(`${BaseURL}/getReceipt`,{params:params, headers: headers }  );
     return response.data; // Assuming the response contains the token
 };
 
-export const SaveRecipt = async ( param:Receipt, credentials:any) => {
-    const response = await axios.post(`${BaseURL}/SaveRecipt`,param, { headers: credentials }   );
+export const saveReceipt = async ( param:Receipt, headers:any): Promise<Receipt>  => {
+    const response: AxiosResponse<Receipt> = await axios.post(`${BaseURL}/saveReceipt`,param, { headers: headers }   );
     return response.data; // Assuming the response contains the token
 };
 
-export const updateRecipt = async ( param:Receipt, credentials:any) => {
-    const response = await axios.put(`${BaseURL}/UpdateRecipt`,param, { headers: credentials }   );
+export const updateReceipt = async ( param:Receipt, headers:any): Promise<Receipt>  => {
+    const response: AxiosResponse<Receipt> = await axios.put(`${BaseURL}/updateReceipt`,param, { headers: headers }   );
     return response.data; // Assuming the response contains the token
 };
 
-export const DeleteRecipt = async ( param:any) => {
-    const response = await axios.delete(`${BaseURL}/DelteRecipt`,param );
+export const deleteReceipt = async ( idOrParam:any, headers:any): Promise<{ success: boolean }>  => {
+    const id = typeof idOrParam === 'object' ? idOrParam.id : idOrParam;
+    const response: AxiosResponse<{ success: boolean }> = await axios.delete(`${BaseURL}/deleteReceipt${id}`,{ headers: headers } );
     return response.data; // Assuming the response contains the token
 };

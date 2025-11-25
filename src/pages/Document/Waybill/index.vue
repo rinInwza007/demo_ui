@@ -160,7 +160,7 @@
               <div class="space-y-4">
                 <div
                   v-for="(row, index) in morelist"
-                  :key="index"
+                  :key="row.id"
                   class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-200"
                 >
                   <div>

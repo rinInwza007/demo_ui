@@ -5,6 +5,7 @@ export function useRowManager() {
 
 const morelist = ref([
   {
+     id: Date.now(),   // 👈 เพิ่ม id
     item: '',
     ref: '',
     keyword: null,
@@ -34,6 +35,7 @@ const initTomSelect = (index) => {
 
 const addRow = () => {
   morelist.value.push({
+    id: Date.now() + Math.random(), 
     item: '',
     ref: '',
     keyword: null,

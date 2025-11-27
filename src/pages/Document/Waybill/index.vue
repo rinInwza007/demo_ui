@@ -89,7 +89,7 @@
                 <Selects
                   v-model="formData.fundName"
                   :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
-                  placeholder="-- เลือกกองทุน --"
+                  placeholder="เลือกกองทุน"
                   value-type="string"
                 />
                 <span v-if="errors.fundName" class="text-red-600 text-xs">
@@ -103,7 +103,7 @@
                 </label>
                 <select
                   id="moneyType"
-                  placeholder="รายได้/เงินโครงการ"
+                  placeholder=""
                   autocomplete="off"
                   v-model="formData.moneyType"
                   class="transition-all duration-200"
@@ -147,13 +147,13 @@
             <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4">
               <!-- Header Labels (Hidden on mobile) -->
               <div
-                class="hidden sm:grid sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 px-2 pb-2 border-b border-gray-300"
+                class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-2 pb-2 border-b border-gray-300 items-center js"
               >
                 <div class="text-xs font-semibold text-gray-600 uppercase">รายการ</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase">เลขที่อ้างอิง</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">จำนวนเงิน</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase">ประเภท</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase w-10"></div>
+                <div class="text-xs font-semibold text-gray-600 uppercase">ค่าธรรมเนียม</div>
+                <div class="text-xs font-semibold text-gray-600 uppercase">หมายเหตุ</div>
+                <div class="text-xs font-semibold text-gray-600 uppercase">คำสำคัญ</div>
               </div>
 
               <!-- Dynamic Rows -->
@@ -165,45 +165,22 @@
                 >
                   <div>
                     <div
-                      class="grid grid-cols-1 sm:grid-cols-[2fr_1.2fr_1fr_1.2fr_auto] gap-3 items-start"
+                      class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-3 items-start"
                     >
-                      <!-- รายการ -->
-                      <div class="flex flex-col gap-1.5">
-                        <label class="text-xs font-medium text-gray-600 sm:hidden">
-                          รายการ <span class="text-red-500">*</span>
-                        </label>
-                        <InputText
+                      <div class="flex flex-col gap-2">
+                        <ItemNameSelect
                           v-model="row.itemName"
-                          placeholder="ระบุรายการ"
-                          class="w-full"
+                          :input-id="`itemName-${index}`"
                           @input="() => clearRowError(index, 'itemName')"
+                          class="-ml-2 -mr-2"
                         />
+
                         <span v-if="errors.rows?.[index]?.itemName" class="text-red-600 text-xs">
                           {{ errors.rows[index].itemName }}
                         </span>
                       </div>
-
-                      <!-- เลขที่อ้างอิง -->
-                      <div class="flex flex-col gap-1.5">
-                        <label class="text-xs font-medium text-gray-600 sm:hidden">
-                          เลขที่อ้างอิง <span class="text-red-500">*</span>
-                        </label>
-                        <InputText
-                          v-model="row.referenceNo"
-                          placeholder="เลขที่เอกสาร"
-                          class="w-full"
-                          @input="() => clearRowError(index, 'referenceNo')"
-                        />
-                        <span v-if="errors.rows?.[index]?.referenceNo" class="text-red-600 text-xs">
-                          {{ errors.rows[index].referenceNo }}
-                        </span>
-                      </div>
-
                       <!-- จำนวนเงิน -->
                       <div class="flex flex-col gap-1.5">
-                        <label class="text-xs font-medium text-gray-600 sm:hidden">
-                          จำนวนเงิน <span class="text-red-500">*</span>
-                        </label>
                         <button
                           class="w-full px-4 py-2 bg-[#7E22CE] text-white rounded-md hover:bg-[#6B21A8] transition-colors duration-200"
                           @click="openModalForRow(index)"
@@ -225,23 +202,36 @@
                           {{ errors.rows[index].selectedItems }}
                         </span>
                       </div>
-
-                      <!-- ประเภท -->
                       <div class="flex flex-col gap-1.5">
-                        <label class="text-xs font-medium text-gray-600 sm:hidden">
-                          ประเภท <span class="text-red-500">*</span>
-                        </label>
                         <InputText
-                          v-model="row.MoneySouce"
-                          placeholder="ภายนอก/ภายใน"
+                          v-model="row.fee"
+                          placeholder="ค่าธรรมเนียม"
                           class="w-full"
-                          @input="() => clearRowError(index, 'MoneySouce')"
+                          @input="() => clearRowError(index, 'fee')"
                         />
-                        <span v-if="errors.rows?.[index]?.MoneySouce" class="text-red-600 text-xs">
-                          {{ errors.rows[index].MoneySouce }}
+                        <span v-if="errors.rows?.[index]?.fee" class="text-red-600 text-xs">
+                          {{ errors.rows[index].fee }}
                         </span>
                       </div>
 
+                      <!-- ประเภท -->
+                      <div class="flex flex-col gap-1.5">
+                        <InputText
+                          v-model="row.note"
+                          placeholder="หมายเหตุ"
+                          class="w-full"
+                          @input="() => clearRowError(index, 'note')"
+                        />
+                        <span v-if="errors.rows?.[index]?.note" class="text-red-600 text-xs">
+                          {{ errors.rows[index].note }}
+                        </span>
+                      </div>
+                      <KeywordTomSelect
+                        v-model="row.keyword"
+                        :input-id="`keyword-${index}`"
+                        :error="errors.rows?.[index]?.keyword"
+                        @input="() => clearRowError(index, 'keyword')"
+                      />
                       <!-- Delete Button -->
                       <button
                         v-if="morelist.length > 1"
@@ -259,14 +249,6 @@
                         </svg>
                       </button>
                     </div>
-
-                    <!-- Keyword -->
-                    <KeywordTomSelect
-                      v-model="row.keyword"
-                      :input-id="`keyword-${index}`"
-                      :error="errors.rows?.[index]?.keyword"
-                      @input="() => clearRowError(index, 'keyword')"
-                    />
                   </div>
                 </div>
               </div>
@@ -290,16 +272,143 @@
           </div>
 
           <!-- Total Amount -->
-          <div class="mt-5">
-            <div class="bg-[#7E22CE] border border-blue-200 rounded p-6 mb-6">
-              <div class="flex justify-between items-center">
-                <span class="text-2xl font-bold text-white">จำนวนเงินรวมทั้งหมด</span>
-                <span class="text-3xl font-bold text-white"
-                  >{{ formatNumber(totalAmount) }} บาท</span
-                >
-              </div>
+  <div>
+    <div
+      v-if="detailsByRow.length > 0"
+      class="bg-white border border-gray-200 rounded-xl p-6 mb-6"
+    >
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
+        รายละเอียดการชำระเงิน
+      </h3>
+
+      <div class="space-y-4">
+        <div
+          v-for="(detail, idx) in detailsByRow"
+          :key="idx"
+          class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+        >
+          <!-- Header รายการ -->
+          <div class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs"
+              >รายการที่ {{ detail.rowIndex + 1 }}</span
+            >
+            <span>{{ detail.itemName || 'ไม่ระบุชื่อรายการ' }}</span>
+          </div>
+
+          <!-- รายการชำระเงิน -->
+          <div class="space-y-2 mb-4">
+  <div
+    v-for="(item, itemIdx) in detail.items"
+    :key="itemIdx"
+    class="bg-gray-50 rounded p-3 text-sm"
+  >
+    <div class="flex justify-between items-start mb-2">
+      <!-- แสดง type พร้อม fallback -->
+      <span
+        class="font-medium px-2 py-1 rounded"
+        :class="{
+          'bg-green-100 text-green-700': item.type === 'เงินสด',
+          'bg-blue-100 text-blue-700': item.type === 'เช็คธนาคาร',
+          'bg-orange-100 text-orange-700': item.type === 'ฝากเข้าบัญชี',
+          'bg-gray-100 text-gray-700': !item.type || item.type === 'ไม่ระบุ'
+        }"
+      >
+        {{ item.type || 'ไม่ระบุประเภท' }}
+      </span>
+      <span class="font-bold text-gray-800">
+        {{ formatNumber(item.amount) }} ฿
+      </span>
+    </div>
+
+    <div class="space-y-1 text-xs text-gray-600">
+      <div class="flex justify-between">
+        <span>เลขที่อ้างอิง:</span>
+        <span class="font-medium">{{ item.referenceNo || '–' }}</span>
+      </div>
+
+      <!-- แสดงเฉพาะเช็คธนาคาร -->
+      <div v-if="item.type === 'เช็คธนาคาร' && item.checkNumber" class="flex justify-between">
+        <span>เลขที่เช็ค:</span>
+        <span class="font-medium">{{ item.checkNumber }}</span>
+      </div>
+
+      <!-- แสดงเฉพาะฝากเข้าบัญชี -->
+      <template v-if="item.type === 'ฝากเข้าบัญชี'">
+        <div v-if="item.accountNumber" class="flex justify-between">
+          <span>เลขบัญชี:</span>
+          <span class="font-medium">{{ item.accountNumber }}</span>
+        </div>
+        <div v-if="item.accountName" class="flex justify-between">
+          <span>ชื่อบัญชี:</span>
+          <span class="font-medium">{{ item.accountName }}</span>
+        </div>
+      </template>
+    </div>
+  </div>
+          </div>
+
+          <!-- Summary ของรายการนี้ -->
+          <div class="border-t border-gray-200 pt-3 space-y-2">
+            <!-- ยอดรวมก่อนหักค่าธรรมเนียม -->
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-gray-600">ยอดรวม:</span>
+              <span class="font-semibold text-gray-800">
+                {{ formatNumber(detail.subtotal) }} ฿
+              </span>
+            </div>
+
+            <!-- ค่าธรรมเนียม -->
+            <div 
+              v-if="detail.fee && detail.fee > 0" 
+              class="flex justify-between items-center text-sm"
+            >
+              <span class="text-gray-600">หัก ค่าธรรมเนียม:</span>
+              <span class="font-semibold text-red-600">
+                - {{ formatNumber(detail.fee) }} ฿
+              </span>
+            </div>
+
+            <!-- หมายเหตุ -->
+            <div 
+              v-if="detail.note" 
+              class="flex justify-between items-center text-sm"
+            >
+              <span class="text-gray-600">หมายเหตุ:</span>
+              <span class="text-gray-700 italic">{{ detail.note }}</span>
+            </div>
+
+            <!-- เส้นแบ่ง -->
+            <div class="border-t border-gray-300 my-2"></div>
+
+            <!-- ยอดสุทธิ -->
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-gray-800">ยอดสุทธิ:</span>
+              <span class="font-bold text-lg" 
+                :class="detail.netAmount >= 0 ? 'text-green-600' : 'text-red-600'"
+              >
+                {{ formatNumber(detail.netAmount) }} ฾
+              </span>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ยอดรวมทั้งหมด -->
+    <div class="space-y-4">
+
+      <!-- ยอดสุทธิสุดท้าย -->
+      <div class="bg-[#7E22CE] border rounded-lg p-6">
+        <div class="flex justify-between items-center">
+          <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด </span>
+          <span class="text-3xl font-bold text-white">
+            {{ formatNumber(netTotalAmount) }} บาท
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
 
           <!-- Note -->
           <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-6 mt-6">
@@ -348,10 +457,13 @@ const reciptStore = useReciptStore() // สร้าง instance
 import { SaveRecipt } from '@/services/ReciptService'
 import { useRowManager } from '@/components/Function/FuncForm'
 import KeywordTomSelect from '@/components/TomSelect/KeywordTomSelect.vue'
+import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 const gotomainpage = () => {
   router.push('/')
 }
 const {
+    netTotalAmount,
+  detailsByRow,
   morelist,
   addRow,
   removeRow,
@@ -368,15 +480,17 @@ const formData = ref({
   subAffiliationName: '',
   fundName: '',
   projectCode: '',
-  moneyType:'',
+  moneyType: null,
   receiptList: '',
 })
+const itemNameInstances = ref({})
 const errors = ref({})
-onMounted(() => {
-  const selectEl = document.getElementById('moneyType')
 
-  if (selectEl && !selectEl.tomselect) {
-    new TomSelect(selectEl, {
+onMounted(() => {
+  // TomSelect สำหรับขอนำส่งเงิน
+  const moneyTypeEl = document.getElementById('moneyType')
+  if (moneyTypeEl && !moneyTypeEl.tomselect) {
+    new TomSelect(moneyTypeEl, {
       create: true,
       sortField: { field: 'text', direction: 'asc' },
       allowEmptyOption: true,
@@ -385,25 +499,60 @@ onMounted(() => {
         formData.value.moneyType = value
       },
     })
-    const control = selectEl.tomselect.control
-    control.style.height = '2.5rem'
-    control.style.padding = '1 0.5rem'
-    control.style.display = 'flex'
-    control.style.alignItems = 'center'
-    control.style.borderRadius = '0.375rem'
-    control.style.border = '1px solid #6b7280'
-    control.style.fontSize = '1rem'
-
-    const input = control.querySelector('input')
-    if (input) {
-      input.style.fontSize = '1.01rem'
-      input.style.height = '1rem'
-      input.style.padding = '0.5rem'
-    }
+    applyCSSToTomSelect(moneyTypeEl)
   }
-  morelist.value.forEach((_, i) => initTomSelect(i))
+
+  // Initialize TomSelect สำหรับ itemName ในแถวแรก
+  morelist.value.forEach((_, i) => {
+    initItemNameTomSelect(i)
+    initTomSelect(i) // keyword TomSelect
+  })
 })
 
+// Function สำหรับสร้าง TomSelect ของ itemName
+const initItemNameTomSelect = (index) => {
+  const elementId = `itemName-${index}`
+
+  // รอให้ DOM render ก่อน
+  setTimeout(() => {
+    const el = document.getElementById(elementId)
+
+    if (el && !el.tomselect) {
+      const tomselect = new TomSelect(el, {
+        create: true, // อนุญาตให้สร้างตัวเลือกใหม่
+        placeholder: 'ระบุรายการ',
+        allowEmptyOption: true,
+        onChange(value) {
+          morelist.value[index].itemName = value
+          clearRowError(index, 'itemName')
+        },
+      })
+
+      applyCSSToTomSelect(el)
+      itemNameInstances.value[index] = tomselect
+    }
+  }, 100)
+}
+
+// Function สำหรับ apply CSS
+const applyCSSToTomSelect = (selectEl) => {
+  const control = selectEl.tomselect.control
+  control.style.height = '2.5rem'
+  control.style.width = '100%'
+  control.style.padding = '0 0.5rem'
+  control.style.display = 'flex'
+  control.style.alignItems = 'center'
+  control.style.borderRadius = '0.375rem'
+  control.style.border = '1px solid #6b7280'
+  control.style.fontSize = '1rem'
+
+  const input = control.querySelector('input')
+  if (input) {
+    input.style.fontSize = '1.01rem'
+    input.style.height = '1rem'
+    input.style.padding = '0.5rem'
+  }
+}
 const options = {
   คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ: [
     'ศูนย์ศึกษาเศรษฐกิจพอเพียงและความอยู่รอดของมนุษยชาติ',
@@ -437,11 +586,17 @@ const subOptions = computed(() => {
   return mainCategory.value ? options[mainCategory.value] : []
 })
 
-watch(morelist, (newVal, oldVal) => {
-  if (newVal.length > oldVal.length) {
-    initTomSelect(newVal.length - 1)
-  }
-})
+watch(
+  morelist,
+  (newVal, oldVal) => {
+    if (newVal.length > oldVal.length) {
+      const newIndex = newVal.length - 1
+      initItemNameTomSelect(newIndex) // 👈 เพิ่มบรรทัดนี้
+      initTomSelect(newIndex)
+    }
+  },
+  { deep: true },
+)
 const formatNumber = (num) => {
   return Number(num).toLocaleString('th-TH', {
     minimumFractionDigits: 2,
@@ -449,18 +604,6 @@ const formatNumber = (num) => {
   })
 }
 
-const totalAmount = computed(() => {
-  return morelist.value.reduce((sum, row) => {
-    if (!row.selectedItems) return sum
-
-    const rowTotal = row.selectedItems.reduce((s, item) => {
-      const amount = Number(item.amount) || 0
-      return s + amount
-    }, 0)
-
-    return sum + rowTotal
-  }, 0)
-})
 
 const saveData = async () => {
   // รีเซ็ต error
@@ -500,8 +643,8 @@ const saveData = async () => {
   morelist.value.forEach((row, index) => {
     const rowErrors = {}
     if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
-    if (!row.referenceNo) rowErrors.referenceNo = 'กรุณากรอก "เลขที่เอกสารอ้างอิง"'
-    if (!row.MoneySouce) rowErrors.MoneySouce = 'กรุณากรอก "ประเภท"'
+    if (!row.note) rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
+    if (!row.fee) rowErrors.fee = 'กรุณากรอก "ค่าธรรมเนียม"'
     if (!row.keyword) rowErrors.keyword = 'กรุณากรอก "keyword"'
 
     // เช็ค selectedItems
@@ -555,16 +698,15 @@ const clearRowError = (rowIndex, field) => {
 
 watch(
   [formData, mainCategory, subCategory],
-  ([newFormData,]) => {
+  ([newFormData]) => {
     // Clear errors สำหรับ formData
     for (const key in newFormData) {
       if (errors.value[key] && newFormData[key]) {
         delete errors.value[key]
       }
     }
-  
   },
-  { deep: true }
+  { deep: true },
 )
 </script>
 

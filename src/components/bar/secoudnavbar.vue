@@ -6,12 +6,12 @@
         <!-- ตัวอย่าง tab -->
         <li class="relative group">
           <RouterLink
-            to="/waybill"
+            to="/indexwaybilldebtor"
             :class="tabClass(isStatus1)"
             class="flex items-center justify-center h-[48px] px-4"
           >
-            <span class="md:hidden">เพิ่มใบนำส่งใหม่</span>
-            <span class="hidden md:inline">เพิ่มใบนำส่งใหม่</span>
+            <span class="md:hidden">ส่งลูกหนี้</span>
+            <span class="hidden md:inline">ใบนำส่งลูกหนี้</span>
           </RouterLink>
 
           <!-- เส้นใต้ hover -->
@@ -27,8 +27,20 @@
             :class="tabClass(isStatus2)"
             class="flex items-center justify-center h-[48px] px-4"
           >
-            <span class="md:hidden">ดำเนินงาน</span>
-            <span class="hidden md:inline">ใบนำส่งที่อยู่ในขั้นตอนดำเนินงาน</span>
+            <span class="md:hidden">ใบนำส่ง</span>
+            <span class="hidden md:inline">ใบนำส่ง</span>
+          </RouterLink>
+          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
+        </li>
+
+        <li class="relative group">
+          <RouterLink
+            to="/indexsavedebtor"
+            :class="tabClass(isStatus3)"
+            class="flex items-center justify-center h-[48px] px-4"
+          >
+            <span class="md:hidden">ล้างลูกหนี้</span>
+            <span class="hidden md:inline">ล้างลูกหนี้</span>
           </RouterLink>
           <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
         </li>
@@ -36,7 +48,7 @@
         <li class="relative group">
           <RouterLink
             to="/Report_submit"
-            :class="tabClass(isStatus3)"
+            :class="tabClass(isStatus4)"
             class="flex items-center justify-center h-[48px] px-4"
           >
             <span class="md:hidden">ผลการนำส่ง</span>
@@ -45,17 +57,7 @@
           <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
         </li>
 
-        <li class="relative group">
-          <RouterLink
-            to="/savedebtor"
-            :class="tabClass(isStatus4)"
-            class="flex items-center justify-center h-[48px] px-4"
-          >
-            <span class="md:hidden">บันทึกลูกหนี้</span>
-            <span class="hidden md:inline">บันทึกลูกหนี้</span>
-          </RouterLink>
-          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
-        </li>
+
 
       </ul>
     </div>
@@ -71,16 +73,20 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 // ✔ กลุ่มหน้าในสถานะ "เพิ่มใบนำส่งใหม่"
-const status1Names = ['waybill', 'waybilldebtor', 'waybillresearch']
+const status1Names = ['waybilldebtor']
+
+const status2Names = ["waybill"]
+
+const status3Names = ["savedebtor"]
 
 // ✔ ตรวจ Active แต่ละสถานะ
 const isStatus1 = computed(() => status1Names.includes(route.name))
 
-const isStatus2 = computed(() => route.name === 'mmain')
+const isStatus2 = computed(() => status2Names.includes(route.name))
 
-const isStatus3 = computed(() => route.name === 'resultsubmit')
+const isStatus3 = computed(() => status3Names.includes(route.name))
 
-const isStatus4 = computed(() => route.name === 'savedebtor')
+const isStatus4 = computed(() => route.name === 'resultsubmit')
 
 // ✔ ฟังก์ชันกำหนด class ตาม active
 const tabClass = (active) => {

@@ -667,19 +667,20 @@ const saveData = async () => {
     fullName: formData.value.fullName,
     phone: formData.value.phone,
     affiliationId: 'AFF-001', // ต้องเพิ่ม
-    affiliationName: mainCategory.value,
+    MainAffiliationName: mainCategory.value,
+    SubAffiliationName: subCategory.value,
     fundId: 'FUND-001', // ต้องเพิ่ม
     fundName: formData.value.fundName,
     projectCode: formData.value.projectCode,
     receiptList: morelist.value.map(row => ({
       itemName: row.itemName,
-      referenceNo: row.referenceNo || crypto.randomUUID(),
+      referenceNo: row.referenceNo ,
       amount: row.selectedItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0,
       moneyType: row.selectedItems?.[0]?.type || 'cash',
       moneySource: 'internal',
       keyword: row.keyword || [],
-      fee: Number(row.fee) || 0,
-      note: row.note || ''
+      fee: row.fee,
+      note: row.note
     }))
   }
 axios.post('/saveReceipt', payload)

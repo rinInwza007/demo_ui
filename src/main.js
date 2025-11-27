@@ -8,7 +8,8 @@ import { VueDatePicker } from "@vuepic/vue-datepicker";
 import '@vuepic/vue-datepicker/dist/main.css'
 import "hover.css";
 import VueApexCharts from "vue3-apexcharts";
-
+import { setupAxiosMock } from './fake/mockAxios.ts';
+setupAxiosMock();
 
 const app = createApp(App)
 

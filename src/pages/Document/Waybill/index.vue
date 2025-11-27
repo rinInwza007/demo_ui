@@ -454,10 +454,11 @@ import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
 import { useReciptStore } from '@/stores/recipt' // เพิ่ม import
 const reciptStore = useReciptStore() // สร้าง instance
-import { SaveRecipt } from '@/services/ReciptService'
+// import { SaveRecipt } from '@/services/ReciptService'
 import { useRowManager } from '@/components/Function/FuncForm'
 import KeywordTomSelect from '@/components/TomSelect/KeywordTomSelect.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
+import axios from 'axios'
 const gotomainpage = () => {
   router.push('/')
 }
@@ -663,25 +664,31 @@ const saveData = async () => {
   if (hasError) return
 
   const payload = {
-    ...formData.value,
-    MainAffiliationName: mainCategory.value,
-    subAffiliationName: subCategory.value,
-    receiptList: morelist.value,
+    fullName: formData.value.fullName,
+    phone: formData.value.phone,
+    affiliationId: 'AFF-001', // ต้องเพิ่ม
+    affiliationName: mainCategory.value,
+    fundId: 'FUND-001', // ต้องเพิ่ม
+    fundName: formData.value.fundName,
+    projectCode: formData.value.projectCode,
+    receiptList: morelist.value.map(row => ({
+      itemName: row.itemName,
+      referenceNo: row.referenceNo || crypto.randomUUID(),
+      amount: row.selectedItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0,
+      moneyType: row.selectedItems?.[0]?.type || 'cash',
+      moneySource: 'internal',
+      keyword: row.keyword || [],
+      fee: Number(row.fee) || 0,
+      note: row.note || ''
+    }))
   }
-  const credentials = {
-    Authorization: 'Bearer your-token-here',
-  }
-  try {
-    const res = await SaveRecipt(payload, credentials)
-
-    console.log('SaveRecipt Response:', res)
-
-    alert('บันทึกข้อมูลสำเร็จ!')
-    router.push('/') // กลับหน้าหลัก
-  } catch (err) {
-    console.error(err)
-    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล')
-  }
+axios.post('/saveReceipt', payload)
+  .then(res => {
+    console.log('บันทึกสำเร็จ:', res.data)
+  })
+  .catch(err => {
+    console.error('บันทึกพัง:', err.response?.data)
+  })
 }
 
 const clearRowError = (rowIndex, field) => {

@@ -2,7 +2,7 @@
 import axios from 'axios';
 import AxiosMockAdapter from 'axios-mock-adapter';
 import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb';
-import type { Receipt } from '@/types/receipt';
+import type { Receipt } from '../types/recipt';
 
 export function setupAxiosMock() {
   const mock = new AxiosMockAdapter(axios, { delayResponse: 300 }); // ใส่ดีเลย์นิดหน่อยให้เหมือนจริง

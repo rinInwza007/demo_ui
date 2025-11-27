@@ -1,5 +1,5 @@
 
-import type { Receipt, ReceiptItem } from '@/types/receipt';
+import type { Receipt, ReceiptItem } from '../types/recipt';
 
 const LS_KEY = 'fakeApi.receipts';
 

@@ -23,11 +23,13 @@
 
         <selectdatetime />
 
-        <Select
-          v-model="category"
-          :options="['กองแผนงาน','กองคลัง','โรงพยาบาลมอพะเยา']"
-          placeholder="หน่วยงาน"
-        />
+         <CascadingSelect
+    v-model:main="selectedMain"
+    v-model:sub1="selectedSub1"
+    v-model:sub2="selectedSub2"
+    :options="options"
+    label="หน่วยงาน"
+  />
 
         <search v-model="searchText" />
 
@@ -102,6 +104,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
+import { options } from "@/components/data/departments"
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
@@ -109,7 +112,7 @@ import { setupAxiosMock } from '@/fake/mockAxios';
 
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Select from '@/components/input/select.vue'
+import Select from '@/components/input/select/select.vue'
 import search from '@/components/input/search.vue'
 import TableBase from '@/components/list/listbase.vue'
 import nextpage from '@/components/list/nextpage.vue'
@@ -117,6 +120,8 @@ import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 import goback from '@/components/Button/goback.vue'
 import dropdrow from '@/components/dropdrow/dropdrow.vue'
 import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
+import CascadingSelect from "@/components/input/select/CascadingSelect.vue"
+
 
 setupAxiosMock();
 
@@ -125,6 +130,13 @@ const router = useRouter()
 const items = ref<any[]>([])
 const searchText = ref('')
 const category = ref('')
+
+const selectedMain = ref("");
+const selectedSub1 = ref("");
+const selectedSub2 = ref("");
+
+
+
 
 const mapReceiptToRow = (r: any) => {
   return {
@@ -192,3 +204,10 @@ const removeItem = async (item:any) => {
 }
 
 </script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');
+
+body, * {
+  font-family: 'Sarabun', 'sans-serif';
+}
+</style>

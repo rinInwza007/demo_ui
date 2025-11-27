@@ -12,6 +12,13 @@ import VueApexCharts from "vue3-apexcharts";
 const app = createApp(App)
 
 
+
+// if (import.meta.env.DEV && import.meta.env.VITE_USE_FAKE_API === 'true') {
+//   const { setupAxiosMock } = await import('@/fake/mockAxios');
+//   setupAxiosMock();
+// }
+
+
 app.use(VueApexCharts);
 app.component('VueDatePicker', VueDatePicker)
 app.use(createPinia())

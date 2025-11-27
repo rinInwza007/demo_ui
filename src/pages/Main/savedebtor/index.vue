@@ -3,15 +3,22 @@
     <Navbar/>
     <SecondNavbar />
 <div class="border border-gray-300 rounded-xl shadow  m-6 bg-white">
-    <div class="ml-12 mt-8 flex">
-  <main>
-    <h1 class="text-4xl font-extrabold text-gray-900 mb-6 mx-auto text-left">
-      ใบนำส่งเงิน
-    </h1>
-  </main>
+    <div class="ml-12 mt-8 grid grid-cols-3 items-center">
+  <!-- ซ้าย -->
+  <div class="flex">
+    <dropdrowwork />
+  </div>
+
+  <!-- กลาง -->
+  <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
+    บันทึกลูกหนี้
+  </h1>
+
+  <!-- ขวา (ปล่อยว่างเพื่อ balance) -->
+  <div></div>
 </div>
 
-    <div class="flex flex-col gap-4 px-12 w-full md:flex-row md:items-end">
+    <div class="flex flex-col gap-4 px-12 w-full md:flex-row md:items-end mt-12">
 
   <!-- วันที่ -->
   <div>
@@ -33,22 +40,28 @@
   </div>
 
   <!-- ปุ่มต่างๆ = ชิดขวาสุดด้วย ml-auto  -->
-  <div class="ml-auto grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-    <phillbutton
-      v-for="btn in actions"
-      :key="btn.key"
-      @click="btn.handler"
-      grow
-    >
-      <template #icon>
-        <i class="material-symbols-outlined text-[22px] leading-none">
+  <div class="ml-auto">
+  <dropdrow>
+    <template #icon>
+      <i class="material-symbols-outlined text-[22px] leading-none ">
+      </i>
+    </template>
+    <template #menu>
+      <div
+        v-for="btn in actions"
+        :key="btn.key"
+        class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 cursor-pointer"
+        @click="btn.handler"
+      >
+        <i class="material-symbols-outlined text-[20px] leading-none">
           {{ btn.icon }}
         </i>
-      </template>
+        <span class="text-sm">{{ btn.label }}</span>
+      </div>
+    </template>
+  </dropdrow>
+</div>
 
-      {{ btn.label }}
-    </phillbutton>
-  </div>
 
 </div>
 
@@ -62,6 +75,7 @@
               <goback />
 </div>
           </div>
+
   </div>
   </div>
 
@@ -69,44 +83,23 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
+
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Select from '@/components/input/select.vue'
 import search from '@/components/input/search.vue'
-import phillbutton from '@/components/input/PillButton.vue'
-import list from '@/components/list/list.vue'
+import list from '@/components/list/listbase.vue'
 import nextpage from '@/components/list/nextpage.vue'
 import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 import goback from '@/components/Button/goback.vue'
-
-const router = useRouter()
+import dropdrow from '@/components/dropdrow/dropdrow.vue'
+import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
 
 // ฟังก์ชันสำหรับปุ่ม "ใบนำส่ง"
-const goTowaybill = () => {
-  router.push('/waybill')
-}
-
-const goTowaybilldebtor = () =>{
-  router.push('/waybilldebtor')
-}
-
-const goTowaybillResearch = () =>{
-  router.push('/waybillresearch')
-}
-
-const gotoresultsubmit = ()=>{
-  router.push('/resultsubmit')
-}
 
 
 
-const actions = [
-  { key: 'export', label: 'Export', icon: "file_export", handler: () => {} },
-  { key: 'main', label: 'ใบนำส่ง', icon: "add", handler: goTowaybill },
-  { key: 'research', label: 'ใบนำส่งวิจัย', icon: "add", handler: goTowaybillResearch },
-  { key: 'debtor', label: 'ใบนำส่งลูกหนี้', icon: "add", handler: goTowaybilldebtor },
-];
+
 </script>
 
 <style>
@@ -115,9 +108,6 @@ const actions = [
 body, * {
   font-family: 'Sarabun', 'sans-serif';
 }
-
-
-
 </style>
 
 

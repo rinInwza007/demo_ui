@@ -99,7 +99,7 @@
                   {{ errors.department }}
                 </span>
               </div>
-              
+
               <div class="flex flex-col gap-2">
                 <label class="text-sm font-medium text-gray-700">
                   ขอนำส่งเงิน <span class="text-red-500">*</span>
@@ -332,7 +332,7 @@
 <script setup>
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Selects from '@/components/input/select.vue'
+import Selects from '@/components/input/select/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
 import { ref, computed, onMounted, nextTick, watch } from 'vue'

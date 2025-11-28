@@ -452,13 +452,14 @@ import { ref, computed, onMounted, watch } from 'vue'
 import Modal from '@/components/modal/modal.vue'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
-import { useReciptStore } from '@/stores/recipt' // เพิ่ม import
-const reciptStore = useReciptStore() // สร้าง instance
-// import { SaveRecipt } from '@/services/ReciptService'
+import { useReceiptStore } from '@/stores/recipt' // เพิ่ม import
 import { useRowManager } from '@/components/Function/FuncForm'
 import KeywordTomSelect from '@/components/TomSelect/KeywordTomSelect.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import axios from 'axios'
+import { setupAxiosMock } from '@/fake/mockAxios'
+const reciptStore = useReceiptStore() // สร้าง instance
+setupAxiosMock()
 const gotomainpage = () => {
   router.push('/')
 }
@@ -711,8 +712,19 @@ axios.post('/saveReceipt', payload)
     console.log('บันทึกสำเร็จ:', res.data)
   })
   .catch(err => {
-    console.error('บันทึกพัง:', err.response?.data)
+    if (err.response) {
+      // server ตอบแล้ว แต่ error
+      console.error('Status:', err.response.status)
+      console.error('Data:', err.response.data)
+    } else if (err.request) {
+      // request ส่งไปแล้ว แต่ไม่มี response
+      console.error('No response received:', err.request)
+    } else {
+      // error อื่นๆ
+      console.error('Error', err.message)
+    }
   })
+
 }
 
 const clearRowError = (rowIndex, field) => {

@@ -21,9 +21,12 @@ export interface ReceiptItem {
 
  /** internal or external */
   moneySource: moneySource;
-
-  /** Keyword for tagging or searching */
+  note?: string;
+  fee?: number; // 👈 fee อยู่ตรงนี้
   keyword?: string[];
+  subtotal?: number;
+  netAmount?: number;
+  paymentDetails?: PaymentDetail[];
 }
 
 export interface Receipt {
@@ -35,7 +38,8 @@ export interface Receipt {
 
   /** Affiliation ID */
   affiliationId: string;
-
+  mainAffiliationName?: string;
+  subAffiliationName?: string;
   /** Affiliation name */
   affiliationName: string;
 

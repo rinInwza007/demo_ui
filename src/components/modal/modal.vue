@@ -75,7 +75,7 @@
                         เลขที่เช็ค <span class="text-red-500">*</span>
                       </label>
                       <input
-                        type="text"
+                        type="number"
                         v-model="item.NumCheck"
                         @input="handleInput"
                         placeholder="กรอกเลขที่เช็ค"
@@ -121,7 +121,7 @@
                       เลขที่อ้างอิง <span class="text-red-500">*</span>
                     </label>
                     <input
-                      type="text"
+                      type="number"
                       v-model="item.referenceNo"
                       @input="handleInput"
                       placeholder="กรอกเลขที่อ้างอิง"
@@ -253,7 +253,8 @@ const isValid = computed(() => {
   }
   
   return checkedItems.every(item => {
-    const hasReferenceNo = item.referenceNo && item.referenceNo.trim() !== ''
+    // ✅ เช็ค referenceNo และ amount ก่อน
+    const hasReferenceNo = item.referenceNo && String(item.referenceNo).trim() !== ''
     const hasAmount = item.amount && parseFloat(item.amount) > 0
     
     if (!hasReferenceNo || !hasAmount) {
@@ -261,12 +262,23 @@ const isValid = computed(() => {
     }
     
     if (item.NumCheck !== undefined) {
-      return item.NumCheck && item.NumCheck.trim() !== ''
+      return item.NumCheck && String(item.NumCheck).trim() !== ''
     }
-    
     if (item.AccountNum !== undefined) {
-      return item.AccountNum && item.AccountNum.trim() !== '' && 
-             item.AccountName && item.AccountName.trim() !== ''
+      const hasAccountNum = item.AccountNum !== null && 
+                           item.AccountNum !== undefined && 
+                           String(item.AccountNum).trim() !== ''
+      const hasAccountName = item.AccountName && 
+                            String(item.AccountName).trim() !== ''
+      
+      console.log('Validating transfer:', {
+        AccountNum: item.AccountNum,
+        AccountName: item.AccountName,
+        hasAccountNum,
+        hasAccountName
+      })
+      
+      return hasAccountNum && hasAccountName
     }
     
     return true
@@ -412,6 +424,8 @@ watch(() => props.show, (newVal) => {
   }
 })
 </script>
+
+
 
 <style scoped>
 /* Transitions */

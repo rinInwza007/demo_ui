@@ -69,7 +69,7 @@ export function setupAxiosMock() {
   });
 
   // DELETE /deleteReceipt/:id
-  mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply(config => {
+  mock.onDelete('/deleteReceipt').reply(config => {
     const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1];
     if (!id) return [400, { success: false, message: 'id required' }];
     const db = loadReceipts();

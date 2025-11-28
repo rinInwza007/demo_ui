@@ -72,7 +72,7 @@
 import { useRouter } from 'vue-router'
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Select from '@/components/input/select.vue'
+import Select from '@/components/input/select/select.vue'
 import search from '@/components/input/search.vue'
 import phillbutton from '@/components/input/PillButton.vue'
 import list from '@/components/list/list.vue'

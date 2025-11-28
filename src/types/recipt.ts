@@ -1,53 +1,53 @@
-export type MoneySouce = 'internal' | 'external';
-
-
-
-export type MoneyType = 'bank' | 'cash' | 'transfer';
+export interface PaymentDetail {
+  type: string; // 'เงินสด' | 'เช็คธนาคาร' | 'ฝากเข้าบัญชี'
+  amount: number;
+  referenceNo?: string;
+  // เฉพาะเช็ค
+  checkNumber?: string | null;
+  // เฉพาะฝากเข้าบัญชี
+  accountNumber?: string | null;
+  accountName?: string | null;
+  // ❌ ลบ fee ออก (fee อยู่ที่ ReceiptItem)
+}
 
 export interface ReceiptItem {
-  /** Item name */
   itemName: string;
-
-  /** Reference number */
-  referenceNo: string;
-
-  /** Amount */
-  amount: number;
-
-  /** Type of money*/
-  moneyType: MoneyType;
-
+  note?: string;
+  fee?: number; // 👈 fee อยู่ตรงนี้
+  keyword?: string[];
+  subtotal?: number;
+  netAmount?: number;
+  paymentDetails?: PaymentDetail[];
+  
+  // เก่า (backward compatible)
+  referenceNo?: string;
+  amount?: number;
+  moneyType?: string;
   moneyTypeNote?: string;
-
- /** internal or external */
-  MoneySouce: MoneySouce;
-
-  /** Keyword for tagging or searching */
-  keyword?: string;
+  moneySource?: string;
 }
 
 export interface Receipt {
-  /** Full name */
   fullName: string;
-
-  /** Phone number */
   phone: string;
-
-  /** Affiliation ID */
-  affiliationId: string;
-
-  /** Affiliation name */
-  affiliationName: string;
-
-  /** Fund ID */
-  fundId: string;
-
-  /** Fund name */
+  
+  // เก่า (backward compatible)
+  affiliationId?: string;
+  affiliationName?: string;
+  fundId?: string;
+  
+  // ใหม่
+  mainAffiliationName?: string;
+  subAffiliationName?: string;
+  
   fundName: string;
-
-  /** Project code */
+  moneyType?: string;
   projectCode: string;
-
-  /** List of receipt items */
+  
+  // ยอดเงิน
+  totalAmount?: number;
+  totalFee?: number;
+  netTotalAmount?: number;
+  
   receiptList: ReceiptItem[];
 }

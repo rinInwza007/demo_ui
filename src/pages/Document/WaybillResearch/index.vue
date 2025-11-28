@@ -158,7 +158,7 @@
 <script setup>
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Selects from '@/components/input/select.vue'
+import Selects from '@/components/input/select/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
 import { ref,computed } from 'vue'

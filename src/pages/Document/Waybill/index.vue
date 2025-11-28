@@ -182,7 +182,7 @@
                       <!-- จำนวนเงิน -->
                       <div class="flex flex-col gap-1.5">
                         <button
-                          class="w-full px-4 py-2 bg-[#7E22CE] text-white rounded-md hover:bg-[#6B21A8] transition-colors duration-200"
+                          class="w-full sm:w-auto px-4 py-2 bg-[#7E22CE] text-white rounded-md hover:bg-[#6B21A8] transition-colors duration-200"
                           @click="openModalForRow(index)"
                         >
                           จำนวนเงินรวม
@@ -445,7 +445,7 @@
 <script setup>
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Selects from '@/components/input/select.vue'
+import Selects from '@/components/input/select/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
 import { ref, computed, onMounted, watch } from 'vue'
@@ -663,25 +663,48 @@ const saveData = async () => {
 
   if (hasError) return
 
+  // สร้าง payload ที่มีข้อมูลครบถ้วน
   const payload = {
+    // ข้อมูลผู้บันทึก
     fullName: formData.value.fullName,
     phone: formData.value.phone,
-    affiliationId: 'AFF-001', // ต้องเพิ่ม
-    MainAffiliationName: mainCategory.value,
-    SubAffiliationName: subCategory.value,
-    fundId: 'FUND-001', // ต้องเพิ่ม
+    
+    // ข้อมูลหน่วยงาน
+    mainAffiliationName: mainCategory.value,
+    subAffiliationName: subCategory.value,
+    
+    // ข้อมูลกองทุนและโครงการ
     fundName: formData.value.fundName,
+    moneyType: formData.value.moneyType,
     projectCode: formData.value.projectCode,
-    receiptList: morelist.value.map(row => ({
-      itemName: row.itemName,
-      referenceNo: row.referenceNo ,
-      amount: row.selectedItems?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0,
-      moneyType: row.selectedItems?.[0]?.type || 'cash',
-      moneySource: 'internal',
-      keyword: row.keyword || [],
-      fee: row.fee,
-      note: row.note
-    }))
+    netTotalAmount: netTotalAmount.value,
+    receiptList: morelist.value.map(row => {
+      const rowTotal = row.selectedItems?.reduce((sum, item) => {
+        return item.checked ? sum + (Number(item.amount) || 0) : sum
+      }, 0) || 0
+
+      const rowFee = Number(row.fee) || 0
+      const rowNetAmount = rowTotal - rowFee
+
+      return {
+        itemName: row.itemName,
+        note: row.note || '',
+        fee: rowFee,
+        keyword: Array.isArray(row.keyword) ? row.keyword : (row.keyword ? [row.keyword] : []),
+        subtotal: rowTotal,
+        netAmount: rowNetAmount,
+        paymentDetails: row.selectedItems
+          ?.filter(item => item.checked)
+          .map(item => ({
+            type: item.type || item.paymentType || 'ไม่ระบุ',
+            amount: Number(item.amount) || 0,
+            referenceNo: item.referenceNo || '',
+            checkNumber: item.checkNumber || item.NumCheck || null,
+            accountNumber: item.accountNumber || item.AccountNum || null,
+            accountName: item.accountName || item.AccountName || null
+          })) || []
+      }
+    })
   }
 axios.post('/saveReceipt', payload)
   .then(res => {

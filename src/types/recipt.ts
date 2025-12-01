@@ -2,7 +2,7 @@ export type moneySource = 'internal' | 'external';
 
 
 
-export type MoneyType = 'bank' | 'cash' | 'transfer';
+export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other';
 
 export interface ReceiptItem {
   /** Item name */

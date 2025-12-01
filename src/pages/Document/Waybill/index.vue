@@ -359,8 +359,8 @@
             </div>
 
             <!-- ค่าธรรมเนียม -->
-            <div 
-              v-if="detail.fee && detail.fee > 0" 
+            <div
+              v-if="detail.fee && detail.fee > 0"
               class="flex justify-between items-center text-sm"
             >
               <span class="text-gray-600">หัก ค่าธรรมเนียม:</span>
@@ -370,8 +370,8 @@
             </div>
 
             <!-- หมายเหตุ -->
-            <div 
-              v-if="detail.note" 
+            <div
+              v-if="detail.note"
               class="flex justify-between items-center text-sm"
             >
               <span class="text-gray-600">หมายเหตุ:</span>
@@ -384,7 +384,7 @@
             <!-- ยอดสุทธิ -->
             <div class="flex justify-between items-center">
               <span class="font-bold text-gray-800">ยอดสุทธิ:</span>
-              <span class="font-bold text-lg" 
+              <span class="font-bold text-lg"
                 :class="detail.netAmount >= 0 ? 'text-green-600' : 'text-red-600'"
               >
                 {{ formatNumber(detail.netAmount) }} ฾
@@ -693,7 +693,7 @@ const saveData = async () => {
     moneyType: formData.value.moneyType,
     projectCode: formData.value.projectCode,
     netTotalAmount: netTotalAmount.value,
-    
+
     receiptList: morelist.value.map(row => {
       const rowTotal = row.selectedItems?.reduce((sum, item) => {
         return item.checked ? sum + (Number(item.amount) || 0) : sum
@@ -725,9 +725,9 @@ const saveData = async () => {
 
   try {
     const response = await axios.post('/saveReceipt', payload)
-    
+
     console.log('บันทึกสำเร็จ:', response.data)
-    
+
     // ✅ แสดง success alert
     await Swal.fire({
       icon: 'success',
@@ -738,21 +738,21 @@ const saveData = async () => {
       timer: 2000,
       timerProgressBar: true
     })
-    
+
     // กลับไปหน้าหลัก
     router.push('/')
-    
+
   } catch (err) {
     console.error('Error:', err)
-    
+
     // ✅ แสดง error alert
     let errorMessage = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'
-    
+
     if (err.response) {
       // Server ตอบกลับมาแล้วแต่มี error
       console.error('Status:', err.response.status)
       console.error('Data:', err.response.data)
-      
+
       if (err.response.status === 409) {
         errorMessage = 'รหัสโครงการนี้มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น'
       } else if (err.response.status === 400) {
@@ -769,7 +769,7 @@ const saveData = async () => {
       console.error('Error:', err.message)
       errorMessage = err.message
     }
-    
+
     Swal.fire({
       icon: 'error',
       title: 'บันทึกไม่สำเร็จ',

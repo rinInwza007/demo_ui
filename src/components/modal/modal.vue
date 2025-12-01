@@ -18,7 +18,7 @@
               <p class="text-purple-100 text-sm">กรุณาเลือกและกรอกรายละเอียด</p>
             </div>
           </div>
-          <button 
+          <button
             @click="closeModal"
             class="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
           >
@@ -31,33 +31,33 @@
         <!-- Body -->
         <div class="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
           <div class="space-y-4">
-            <div 
+            <div
               v-for="(item, index) in items"
               :key="index"
               class="border-2 rounded-xl p-5 transition-all duration-200"
-              :class="item.checked 
-                ? getColorClasses(item.name) + ' shadow-md' 
+              :class="item.checked
+                ? getColorClasses(item.name) + ' shadow-md'
                 : 'border-gray-200 bg-white hover:border-gray-300'"
             >
               <!-- Header ของแต่ละรายการ -->
               <label class="flex items-center gap-3 cursor-pointer group">
                 <div class="relative flex items-center">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     v-model="item.checked"
                     @change="handleInput"
                     class="w-5 h-5 rounded border-2 border-gray-300   cursor-pointer transition-all"
                   />
                 </div>
-                
-                <div 
+
+                <div
                   class="p-2 rounded-lg transition-all"
                   :class="[item.checked ? 'bg-white shadow-sm' : 'bg-gray-100', getIconColor(item.name)]"
                 >
                   <component :is="getIcon(item.name)" class="w-5 h-5" />
                 </div>
-                
-                <span 
+
+                <span
                   class="text-lg font-semibold transition-colors"
                   :class="item.checked ? 'text-gray-800' : 'text-gray-600'"
                 >
@@ -175,20 +175,20 @@
             </span>
             <span v-else class="text-gray-400">ยังไม่ได้เลือกรายการ</span>
           </div>
-          
+
           <div class="flex gap-3">
-            <button 
+            <button
               @click="closeModal"
               class="px-6 py-2.5 bg-white border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all"
             >
               ยกเลิก
             </button>
-            <button 
+            <button
               @click="confirmSelection"
               :disabled="!isValid"
               class="px-6 py-2.5 font-medium rounded-lg transition-all shadow-lg relative overflow-hidden group"
-              :class="isValid 
-                ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800 shadow-purple-500/30' 
+              :class="isValid
+                ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800 shadow-purple-500/30'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'"
             >
               <span class="relative z-10">บันทึกข้อมูล</span>
@@ -229,14 +229,14 @@ const BuildingIcon = {
   `
 }
 
-const props = defineProps({ 
+const props = defineProps({
   show: Boolean,
   items: Array
 })
 
 const emit = defineEmits(['close', 'update:selected'])
 
-const hasConfirmed = ref(false) 
+const hasConfirmed = ref(false)
 const errorMessage = ref('')
 const savedData = ref({})
 
@@ -247,40 +247,40 @@ const checkedCount = computed(() => {
 
 const isValid = computed(() => {
   const checkedItems = props.items?.filter(i => i.checked) || []
-  
+
   if (checkedItems.length === 0) {
     return false
   }
-  
+
   return checkedItems.every(item => {
     // ✅ เช็ค referenceNo และ amount ก่อน
     const hasReferenceNo = item.referenceNo && String(item.referenceNo).trim() !== ''
     const hasAmount = item.amount && parseFloat(item.amount) > 0
-    
+
     if (!hasReferenceNo || !hasAmount) {
       return false
     }
-    
+
     if (item.NumCheck !== undefined) {
       return item.NumCheck && String(item.NumCheck).trim() !== ''
     }
     if (item.AccountNum !== undefined) {
-      const hasAccountNum = item.AccountNum !== null && 
-                           item.AccountNum !== undefined && 
+      const hasAccountNum = item.AccountNum !== null &&
+                           item.AccountNum !== undefined &&
                            String(item.AccountNum).trim() !== ''
-      const hasAccountName = item.AccountName && 
+      const hasAccountName = item.AccountName &&
                             String(item.AccountName).trim() !== ''
-      
+
       console.log('Validating transfer:', {
         AccountNum: item.AccountNum,
         AccountName: item.AccountName,
         hasAccountNum,
         hasAccountName
       })
-      
+
       return hasAccountNum && hasAccountName
     }
-    
+
     return true
   })
 })
@@ -304,13 +304,13 @@ const getDisplayName = (itemName) => {
 const getColorClasses = (itemName) => {
   const name = getDisplayName(itemName)
   switch(name) {
-    case 'เงินสด': 
+    case 'เงินสด':
       return 'border-green-200 bg-green-50 hover:border-green-300'
-    case 'เช็คธนาคาร': 
+    case 'เช็คธนาคาร':
       return 'border-blue-200 bg-blue-50 hover:border-blue-300'
-    case 'ฝากเข้าบัญชี': 
+    case 'ฝากเข้าบัญชี':
       return 'border-orange-200 bg-orange-50 hover:border-orange-300'
-    default: 
+    default:
       return 'border-gray-200 bg-gray-50'
   }
 }
@@ -335,10 +335,10 @@ const confirmSelection = () => {
     errorMessage.value = 'กรุณากรอกข้อมูลให้ครบถ้วน'
     return
   }
-  
+
   const selected = props.items.filter(i => i.checked).map(i => {
     const item = {...i}
-    
+
     if (i.name === 'cash' || i.name === 'เงินสด') {
       item.moneyType = 'เงินสด'
     } else if (i.name === 'bank' || i.name === 'เช็คธนาคาร') {
@@ -349,10 +349,10 @@ const confirmSelection = () => {
       item.accountNumber = i.AccountNum
       item.accountName = i.AccountName
     }
-    
+
     return item
   })
-  
+
   props.items.forEach(item => {
     const data = {
       checked: item.checked,
@@ -371,7 +371,7 @@ const confirmSelection = () => {
     data.moneyType = item.moneyType
     savedData.value[item.name] = data
   })
-  
+
   errorMessage.value = ''
   hasConfirmed.value = true
   emit('update:selected', selected)

@@ -340,15 +340,12 @@ const confirmSelection = () => {
     const item = {...i}
     
     if (i.name === 'cash' || i.name === 'เงินสด') {
-      item.type = 'เงินสด'
-      item.paymentType = 'เงินสด'
+      item.moneyType = 'เงินสด'
     } else if (i.name === 'bank' || i.name === 'เช็คธนาคาร') {
-      item.type = 'เช็คธนาคาร'
-      item.paymentType = 'เช็คธนาคาร'
+      item.moneyType = 'เช็คธนาคาร'
       item.checkNumber = i.NumCheck
     } else if (i.name === 'transfer' || i.name === 'ฝากเข้าบัญชี') {
-      item.type = 'ฝากเข้าบัญชี'
-      item.paymentType = 'ฝากเข้าบัญชี'
+      item.moneyType = 'ฝากเข้าบัญชี'
       item.accountNumber = i.AccountNum
       item.accountName = i.AccountName
     }
@@ -371,7 +368,7 @@ const confirmSelection = () => {
       data.AccountNum = item.AccountNum
       data.AccountName = item.AccountName
     }
-
+    data.moneyType = item.moneyType
     savedData.value[item.name] = data
   })
   

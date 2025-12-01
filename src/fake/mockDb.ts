@@ -81,11 +81,11 @@ export function sanitizeItem(it: ReceiptItem): ReceiptItem {
     netAmount: Number.isFinite(it.netAmount) ? it.netAmount : 0,
     paymentDetails: Array.isArray(it.paymentDetails) 
       ? it.paymentDetails.map(p => ({
-          type: (p.type ?? '').trim(),
+          moneyType: (p.moneyType ?? p.type ?? '').trim(),
           amount: Number.isFinite(p.amount) ? p.amount : 0,
           referenceNo: (p.referenceNo != null ? String(p.referenceNo) : '').trim(),
-          checkNumber: p.checkNumber?.trim() || null,
-          accountNumber: p.accountNumber?.trim() || null,
+          checkNumber: p.checkNumber != null ? String(p.checkNumber).trim() : '',
+          accountNumber: p.checkNumber != null ? String(p.checkNumber).trim() : '',
           accountName: p.accountName?.trim() || null,
         }))
       : [],
@@ -97,9 +97,8 @@ export function sanitizeReceipt(r: Receipt): Receipt {
     fullName: (r.fullName ?? '').trim(),
     phone: (r.phone ?? '').trim(),
     affiliationId: (r.affiliationId ?? '').trim(),
-    affiliationName: (r.affiliationName ?? '').trim(),
+    affiliationName: (r.mainAffiliationName ?? '').trim(),
     fundId: (r.fundId ?? '').trim(),
-    mainAffiliationName: (r.mainAffiliationName ?? '').trim(),
     subAffiliationName: (r.subAffiliationName ?? '').trim(),
     fundName: (r.fundName ?? '').trim(),
     moneyType: (r.moneyType ?? '').trim(),

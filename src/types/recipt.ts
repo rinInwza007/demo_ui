@@ -26,7 +26,6 @@ export interface ReceiptItem {
   keyword?: string[];
   subtotal?: number;
   netAmount?: number;
-  paymentDetails?: PaymentDetail[];
 }
 
 export interface Receipt {

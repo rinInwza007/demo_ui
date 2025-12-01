@@ -59,36 +59,22 @@
       </div>
 
       <!-- Table List -->
-      <div class="pt-10 px-6 mt-1">
+      <div class="pt-10 px-6 mt-1 ">
         <TableBase :items="items">
       <template #actions="{ item }">
+  <ActionButtons
+    :item="item"
+    :showEdit="true"
+    :show-view="true"
+    :showLock="true"
+    :showDelete="true"
 
-        <!-- ดูข้อมูล -->
-        <button @click="view(item)" v-tippy="'ดูข้อมูล'">
-          <i class="material-symbols-outlined text-blue-500">visibility</i>
-        </button>
-
-        <!-- แก้ไข -->
-        <button @click="edit(item)" v-tippy="'แก้ไข'">
-          <i class="material-symbols-outlined text-indigo-500">edit</i>
-        </button>
-
-        <!-- ล็อก -->
-        <button @click="toggleLock(item)" v-tippy="'ล็อก/ปลดล็อก'">
-          <i
-            class="material-symbols-outlined"
-            :class="item.isLocked ? 'text-amber-600' : 'text-green-600'"
-          >
-            {{ item.isLocked ? 'lock' : 'lock_open_right' }}
-          </i>
-        </button>
-
-        <!-- ลบ -->
-        <button @click="removeItem(item)" v-tippy="'ลบ'">
-          <i class="material-symbols-outlined text-red-500">delete</i>
-        </button>
-
-      </template>
+    @edit="edit"
+    @lock="toggleLock"
+    @delete="removeItem"
+    @view="view"
+  />
+</template>
     </TableBase>
       </div>
 
@@ -110,6 +96,8 @@ import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 import { setupAxiosMock } from '@/fake/mockAxios';
 
+
+
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Select from '@/components/input/select/select.vue'
@@ -121,6 +109,8 @@ import goback from '@/components/Button/goback.vue'
 import dropdrow from '@/components/dropdrow/dropdrow.vue'
 import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
 import CascadingSelect from "@/components/input/select/CascadingSelect.vue"
+import ActionButtons from '@/components/Actionbutton/ActionButtons.vue'
+
 
 
 setupAxiosMock();
@@ -204,10 +194,5 @@ const removeItem = async (item:any) => {
 }
 
 </script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');
 
-body, * {
-  font-family: 'Sarabun', 'sans-serif';
-}
-</style>
+

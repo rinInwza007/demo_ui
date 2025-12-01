@@ -149,18 +149,30 @@ const options = {
   สถาบันนวัตกรรมและถ่ายทอดเทคโนโลยี: [],
   สถาบันนวัตกรรมการเรียนรู้: [],
 }
+const moneyTypeLabel: Record<string, string> = {
+  cash: 'เงินสด',
+  bank: 'เช็คธนาคาร',
+  transfer: 'ฝากเข้าบัญชี',
+  debtor: 'ลูกหนี้',
+  other: 'อื่นๆ',
+};
 
 const mapReceiptToRow = (r: any) => {
-  const fileTypesArray: string[] =
-    r.receiptList?.flatMap(
-      (item: any) =>
-        (item.paymentDetails || []).map((p: any) => p.moneyType?.trim()).filter((t: string) => !!t), // กรองค่าที่ว่าง
-    ) || []
+const fileTypesArray: string[] =
+  r.receiptList?.flatMap((item: any) => {
+    const fromPaymentDetails = (item.paymentDetails || [])
+      .map((p: any) => p.moneyType?.trim())
+      .filter((t: string) => !!t);
 
-  // เอา Set เพื่อเอาเฉพาะค่าที่ไม่ซ้ำ
-  const uniqueFileTypes = Array.from(new Set(fileTypesArray))
+    const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : [];
 
-  const fileType = uniqueFileTypes.length > 0 ? uniqueFileTypes.join(', ') : '-'
+    return [...fromPaymentDetails, ...fromReceiptItem];
+  }) || [];
+
+const uniqueFileTypes = Array.from(new Set(fileTypesArray))
+const fileType = uniqueFileTypes.length > 0
+  ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
+  : '-'
   return {
     id: r.projectCode,
     statusColorClass: 'text-red-600',

@@ -336,25 +336,22 @@ const confirmSelection = () => {
     return
   }
   
-const selected = props.items.filter(i => i.checked).map(i => {
-  const item = {...i}
-  const name = (i.name || '').trim();
-
-  if (name === 'cash' || name === 'เงินสด') {
-    item.moneyType = 'cash';
-  } else if (name === 'bank' || name === 'เช็คธนาคาร') {
-    item.moneyType = 'bank';
-    item.checkNumber = i.NumCheck;
-  } else if (name === 'transfer' || name === 'ฝากเข้าบัญชี') {
-    item.moneyType = 'transfer';
-    item.accountNumber = i.AccountNum;
-    item.accountName = i.AccountName;
-  } else {
-    item.moneyType = 'other';
-  }
-
-  return item;
-});
+  const selected = props.items.filter(i => i.checked).map(i => {
+    const item = {...i}
+    
+    if (i.name === 'cash' || i.name === 'เงินสด') {
+      item.moneyType = 'cash'
+    } else if (i.name === 'bank' || i.name === 'เช็คธนาคาร') {
+      item.moneyType = 'bank'
+      item.checkNumber = i.NumCheck
+    } else if (i.name === 'transfer' || i.name === 'ฝากเข้าบัญชี') {
+      item.moneyType = 'transfer'
+      item.accountNumber = i.AccountNum
+      item.accountName = i.AccountName
+    }
+    
+    return item
+  })
   
   props.items.forEach(item => {
     const data = {

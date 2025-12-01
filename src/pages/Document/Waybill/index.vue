@@ -713,7 +713,7 @@ const saveData = async () => {
           row.selectedItems
             ?.filter((item) => item.checked)
             .map((item) => ({
-              type: item.type || item.paymentType || 'ไม่ระบุ',
+              moneyType: item.moneyType,
               amount: Number(item.amount) || 0,
               referenceNo: item.referenceNo || '',
               checkNumber: item.checkNumber || item.NumCheck || null,

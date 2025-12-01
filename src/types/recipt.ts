@@ -26,6 +26,7 @@ export interface ReceiptItem {
   keyword?: string[];
   subtotal?: number;
   netAmount?: number;
+  paymentDetails?: PaymentDetail[];
 }
 
 export interface Receipt {
@@ -53,6 +54,14 @@ export interface Receipt {
 
   /** List of receipt items */
   receiptList: ReceiptItem[];
+}
+export interface PaymentDetail {
+  moneyType: MoneyType | string;
+  amount: number;
+  referenceNo: string;
+  checkNumber?: string;
+  accountNumber?: string;
+  accountName?: string | null;
 }
 
 export interface user {

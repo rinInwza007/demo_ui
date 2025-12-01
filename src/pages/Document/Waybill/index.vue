@@ -102,18 +102,18 @@
                   ขอนำส่งเงิน <span class="text-red-500">*</span>
                 </label>
                 <select
-                  id="moneyType"
+                  id="sendmoney"
                   placeholder=""
                   autocomplete="off"
-                  v-model="formData.moneyType"
+                  v-model="formData.sendmoney"
                   class="transition-all duration-200"
                 >
                   <option value=""></option>
                   <option value="รายได้">รายได้</option>
                   <option value="เงินโครงการ">เงินโครงการ</option>
                 </select>
-                <span v-if="errors.moneyType" class="text-red-600 text-xs">
-                  {{ errors.moneyType }}
+                <span v-if="errors.sendmoney" class="text-red-600 text-xs">
+                  {{ errors.sendmoney }}
                 </span>
               </div>
 
@@ -457,6 +457,7 @@ import { useRowManager } from '@/components/Function/FuncForm'
 import KeywordTomSelect from '@/components/TomSelect/KeywordTomSelect.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import axios from 'axios'
+import Swal from 'sweetalert2'
 import { setupAxiosMock } from '@/fake/mockAxios'
 const reciptStore = useReceiptStore() // สร้าง instance
 setupAxiosMock()
@@ -482,7 +483,7 @@ const formData = ref({
   subAffiliationName: '',
   fundName: '',
   projectCode: '',
-  moneyType: null,
+  sendmoney: null,
   receiptList: '',
 })
 const itemNameInstances = ref({})
@@ -490,7 +491,7 @@ const errors = ref({})
 
 onMounted(() => {
   // TomSelect สำหรับขอนำส่งเงิน
-  const moneyTypeEl = document.getElementById('moneyType')
+  const moneyTypeEl = document.getElementById('sendmoney')
   if (moneyTypeEl && !moneyTypeEl.tomselect) {
     new TomSelect(moneyTypeEl, {
       create: true,
@@ -498,7 +499,7 @@ onMounted(() => {
       allowEmptyOption: true,
       placeholder: 'รายได้/เงินโครงการ',
       onChange(value) {
-        formData.value.moneyType = value
+        formData.value.sendmoney = value
       },
     })
     applyCSSToTomSelect(moneyTypeEl)
@@ -633,8 +634,8 @@ const saveData = async () => {
     errors.value.subCategory = 'กรุณาเลือก "หน่วยงานย่อย"'
     hasError = true
   }
-  if (!formData.value.moneyType) {
-    errors.value.moneyType = 'กรุณาเลือก "ขอนำส่งเงิน"'
+  if (!formData.value.sendmoney) {
+    errors.value.sendmoney = 'กรุณาเลือก "ขอนำส่งเงิน"'
     hasError = true
   }
   if (!formData.value.projectCode) {
@@ -662,23 +663,37 @@ const saveData = async () => {
     }
   })
 
-  if (hasError) return
+  if (hasError) {
+    // ✅ แจ้งเตือนเมื่อมี error
+    Swal.fire({
+      icon: 'error',
+      title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+      text: 'มีข้อมูลบางช่องที่ยังไม่ได้กรอกหรือกรอกไม่ถูกต้อง',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#7E22CE'
+    })
+    return
+  }
 
+  // แสดง loading
+  Swal.fire({
+    title: 'กำลังบันทึกข้อมูล...',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading()
+    }
+  })
   // สร้าง payload ที่มีข้อมูลครบถ้วน
   const payload = {
-    // ข้อมูลผู้บันทึก
     fullName: formData.value.fullName,
     phone: formData.value.phone,
-    
-    // ข้อมูลหน่วยงาน
     mainAffiliationName: mainCategory.value,
     subAffiliationName: subCategory.value,
-    
-    // ข้อมูลกองทุนและโครงการ
     fundName: formData.value.fundName,
     moneyType: formData.value.moneyType,
     projectCode: formData.value.projectCode,
     netTotalAmount: netTotalAmount.value,
+    
     receiptList: morelist.value.map(row => {
       const rowTotal = row.selectedItems?.reduce((sum, item) => {
         return item.checked ? sum + (Number(item.amount) || 0) : sum
@@ -707,24 +722,62 @@ const saveData = async () => {
       }
     })
   }
-axios.post('/saveReceipt', payload)
-  .then(res => {
-    console.log('บันทึกสำเร็จ:', res.data)
-  })
-  .catch(err => {
+
+  try {
+    const response = await axios.post('/saveReceipt', payload)
+    
+    console.log('บันทึกสำเร็จ:', response.data)
+    
+    // ✅ แสดง success alert
+    await Swal.fire({
+      icon: 'success',
+      title: 'บันทึกสำเร็จ!',
+      text: `บันทึกใบนำส่งเงิน ${formData.value.projectCode} เรียบร้อยแล้ว`,
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#7E22CE',
+      timer: 2000,
+      timerProgressBar: true
+    })
+    
+    // กลับไปหน้าหลัก
+    router.push('/')
+    
+  } catch (err) {
+    console.error('Error:', err)
+    
+    // ✅ แสดง error alert
+    let errorMessage = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'
+    
     if (err.response) {
-      // server ตอบแล้ว แต่ error
+      // Server ตอบกลับมาแล้วแต่มี error
       console.error('Status:', err.response.status)
       console.error('Data:', err.response.data)
+      
+      if (err.response.status === 409) {
+        errorMessage = 'รหัสโครงการนี้มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น'
+      } else if (err.response.status === 400) {
+        errorMessage = err.response.data.message || 'ข้อมูลไม่ถูกต้อง'
+      } else {
+        errorMessage = err.response.data.message || errorMessage
+      }
     } else if (err.request) {
-      // request ส่งไปแล้ว แต่ไม่มี response
-      console.error('No response received:', err.request)
+      // Request ส่งไปแล้วแต่ไม่มี response
+      console.error('No response:', err.request)
+      errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
     } else {
-      // error อื่นๆ
-      console.error('Error', err.message)
+      // Error อื่นๆ
+      console.error('Error:', err.message)
+      errorMessage = err.message
     }
-  })
-
+    
+    Swal.fire({
+      icon: 'error',
+      title: 'บันทึกไม่สำเร็จ',
+      text: errorMessage,
+      confirmButtonText: 'ลองอีกครั้ง',
+      confirmButtonColor: '#DC2626'
+    })
+  }
 }
 
 const clearRowError = (rowIndex, field) => {

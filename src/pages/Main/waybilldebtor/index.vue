@@ -23,13 +23,16 @@
 
         <selectdatetime />
 
-         <CascadingSelect
+        <div class="pr-6 margin-left-6">
+  <CascadingSelect
     v-model:main="selectedMain"
     v-model:sub1="selectedSub1"
     v-model:sub2="selectedSub2"
     :options="options"
     label="หน่วยงาน"
   />
+</div>
+
 
         <search v-model="searchText" />
 
@@ -210,4 +213,25 @@ const removeItem = async (item:any) => {
 body, * {
   font-family: 'Sarabun', 'sans-serif';
 }
+/* --- ทำให้ช่อง TomSelect เท่าช่องค้นหา --- */
+.ts-control {
+  min-height: 48px !important;
+  height: 48px !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid #d1d5db !important;
+  display: flex;
+  align-items: center;
+}
+
+.ts-wrapper.single .ts-control {
+  height: 48px !important;
+}
+
+
+.ts-control input {
+  font-size: 1rem !important;
+}
+
+
 </style>

@@ -69,16 +69,6 @@ export function loadReceipts(): Receipt[] {
 export function saveReceipts(list: Receipt[]) {
   localStorage.setItem(LS_KEY, JSON.stringify(list));
 }
-
-const mapMoneyType = (val: string) => {
-  switch(val.trim()) {
-    case 'เงินสด': return 'cash';
-    case 'เช็คธนาคาร': return 'bank';
-    case 'ฝากเข้าบัญชี': return 'transfer';
-    default: return val; // ถ้าเป็นค่าอื่น ก็เอาไว้
-  }
-};
-
 // sanitize helpers
 export function sanitizeItem(it: ReceiptItem): ReceiptItem {
   return {
@@ -90,7 +80,7 @@ export function sanitizeItem(it: ReceiptItem): ReceiptItem {
     netAmount: Number.isFinite(it.netAmount) ? it.netAmount : 0,
     paymentDetails: Array.isArray(it.paymentDetails)
       ? it.paymentDetails.map(p => ({
-          moneyType: mapMoneyType(p.moneyType ?? p.type ?? ''),
+          moneyType:(p.moneyType ?? p.type ?? ''),
           amount: Number.isFinite(p.amount) ? p.amount : 0,
           referenceNo: (p.referenceNo != null ? String(p.referenceNo) : '').trim(),
           checkNumber: p.checkNumber != null ? String(p.checkNumber).trim() : '',

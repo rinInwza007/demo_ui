@@ -12,7 +12,7 @@
         </div>
 
         <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
-          ล้างหนี้
+          ล้างลูกหนี้
         </h1>
 
         <div></div>
@@ -25,7 +25,8 @@
 
          <CascadingSelect
     v-model:main="selectedMain"
-    v-model:sub="selectedSub"
+    v-model:sub1="selectedSub1"
+    v-model:sub2="selectedSub2"
     :options="options"
     label="หน่วยงาน"
   />
@@ -58,36 +59,23 @@
       </div>
 
       <!-- Table List -->
-      <div class="pt-10 px-6 mt-1">
+      <div class="pt-10 px-6 mt-1 ">
         <TableBase :items="items">
       <template #actions="{ item }">
+  <ActionButtons
+    :item="item"
+    :showEdit="true"
+    :show-view="true"
+    :showLock="true"
+    :showDelete="true"
+    :show-cleardedtor="true"
 
-        <!-- ดูข้อมูล -->
-        <button @click="view(item)" v-tippy="'ดูข้อมูล'">
-          <i class="material-symbols-outlined text-blue-500">visibility</i>
-        </button>
-
-        <!-- แก้ไข -->
-        <button @click="edit(item)" v-tippy="'แก้ไข'">
-          <i class="material-symbols-outlined text-indigo-500">edit</i>
-        </button>
-
-        <!-- ล็อก -->
-        <button @click="toggleLock(item)" v-tippy="'ล็อก/ปลดล็อก'">
-          <i
-            class="material-symbols-outlined"
-            :class="item.isLocked ? 'text-amber-600' : 'text-green-600'"
-          >
-            {{ item.isLocked ? 'lock' : 'lock_open_right' }}
-          </i>
-        </button>
-
-        <!-- ลบ -->
-        <button @click="removeItem(item)" v-tippy="'ลบ'">
-          <i class="material-symbols-outlined text-red-500">delete</i>
-        </button>
-
-      </template>
+    @edit="edit"
+    @lock="toggleLock"
+    @delete="removeItem"
+    @view="view"
+  />
+</template>
     </TableBase>
       </div>
 
@@ -103,10 +91,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
+import { options } from "@/components/data/departments"
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 import { setupAxiosMock } from '@/fake/mockAxios';
+
+
 
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
@@ -119,6 +110,8 @@ import goback from '@/components/Button/goback.vue'
 import dropdrow from '@/components/dropdrow/dropdrow.vue'
 import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
 import CascadingSelect from "@/components/input/select/CascadingSelect.vue"
+import ActionButtons from '@/components/Actionbutton/ActionButtons.vue'
+
 
 
 setupAxiosMock();
@@ -129,30 +122,24 @@ const items = ref<any[]>([])
 const searchText = ref('')
 const category = ref('')
 
-const selectedMain = ref("")
-const selectedSub = ref("")
+const selectedMain = ref("");
+const selectedSub1 = ref("");
+const selectedSub2 = ref("");
 
-const options = {
-  คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ: ["ศูนย์ศึกษาเศรษฐกิจพอเพียงและความอยู่รอดของมนุษยชาติ", "ศูนย์ฝึกอบรมวิชาชีพและบริการนานาชาติด้านเกษตรและอาหาร"],
-  คณะทันตแพทยศาสตร์: ["โรงพยาบาลทันตกรรมมหาวิทยาลัยพะเยา"],
-  คณะพยาบาลศาสตร์ : ["ศูนย์พัฒนาเด็กเล็ก"],
-  คณะพลังงานและสิ่งแวดล้อม: ["1.ศูนย์วิจัยพลังงานทดแทนและสิ่งแวดล้อม","1.1หน่วยปฏิบัติการทดสอบทางสิ่งแวดล้อม","1.2 หน่วยรับรองการจัดการก๊าซเรือนกระจก"],
-  คณะแพทยศาสตร์: ["โรงพยาบาลมหาวิทยาลัยพะเยา"],
-  คณะเภสัชศาสตร์: ["สถานปฏิบัติการเภสัชกรรมชุมชน"],
-  คณะวิทยาศาสตร์: ["ศูนย์การเรียนรู้ความเป็นเลิศทางวิทยาศาสตร์และบริการวิชาการ"],
-  คณะวิศวกรรมศาสตร์: ["ศูนย์วิจัยและบริการวิชาการวิศวกรรม","ศูนย์เทคโนโลยียานยนต์และขนส่ง"],
-  คณะสถาปัตยกรรมศาสตร์และศิลปกรรมศาสตร์: ["ศูนย์บริการวิชาการงานสร้างสรรค์"],
-  คณะศิลปศาสตร์: ["ศูนย์ภาษา"],
-  คณะสหเวชศาสตร์: ["ศูนย์บริการสุขภาพสหเวชศาสตร์"],
-  วิทยาลัยการจัดการ: [],
-  กองทรัพย์สิน: ["งานบริหารพื้นที่","งานโรงแรมฟ้ามุ่ยและเอื้องคำ","งานร้านค้าสวัสดิการ"],
-  โรงเรียนสาธิตมหาวิทยาลัยพะเยา: [],
-  วิทยาเขตเชียงราย: [],
-  สถาบันนวัตกรรมและถ่ายทอดเทคโนโลยี: [],
-  สถาบันนวัตกรรมการเรียนรู้: [],
-};
+
+
 
 const mapReceiptToRow = (r: any) => {
+const fileTypesArray: string[] = r.receiptList?.flatMap((item: any) =>
+  (item.paymentDetails || [])
+    .map((p: any) => p.moneyType?.trim())
+    .filter((t: string) => !!t) // กรองค่าที่ว่าง
+) || [];
+
+// เอา Set เพื่อเอาเฉพาะค่าที่ไม่ซ้ำ
+const uniqueFileTypes = Array.from(new Set(fileTypesArray));
+
+const fileType = uniqueFileTypes.length > 0 ? uniqueFileTypes.join(", ") : "-";
   return {
     id: r.projectCode,
     statusColorClass: "text-red-600",
@@ -161,8 +148,11 @@ const mapReceiptToRow = (r: any) => {
     year: "2568",
     owner: r.fullName,
     time: "-",
-    fileType: "รายการ",
-    amount: r.receiptList.reduce((sum: number, it: any) => sum + it.amount, 0) + " บาท",
+    fileType: fileType,
+    amount: r.netTotalAmount
+    ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', { minimumFractionDigits: 2 }) + " บาท"
+    : "0.00 บาท",
+
     isLocked: false,
   }
 }
@@ -218,10 +208,5 @@ const removeItem = async (item:any) => {
 }
 
 </script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');
 
-body, * {
-  font-family: 'Sarabun', 'sans-serif';
-}
-</style>
+

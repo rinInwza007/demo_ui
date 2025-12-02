@@ -272,143 +272,143 @@
           </div>
 
           <!-- Total Amount -->
-  <div>
-    <div
-      v-if="detailsByRow.length > 0"
-      class="bg-white border border-gray-200 rounded-xl p-6 mb-6"
-    >
-      <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-        <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
-        รายละเอียดการชำระเงิน
-      </h3>
-
-      <div class="space-y-4">
-        <div
-          v-for="(detail, idx) in detailsByRow"
-          :key="idx"
-          class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-        >
-          <!-- Header รายการ -->
-          <div class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs"
-              >รายการที่ {{ detail.rowIndex + 1 }}</span
-            >
-            <span>{{ detail.itemName || 'ไม่ระบุชื่อรายการ' }}</span>
-          </div>
-
-          <!-- รายการชำระเงิน -->
-          <div class="space-y-2 mb-4">
-  <div
-    v-for="(item, itemIdx) in detail.items"
-    :key="itemIdx"
-    class="bg-gray-50 rounded p-3 text-sm"
-  >
-    <div class="flex justify-between items-start mb-2">
-      <!-- แสดง type พร้อม fallback -->
-      <span
-        class="font-medium px-2 py-1 rounded"
-        :class="{
-          'bg-green-100 text-green-700': item.type === 'เงินสด',
-          'bg-blue-100 text-blue-700': item.type === 'เช็คธนาคาร',
-          'bg-orange-100 text-orange-700': item.type === 'ฝากเข้าบัญชี',
-          'bg-gray-100 text-gray-700': !item.type || item.type === 'ไม่ระบุ'
-        }"
-      >
-        {{ item.type || 'ไม่ระบุประเภท' }}
-      </span>
-      <span class="font-bold text-gray-800">
-        {{ formatNumber(item.amount) }} ฿
-      </span>
-    </div>
-
-    <div class="space-y-1 text-xs text-gray-600">
-      <div class="flex justify-between">
-        <span>เลขที่อ้างอิง:</span>
-        <span class="font-medium">{{ item.referenceNo || '–' }}</span>
-      </div>
-
-      <!-- แสดงเฉพาะเช็คธนาคาร -->
-      <div v-if="item.type === 'เช็คธนาคาร' && item.checkNumber" class="flex justify-between">
-        <span>เลขที่เช็ค:</span>
-        <span class="font-medium">{{ item.checkNumber }}</span>
-      </div>
-
-      <!-- แสดงเฉพาะฝากเข้าบัญชี -->
-      <template v-if="item.type === 'ฝากเข้าบัญชี'">
-        <div v-if="item.accountNumber" class="flex justify-between">
-          <span>เลขบัญชี:</span>
-          <span class="font-medium">{{ item.accountNumber }}</span>
-        </div>
-        <div v-if="item.accountName" class="flex justify-between">
-          <span>ชื่อบัญชี:</span>
-          <span class="font-medium">{{ item.accountName }}</span>
-        </div>
-      </template>
-    </div>
-  </div>
-          </div>
-
-          <!-- Summary ของรายการนี้ -->
-          <div class="border-t border-gray-200 pt-3 space-y-2">
-            <!-- ยอดรวมก่อนหักค่าธรรมเนียม -->
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-gray-600">ยอดรวม:</span>
-              <span class="font-semibold text-gray-800">
-                {{ formatNumber(detail.subtotal) }} ฿
-              </span>
-            </div>
-
-            <!-- ค่าธรรมเนียม -->
+          <div>
             <div
-              v-if="detail.fee && detail.fee > 0"
-              class="flex justify-between items-center text-sm"
+              v-if="detailsByRow.length > 0"
+              class="bg-white border border-gray-200 rounded-xl p-6 mb-6"
             >
-              <span class="text-gray-600">หัก ค่าธรรมเนียม:</span>
-              <span class="font-semibold text-red-600">
-                - {{ formatNumber(detail.fee) }} ฿
-              </span>
+              <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
+                รายละเอียดการชำระเงิน
+              </h3>
+
+              <div class="space-y-4">
+                <div
+                  v-for="(detail, idx) in detailsByRow"
+                  :key="idx"
+                  class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <!-- Header รายการ -->
+                  <div class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs"
+                      >รายการที่ {{ detail.rowIndex + 1 }}</span
+                    >
+                    <span>{{ detail.itemName || 'ไม่ระบุชื่อรายการ' }}</span>
+                  </div>
+
+                  <!-- รายการชำระเงิน -->
+                  <div class="space-y-2 mb-4">
+                    <div
+                      v-for="(item, itemIdx) in detail.items"
+                      :key="itemIdx"
+                      class="bg-gray-50 rounded p-3 text-sm"
+                    >
+                      <div class="flex justify-between items-start mb-2">
+                        <!-- แสดง type พร้อม fallback -->
+                        <span
+                          class="font-medium px-2 py-1 rounded"
+                          :class="{
+                            'bg-green-100 text-green-700': item.type === 'เงินสด',
+                            'bg-blue-100 text-blue-700': item.type === 'เช็คธนาคาร',
+                            'bg-orange-100 text-orange-700': item.type === 'ฝากเข้าบัญชี',
+                            'bg-gray-100 text-gray-700': !item.type || item.type === 'ไม่ระบุ',
+                          }"
+                        >
+                          {{ item.type || 'ไม่ระบุประเภท' }}
+                        </span>
+                        <span class="font-bold text-gray-800">
+                          {{ formatNumber(item.amount) }} ฿
+                        </span>
+                      </div>
+
+                      <div class="space-y-1 text-xs text-gray-600">
+                        <div class="flex justify-between">
+                          <span>เลขที่อ้างอิง:</span>
+                          <span class="font-medium">{{ item.referenceNo || '–' }}</span>
+                        </div>
+
+                        <!-- แสดงเฉพาะเช็คธนาคาร -->
+                        <div
+                          v-if="item.type === 'เช็คธนาคาร' && item.checkNumber"
+                          class="flex justify-between"
+                        >
+                          <span>เลขที่เช็ค:</span>
+                          <span class="font-medium">{{ item.checkNumber }}</span>
+                        </div>
+
+                        <!-- แสดงเฉพาะฝากเข้าบัญชี -->
+                        <template v-if="item.type === 'ฝากเข้าบัญชี'">
+                          <div v-if="item.accountNumber" class="flex justify-between">
+                            <span>เลขบัญชี:</span>
+                            <span class="font-medium">{{ item.accountNumber }}</span>
+                          </div>
+                          <div v-if="item.accountName" class="flex justify-between">
+                            <span>ชื่อบัญชี:</span>
+                            <span class="font-medium">{{ item.accountName }}</span>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Summary ของรายการนี้ -->
+                  <div class="border-t border-gray-200 pt-3 space-y-2">
+                    <!-- ยอดรวมก่อนหักค่าธรรมเนียม -->
+                    <div class="flex justify-between items-center text-sm">
+                      <span class="text-gray-600">ยอดรวม:</span>
+                      <span class="font-semibold text-gray-800">
+                        {{ formatNumber(detail.subtotal) }} ฿
+                      </span>
+                    </div>
+
+                    <!-- ค่าธรรมเนียม -->
+                    <div
+                      v-if="detail.fee && detail.fee > 0"
+                      class="flex justify-between items-center text-sm"
+                    >
+                      <span class="text-gray-600">หัก ค่าธรรมเนียม:</span>
+                      <span class="font-semibold text-red-600">
+                        - {{ formatNumber(detail.fee) }} ฿
+                      </span>
+                    </div>
+
+                    <!-- หมายเหตุ -->
+                    <div v-if="detail.note" class="flex justify-between items-center text-sm">
+                      <span class="text-gray-600">หมายเหตุ:</span>
+                      <span class="text-gray-700 italic">{{ detail.note }}</span>
+                    </div>
+
+                    <!-- เส้นแบ่ง -->
+                    <div class="border-t border-gray-300 my-2"></div>
+
+                    <!-- ยอดสุทธิ -->
+                    <div class="flex justify-between items-center">
+                      <span class="font-bold text-gray-800">ยอดสุทธิ:</span>
+                      <span
+                        class="font-bold text-lg"
+                        :class="detail.netAmount >= 0 ? 'text-green-600' : 'text-red-600'"
+                      >
+                        {{ formatNumber(detail.netAmount) }} ฾
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <!-- หมายเหตุ -->
-            <div
-              v-if="detail.note"
-              class="flex justify-between items-center text-sm"
-            >
-              <span class="text-gray-600">หมายเหตุ:</span>
-              <span class="text-gray-700 italic">{{ detail.note }}</span>
-            </div>
-
-            <!-- เส้นแบ่ง -->
-            <div class="border-t border-gray-300 my-2"></div>
-
-            <!-- ยอดสุทธิ -->
-            <div class="flex justify-between items-center">
-              <span class="font-bold text-gray-800">ยอดสุทธิ:</span>
-              <span class="font-bold text-lg"
-                :class="detail.netAmount >= 0 ? 'text-green-600' : 'text-red-600'"
-              >
-                {{ formatNumber(detail.netAmount) }} ฾
-              </span>
+            <!-- ยอดรวมทั้งหมด -->
+            <div class="space-y-4">
+              <!-- ยอดสุทธิสุดท้าย -->
+              <div class="bg-[#7E22CE] border rounded-lg p-6">
+                <div class="flex justify-between items-center">
+                  <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด </span>
+                  <span class="text-3xl font-bold text-white">
+                    {{ formatNumber(netTotalAmount) }} บาท
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ยอดรวมทั้งหมด -->
-    <div class="space-y-4">
-
-      <!-- ยอดสุทธิสุดท้าย -->
-      <div class="bg-[#7E22CE] border rounded-lg p-6">
-        <div class="flex justify-between items-center">
-          <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด </span>
-          <span class="text-3xl font-bold text-white">
-            {{ formatNumber(netTotalAmount) }} บาท
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
 
           <!-- Note -->
           <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-6 mt-6">
@@ -465,7 +465,7 @@ const gotomainpage = () => {
   router.push('/')
 }
 const {
-    netTotalAmount,
+  netTotalAmount,
   detailsByRow,
   morelist,
   addRow,
@@ -607,7 +607,6 @@ const formatNumber = (num) => {
   })
 }
 
-
 const saveData = async () => {
   // รีเซ็ต error
   errors.value = {}
@@ -670,7 +669,7 @@ const saveData = async () => {
       title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
       text: 'มีข้อมูลบางช่องที่ยังไม่ได้กรอกหรือกรอกไม่ถูกต้อง',
       confirmButtonText: 'ตกลง',
-      confirmButtonColor: '#7E22CE'
+      confirmButtonColor: '#7E22CE',
     })
     return
   }
@@ -681,7 +680,7 @@ const saveData = async () => {
     allowOutsideClick: false,
     didOpen: () => {
       Swal.showLoading()
-    }
+    },
   })
   // สร้าง payload ที่มีข้อมูลครบถ้วน
   const payload = {
@@ -694,10 +693,11 @@ const saveData = async () => {
     projectCode: formData.value.projectCode,
     netTotalAmount: netTotalAmount.value,
 
-    receiptList: morelist.value.map(row => {
-      const rowTotal = row.selectedItems?.reduce((sum, item) => {
-        return item.checked ? sum + (Number(item.amount) || 0) : sum
-      }, 0) || 0
+    receiptList: morelist.value.map((row) => {
+      const rowTotal =
+        row.selectedItems?.reduce((sum, item) => {
+          return item.checked ? sum + (Number(item.amount) || 0) : sum
+        }, 0) || 0
 
       const rowFee = Number(row.fee) || 0
       const rowNetAmount = rowTotal - rowFee
@@ -706,21 +706,22 @@ const saveData = async () => {
         itemName: row.itemName,
         note: row.note || '',
         fee: rowFee,
-        keyword: Array.isArray(row.keyword) ? row.keyword : (row.keyword ? [row.keyword] : []),
+        keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
         subtotal: rowTotal,
-        netAmount: rowNetAmount,
-        paymentDetails: row.selectedItems
-          ?.filter(item => item.checked)
-          .map(item => ({
-            type: item.type || item.paymentType || 'ไม่ระบุ',
-            amount: Number(item.amount) || 0,
-            referenceNo: item.referenceNo || '',
-            checkNumber: item.checkNumber || item.NumCheck || null,
-            accountNumber: item.accountNumber || item.AccountNum || null,
-            accountName: item.accountName || item.AccountName || null
-          })) || []
+        amount: rowNetAmount,
+        paymentDetails:
+          row.selectedItems
+            ?.filter((item) => item.checked)
+            .map((item) => ({
+              moneyType: item.moneyType,
+              amount: Number(item.amount) || 0,
+              referenceNo: item.referenceNo || '',
+              checkNumber: item.checkNumber || item.NumCheck || null,
+              accountNumber: item.accountNumber || item.AccountNum || null,
+              accountName: item.accountName || item.AccountName || null,
+            })) || [],
       }
-    })
+    }),
   }
 
   try {
@@ -736,12 +737,11 @@ const saveData = async () => {
       confirmButtonText: 'ตกลง',
       confirmButtonColor: '#7E22CE',
       timer: 2000,
-      timerProgressBar: true
+      timerProgressBar: true,
     })
 
     // กลับไปหน้าหลัก
     router.push('/')
-
   } catch (err) {
     console.error('Error:', err)
 
@@ -775,7 +775,7 @@ const saveData = async () => {
       title: 'บันทึกไม่สำเร็จ',
       text: errorMessage,
       confirmButtonText: 'ลองอีกครั้ง',
-      confirmButtonColor: '#DC2626'
+      confirmButtonColor: '#DC2626',
     })
   }
 }

@@ -129,6 +129,16 @@ const selectedSub2 = ref("");
 
 
 const mapReceiptToRow = (r: any) => {
+const fileTypesArray: string[] = r.receiptList?.flatMap((item: any) =>
+  (item.paymentDetails || [])
+    .map((p: any) => p.moneyType?.trim())
+    .filter((t: string) => !!t) // กรองค่าที่ว่าง
+) || [];
+
+// เอา Set เพื่อเอาเฉพาะค่าที่ไม่ซ้ำ
+const uniqueFileTypes = Array.from(new Set(fileTypesArray));
+
+const fileType = uniqueFileTypes.length > 0 ? uniqueFileTypes.join(", ") : "-";
   return {
     id: r.projectCode,
     statusColorClass: "text-red-600",
@@ -137,8 +147,11 @@ const mapReceiptToRow = (r: any) => {
     year: "2568",
     owner: r.fullName,
     time: "-",
-    fileType: "รายการ",
-    amount: r.receiptList.reduce((sum: number, it: any) => sum + it.amount, 0) + " บาท",
+    fileType: fileType,
+    amount: r.netTotalAmount
+    ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', { minimumFractionDigits: 2 }) + " บาท"
+    : "0.00 บาท",
+
     isLocked: false,
   }
 }

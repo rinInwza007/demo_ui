@@ -340,12 +340,12 @@ const confirmSelection = () => {
     const item = {...i}
 
     if (i.name === 'cash' || i.name === 'เงินสด') {
-      item.moneyType = 'เงินสด'
+      item.moneyType = 'cash'
     } else if (i.name === 'bank' || i.name === 'เช็คธนาคาร') {
-      item.moneyType = 'เช็คธนาคาร'
+      item.moneyType = 'bank'
       item.checkNumber = i.NumCheck
     } else if (i.name === 'transfer' || i.name === 'ฝากเข้าบัญชี') {
-      item.moneyType = 'ฝากเข้าบัญชี'
+      item.moneyType = 'transfer'
       item.accountNumber = i.AccountNum
       item.accountName = i.AccountName
     }

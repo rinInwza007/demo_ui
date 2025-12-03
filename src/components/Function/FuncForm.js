@@ -150,6 +150,15 @@ const totalAmount = computed(() => {
   }, 0)
 })
 
+const totalAmountDebtor = computed(() => {
+  return morelist.value.reduce((sum, row) => {
+    // แปลง amount ให้เป็นตัวเลขแบบปลอดภัย
+    const cleanAmount = String(row.amount || '0').replace(/,/g, '').trim()
+    const amount = parseFloat(cleanAmount)
+
+    return sum + (isNaN(amount) || amount < 0 ? 0 : amount)
+  }, 0)
+})
 
 // Computed: ค่าธรรมเนียมรวม
 const totalFee = computed(() => {
@@ -234,6 +243,7 @@ const detailsDebtor = computed(() => {
 
   return {
     detailsDebtor,
+    totalAmountDebtor,
     totalAmount,
     totalFee,
     netTotalAmount,

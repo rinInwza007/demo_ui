@@ -133,12 +133,41 @@
             </div>
           </div>
 
+          <div class="space-y-4">
+            <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <input
+                type="checkbox"
+                id="showBankList"
+                v-model="showBankList"
+                class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+              />
+              <label
+                for="showBankList"
+                class="text-sm font-medium text-gray-700 cursor-pointer select-none"
+              >
+                แสดงรายการธนาคาร
+              </label>
+            </div>
+
+            <!-- แสดง ListBank เมื่อ checkbox ถูกเลือก -->
+            <div v-if="showBankList" class="transition-all duration-300">
+              <ListBank 
+                :morelist="morelist"
+                :errors="errors"
+                :add-row="addRow"
+                :remove-row="removeRow"
+                :clear-row-error="clearRowError"
+                :init-item-name-tom-select="initItemNameTomSelect"
+              />
+            </div>
+          </div>
+
           <!-- รายการนำส่งเงิน -->
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
                 <span class="w-1 h-6 bg-green-500 rounded-full"></span>
-                รายการนำส่งเงิน
+                รายการลูกหนี้
               </h2>
               <span class="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                 {{ morelist.length }} รายการ
@@ -241,14 +270,13 @@
           </div>
 
           <!-- Total Amount -->
-          <div>
             <div
               v-if="detailsDebtor.length > 0"
               class="bg-white border border-gray-200 rounded-xl p-6 mb-6"
             >
               <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
-                รายละเอียดการชำระเงิน
+                รายละเอียดรายการ
               </h3>
 
               <div class="space-y-4">
@@ -313,12 +341,11 @@
                 <div class="flex justify-between items-center">
                   <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด </span>
                   <span class="text-3xl font-bold text-white">
-                    {{ formatNumber(netTotalAmount) }} บาท
+                    {{ formatNumber(totalAmountDebtor) }} บาท
                   </span>
                 </div>
               </div>
             </div>
-          </div>
 
           <!-- Note -->
           <div class="bg-yellow-50 border border-yellow-300 rounded p-3 mb-6 mt-6">
@@ -367,12 +394,14 @@ import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { setupAxiosMock } from '@/fake/mockAxios'
+import ListBank from '@/components/list/ListBank.vue'
 const reciptStore = useReceiptStore() // สร้าง instance
 setupAxiosMock()
 const gotomainpage = () => {
   router.push('/')
 }
 const {
+  totalAmountDebtor,
   netTotalAmount,
   detailsDebtor,
   morelist,

@@ -1,7 +1,7 @@
 <template>
   <div class="trezo-card bg-gray p-[20px] md:p-[25px]">
     <div class="trezo-card-content">
-      <ul class="mb-[20px] border-b border-purple-500 grid grid-cols-4 text-center">
+      <ul class="mb-[20px] border-b border-purple-500/50 grid grid-cols-4 text-center">
 
         <!-- ตัวอย่าง tab -->
         <li class="relative group">
@@ -16,7 +16,7 @@
 
           <!-- เส้นใต้ hover -->
           <span
-            class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"
+            class="absolute bottom-0 left-0 h-[3px] bg-purple-500/50 w-0 group-hover:w-full transition-all duration-300"
           ></span>
         </li>
 
@@ -30,7 +30,7 @@
             <span class="md:hidden">ใบนำส่ง</span>
             <span class="hidden md:inline">ใบนำส่ง</span>
           </RouterLink>
-          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
+          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500/50 w-0 group-hover:w-full transition-all duration-300"></span>
         </li>
 
         <li class="relative group">
@@ -42,7 +42,7 @@
             <span class="md:hidden">ล้างลูกหนี้</span>
             <span class="hidden md:inline">ล้างลูกหนี้</span>
           </RouterLink>
-          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
+          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500/50 w-0 group-hover:w-full transition-all duration-300"></span>
         </li>
 
         <li class="relative group">
@@ -54,7 +54,7 @@
             <span class="md:hidden">ผลการนำส่ง</span>
             <span class="hidden md:inline">รายการผลการนำส่ง</span>
           </RouterLink>
-          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500 w-0 group-hover:w-full transition-all duration-300"></span>
+          <span class="absolute bottom-0 left-0 h-[3px] bg-purple-500/50 w-0 group-hover:w-full transition-all duration-300"></span>
         </li>
 
 
@@ -77,14 +77,13 @@ const status1Names = ['waybilldebtor']
 
 const status2Names = ["waybill"]
 
-const status3Names = ["savedebtor"]
 
 // ✔ ตรวจ Active แต่ละสถานะ
 const isStatus1 = computed(() => status1Names.includes(route.name))
 
 const isStatus2 = computed(() => status2Names.includes(route.name))
 
-const isStatus3 = computed(() => status3Names.includes(route.name))
+
 
 const isStatus4 = computed(() => route.name === 'resultsubmit')
 

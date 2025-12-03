@@ -1,5 +1,5 @@
 <template>
-  <nav class="relative bg-purple-700">
+  <nav class="relative bg-purple-500/70">
     <div class="mx-auto  px-2 sm:px-6 lg:px-8 ml-6 mr-6">
       <div class="relative flex h-16 items-center justify-between">
 

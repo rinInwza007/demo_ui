@@ -2,9 +2,9 @@
   <Menu as="div" class="relative inline-block text-left">
     <!-- ปุ่มหลัก -->
     <MenuButton
-  class="px-6 h-[44px] bg-blue-600 text-white rounded-lg flex items-center gap-2
+  class="px-6 h-[44px] bg-blue-600/50 text-white rounded-lg flex items-center gap-2
          transition-all duration-300 ease-out
-         hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.15)]
+         hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.15)] hover:bg-blue-600
          hover:after:content-[''] hover:after:absolute
          relative
          after:absolute after:left-1/2 after:-translate-x-1/2
@@ -59,13 +59,13 @@ const router = useRouter();
 const goTowaybill = () => router.push("/waybill");
 const goTowaybillResearch = () => router.push("/waybillresearch");
 const goTowaybilldebtor = () => router.push("/waybilldebtor");
-const goTosavedebtor = () => router.push("/savedebtor");
+
 
 const actions = [
   { key: "export", label: "Export", icon: "file_export", handler: () => {} },
   { key: "main", label: "ใบนำส่ง", icon: "add", handler: goTowaybill },
   { key: "main", label: "ใบนำลูกหนี้", icon: "add", handler: goTowaybilldebtor },
   { key: "research", label: "ใบนำส่งวิจัย", icon: "add", handler: goTowaybillResearch },
-  { key: "debtor", label: "บันทึกลูกหนี้", icon: "add", handler: goTosavedebtor },
+
 ];
 </script>

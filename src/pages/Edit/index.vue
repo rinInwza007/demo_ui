@@ -171,7 +171,7 @@ import Selects from '@/components/input/select/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
 import { ref,computed } from 'vue'
-import Modal from '@/components/modal/modal.vue'
+import Modal from '@/components/modal/modalwaybill.vue'
 
 const formData = ref({
   name: '',

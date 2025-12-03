@@ -4,26 +4,22 @@
     <SecondNavbar />
 
     <div class="border border-gray-300 rounded-xl shadow m-6 bg-white">
-
       <!-- Header 3 Columns -->
       <div class="ml-12 mt-8 grid grid-cols-3 items-center">
         <div class="flex">
           <dropdrowwork />
         </div>
 
-        <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
-          ล้างลูกหนี้
-        </h1>
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">ล้างลูกหนี้</h1>
 
         <div></div>
       </div>
 
       <!-- Filters Row -->
       <div class="flex flex-col gap-4 px-12 w-full md:flex-row md:items-end mt-12">
-
         <selectdatetime />
 
-         <CascadingSelect
+        <CascadingSelect
     v-model:main="selectedMain"
     v-model:sub1="selectedSub1"
     v-model:sub2="selectedSub2"
@@ -55,7 +51,6 @@
             </template>
           </dropdrow>
         </div>
-
       </div>
 
       <!-- Table List -->
@@ -68,7 +63,6 @@
     :show-view="true"
     :showLock="true"
     :showDelete="true"
-    :show-cleardedtor="true"
 
     @edit="edit"
     @lock="toggleLock"
@@ -84,21 +78,20 @@
         <nextpage />
         <goback />
       </div>
-
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { options } from "@/components/data/departments"
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
-import { setupAxiosMock } from '@/fake/mockAxios';
+import { setupAxiosMock } from '@/fake/mockAxios'
+import {options} from "@/components/data/departments"
 
 
-
+import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Select from '@/components/input/select/select.vue'
@@ -109,12 +102,9 @@ import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 import goback from '@/components/Button/goback.vue'
 import dropdrow from '@/components/dropdrow/dropdrow.vue'
 import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
-import CascadingSelect from "@/components/input/select/CascadingSelect.vue"
-import ActionButtons from '@/components/Actionbutton/ActionButtons.vue'
+import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 
-
-
-setupAxiosMock();
+setupAxiosMock()
 
 const router = useRouter()
 
@@ -129,29 +119,45 @@ const selectedSub2 = ref("");
 
 
 
+
+const moneyTypeLabel: Record<string, string> = {
+  cash: 'เงินสด',
+  bank: 'เช็คธนาคาร',
+  transfer: 'ฝากเข้าบัญชี',
+  debtor: 'ลูกหนี้',
+  other: 'อื่นๆ',
+};
+
 const mapReceiptToRow = (r: any) => {
-const fileTypesArray: string[] = r.receiptList?.flatMap((item: any) =>
-  (item.paymentDetails || [])
-    .map((p: any) => p.moneyType?.trim())
-    .filter((t: string) => !!t) // กรองค่าที่ว่าง
-) || [];
+const fileTypesArray: string[] =
+  r.receiptList?.flatMap((item: any) => {
+    const fromPaymentDetails = (item.paymentDetails || [])
+      .map((p: any) => p.moneyType?.trim())
+      .filter((t: string) => !!t);
 
-// เอา Set เพื่อเอาเฉพาะค่าที่ไม่ซ้ำ
-const uniqueFileTypes = Array.from(new Set(fileTypesArray));
+    const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : [];
 
-const fileType = uniqueFileTypes.length > 0 ? uniqueFileTypes.join(", ") : "-";
+    return [...fromPaymentDetails, ...fromReceiptItem];
+  }) || [];
+
+const uniqueFileTypes = Array.from(new Set(fileTypesArray))
+const fileType = uniqueFileTypes.length > 0
+  ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
+  : '-'
   return {
     id: r.projectCode,
-    statusColorClass: "text-red-600",
+    statusColorClass: 'text-red-600',
     org: r.affiliationName,
     project: r.fundName,
-    year: "2568",
+    year: '2568',
     owner: r.fullName,
-    time: "-",
+    time: '-',
     fileType: fileType,
     amount: r.netTotalAmount
-    ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', { minimumFractionDigits: 2 }) + " บาท"
-    : "0.00 บาท",
+      ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', {
+          minimumFractionDigits: 2,
+        }) + ' บาท'
+      : '0.00 บาท',
 
     isLocked: false,
   }
@@ -170,15 +176,15 @@ onMounted(loadData)
 /* =================================
     3) ACTION FUNCTIONS
 ================================== */
-const view = (item:any) => {
+const view = (item: any) => {
   router.push(`/pdfpage/${item.id}`)
 }
 
-const edit = (item:any) => {
+const edit = (item: any) => {
   router.push(`/edit/${item.id}`)
 }
 
-const toggleLock = (item:any) => {
+const toggleLock = (item: any) => {
   item.isLocked = !item.isLocked
   Swal.fire({
     position: 'top-end',
@@ -189,14 +195,14 @@ const toggleLock = (item:any) => {
   })
 }
 
-const removeItem = async (item:any) => {
+const removeItem = async (item: any) => {
   const result = await Swal.fire({
     title: 'ต้องการลบ?',
     text: `${item.project}`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'ลบเลย',
-    cancelButtonText: 'ยกเลิก'
+    cancelButtonText: 'ยกเลิก',
   })
 
   if (!result.isConfirmed) return
@@ -206,7 +212,5 @@ const removeItem = async (item:any) => {
 
   Swal.fire('ลบแล้ว', '', 'success')
 }
-
 </script>
-
 

@@ -449,7 +449,7 @@ import Selects from '@/components/input/select/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
 import { ref, computed, onMounted, watch } from 'vue'
-import Modal from '@/components/modal/modal.vue'
+import Modal from '@/components/modal/modalwaybill.vue'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
 import { useReceiptStore } from '@/stores/recipt' // เพิ่ม import
@@ -807,3 +807,4 @@ watch(
 </script>
 
 <style lang="scss" scoped></style>
+

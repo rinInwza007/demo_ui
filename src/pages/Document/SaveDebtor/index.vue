@@ -66,19 +66,7 @@
                 </span>
               </div>
 
-              <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">
-                  จำนวนเงินรวม <span class="text-red-500">*</span>
-                </label>
-                <InputText
-                  v-model="formData.fund"
-                  placeholder="กรอกจำนวนเงิน (บาท)"
-                  class="transition-all duration-200"
-                />
-                <span v-if="errors.fund" class="text-red-600 text-xs">
-                  {{ errors.fund }}
-                </span>
-              </div>
+              
             </div>
           </div>
 

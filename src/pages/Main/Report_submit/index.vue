@@ -34,7 +34,6 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted } from "vue";
 
-// ✅ กำหนด path ให้ตรงกับชื่อไฟล์จริงของคุณ
 import Navbar from "@/components/bar/navbar.vue";
 import SecondNavbar from "@/components/bar/secoudnavbar.vue";
 

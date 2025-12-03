@@ -63,6 +63,7 @@
     :show-view="true"
     :showLock="true"
     :showDelete="true"
+    :show-cleardedtor="true"
 
     @edit="edit"
     @lock="toggleLock"

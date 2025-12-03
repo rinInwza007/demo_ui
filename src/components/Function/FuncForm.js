@@ -9,6 +9,7 @@ const morelist = ref([
     itemName: null,
     referenceNo: '',
     keyword: null,
+    amount:'',
     note: '',
     fee: '',
     selectedItems: [],
@@ -148,6 +149,8 @@ const totalAmount = computed(() => {
     return sum + rowTotal
   }, 0)
 })
+
+
 // Computed: ค่าธรรมเนียมรวม
 const totalFee = computed(() => {
   return morelist.value.reduce((sum, row) => {
@@ -212,7 +215,25 @@ const detailsByRow = computed(() => {
     .filter((item) => item !== null)
 })
 
+const detailsDebtor = computed(() => {
+  return morelist.value
+    .map((row, index) => {
+      // ทำความสะอาดและแปลง amount
+      const cleanAmount = String(row.amount || '0').replace(/,/g, '').trim()
+      const amount = parseFloat(cleanAmount)
+      
+      return {
+        rowIndex: index,
+        itemName: row.itemName || '',
+        amount: isNaN(amount) || amount < 0 ? 0 : amount,
+        note: row.note || ''
+      }
+    })
+    .filter(row => row.itemName || row.amount || row.note)
+})
+
   return {
+    detailsDebtor,
     totalAmount,
     totalFee,
     netTotalAmount,

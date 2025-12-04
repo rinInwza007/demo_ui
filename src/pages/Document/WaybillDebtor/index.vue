@@ -151,14 +151,14 @@
 
             <!-- แสดง ListBank เมื่อ checkbox ถูกเลือก -->
             <div v-if="showBankList" class="transition-all duration-300">
-              <ListBank 
-                :morelist="morelist"
-                :errors="errors"
-                :add-row="addRow"
-                :remove-row="removeRow"
-                :clear-row-error="clearRowError"
-                :init-item-name-tom-select="initItemNameTomSelect"
-              />
+            <ListBank 
+              :morelist="morelist"
+              :errors="errors"
+              :add-row="addRow"
+              :remove-row="removeRow"
+              :clear-row-error="clearRowError"
+              :init-item-name-tom-select="initItemNameTomSelect"
+            />
             </div>
           </div>
 
@@ -419,6 +419,7 @@ const formData = ref({
   sendmoney: null,
   receiptList: '',
 })
+const showBankList = ref(false)
 const itemNameInstances = ref({})
 const errors = ref({})
 

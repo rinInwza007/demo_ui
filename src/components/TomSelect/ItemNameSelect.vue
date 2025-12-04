@@ -6,10 +6,13 @@
       class="w-full px-2 text-sm"
     >
       <option value=""></option>
-      <option value="ค่าลงทะเบียน">ค่าลงทะเบียน</option>
-      <option value="ค่าอบรม">ค่าอบรม</option>
-      <option value="ค่าบริการ">ค่าบริการ</option>
-      <option value="ค่าเช่าสถานที่">ค่าเช่าสถานที่</option>
+      <option value="ค่าบริการทางการแพทย์ (สปสช)">ค่าบริการทางการแพทย์ (สปสช)</option>
+      <option value="ค่าบริการทางการแพทย์ (กรมบัญชีกลาง)">ค่าบริการทางการแพทย์ (กรมบัญชีกลาง)</option>
+      <option value="ค่าบริการทางการแพทย์ (ประกันสังคม)">ค่าบริการทางการแพทย์ (ประกันสังคม)</option>
+      <option value="ค่าบริการทางการแพทย์ (อื่นๆ)">ค่าบริการทางการแพทย์ (อื่นๆ)</option>
+      <option value="ค่าบริการทางการแพทย์ (อื่นๆ สิทธิชำระเงิน - ค้างชำระ)">ค่าบริการทางการแพทย์ (อื่นๆ สิทธิชำระเงิน - ค้างชำระ)</option>
+      <option value="ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย">ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย</option>
+      <option value="ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย">ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย</option>
     </select>
   </div>
 </template>
@@ -49,7 +52,7 @@ onMounted(() => {
   if (el && !el.tomselect) {
     tomSelectInstance = new TomSelect(el, {
       create: true,
-      placeholder: '-- ระบุรายการ --',
+      placeholder: 'ระบุรายการ',
       allowEmptyOption: true,
       onChange(value) {
         localValue.value = value

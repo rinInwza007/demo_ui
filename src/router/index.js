@@ -11,6 +11,7 @@ import edit from "@/pages/Edit/index.vue"
 import indexsavedebtor from "@/pages/Main/savedebtor/index.vue"
 import indexwaybilldebtor from "@/pages/Main/waybilldebtor/index.vue"
 import ClearDebtor from '@/pages/Document/ClearDebtor/index.vue'
+import ListBank from '@/components/list/ListBank.vue'
 
 const routes = [
   { path: '/', name: 'main', component: Main },
@@ -24,6 +25,7 @@ const routes = [
   { path: '/pdfpage', name: 'pdfpage',component:pdfpage},
   { path: '/edit', name: 'edit',component:edit},
   { path: '/cleardebtor', name: 'cleardebtor',component:ClearDebtor},
+  { path: '/ListBank', name: 'ListBank',component:ListBank},
 
   { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor',component:indexwaybilldebtor}
 ]

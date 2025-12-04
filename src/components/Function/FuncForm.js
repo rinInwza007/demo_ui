@@ -33,6 +33,41 @@ const initTomSelect = (index) => {
     })
   })
 }
+const allowOnlyDigits = (e) => {
+  if (!/[0-9 ,-]/.test(e.key)) {
+    e.preventDefault()
+  }
+}
+
+const defaultItems = [
+  { 
+    name: 'cash', 
+    checked: false, 
+    amount: '', 
+    referenceNo: '',
+    type: 'เงินสด',
+    paymentType: 'เงินสด'
+  },
+  { 
+    name: 'bank', 
+    checked: false, 
+    amount: '', 
+    referenceNo: '',
+    NumCheck: '',
+    type: 'เช็คธนาคาร',
+    paymentType: 'เช็คธนาคาร'
+  },
+  { 
+    name: 'transfer', 
+    checked: false, 
+    amount: '', 
+    referenceNo: '',
+    AccountNum: '', 
+    AccountName: '',
+    type: 'ฝากเข้าบัญชี',
+    paymentType: 'ฝากเข้าบัญชี'
+  },
+]
 
 const addRow = () => {
   morelist.value.push({
@@ -42,7 +77,7 @@ const addRow = () => {
     note: '',
     Fee:'',
     keyword: null,
-    selectedItems: [],
+    selectedItems: JSON.parse(JSON.stringify(defaultItems)),
   })
 
   nextTick(() => {
@@ -60,39 +95,27 @@ const showModal = ref(null)
 const rowItems = ref([])
 
 const openModalForRow = (index) => {
-  if (!rowItems.value[index]) {
-    rowItems.value[index] = JSON.parse(
-      JSON.stringify([
-        { 
-          name: 'cash', 
-          checked: false, 
-          amount: '', 
-          referenceNo: '',
-          type: 'เงินสด',
-          paymentType: 'เงินสด'
-        },
-        { 
-          name: 'bank', 
-          checked: false, 
-          amount: '', 
-          referenceNo: '',
-          NumCheck: '',
-          type: 'เช็คธนาคาร',
-          paymentType: 'เช็คธนาคาร'
-        },
-        { 
-          name: 'transfer', 
-          checked: false, 
-          amount: '', 
-          referenceNo: '',
-          AccountNum: '', 
-          AccountName: '',
-          type: 'ฝากเข้าบัญชี',
-          paymentType: 'ฝากเข้าบัญชี'
-        },
-      ]),
-    )
+  // ถ้ายังไม่เคยมี selectedItems ให้ใช้ defaultItems
+  if (!morelist.value[index].selectedItems || morelist.value[index].selectedItems.length === 0) {
+    morelist.value[index].selectedItems = JSON.parse(JSON.stringify(defaultItems))
   }
+  
+  // Merge: เอา defaultItems มาก่อน แล้ว override ด้วยข้อมูลที่มีอยู่
+  const merged = defaultItems.map(defaultItem => {
+    const existingItem = morelist.value[index].selectedItems.find(
+      item => item.name === defaultItem.name
+    )
+    
+    // ถ้ามีข้อมูลเดิมอยู่ ให้ใช้ข้อมูลเดิม
+    if (existingItem) {
+      return { ...existingItem }
+    }
+    
+    // ถ้าไม่มี ให้ใช้ defaultItem
+    return { ...defaultItem }
+  })
+  
+  rowItems.value[index] = merged
   showModal.value = index
 }
   const updateSelectedItems = (rowIndex, selectedItems) => {
@@ -156,6 +179,11 @@ const totalFee = computed(() => {
   }, 0)
 })
 
+const getRowDetail = (rowIndex) => {
+  const detail = detailsByRow.value.find(d => d.rowIndex === rowIndex)
+  return detail || null
+}
+
 // Computed: ยอดสุทธิหลังหักค่าธรรมเนียม
 const netTotalAmount = computed(() => {
   return totalAmount.value - totalFee.value
@@ -163,56 +191,77 @@ const netTotalAmount = computed(() => {
 
 // Computed: รายละเอียดแต่ละแถว (ปรับปรุงให้มีข้อมูลครบ)
 const detailsByRow = computed(() => {
+  console.log('detailsByRow computing...', morelist.value)
+  
   return morelist.value
     .map((row, index) => {
-      if (!row.selectedItems || row.selectedItems.length === 0) {
+      // ✅ เปลี่ยนเงื่อนไข: แสดงถ้ามีข้อมูลอย่างใดอย่างหนึ่ง
+      const hasItemName = row.itemName && row.itemName.trim() !== ''
+      const hasFee = row.fee && row.fee !== ''
+      const hasNote = row.note && row.note.trim() !== ''
+      const hasSelectedItems = row.selectedItems && row.selectedItems.some(item => item.checked)
+
+      // ถ้าไม่มีข้อมูลเลย ก็ไม่แสดง
+      if (!hasItemName && !hasFee && !hasNote && !hasSelectedItems) {
         return null
       }
 
+      // ประมวลผล selectedItems (ถ้ามี)
       const checkedItems = row.selectedItems
-        .filter((item) => item.checked)
-        .map((item) => {
-          // 👇 ใช้ type ที่ส่งมาจาก modal โดยตรง
-          const itemType = item.type || item.paymentType || 'ไม่ระบุ'
+        ? row.selectedItems
+            .filter((item) => item.checked)
+            .map((item) => {
+              console.log('Item:', item)
+              
+              let itemType = 'ไม่ระบุ'
+              
+              if (item.moneyType) {
+                if (item.moneyType === 'cash') itemType = 'เงินสด'
+                else if (item.moneyType === 'bank') itemType = 'เช็คธนาคาร'
+                else if (item.moneyType === 'transfer') itemType = 'ฝากเข้าบัญชี'
+              } else if (item.name) {
+                if (item.name === 'cash') itemType = 'เงินสด'
+                else if (item.name === 'bank') itemType = 'เช็คธนาคาร'
+                else if (item.name === 'transfer') itemType = 'ฝากเข้าบัญชี'
+              }
 
-          return {
-            type: itemType,
-            amount: Number(item.amount) || 0,
-            referenceNo: item.referenceNo || '–',
-            // เช็คธนาคาร
-            checkNumber: item.checkNumber || item.NumCheck || null,
-            // ฝากเข้าบัญชี
-            accountNumber: item.accountNumber || item.AccountNum || null,
-            accountName: item.accountName || item.AccountName || null,
-          }
-        })
-      
-      if (checkedItems.length === 0) {
-        return null
-      }
+              return {
+                type: itemType,
+                amount: Number(item.amount) || 0,
+                referenceNo: item.referenceNo || '–',
+                checkNumber: item.checkNumber || item.NumCheck || null,
+                accountNumber: item.accountNumber || item.AccountNum || null,
+                accountName: item.accountName || item.AccountName || null,
+                bankName: item.bankName || item.BankName || null,
+              }
+            })
+        : []
 
-      const subtotal = checkedItems.reduce((sum, item) => {
-        return sum + (Number(item.amount) || 0)
-      }, 0)
-
+      const subtotal = checkedItems.reduce((sum, item) => sum + item.amount, 0)
       const fee = Number(row.fee) || 0
       const netAmount = subtotal - fee
 
       return {
         rowIndex: index,
-        itemName: row.itemName,
+        itemName: row.itemName || 'ยังไม่ระบุชื่อรายการ', // ✅ แสดง fallback
         items: checkedItems,
         fee: fee,
-        note: row.note,
+        note: row.note || '', // ✅ แสดงว่าง ถ้ายังไม่กรอก
         subtotal: subtotal,
         netAmount: netAmount,
-        keyword: row.keyword
+        keyword: row.keyword,
+        // ✅ เพิ่ม flag เพื่อบอกว่ามีข้อมูลอะไรบ้าง
+        hasItemName,
+        hasFee,
+        hasNote,
+        hasPayment: checkedItems.length > 0
       }
     })
     .filter((item) => item !== null)
 })
-
   return {
+    allowOnlyDigits,
+    getRowDetail,
     totalAmount,
     totalFee,
     netTotalAmount,

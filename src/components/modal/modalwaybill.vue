@@ -6,11 +6,18 @@
     >
       <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-modal">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-[#7E22CE] to-[#7E22CE] px-6 py-5 flex justify-between items-center">
+        <div
+          class="bg-gradient-to-r from-[#7E22CE] to-[#7E22CE] px-6 py-5 flex justify-between items-center"
+        >
           <div class="flex items-center gap-3">
             <div class="bg-white bg-opacity-20 p-2 rounded-lg">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                />
               </svg>
             </div>
             <div>
@@ -23,7 +30,12 @@
             class="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition-colors"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -35,9 +47,11 @@
               v-for="(item, index) in items"
               :key="index"
               class="border-2 rounded-xl p-5 transition-all duration-200"
-              :class="item.checked
-                ? getColorClasses(item.name) + ' shadow-md'
-                : 'border-gray-200 bg-white hover:border-gray-300'"
+              :class="
+                item.checked
+                  ? getColorClasses(item.name) + ' shadow-md'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              "
             >
               <!-- Header ของแต่ละรายการ -->
               <label class="flex items-center gap-3 cursor-pointer group">
@@ -46,13 +60,16 @@
                     type="checkbox"
                     v-model="item.checked"
                     @change="handleInput"
-                    class="w-5 h-5 rounded border-2 border-gray-300   cursor-pointer transition-all"
+                    class="w-5 h-5 rounded border-2 border-gray-300 cursor-pointer transition-all"
                   />
                 </div>
 
                 <div
                   class="p-2 rounded-lg transition-all"
-                  :class="[item.checked ? 'bg-white shadow-sm' : 'bg-gray-100', getIconColor(item.name)]"
+                  :class="[
+                    item.checked ? 'bg-white shadow-sm' : 'bg-gray-100',
+                    getIconColor(item.name),
+                  ]"
                 >
                   <component :is="getIcon(item.name)" class="w-5 h-5" />
                 </div>
@@ -87,31 +104,48 @@
 
                   <!-- ฝากเข้าบัญชี -->
                   <template v-if="item.AccountNum !== undefined">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                        เลขบัญชี <span class="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        v-model="item.AccountNum"
-                        @input="handleInput"
-                        placeholder="xxx-x-xxxxx-x"
-                        class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
-                        :class="{ 'border-red-300 bg-red-50': item.checked && !item.AccountNum }"
-                      />
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                        ชื่อบัญชี <span class="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        v-model="item.AccountName"
-                        @input="handleInput"
-                        placeholder="กรอกชื่อบัญชี"
-                        class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
-                        :class="{ 'border-red-300 bg-red-50': item.checked && !item.AccountName }"
-                      />
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                          ชื่อบัญชี <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                          v-model="item.AccountName"
+                          @change="handleAccountChange(item)"
+                          class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                          :class="{ 'border-red-300 bg-red-50': item.checked && !item.AccountName }"
+                        >
+                          <option value="" disabled>เลือกบัญชี</option>
+                          <option v-for="acc in accounts" :key="acc.name" :value="acc.name">
+                            {{ acc.name }}
+                          </option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                          ชื่อธนาคาร <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          readonly
+                          v-model="item.BankName"
+                          placeholder="เลือกชื่อบัญชีก่อน"
+                          class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                        />
+                      </div>
+                      <!-- เลขบัญชี (Read-only) -->
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                          เลขบัญชี <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          readonly
+                          v-model="item.AccountNum"
+                          placeholder="เลือกชื่อบัญชีก่อน"
+                          class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                        />
+                      </div>
                     </div>
                   </template>
 
@@ -143,7 +177,9 @@
                         class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none"
                         :class="{ 'border-red-300 bg-red-50': item.checked && !item.amount }"
                       />
-                      <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                      <span
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium"
+                      >
                         ฿
                       </span>
                     </div>
@@ -157,19 +193,33 @@
         <!-- Error Message -->
         <div v-if="errorMessage" class="px-6 pb-4">
           <div class="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-            <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            <svg
+              class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clip-rule="evenodd"
+              />
             </svg>
             <span class="text-sm text-red-700">{{ errorMessage }}</span>
           </div>
         </div>
 
         <!-- Footer -->
-        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+        <div
+          class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-between items-center"
+        >
           <div class="text-sm text-gray-600">
             <span v-if="checkedCount > 0" class="flex items-center gap-2">
               <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clip-rule="evenodd"
+                />
               </svg>
               เลือกแล้ว {{ checkedCount }} รายการ
             </span>
@@ -187,12 +237,17 @@
               @click="confirmSelection"
               :disabled="!isValid"
               class="px-6 py-2.5 font-medium rounded-lg transition-all shadow-lg relative overflow-hidden group"
-              :class="isValid
-                ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800 shadow-purple-500/30'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'"
+              :class="
+                isValid
+                  ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800 shadow-purple-500/30'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
+              "
             >
               <span class="relative z-10">บันทึกข้อมูล</span>
-              <span v-if="isValid" class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></span>
+              <span
+                v-if="isValid"
+                class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"
+              ></span>
             </button>
           </div>
         </div>
@@ -203,14 +258,13 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-
 // Icons as components
 const WalletIcon = {
   template: `
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
     </svg>
-  `
+  `,
 }
 
 const CreditCardIcon = {
@@ -218,7 +272,7 @@ const CreditCardIcon = {
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
     </svg>
-  `
+  `,
 }
 
 const BuildingIcon = {
@@ -226,12 +280,29 @@ const BuildingIcon = {
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
     </svg>
-  `
+  `,
+}
+
+const accounts = ref([
+  { name: 'โรงพยาบาลมหาวิทยาลัยพะเยา', number: '671-2-90667-9', bank: 'ธนาคารกรุงไทย' },
+  { name: 'มหาวิทยาลัยพะเยา(กองทุนทั่วไป)', number: '980-9-61729-1', bank: 'ธนาคารกรุงไทย' },
+  { name: 'กองทุนเพื่อการจัดจั้งธนาคารเลือด', number: '662-0-96023-5', bank: 'ธนาคารกรุงไทย' },
+])
+function handleAccountChange(item) {
+  const selected = accounts.value.find((acc) => acc.name === item.AccountName)
+  if (selected) {
+    item.AccountNum = selected.number
+    item.BankName = selected.bank
+  } else {
+    item.AccountName = ''
+    item.BankName = ''
+  }
+  handleInput()
 }
 
 const props = defineProps({
   show: Boolean,
-  items: Array
+  items: Array,
 })
 
 const emit = defineEmits(['close', 'update:selected'])
@@ -242,17 +313,17 @@ const savedData = ref({})
 
 // Computed
 const checkedCount = computed(() => {
-  return props.items?.filter(i => i.checked).length || 0
+  return props.items?.filter((i) => i.checked).length || 0
 })
 
 const isValid = computed(() => {
-  const checkedItems = props.items?.filter(i => i.checked) || []
+  const checkedItems = props.items?.filter((i) => i.checked) || []
 
   if (checkedItems.length === 0) {
     return false
   }
 
-  return checkedItems.every(item => {
+  return checkedItems.every((item) => {
     // ✅ เช็ค referenceNo และ amount ก่อน
     const hasReferenceNo = item.referenceNo && String(item.referenceNo).trim() !== ''
     const hasAmount = item.amount && parseFloat(item.amount) > 0
@@ -265,20 +336,21 @@ const isValid = computed(() => {
       return item.NumCheck && String(item.NumCheck).trim() !== ''
     }
     if (item.AccountNum !== undefined) {
-      const hasAccountNum = item.AccountNum !== null &&
-                           item.AccountNum !== undefined &&
-                           String(item.AccountNum).trim() !== ''
-      const hasAccountName = item.AccountName &&
-                            String(item.AccountName).trim() !== ''
+      const hasAccountNum =
+        item.AccountNum !== null &&
+        item.AccountNum !== undefined &&
+        String(item.AccountNum).trim() !== ''
+      const hasAccountName = item.AccountName && String(item.AccountName).trim() !== ''
+      const hasBankName = item.BankName && String(item.BankName).trim() !== ''
 
       console.log('Validating transfer:', {
         AccountNum: item.AccountNum,
         AccountName: item.AccountName,
         hasAccountNum,
-        hasAccountName
+        hasAccountName,
       })
 
-      return hasAccountNum && hasAccountName
+      return hasAccountNum && hasAccountName && hasBankName
     }
 
     return true
@@ -303,7 +375,7 @@ const getDisplayName = (itemName) => {
 
 const getColorClasses = (itemName) => {
   const name = getDisplayName(itemName)
-  switch(name) {
+  switch (name) {
     case 'เงินสด':
       return 'border-green-200 bg-green-50 hover:border-green-300'
     case 'เช็คธนาคาร':
@@ -317,11 +389,15 @@ const getColorClasses = (itemName) => {
 
 const getIconColor = (itemName) => {
   const name = getDisplayName(itemName)
-  switch(name) {
-    case 'เงินสด': return 'text-green-600'
-    case 'เช็คธนาคาร': return 'text-blue-600'
-    case 'ฝากเข้าบัญชี': return 'text-orange-600'
-    default: return 'text-gray-600'
+  switch (name) {
+    case 'เงินสด':
+      return 'text-green-600'
+    case 'เช็คธนาคาร':
+      return 'text-blue-600'
+    case 'ฝากเข้าบัญชี':
+      return 'text-orange-600'
+    default:
+      return 'text-gray-600'
   }
 }
 
@@ -336,28 +412,31 @@ const confirmSelection = () => {
     return
   }
 
-  const selected = props.items.filter(i => i.checked).map(i => {
-    const item = {...i}
+  const selected = props.items
+    .filter((i) => i.checked)
+    .map((i) => {
+      const item = { ...i }
 
-    if (i.name === 'cash' || i.name === 'เงินสด') {
-      item.moneyType = 'cash'
-    } else if (i.name === 'bank' || i.name === 'เช็คธนาคาร') {
-      item.moneyType = 'bank'
-      item.checkNumber = i.NumCheck
-    } else if (i.name === 'transfer' || i.name === 'ฝากเข้าบัญชี') {
-      item.moneyType = 'transfer'
-      item.accountNumber = i.AccountNum
-      item.accountName = i.AccountName
-    }
+      if (i.name === 'cash' || i.name === 'เงินสด') {
+        item.moneyType = 'cash'
+      } else if (i.name === 'bank' || i.name === 'เช็คธนาคาร') {
+        item.moneyType = 'bank'
+        item.checkNumber = i.NumCheck
+      } else if (i.name === 'transfer' || i.name === 'ฝากเข้าบัญชี') {
+        item.moneyType = 'transfer'
+        item.accountNumber = i.AccountNum
+        item.accountName = i.AccountName
+        item.bankName = i.BankName // เพิ่มบรรทัดนี้
+      }
 
-    return item
-  })
+      return item
+    })
 
-  props.items.forEach(item => {
+  props.items.forEach((item) => {
     const data = {
       checked: item.checked,
       amount: item.amount,
-      referenceNo: item.referenceNo
+      referenceNo: item.referenceNo,
     }
 
     if (item.NumCheck !== undefined) {
@@ -367,6 +446,7 @@ const confirmSelection = () => {
     if (item.AccountNum !== undefined) {
       data.AccountNum = item.AccountNum
       data.AccountName = item.AccountName
+      data.BankName = item.BankName
     }
     data.moneyType = item.moneyType
     savedData.value[item.name] = data
@@ -384,7 +464,7 @@ const closeModal = () => {
 }
 
 const restoreSavedData = () => {
-  props.items?.forEach(item => {
+  props.items?.forEach((item) => {
     const saved = savedData.value[item.name]
 
     if (saved) {
@@ -399,6 +479,7 @@ const restoreSavedData = () => {
       if (item.AccountNum !== undefined) {
         item.AccountNum = saved.AccountNum ?? ''
         item.AccountName = saved.AccountName ?? ''
+        item.BankName = saved.BankName ??''
       }
     } else {
       item.checked = false
@@ -408,21 +489,23 @@ const restoreSavedData = () => {
       if (item.AccountNum !== undefined) {
         item.AccountNum = ''
         item.AccountName = ''
+        item.BankName = ''
       }
     }
   })
 }
 
-watch(() => props.show, (newVal) => {
-  if (newVal && props.items) {
-    restoreSavedData()
-    const hasCheckedItems = props.items?.some(i => i.checked && i.amount)
-    hasConfirmed.value = hasCheckedItems
-  }
-})
+watch(
+  () => props.show,
+  (newVal) => {
+    if (newVal && props.items) {
+      restoreSavedData()
+      const hasCheckedItems = props.items?.some((i) => i.checked && i.amount)
+      hasConfirmed.value = hasCheckedItems
+    }
+  },
+)
 </script>
-
-
 
 <style scoped>
 /* Transitions */
@@ -490,13 +573,13 @@ watch(() => props.show, (newVal) => {
 }
 
 /* Remove number input arrows */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-input[type="number"] {
+input[type='number'] {
   -moz-appearance: textfield;
 }
 </style>

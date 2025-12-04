@@ -34,7 +34,7 @@ const initTomSelect = (index) => {
   })
 }
 const allowOnlyDigits = (e) => {
-  if (!/[0-9 ,-]/.test(e.key)) {
+  if (!/[0-9 ,-,.]/.test(e.key)) {
     e.preventDefault()
   }
 }
@@ -118,17 +118,38 @@ const openModalForRow = (index) => {
   rowItems.value[index] = merged
   showModal.value = index
 }
-  const updateSelectedItems = (rowIndex, selectedItems) => {
-    console.log('updateSelectedItems called:', { rowIndex, selectedItems }) // 👈 Debug
+// ใน FuncForm.js หรือใน addwaybill.vue
+// แก้ไข function updateSelectedItems ให้เป็นแบบนี้:
+
+const updateSelectedItems = (index, selected) => {
+  console.log('📥 Received from Modal:', selected)
+  
+  // ✅ เก็บข้อมูลทั้งหมดที่ส่งมาจาก Modal
+  morelist.value[index].selectedItems = selected.map(item => ({
+    ...item,
+    // ตรวจสอบว่ามีข้อมูลทุก field
+    checked: item.checked,
+    name: item.name,
+    amount: item.amount,
+    referenceNo: item.referenceNo,
+    moneyType: item.moneyType,
     
-    morelist.value[rowIndex].selectedItems = selectedItems.map(item => ({
-      ...item,
-      type: item.type || item.paymentType || 'ไม่ระบุ', // ตรวจสอบว่ามี type
-      checked: item.checked
-    }))
+    // สำหรับเช็คธนาคาร
+    NumCheck: item.NumCheck || item.checkNumber || null,
+    checkNumber: item.checkNumber || item.NumCheck || null,
     
-    console.log('Updated morelist:', morelist.value[rowIndex]) // 👈 Debug
-  }
+    // สำหรับฝากเข้าบัญชี - ✅ เพิ่มส่วนนี้
+    AccountNum: item.AccountNum || item.accountNumber || null,
+    AccountName: item.AccountName || item.accountName || null,
+    BankName: item.BankName || item.bankName || null,
+    
+    accountNumber: item.accountNumber || item.AccountNum || null,
+    accountName: item.accountName || item.AccountName || null,
+    bankName: item.bankName || item.BankName || null, // ✅ บรรทัดนี้สำคัญมาก!
+  }))
+  
+  console.log('💾 Saved to morelist:', morelist.value[index].selectedItems)
+}
 
 const summaryByType = computed(() => {
   const summary = {

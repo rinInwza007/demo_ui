@@ -426,7 +426,7 @@ const confirmSelection = () => {
         item.moneyType = 'transfer'
         item.accountNumber = i.AccountNum
         item.accountName = i.AccountName
-        item.bankName = i.BankName // เพิ่มบรรทัดนี้
+        item.bankName = i.BankName
       }
 
       return item

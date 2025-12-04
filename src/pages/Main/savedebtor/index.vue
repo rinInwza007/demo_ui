@@ -171,7 +171,28 @@ const fileType = uniqueFileTypes.length > 0
 ================================== */
 const loadData = async () => {
   const res = await axios.get('/getReceipt')
-  items.value = res.data.map(mapReceiptToRow)
+
+  // ⭐ 1) กรองเฉพาะประเภท debtor และ other
+  const filtered = res.data.filter((r: any) => {
+    const fileTypesArray: string[] =
+      r.receiptList?.flatMap((item: any) => {
+        const fromPaymentDetails = (item.paymentDetails || [])
+          .map((p: any) => p.moneyType?.trim())
+          .filter((t: string) => !!t)
+
+        const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : []
+
+        return [...fromPaymentDetails, ...fromReceiptItem]
+      }) || []
+
+    const uniqueFileTypes = Array.from(new Set(fileTypesArray))
+
+    // ⭐ เงื่อนไขกรองเฉพาะ debtor หรือ other
+    return uniqueFileTypes.some(t => ['debtor', 'other'].includes(t))
+  })
+
+  // ⭐ 2) Map เฉพาะข้อมูลที่ผ่านการกรองแล้ว
+  items.value = filtered.map(mapReceiptToRow)
 }
 
 onMounted(loadData)

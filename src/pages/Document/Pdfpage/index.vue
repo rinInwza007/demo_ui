@@ -88,6 +88,7 @@ function createCheckbox() {
     width: 20,
   }
 }
+
 /** ✅ รวม logic สร้างเอกสาร PDF ไว้ฟังก์ชันเดียว ใช้ทั้ง preview + download */
 function createDocDefinition() {
   deleteRowEmpty()

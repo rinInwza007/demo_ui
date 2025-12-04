@@ -96,13 +96,10 @@
         </button>
       </div>
     </div>
-    
+
 
   </div>
 </template>
-
-
-
 
 <script setup>
 import { reactive } from 'vue'
@@ -113,7 +110,7 @@ import Swal from "sweetalert2";
 
 
 const debtor = reactive({
-  fullName: "สมชาย ใจดี",
+  fullName: "กองแผน",
   totalDebt: 35220,
   items: [
     { id: "1", title: "ค่าธรรมเนียมธนาคาร", amount: 50, selected: false },

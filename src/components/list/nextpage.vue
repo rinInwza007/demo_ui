@@ -35,7 +35,7 @@
       :key="n"
       @click="page = n"
       class="px-3 py-1 border rounded"
-      :class="page === n ? 'bg-purple-600 text-white' : ''"
+      :class="page === n ? 'bg-purple-600/60 text-white' : ''"
     >
       {{ n }}
     </button>
@@ -58,17 +58,4 @@ const page = ref(1)
 const totalPages = 5
 </script>
 
-<style scoped>
-@keyframes bob {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
-}
 
-.animate-bob {
-  animation: bob 0.5s ease-in-out infinite;
-}
-</style>

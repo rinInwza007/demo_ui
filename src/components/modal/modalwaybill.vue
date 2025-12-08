@@ -425,8 +425,11 @@ const confirmSelection = () => {
       } else if (i.name === 'transfer' || i.name === 'ฝากเข้าบัญชี') {
         item.moneyType = 'transfer'
         item.accountNumber = i.AccountNum
+        item.AccountNum = i.AccountNum
         item.accountName = i.AccountName
-        item.bankName = i.BankName // เพิ่มบรรทัดนี้
+        item.AccountName = i.AccountName
+        item.bankName = i.BankName
+        item.BankName = i.BankName
       }
 
       return item
@@ -447,6 +450,9 @@ const confirmSelection = () => {
       data.AccountNum = item.AccountNum
       data.AccountName = item.AccountName
       data.BankName = item.BankName
+      data.accountNumber = item.AccountNum
+      data.accountName = item.AccountName
+      data.bankName = item.BankName
     }
     data.moneyType = item.moneyType
     savedData.value[item.name] = data

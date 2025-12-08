@@ -148,7 +148,7 @@
             <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4">
               <!-- Header Labels (Hidden on mobile) -->
               <div
-                class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-2 pb-2 border-b border-gray-300 items-center js"
+                class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-2 pb-2 border-b border-gray-300 items-center js text-center mr-5"
               >
                 <div class="text-xs font-semibold text-gray-600 uppercase">รายการ</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">จำนวนเงิน</div>
@@ -211,9 +211,6 @@
                           @keypress="allowOnlyDigits"
                           @input="() => clearRowError(index, 'fee')"
                         />
-                        <span v-if="errors.rows?.[index]?.fee" class="text-red-600 text-xs">
-                          {{ errors.rows[index].fee }}
-                        </span>
                       </div>
 
                       <!-- ประเภท -->
@@ -676,7 +673,6 @@ const saveData = async () => {
     const rowErrors = {}
     if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
     if (!row.note) rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
-    if (!row.fee) rowErrors.fee = 'กรุณากรอก "ค่าธรรมเนียม"'
     if (!row.keyword) rowErrors.keyword = 'กรุณากรอก "keyword"'
 
     // เช็ค selectedItems
@@ -715,6 +711,7 @@ const saveData = async () => {
   // สร้าง payload ที่มีข้อมูลครบถ้วน
   const payload = {
     fullName: formData.value.fullName,
+    moneyTypeNote:'Waybill',
     phone: formData.value.phone,
     mainAffiliationName: mainCategory.value,
     subAffiliationName: subCategory.value,
@@ -732,25 +729,28 @@ const saveData = async () => {
       const rowFee = Number(row.fee) || 0
       const rowNetAmount = rowTotal - rowFee
 
-      return {
-        itemName: row.itemName,
-        note: row.note || '',
-        fee: rowFee,
-        keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
-        subtotal: rowTotal,
-        amount: rowNetAmount,
-        paymentDetails:
-          row.selectedItems
-            ?.filter((item) => item.checked)
-            .map((item) => ({
-              moneyType: item.moneyType,
-              amount: Number(item.amount) || 0,
-              referenceNo: item.referenceNo || '',
-              checkNumber: item.checkNumber || item.NumCheck || null,
-              accountNumber: item.accountNumber || item.AccountNum || null,
-              accountName: item.accountName || item.AccountName || null,
-            })) || [],
-      }
+        return {
+          itemName: row.itemName,
+          note: row.note || '',
+          fee: rowFee,
+          keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
+          subtotal: rowTotal,
+          amount: rowNetAmount,
+          paymentDetails:
+            row.selectedItems
+              ?.filter((item) => item.checked)
+              .map((item) => ({
+                moneyType: item.moneyType,
+                amount: Number(item.amount) || 0,
+                referenceNo: item.referenceNo || '',
+                // เช็คธนาคาร
+                checkNumber: item.checkNumber || item.NumCheck || null,
+                // ✅ ฝากเข้าบัญชี - ใช้ชื่อที่ต้องการส่งไป API
+                accountName: item.accountName || item.AccountName || null,
+                accountNumber: item.accountNumber || item.AccountNum || null,
+                bankName: item.bankName || item.BankName || null,
+              })) || [],
+        }
     }),
   }
 

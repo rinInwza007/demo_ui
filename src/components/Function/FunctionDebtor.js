@@ -1,21 +1,23 @@
 import { ref, nextTick , computed } from 'vue'
 import TomSelect from 'tom-select'
 
-export function useRowManager() {
+export function useRowManagerDebtor() {
 
 const morelist = ref([
   {
-     id: 1,   // 👈 เพิ่ม id
+    id: 1,
     itemName: null,
     referenceNo: '',
     keyword: null,
     note: '',
     fee: '',
     selectedItems: [],
-    
+    money: '',
   },
 ])
+
 const keywordInputs = []
+
 const initTomSelect = (index) => {
   nextTick(() => {
     const input = keywordInputs[index]
@@ -34,6 +36,7 @@ const initTomSelect = (index) => {
     })
   })
 }
+
 const allowOnlyDigits = (e) => {
   if (!/[0-9 ,-,.]/.test(e.key)) {
     e.preventDefault()
@@ -76,9 +79,10 @@ const addRow = () => {
     itemName: null,
     referenceNo: '',
     note: '',
-    Fee:'',
+    fee: '',
     keyword: null,
-    selectedItems: JSON.parse(JSON.stringify(defaultItems)),
+    selectedItems: [],
+    money: '',
   })
 
   nextTick(() => {
@@ -96,37 +100,30 @@ const showModal = ref(null)
 const rowItems = ref([])
 
 const openModalForRow = (index) => {
-  // ถ้ายังไม่เคยมี selectedItems ให้ใช้ defaultItems
   if (!morelist.value[index].selectedItems || morelist.value[index].selectedItems.length === 0) {
     morelist.value[index].selectedItems = JSON.parse(JSON.stringify(defaultItems))
   }
   
-  // Merge: เอา defaultItems มาก่อน แล้ว override ด้วยข้อมูลที่มีอยู่
   const merged = defaultItems.map(defaultItem => {
     const existingItem = morelist.value[index].selectedItems.find(
       item => item.name === defaultItem.name
     )
     
-    // ถ้ามีข้อมูลเดิมอยู่ ให้ใช้ข้อมูลเดิม
     if (existingItem) {
       return { ...existingItem }
     }
     
-    // ถ้าไม่มี ให้ใช้ defaultItem
     return { ...defaultItem }
   })
   
   rowItems.value[index] = merged
   showModal.value = index
 }
-// ใน FuncForm.js หรือใน addwaybill.vue
-// แก้ไข function updateSelectedItems ให้เป็นแบบนี้:
 
 const updateSelectedItems = (index, selected) => {
   console.log('📥 Received from Modal:', selected)
   
   morelist.value[index].selectedItems = selected.map(item => {
-    // ✅ สร้าง object ใหม่ที่มีข้อมูลครบถ้วน
     const mappedItem = {
       checked: item.checked,
       name: item.name,
@@ -136,13 +133,11 @@ const updateSelectedItems = (index, selected) => {
       type: item.type || item.paymentType,
     }
 
-    // สำหรับเช็คธนาคาร
     if (item.NumCheck !== undefined || item.checkNumber !== undefined) {
       mappedItem.NumCheck = item.NumCheck || item.checkNumber || ''
       mappedItem.checkNumber = item.checkNumber || item.NumCheck || ''
     }
 
-    // ✅ สำหรับฝากเข้าบัญชี - เก็บทั้ง 2 รูปแบบ
     if (item.AccountNum !== undefined || item.accountNumber !== undefined) {
       mappedItem.AccountNum = item.AccountNum || item.accountNumber || ''
       mappedItem.AccountName = item.AccountName || item.accountName || ''
@@ -187,20 +182,14 @@ const summaryByType = computed(() => {
   return summary
 })
 
-
+// ✅ ใช้ money แทน selectedItems
 const totalAmount = computed(() => {
   return morelist.value.reduce((sum, row) => {
-    if (!row.selectedItems) return sum
-
-    const rowTotal = row.selectedItems.reduce((s, item) => {
-      const amount = Number(item.amount) || 0
-      return s + amount
-    }, 0)
-
-    return sum + rowTotal
+    const money = Number(row.money) || 0
+    return sum + money
   }, 0)
 })
-// Computed: ค่าธรรมเนียมรวม
+
 const totalFee = computed(() => {
   return morelist.value.reduce((sum, row) => {
     const fee = Number(row.fee) || 0
@@ -213,35 +202,29 @@ const getRowDetail = (rowIndex) => {
   return detail || null
 }
 
-// Computed: ยอดสุทธิหลังหักค่าธรรมเนียม
 const netTotalAmount = computed(() => {
   return totalAmount.value - totalFee.value
 })
 
-// Computed: รายละเอียดแต่ละแถว (ปรับปรุงให้มีข้อมูลครบ)
+// ✅ ใช้ money เป็น subtotal
 const detailsByRow = computed(() => {
   console.log('detailsByRow computing...', morelist.value)
   
   return morelist.value
     .map((row, index) => {
-      // ✅ เปลี่ยนเงื่อนไข: แสดงถ้ามีข้อมูลอย่างใดอย่างหนึ่ง
       const hasItemName = row.itemName && row.itemName.trim() !== ''
       const hasFee = row.fee && row.fee !== ''
       const hasNote = row.note && row.note.trim() !== ''
-      const hasSelectedItems = row.selectedItems && row.selectedItems.some(item => item.checked)
+      const hasMoney = row.money && row.money !== ''
 
-      // ถ้าไม่มีข้อมูลเลย ก็ไม่แสดง
-      if (!hasItemName && !hasFee && !hasNote && !hasSelectedItems) {
+      if (!hasItemName && !hasFee && !hasNote && !hasMoney) {
         return null
       }
 
-      // ประมวลผล selectedItems (ถ้ามี)
       const checkedItems = row.selectedItems
         ? row.selectedItems
             .filter((item) => item.checked)
             .map((item) => {
-              console.log('Item:', item)
-              
               let itemType = 'ไม่ระบุ'
               
               if (item.moneyType) {
@@ -266,20 +249,19 @@ const detailsByRow = computed(() => {
             })
         : []
 
-      const subtotal = checkedItems.reduce((sum, item) => sum + item.amount, 0)
+      const subtotal = Number(row.money) || 0
       const fee = Number(row.fee) || 0
       const netAmount = subtotal - fee
 
       return {
         rowIndex: index,
-        itemName: row.itemName || 'ยังไม่ระบุชื่อรายการ', // ✅ แสดง fallback
+        itemName: row.itemName || 'ยังไม่ระบุชื่อรายการ',
         items: checkedItems,
         fee: fee,
-        note: row.note || '', // ✅ แสดงว่าง ถ้ายังไม่กรอก
+        note: row.note || '',
         subtotal: subtotal,
         netAmount: netAmount,
         keyword: row.keyword,
-        // ✅ เพิ่ม flag เพื่อบอกว่ามีข้อมูลอะไรบ้าง
         hasItemName,
         hasFee,
         hasNote,
@@ -288,6 +270,7 @@ const detailsByRow = computed(() => {
     })
     .filter((item) => item !== null)
 })
+
   return {
     allowOnlyDigits,
     getRowDetail,

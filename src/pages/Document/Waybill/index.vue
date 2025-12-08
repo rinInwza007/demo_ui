@@ -711,6 +711,7 @@ const saveData = async () => {
   // สร้าง payload ที่มีข้อมูลครบถ้วน
   const payload = {
     fullName: formData.value.fullName,
+    moneyTypeNote:'Waybill',
     phone: formData.value.phone,
     mainAffiliationName: mainCategory.value,
     subAffiliationName: subCategory.value,

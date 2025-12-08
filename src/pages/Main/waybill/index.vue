@@ -106,11 +106,9 @@ import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 setupAxiosMock()
 
 const router = useRouter()
-
-const items = ref<any[]>([])
 const searchText = ref('')
 const category = ref('')
-
+const rawData = ref<any[]>([])
 const selectedMain = ref("");
 const selectedSub1 = ref("");
 const selectedSub2 = ref("");
@@ -130,25 +128,27 @@ const moneyTypeLabel: Record<string, string> = {
 
 
 const mapReceiptToRow = (r: any) => {
-const fileTypesArray: string[] =
-  r.receiptList?.flatMap((item: any) => {
-    const fromPaymentDetails = (item.paymentDetails || [])
-      .map((p: any) => p.moneyType?.trim())
-      .filter((t: string) => !!t);
+  const fileTypesArray: string[] =
+    r.receiptList?.flatMap((item: any) => {
+      const fromPaymentDetails = (item.paymentDetails || [])
+        .map((p: any) => p.moneyType?.trim())
+        .filter((t: string) => !!t)
 
-    const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : [];
+      const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : []
 
-    return [...fromPaymentDetails, ...fromReceiptItem];
-  }) || [];
+      return [...fromPaymentDetails, ...fromReceiptItem]
+    }) || []
 
-const uniqueFileTypes = Array.from(new Set(fileTypesArray))
-const fileType = uniqueFileTypes.length > 0
-  ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
-  : '-'
+  const uniqueFileTypes = Array.from(new Set(fileTypesArray))
+  const fileType = uniqueFileTypes.length > 0
+    ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
+    : '-'
+
   return {
     id: r.projectCode,
     statusColorClass: 'text-red-600',
-    org: r.affiliationName,
+    org: r.mainAffiliationName || r.affiliationName || '-',  // ✅ ปรับให้ตรงกับ field จริง
+    subOrg1: r.subAffiliationName || '-',  // ✅ เพิ่ม field
     project: r.fundName,
     year: '2568',
     owner: r.fullName,
@@ -159,7 +159,6 @@ const fileType = uniqueFileTypes.length > 0
           minimumFractionDigits: 2,
         }) + ' บาท'
       : '0.00 บาท',
-
     isLocked: false,
   }
 }
@@ -168,30 +167,70 @@ const fileType = uniqueFileTypes.length > 0
     2) โหลดข้อมูลจาก Fake API
 ================================== */
 const loadData = async () => {
-  const res = await axios.get('/getReceipt')
-
-  // ⭐ 1) กรองเฉพาะประเภท debtor และ other
-  const filtered = res.data.filter((r: any) => {
-    const fileTypesArray: string[] =
-      r.receiptList?.flatMap((item: any) => {
-        const fromPaymentDetails = (item.paymentDetails || [])
-          .map((p: any) => p.moneyType?.trim())
-          .filter((t: string) => !!t)
-
-        const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : []
-
-        return [...fromPaymentDetails, ...fromReceiptItem]
-      }) || []
-
-    const uniqueFileTypes = Array.from(new Set(fileTypesArray))
-
-    // ⭐ เงื่อนไขกรองเฉพาะ debtor หรือ other
-    return uniqueFileTypes.some(t => ['cash', 'bank','transfer'].includes(t))
-  })
-
-  // ⭐ 2) Map เฉพาะข้อมูลที่ผ่านการกรองแล้ว
-  items.value = filtered.map(mapReceiptToRow)
+  try {
+    const res = await axios.get('/getReceipt')
+    
+    console.log('📦 Raw API Response:', res.data) // ✅ Debug: ดูข้อมูลจาก API
+    
+    // กรองเฉพาะ type = 'Waybill'
+    rawData.value = res.data.filter((r: any) => r.moneyTypeNote === 'Waybill')
+    
+    console.log('✅ Filtered Waybill:', rawData.value) // ✅ Debug
+  } catch (error) {
+    console.error('❌ Error loading data:', error)
+    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
+  }
 }
+
+/* =================================
+    🔥 COMPUTED: กรองข้อมูลตาม Filters
+================================== */
+const items = computed(() => {
+  let filtered = [...rawData.value]
+
+  // 1️⃣ Filter ตาม Search Text
+  if (searchText.value.trim()) {
+    const search = searchText.value.toLowerCase()
+    filtered = filtered.filter(r =>
+      r.projectCode?.toLowerCase().includes(search) ||
+      r.fullName?.toLowerCase().includes(search) ||
+      r.fundName?.toLowerCase().includes(search)
+    )
+  }
+
+  // 2️⃣ Filter ตาม หน่วยงานหลัก (selectedMain)
+  if (selectedMain.value) {
+    filtered = filtered.filter(r =>
+      r.mainAffiliationName === selectedMain.value ||
+      r.affiliationName === selectedMain.value  // fallback
+    )
+  }
+
+  // 3️⃣ Filter ตาม หน่วยงานย่อย (selectedSub1)
+  if (selectedSub1.value) {
+    filtered = filtered.filter(r =>
+      r.subAffiliationName === selectedSub1.value
+    )
+  }
+
+  // 4️⃣ (Optional) Filter ตาม selectedSub2 ถ้ามี
+  if (selectedSub2.value) {
+    // ปรับตามโครงสร้างข้อมูลจริง
+    filtered = filtered.filter(r =>
+      r.subAffiliationName2 === selectedSub2.value
+    )
+  }
+
+  console.log('🔍 Filtered Results:', filtered) // ✅ Debug
+
+  // แปลงเป็น Table Row Format
+  return filtered.map(mapReceiptToRow)
+})
+
+/* =================================
+    🛠️ ACTION FUNCTIONS
+================================== */
+
 
 onMounted(loadData)
 

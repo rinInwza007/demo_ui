@@ -42,6 +42,7 @@
                   v-model="formData.phone"
                   placeholder="xxx-xxxx-xxx"
                   class="transition-all duration-200"
+                  @keypress="allowOnlyDigits"
                 />
                 <span v-if="errors.phone" class="text-red-600 text-xs">
                   {{ errors.phone }}
@@ -138,7 +139,7 @@
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
                 <span class="w-1 h-6 bg-green-500 rounded-full"></span>
-                รายการนำส่งเงิน
+                รายการลูกหนี้
               </h2>
               <span class="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                 {{ morelist.length }} รายการ
@@ -147,13 +148,11 @@
             <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4">
               <!-- Header Labels (Hidden on mobile) -->
               <div
-                class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-2 pb-2 border-b border-gray-300 items-center js"
+                class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr] gap-3 px-2 pb-2 border-b border-gray-300 items-center js text-center mr-5"
               >
                 <div class="text-xs font-semibold text-gray-600 uppercase">รายการ</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">จำนวนเงิน</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase">ค่าธรรมเนียม</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">หมายเหตุ</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase">คำสำคัญ</div>
               </div>
 
               <!-- Dynamic Rows -->
@@ -165,7 +164,7 @@
                 >
                   <div>
                     <div
-                      class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-3 items-start"
+                      class="grid grid-cols-1 sm:grid-cols-[3fr_2fr_1fr_auto] gap-3 items-start"
                     >
                       <div class="flex flex-col gap-2">
                         <ItemNameSelect
@@ -181,36 +180,19 @@
                       </div>
                       <!-- จำนวนเงิน -->
                       <div class="flex flex-col gap-1.5">
-                        <button
-                          class="w-full sm:w-auto px-4 py-2 bg-[#7E22CE] text-white rounded-md hover:bg-[#6B21A8] transition-colors duration-200"
-                          @click="openModalForRow(index)"
-                        >
-                          จำนวนเงินรวม
-                        </button>
-                        <Modaldebtor
-                          v-if="showModal === index"
-                          :show="true"
-                          :items="rowItems[index]"
-                          @close="showModal = null"
-                          @input="() => clearRowError(index, 'selectedItems')"
-                          @update:selected="(selected) => updateSelectedItems(index, selected)"
-                        />
+                      <InputText
+                      placeholder="จำนวนเงิน"
+                      v-model="row.money"
+                      @keypress="allowOnlyDigits"
+                      
+                      
+                      
+                      />
                         <span
                           v-if="errors.rows?.[index]?.selectedItems"
                           class="text-red-600 text-xs"
                         >
                           {{ errors.rows[index].selectedItems }}
-                        </span>
-                      </div>
-                      <div class="flex flex-col gap-1.5">
-                        <InputText
-                          v-model="row.fee"
-                          placeholder="ค่าธรรมเนียม"
-                          class="w-full"
-                          @input="() => clearRowError(index, 'fee')"
-                        />
-                        <span v-if="errors.rows?.[index]?.fee" class="text-red-600 text-xs">
-                          {{ errors.rows[index].fee }}
                         </span>
                       </div>
 
@@ -226,12 +208,6 @@
                           {{ errors.rows[index].note }}
                         </span>
                       </div>
-                      <KeywordTomSelect
-                        v-model="row.keyword"
-                        :input-id="`keyword-${index}`"
-                        :error="errors.rows?.[index]?.keyword"
-                        @input="() => clearRowError(index, 'keyword')"
-                      />
                       <!-- Delete Button -->
                       <button
                         v-if="morelist.length > 1"
@@ -279,7 +255,7 @@
             >
               <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
-                รายละเอียดการชำระเงิน
+                รายละเอียดรายการ
               </h3>
 
               <div class="space-y-4">
@@ -296,82 +272,8 @@
                     <span>{{ detail.itemName || 'ไม่ระบุชื่อรายการ' }}</span>
                   </div>
 
-                  <!-- รายการชำระเงิน -->
-                  <div class="space-y-2 mb-4">
-                    <div
-                      v-for="(item, itemIdx) in detail.items"
-                      :key="itemIdx"
-                      class="bg-gray-50 rounded p-3 text-sm"
-                    >
-                      <div class="flex justify-between items-start mb-2">
-                        <!-- แสดง type พร้อม fallback -->
-                        <span
-                          class="font-medium px-2 py-1 rounded"
-                          :class="{
-                            'bg-green-100 text-green-700': item.type === 'เงินสด',
-                            'bg-blue-100 text-blue-700': item.type === 'เช็คธนาคาร',
-                            'bg-orange-100 text-orange-700': item.type === 'ฝากเข้าบัญชี',
-                            'bg-gray-100 text-gray-700': !item.type || item.type === 'ไม่ระบุ',
-                          }"
-                        >
-                          {{ item.type || 'ไม่ระบุประเภท' }}
-                        </span>
-                        <span class="font-bold text-gray-800">
-                          {{ formatNumber(item.amount) }} ฿
-                        </span>
-                      </div>
-
-                      <div class="space-y-1 text-xs text-gray-600">
-                        <div class="flex justify-between">
-                          <span>เลขที่อ้างอิง:</span>
-                          <span class="font-medium">{{ item.referenceNo || '–' }}</span>
-                        </div>
-
-                        <!-- แสดงเฉพาะเช็คธนาคาร -->
-                        <div
-                          v-if="item.type === 'เช็คธนาคาร' && item.checkNumber"
-                          class="flex justify-between"
-                        >
-                          <span>เลขที่เช็ค:</span>
-                          <span class="font-medium">{{ item.checkNumber }}</span>
-                        </div>
-
-                        <!-- แสดงเฉพาะฝากเข้าบัญชี -->
-                        <template v-if="item.type === 'ฝากเข้าบัญชี'">
-                          <div v-if="item.accountNumber" class="flex justify-between">
-                            <span>เลขบัญชี:</span>
-                            <span class="font-medium">{{ item.accountNumber }}</span>
-                          </div>
-                          <div v-if="item.accountName" class="flex justify-between">
-                            <span>ชื่อบัญชี:</span>
-                            <span class="font-medium">{{ item.accountName }}</span>
-                          </div>
-                        </template>
-                      </div>
-                    </div>
-                  </div>
-
                   <!-- Summary ของรายการนี้ -->
                   <div class="border-t border-gray-200 pt-3 space-y-2">
-                    <!-- ยอดรวมก่อนหักค่าธรรมเนียม -->
-                    <div class="flex justify-between items-center text-sm">
-                      <span class="text-gray-600">ยอดรวม:</span>
-                      <span class="font-semibold text-gray-800">
-                        {{ formatNumber(detail.subtotal) }} ฿
-                      </span>
-                    </div>
-
-                    <!-- ค่าธรรมเนียม -->
-                    <div
-                      v-if="detail.fee && detail.fee > 0"
-                      class="flex justify-between items-center text-sm"
-                    >
-                      <span class="text-gray-600">หัก ค่าธรรมเนียม:</span>
-                      <span class="font-semibold text-red-600">
-                        - {{ formatNumber(detail.fee) }} ฿
-                      </span>
-                    </div>
-
                     <!-- หมายเหตุ -->
                     <div v-if="detail.note" class="flex justify-between items-center text-sm">
                       <span class="text-gray-600">หมายเหตุ:</span>
@@ -383,12 +285,12 @@
 
                     <!-- ยอดสุทธิ -->
                     <div class="flex justify-between items-center">
-                      <span class="font-bold text-gray-800">ยอดสุทธิ:</span>
+                      <span class="font-bold text-gray-800">จำนวนเงิน:</span>
                       <span
                         class="font-bold text-lg"
                         :class="detail.netAmount >= 0 ? 'text-green-600' : 'text-red-600'"
                       >
-                        {{ formatNumber(detail.netAmount) }} ฾
+                        {{ formatNumber(detail.netAmount) }} ฿
                       </span>
                     </div>
                   </div>
@@ -449,12 +351,10 @@ import Selects from '@/components/input/select/select.vue'
 import router from '@/router'
 import InputText from '@/components/input/inputtext.vue'
 import { ref, computed, onMounted, watch } from 'vue'
-import Modaldebtor from '@/components/modal/modalwaybilldebtor.vue'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
 import { useReceiptStore } from '@/stores/recipt' // เพิ่ม import
-import { useRowManager } from '@/components/Function/FuncForm'
-import KeywordTomSelect from '@/components/TomSelect/KeywordTomSelect.vue'
+import { useRowManagerDebtor } from '@/components/Function/FunctionDebtor'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
@@ -465,17 +365,14 @@ const gotomainpage = () => {
   router.push('/')
 }
 const {
+  allowOnlyDigits,
   netTotalAmount,
   detailsByRow,
   morelist,
   addRow,
   removeRow,
-  openModalForRow,
-  updateSelectedItems,
-  showModal,
-  rowItems,
   initTomSelect,
-} = useRowManager()
+} = useRowManagerDebtor()
 const formData = ref({
   fullName: '',
   phone: '',
@@ -642,24 +539,12 @@ const saveData = async () => {
     hasError = true
   }
   errors.value.rows = {}
-  morelist.value.forEach((row, index) => {
+  morelist.value.forEach((row) => {
     const rowErrors = {}
     if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
     if (!row.note) rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
-    if (!row.fee) rowErrors.fee = 'กรุณากรอก "ค่าธรรมเนียม"'
-    if (!row.keyword) rowErrors.keyword = 'กรุณากรอก "keyword"'
+    if (!row.money) rowErrors.money = 'กรุณากรอก "จำนวนเงิน"'
 
-    // เช็ค selectedItems
-    if (!row.selectedItems || row.selectedItems.filter((i) => i.checked).length === 0) {
-      rowErrors.selectedItems = 'กรุณาเลือก "จำนวนเงิน" อย่างน้อย 1 รายการ'
-    } else if (row.selectedItems.some((i) => i.checked && !i.amount)) {
-      rowErrors.selectedItems = 'กรุณากรอกจำนวนเงินให้ครบถ้วน'
-    }
-
-    if (Object.keys(rowErrors).length > 0) {
-      errors.value.rows[index] = rowErrors
-      hasError = true
-    }
   })
 
   if (hasError) {
@@ -685,6 +570,7 @@ const saveData = async () => {
   // สร้าง payload ที่มีข้อมูลครบถ้วน
   const payload = {
     fullName: formData.value.fullName,
+    moneyTypeNote:'Debtor',
     phone: formData.value.phone,
     mainAffiliationName: mainCategory.value,
     subAffiliationName: subCategory.value,
@@ -694,32 +580,11 @@ const saveData = async () => {
     netTotalAmount: netTotalAmount.value,
 
     receiptList: morelist.value.map((row) => {
-      const rowTotal =
-        row.selectedItems?.reduce((sum, item) => {
-          return item.checked ? sum + (Number(item.amount) || 0) : sum
-        }, 0) || 0
-
-      const rowFee = Number(row.fee) || 0
-      const rowNetAmount = rowTotal - rowFee
-
       return {
         itemName: row.itemName,
         note: row.note || '',
-        fee: rowFee,
-        keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
-        subtotal: rowTotal,
-        amount: rowNetAmount,
-        paymentDetails:
-          row.selectedItems
-            ?.filter((item) => item.checked)
-            .map((item) => ({
-              moneyType: item.moneyType,
-              amount: Number(item.amount) || 0,
-              referenceNo: item.referenceNo || '',
-              checkNumber: item.checkNumber || item.NumCheck || null,
-              accountNumber: item.accountNumber || item.AccountNum || null,
-              accountName: item.accountName || item.AccountName || null,
-            })) || [],
+        amount: Number(row.money) || 0,
+
       }
     }),
   }
@@ -741,7 +606,7 @@ const saveData = async () => {
     })
 
     // กลับไปหน้าหลัก
-    router.push('/')
+    router.push('/indexwaybilldebtor')
   } catch (err) {
     console.error('Error:', err)
 

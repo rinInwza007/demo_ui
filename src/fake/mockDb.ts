@@ -13,7 +13,7 @@ function defaultSeed(): Receipt[] {
       fundId: 'FUND-01',
       fundName: 'งบกลาง',
       projectCode: 'PRJ-0001',
-      receiptList: [
+      receiptList: [  
         {
           itemName: 'ค่าเอกสาร',
           referenceNo: 'ref-001',
@@ -58,7 +58,11 @@ function defaultSeed(): Receipt[] {
 export function loadReceipts(): Receipt[] {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return defaultSeed();
+    if (!raw) {
+      const seed = defaultSeed();
+      saveReceipts(seed); // ✅ บันทึก seed data ลง localStorage
+      return seed;
+    }
     const data = JSON.parse(raw) as Receipt[];
     return Array.isArray(data) ? data : defaultSeed();
   } catch {
@@ -69,7 +73,8 @@ export function loadReceipts(): Receipt[] {
 export function saveReceipts(list: Receipt[]) {
   localStorage.setItem(LS_KEY, JSON.stringify(list));
 }
-// sanitize helpers
+
+// ✅ sanitize helpers
 export function sanitizeItem(it: ReceiptItem): ReceiptItem {
   return {
     itemName: (it.itemName ?? '').trim(),
@@ -77,10 +82,10 @@ export function sanitizeItem(it: ReceiptItem): ReceiptItem {
     fee: Number.isFinite(it.fee) ? it.fee : 0,
     keyword: Array.isArray(it.keyword) ? it.keyword : [],
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
-    netAmount: Number.isFinite(it.netAmount) ? it.netAmount : 0,
+    amount: Number.isFinite(it.amount) ? it.amount : 0, // ✅ เพิ่ม amount
     paymentDetails: Array.isArray(it.paymentDetails)
       ? it.paymentDetails.map(p => ({
-          moneyType: (p.moneyType ?? p.type ?? '').trim(),
+          moneyType: (p.moneyType ?? '').trim(),
           amount: Number.isFinite(p.amount) ? p.amount : 0,
           referenceNo: (p.referenceNo != null ? String(p.referenceNo) : '').trim(),
           checkNumber: p.checkNumber != null ? String(p.checkNumber).trim() : null,
@@ -96,15 +101,12 @@ export function sanitizeReceipt(r: Receipt): Receipt {
   return {
     fullName: (r.fullName ?? '').trim(),
     phone: (r.phone ?? '').trim(),
-    affiliationId: (r.affiliationId ?? '').trim(),
-    affiliationName: (r.mainAffiliationName ?? '').trim(),
-    fundId: (r.fundId ?? '').trim(),
+    mainAffiliationName: (r.mainAffiliationName ?? '').trim(), // ✅ แก้ไข
     subAffiliationName: (r.subAffiliationName ?? '').trim(),
     fundName: (r.fundName ?? '').trim(),
-    moneyType: (r.moneyType ?? '').trim(),
     projectCode: (r.projectCode ?? '').trim(),
+    moneyTypeNote: (r.moneyTypeNote ?? '').trim(), // ✅ เพิ่ม
     netTotalAmount: Number.isFinite(r.netTotalAmount) ? r.netTotalAmount : 0,
     receiptList: Array.isArray(r.receiptList) ? r.receiptList.map(sanitizeItem) : [],
   };
 }
-

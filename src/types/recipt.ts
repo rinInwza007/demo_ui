@@ -1,7 +1,7 @@
 export type moneySource = 'internal' | 'external';
 
 
-
+export type Type = 'Waybill' | 'Debtor';
 export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other';
 
 export interface ReceiptItem {
@@ -17,8 +17,6 @@ export interface ReceiptItem {
   /** Type of money*/
   moneyType: MoneyType;
 
-  moneyTypeNote?: string;
-
  /** internal or external */
   moneySource: moneySource;
   note?: string;
@@ -32,7 +30,7 @@ export interface ReceiptItem {
 export interface Receipt {
   /** Full name */
   fullName: string;
-
+  moneyTypeNote?: Type;
   /** Phone number */
   phone: string;
 

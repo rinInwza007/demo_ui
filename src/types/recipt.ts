@@ -26,6 +26,7 @@ export interface ReceiptItem {
   keyword?: string[];
   subtotal?: number;
   netAmount?: number;
+  paymentDetails?: PaymentDetails[];
 }
 
 export interface Receipt {
@@ -82,4 +83,18 @@ export interface ReceiptTemplate {
   description?: string;
   /** List of receipt items in the template */
   receiptItems: ReceiptItem[];
+}
+
+export interface PaymentDetails {
+  moneyType: string; // 'cash' | 'bank' | 'transfer'
+  amount: number;
+  referenceNo: string;
+  
+  // สำหรับเช็คธนาคาร
+  checkNumber?: string | null;
+  
+  // สำหรับฝากเข้าบัญชี
+  accountNumber?: string | null;
+  accountName?: string | null;
+  bankName?: string | null;
 }

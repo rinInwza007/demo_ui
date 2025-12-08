@@ -124,29 +124,36 @@ const openModalForRow = (index) => {
 const updateSelectedItems = (index, selected) => {
   console.log('📥 Received from Modal:', selected)
   
-  // ✅ เก็บข้อมูลทั้งหมดที่ส่งมาจาก Modal
-  morelist.value[index].selectedItems = selected.map(item => ({
-    ...item,
-    // ตรวจสอบว่ามีข้อมูลทุก field
-    checked: item.checked,
-    name: item.name,
-    amount: item.amount,
-    referenceNo: item.referenceNo,
-    moneyType: item.moneyType,
-    
+  morelist.value[index].selectedItems = selected.map(item => {
+    // ✅ สร้าง object ใหม่ที่มีข้อมูลครบถ้วน
+    const mappedItem = {
+      checked: item.checked,
+      name: item.name,
+      amount: item.amount || '',
+      referenceNo: item.referenceNo || '',
+      moneyType: item.moneyType,
+      type: item.type || item.paymentType,
+    }
+
     // สำหรับเช็คธนาคาร
-    NumCheck: item.NumCheck || item.checkNumber || null,
-    checkNumber: item.checkNumber || item.NumCheck || null,
-    
-    // สำหรับฝากเข้าบัญชี - ✅ เพิ่มส่วนนี้
-    AccountNum: item.AccountNum || item.accountNumber || null,
-    AccountName: item.AccountName || item.accountName || null,
-    BankName: item.BankName || item.bankName || null,
-    
-    accountNumber: item.accountNumber || item.AccountNum || null,
-    accountName: item.accountName || item.AccountName || null,
-    bankName: item.bankName || item.BankName || null, // ✅ บรรทัดนี้สำคัญมาก!
-  }))
+    if (item.NumCheck !== undefined || item.checkNumber !== undefined) {
+      mappedItem.NumCheck = item.NumCheck || item.checkNumber || ''
+      mappedItem.checkNumber = item.checkNumber || item.NumCheck || ''
+    }
+
+    // ✅ สำหรับฝากเข้าบัญชี - เก็บทั้ง 2 รูปแบบ
+    if (item.AccountNum !== undefined || item.accountNumber !== undefined) {
+      mappedItem.AccountNum = item.AccountNum || item.accountNumber || ''
+      mappedItem.AccountName = item.AccountName || item.accountName || ''
+      mappedItem.BankName = item.BankName || item.bankName || ''
+      
+      mappedItem.accountNumber = item.accountNumber || item.AccountNum || ''
+      mappedItem.accountName = item.accountName || item.AccountName || ''
+      mappedItem.bankName = item.bankName || item.BankName || ''
+    }
+
+    return mappedItem
+  })
   
   console.log('💾 Saved to morelist:', morelist.value[index].selectedItems)
 }

@@ -80,12 +80,13 @@ export function sanitizeItem(it: ReceiptItem): ReceiptItem {
     netAmount: Number.isFinite(it.netAmount) ? it.netAmount : 0,
     paymentDetails: Array.isArray(it.paymentDetails)
       ? it.paymentDetails.map(p => ({
-          moneyType:(p.moneyType ?? p.type ?? ''),
+          moneyType: (p.moneyType ?? p.type ?? '').trim(),
           amount: Number.isFinite(p.amount) ? p.amount : 0,
           referenceNo: (p.referenceNo != null ? String(p.referenceNo) : '').trim(),
-          checkNumber: p.checkNumber != null ? String(p.checkNumber).trim() : '',
-          accountNumber: p.checkNumber != null ? String(p.checkNumber).trim() : '',
+          checkNumber: p.checkNumber != null ? String(p.checkNumber).trim() : null,
+          accountNumber: p.accountNumber != null ? String(p.accountNumber).trim() : null,
           accountName: p.accountName?.trim() || null,
+          bankName: p.bankName != null ? String(p.bankName).trim() : null,
         }))
       : [],
   };

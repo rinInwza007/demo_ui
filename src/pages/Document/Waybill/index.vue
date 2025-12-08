@@ -728,26 +728,28 @@ const saveData = async () => {
       const rowFee = Number(row.fee) || 0
       const rowNetAmount = rowTotal - rowFee
 
-      return {
-        itemName: row.itemName,
-        note: row.note || '',
-        fee: rowFee,
-        keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
-        subtotal: rowTotal,
-        amount: rowNetAmount,
-        paymentDetails:
-          row.selectedItems
-            ?.filter((item) => item.checked)
-            .map((item) => ({
-              moneyType: item.moneyType,
-              amount: Number(item.amount) || 0,
-              referenceNo: item.referenceNo || '',
-              checkNumber: item.checkNumber || item.NumCheck || null,
-              accountName: item.accountName || item.AccountName || null,
-              accountNumber: item.accountNumber || item.AccountNum || null,
-              bankName: item.bankName || item.BankName || null,
-            })) || [],
-      }
+        return {
+          itemName: row.itemName,
+          note: row.note || '',
+          fee: rowFee,
+          keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
+          subtotal: rowTotal,
+          amount: rowNetAmount,
+          paymentDetails:
+            row.selectedItems
+              ?.filter((item) => item.checked)
+              .map((item) => ({
+                moneyType: item.moneyType,
+                amount: Number(item.amount) || 0,
+                referenceNo: item.referenceNo || '',
+                // เช็คธนาคาร
+                checkNumber: item.checkNumber || item.NumCheck || null,
+                // ✅ ฝากเข้าบัญชี - ใช้ชื่อที่ต้องการส่งไป API
+                accountName: item.accountName || item.AccountName || null,
+                accountNumber: item.accountNumber || item.AccountNum || null,
+                bankName: item.bankName || item.BankName || null,
+              })) || [],
+        }
     }),
   }
 

@@ -240,7 +240,36 @@ onMounted(loadData)
 const view = (item: any) => {
   router.push(`/pdfpage/${item.id}`)
 }
+const updateReceipt = async (item: any, updatedData: any) => {
+  try {
+    Swal.fire({
+      title: 'กำลังบันทึก...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
 
+    // ส่ง PUT request ด้วย projectCode
+    await axios.put(`/updateReceipt/${item.id}`, updatedData);
+
+    // โหลดข้อมูลใหม่
+    await loadData();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'บันทึกสำเร็จ!',
+      showConfirmButton: false,
+      timer: 1500
+    });
+
+  } catch (error) {
+    console.error('❌ Update Error:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: 'ไม่สามารถบันทึกข้อมูลได้'
+    });
+  }
+};
 const edit = (item: any) => {
   router.push(`/edit/${item.id}`)
 }

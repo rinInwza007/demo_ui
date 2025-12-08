@@ -11,6 +11,7 @@ import indexsavedebtor from "@/pages/Main/savedebtor/index.vue"
 import indexwaybilldebtor from "@/pages/Main/waybilldebtor/index.vue"
 import ClearDebtor from '@/pages/Document/ClearDebtor/index.vue'
 
+
 const routes = [
   { path: '/', name: 'main', component: Main },
   { path: '/waybill', name: 'waybill', component: Waybill },
@@ -22,7 +23,7 @@ const routes = [
   { path: '/pdfpage', name: 'pdfpage',component:pdfpage},
   { path: '/edit', name: 'edit',component:edit},
   { path: '/cleardebtor', name: 'cleardebtor',component:ClearDebtor},
-
+  {path: '/edit/:id',name: 'EditReceipt',component: edit},
   { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor',component:indexwaybilldebtor}
 ]
 

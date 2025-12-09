@@ -14,6 +14,7 @@ export function setupAxiosMock() {
     const db = loadReceipts();
     const found = db.find(r => r.projectCode === id || (r as any).id === id);
     if (!found) return [404, { message: 'Not found' }];
+    console.log('✅ Found receipt:', found);
     return [200, found];
   });
 
@@ -56,16 +57,36 @@ export function setupAxiosMock() {
   });
 
   // PUT /updateReceipt
-  mock.onPut('/updateReceipt').reply(config => {
-    const incoming = sanitizeReceipt(JSON.parse(config.data));
-    if (!incoming.projectCode) return [400, { message: 'projectCode is required' }];
+ mock.onPut(/\/updateReceipt\/(.+)$/).reply(config => {
+    const matches = config.url?.match(/\/updateReceipt\/(.+)$/);
+    const projectCode = matches ? decodeURIComponent(matches[1]) : '';
+    const incoming = JSON.parse(config.data);
+    
+    console.log('🔄 Update Request:', { projectCode, incoming });
+    
+    if (!projectCode) return [400, { message: 'projectCode is required' }];
 
     const db = loadReceipts();
-    const idx = db.findIndex(r => r.projectCode === incoming.projectCode);
-    if (idx === -1) return [404, { message: 'Not found' }];
-    db[idx] = incoming;
+    const idx = db.findIndex(r => r.projectCode === projectCode);
+    
+    if (idx === -1) {
+      console.error('❌ Not found:', projectCode);
+      console.log('Available projectCodes:', db.map(r => r.projectCode));
+      return [404, { message: 'Receipt not found' }];
+    }
+
+    // Merge ข้อมูลเดิมกับข้อมูลใหม่
+    const updated = sanitizeReceipt({
+      ...db[idx],
+      ...incoming,
+      projectCode // ใช้ projectCode เดิม
+    });
+    
+    db[idx] = updated;
     saveReceipts(db);
-    return [200, incoming];
+    
+    console.log('✅ Updated successfully:', updated);
+    return [200, updated];
   });
 
   // DELETE /deleteReceipt/:id

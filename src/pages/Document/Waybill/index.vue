@@ -510,7 +510,7 @@ const formData = ref({
   subAffiliationName: '',
   fundName: '',
   projectCode: '',
-  sendmoney: null,
+  sendmoney: '',
   receiptList: '',
 })
 const itemNameInstances = ref({})

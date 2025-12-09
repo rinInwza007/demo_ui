@@ -39,7 +39,6 @@ const allowOnlyDigits = (e) => {
     e.preventDefault()
   }
 }
-
 const defaultItems = [
   { 
     name: 'cash', 

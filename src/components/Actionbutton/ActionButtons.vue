@@ -70,5 +70,5 @@ defineProps({
   showCleardedtor:{type:Boolean,default :false}
 })
 
-defineEmits(["view", "edit", "lock", "delete"])
+defineEmits(["view", "edit", "lock", "delete","cleardebtor"])
 </script>

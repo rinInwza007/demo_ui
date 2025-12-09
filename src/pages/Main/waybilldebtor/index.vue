@@ -11,7 +11,7 @@
         </div>
 
         <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">ใบนำส่งลูกหนี้</h1>
-        
+
       </div>
 
       <!-- Filters Row -->
@@ -127,39 +127,43 @@ const moneyTypeLabel: Record<string, string> = {
 };
 
 const mapReceiptToRow = (r: any) => {
-const fileTypesArray: string[] =
-  r.receiptList?.flatMap((item: any) => {
-    const fromPaymentDetails = (item.paymentDetails || [])
-      .map((p: any) => p.moneyType?.trim())
-      .filter((t: string) => !!t);
+  const fileTypesArray: string[] =
+    r.receiptList?.flatMap((item: any) => {
+      const fromPaymentDetails = (item.paymentDetails || [])
+        .map((p: any) => p.moneyType?.trim())
+        .filter((t: string) => !!t)
 
-    const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : [];
+      const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : []
 
-    return [...fromPaymentDetails, ...fromReceiptItem];
-  }) || [];
+      return [...fromPaymentDetails, ...fromReceiptItem]
+    }) || []
 
-const uniqueFileTypes = Array.from(new Set(fileTypesArray))
-const fileType = uniqueFileTypes.length > 0
-  ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
-  : '-'
+  const uniqueFileTypes = Array.from(new Set(fileTypesArray))
+  const fileType = uniqueFileTypes.length > 0
+    ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
+    : '-'
+
   return {
     id: r.projectCode,
     statusColorClass: 'text-red-600',
-    org: r.mainAffiliationName || r.affiliationName || '-', 
+    org: r.mainAffiliationName || r.affiliationName || '-',
+    subOrg1: r.subAffiliationName || '-',
     project: r.fundName,
     year: '2568',
     owner: r.fullName,
     time: '-',
-    fileType: 'ลูกหนี้',
+    fileType,
     amount: r.netTotalAmount
       ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', {
           minimumFractionDigits: 2,
         }) + ' บาท'
       : '0.00 บาท',
 
-    isLocked: false,
+    // 🔥🔥🔥 สำคัญที่สุด — ตรงนี้ต้องใช้ค่าจาก rawData
+    isLocked: r.isLocked ?? false,
   }
 }
+
 
 /* =================================
     2) โหลดข้อมูลจาก Fake API
@@ -167,19 +171,26 @@ const fileType = uniqueFileTypes.length > 0
 const loadData = async () => {
   try {
     const res = await axios.get('/getReceipt')
-    
-    console.log('📦 Raw API Response:', res.data) // ✅ Debug: ดูข้อมูลจาก API
-    
-    // กรองเฉพาะ type = 'Waybill'
-    rawData.value = res.data.filter((r: any) => r.moneyTypeNote === 'Debtor')
-    
-    console.log('✅ Filtered Waybill:', rawData.value) // ✅ Debug
+
+    console.log('📦 Raw API Response:', res.data)
+
+    // 1) กรองเฉพาะ type = 'Debtor'
+    rawData.value = res.data
+      .filter((r: any) => r.moneyTypeNote === 'Debtor')
+      .map((r: any) => ({
+        ...r,
+
+        // 🔥 เพิ่มสถานะล็อกให้ทุกรายการ
+        isLocked: r.isLocked ?? false,
+      }))
+
+    console.log('✅ Filtered + Added isLocked:', rawData.value)
+
   } catch (error) {
     console.error('❌ Error loading data:', error)
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
   }
 }
-
 /* =================================
     🔥 COMPUTED: กรองข้อมูลตาม Filters
 ================================== */
@@ -239,15 +250,20 @@ const edit = (item: any) => {
 }
 
 const toggleLock = (item: any) => {
-  item.isLocked = !item.isLocked
+  const target = rawData.value.find(r => r.projectCode === item.id)
+  if (!target) return
+
+  target.isLocked = !target.isLocked
+
   Swal.fire({
     position: 'top-end',
     icon: 'success',
-    title: item.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
+    title: target.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
     showConfirmButton: false,
     timer: 1500,
   })
 }
+
 
 const removeItem = async (item: any) => {
   const result = await Swal.fire({

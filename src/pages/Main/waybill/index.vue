@@ -159,7 +159,7 @@ const mapReceiptToRow = (r: any) => {
           minimumFractionDigits: 2,
         }) + ' บาท'
       : '0.00 บาท',
-    isLocked: false,
+    isLocked: r.isLocked ?? false,
   }
 }
 
@@ -169,18 +169,25 @@ const mapReceiptToRow = (r: any) => {
 const loadData = async () => {
   try {
     const res = await axios.get('/getReceipt')
-    
-    console.log('📦 Raw API Response:', res.data) // ✅ Debug: ดูข้อมูลจาก API
-    
-    // กรองเฉพาะ type = 'Waybill'
-    rawData.value = res.data.filter((r: any) => r.moneyTypeNote === 'Waybill')
-    
-    console.log('✅ Filtered Waybill:', rawData.value) // ✅ Debug
+
+    console.log('📦 Raw API Response:', res.data)
+    rawData.value = res.data
+
+      .filter((r: any) => r.moneyTypeNote === 'Waybill')
+      .map((r: any) => ({
+        ...r,
+
+        isLocked: r.isLocked ?? false,
+      }))
+
+    console.log('✅ Filtered + Added isLocked:', rawData.value)
+
   } catch (error) {
     console.error('❌ Error loading data:', error)
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
   }
 }
+
 
 /* =================================
     🔥 COMPUTED: กรองข้อมูลตาม Filters
@@ -188,44 +195,33 @@ const loadData = async () => {
 const items = computed(() => {
   let filtered = [...rawData.value]
 
-  // 1️⃣ Filter ตาม Search Text
+  // (Search Filter)
   if (searchText.value.trim()) {
-    const search = searchText.value.toLowerCase()
+    const s = searchText.value.toLowerCase()
     filtered = filtered.filter(r =>
-      r.projectCode?.toLowerCase().includes(search) ||
-      r.fullName?.toLowerCase().includes(search) ||
-      r.fundName?.toLowerCase().includes(search)
+      r.projectCode?.toLowerCase().includes(s) ||
+      r.fullName?.toLowerCase().includes(s) ||
+      r.fundName?.toLowerCase().includes(s)
     )
   }
 
-  // 2️⃣ Filter ตาม หน่วยงานหลัก (selectedMain)
+  // (Filter หน่วยงาน)
   if (selectedMain.value) {
     filtered = filtered.filter(r =>
       r.mainAffiliationName === selectedMain.value ||
-      r.affiliationName === selectedMain.value  // fallback
+      r.affiliationName === selectedMain.value
     )
   }
 
-  // 3️⃣ Filter ตาม หน่วยงานย่อย (selectedSub1)
   if (selectedSub1.value) {
     filtered = filtered.filter(r =>
       r.subAffiliationName === selectedSub1.value
     )
   }
 
-  // 4️⃣ (Optional) Filter ตาม selectedSub2 ถ้ามี
-  if (selectedSub2.value) {
-    // ปรับตามโครงสร้างข้อมูลจริง
-    filtered = filtered.filter(r =>
-      r.subAffiliationName2 === selectedSub2.value
-    )
-  }
-
-  console.log('🔍 Filtered Results:', filtered) // ✅ Debug
-
-  // แปลงเป็น Table Row Format
   return filtered.map(mapReceiptToRow)
 })
+
 
 /* =================================
     🛠️ ACTION FUNCTIONS
@@ -245,16 +241,21 @@ const edit = (item: any) => {
   router.push(`/edit/${item.id}`)
 }
 
-const toggleLock = (item: any) => {
-  item.isLocked = !item.isLocked
+const toggleLock = (row: any) => {
+  const target = rawData.value.find(r => r.projectCode === row.id)
+  if (!target) return
+
+  target.isLocked = !target.isLocked
+
   Swal.fire({
     position: 'top-end',
     icon: 'success',
-    title: item.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
+    title: target.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
     showConfirmButton: false,
     timer: 1500,
   })
 }
+
 
 const removeItem = async (item: any) => {
   const result = await Swal.fire({

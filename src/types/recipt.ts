@@ -14,7 +14,7 @@ export interface ReceiptItem {
 
   /** Reference number */
   referenceNo: string;
-
+//
   /** Amount */
   amount: number;
 

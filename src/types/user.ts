@@ -1,5 +1,8 @@
+import { Affiliation } from "./affiliation";
+
 
 export type roleType = 'user' | 'treasury' | 'admin' | 'superadmin';
+
 
 export interface User {
   /** User ID */
@@ -8,8 +11,8 @@ export interface User {
   fullName: string;
   /** User affiliation */
   affiliation: string;
-  /** User affiliation ID */
-  affiliationId: string;
+  /** User affiliation  */
+  Affiliation: Affiliation;
   /** User role */
   role: roleType;
   /** User email */

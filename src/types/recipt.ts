@@ -20,7 +20,7 @@ export interface ReceiptItem {
  /** internal or external */
   moneySource: moneySource;
   note?: string;
-  fee?: number; // 👈 fee อยู่ตรงนี้
+  fee?: number; //
   keyword?: string[];
   subtotal?: number;
   netAmount?: number;

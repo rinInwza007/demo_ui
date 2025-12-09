@@ -171,7 +171,7 @@
               <div class="space-y-4">
                 <div
                   v-for="(row, index) in morelist"
-                  :key="index"
+                  :key="row.id"
                   class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-200"
                 >
                   <div class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-3 items-start">
@@ -190,7 +190,7 @@
                     <div class="flex flex-col gap-1.5">
                       <button
                         class="w-full px-4 py-2 bg-[#7E22CE] text-white rounded-md hover:bg-[#6B21A8] transition-colors"
-                        @click="openModalForRow(index)"
+                        @click="openModalForRowEdit(index)"
                       >
                         จำนวนเงิน
                       </button>
@@ -235,21 +235,21 @@
                     </div>
 
                     <!-- Delete Button -->
-                    <button
-                      v-if="morelist.length > 1"
-                      @click="removeRow(index)"
-                      class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="ลบรายการ"
-                    >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
+                      <button
+                        v-if="morelist.length > 1"
+                        @click="removeRow(index)"
+                        class="mt-0 sm:mt-0 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start sm:self-center"
+                        title="ลบรายการ"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
                   </div>
 
                   <!-- รายละเอียดรายการ (ตามหน้า Add) -->
@@ -304,7 +304,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted,watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Swal from 'sweetalert2'
@@ -313,19 +313,49 @@ import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select/select.vue'
 import InputText from '@/components/input/inputtext.vue'
 import Modal from '@/components/modal/modalwaybill.vue'
-
+import { useRowManager } from '@/components/Function/FuncForm'
 const route = useRoute()
 const router = useRouter()
 const projectCode = ref(route.params.id)
 const loading = ref(true)
-
+const {
+  allowOnlyDigits,
+  netTotalAmount,
+  getRowDetail,
+  morelist,
+  addRow,
+  removeRow,
+  updateSelectedItems,
+  showModal,
+  rowItems,
+  initTomSelect,
+} = useRowManager()
 // ตัวเลือกหน่วยงาน (เหมือนหน้า Add)
 const options = {
   คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ: [
     'ศูนย์ศึกษาเศรษฐกิจพอเพียงและความอยู่รอดของมนุษยชาติ',
     'ศูนย์ฝึกอบรมวิชาชีพและบริการนานาชาติด้านเกษตรและอาหาร',
   ],
-  // ... (ใส่ options เหมือนหน้า Add)
+  คณะทันตแพทยศาสตร์: ['โรงพยาบาลทันตกรรมมหาวิทยาลัยพะเยา'],
+  คณะพยาบาลศาสตร์: ['ศูนย์พัฒนาเด็กเล็ก'],
+  คณะพลังงานและสิ่งแวดล้อม: [
+    '1.ศูนย์วิจัยพลังงานทดแทนและสิ่งแวดล้อม',
+    '1.1หน่วยปฏิบัติการทดสอบทางสิ่งแวดล้อม',
+    '1.2 หน่วยรับรองการจัดการก๊าซเรือนกระจก',
+  ],
+  คณะแพทยศาสตร์: ['โรงพยาบาลมหาวิทยาลัยพะเยา'],
+  คณะเภสัชศาสตร์: ['สถานปฏิบัติการเภสัชกรรมชุมชน'],
+  คณะวิทยาศาสตร์: ['ศูนย์การเรียนรู้ความเป็นเลิศทางวิทยาศาสตร์และบริการวิชาการ'],
+  คณะวิศวกรรมศาสตร์: ['ศูนย์วิจัยและบริการวิชาการวิศวกรรม', 'ศูนย์เทคโนโลยียานยนต์และขนส่ง'],
+  คณะสถาปัตยกรรมศาสตร์และศิลปกรรมศาสตร์: ['ศูนย์บริการวิชาการงานสร้างสรรค์'],
+  คณะศิลปศาสตร์: ['ศูนย์ภาษา'],
+  คณะสหเวชศาสตร์: ['ศูนย์บริการสุขภาพสหเวชศาสตร์'],
+  วิทยาลัยการจัดการ: [],
+  กองทรัพย์สิน: ['งานบริหารพื้นที่', 'งานโรงแรมฟ้ามุ่ยและเอื้องคำ', 'งานร้านค้าสวัสดิการ'],
+  โรงเรียนสาธิตมหาวิทยาลัยพะเยา: [],
+  วิทยาเขตเชียงราย: [],
+  สถาบันนวัตกรรมและถ่ายทอดเทคโนโลยี: [],
+  สถาบันนวัตกรรมการเรียนรู้: [],
 }
 
 const mainCategory = ref('')
@@ -341,26 +371,15 @@ const formData = ref({
   sendmoney: '',
   projectCode: ''
 })
-
-const morelist = ref([
-  {
-    itemName: '',
-    note: '',
-    fee: 0,
-    keyword: [],
-    selectedItems: []
-  }
-])
-
 const errors = ref({})
-const showModal = ref(null)
-const rowItems = ref([])
-
-// 🔥 โหลดข้อมูลเดิม
 onMounted(async () => {
   try {
-    const response = await axios.get(`/findOneReceipt/${projectCode.value}`)
-    const data = response.data
+    console.log('🔍 Loading receipt:', projectCode.value);
+    
+    const response = await axios.get(`/findOneReceipt/${projectCode.value}`);
+    const data = response.data;
+
+    console.log('📦 Loaded data:', data);
 
     formData.value = {
       fullName: data.fullName || '',
@@ -368,25 +387,29 @@ onMounted(async () => {
       fundName: data.fundName || '',
       sendmoney: data.moneyTypeNote || '',
       projectCode: data.projectCode || ''
-    }
+    };
 
-    mainCategory.value = data.mainAffiliationName || ''
-    subCategory.value = data.subAffiliationName || ''
+    mainCategory.value = data.mainAffiliationName || '';
+    subCategory.value = data.subAffiliationName || '';
 
     if (data.receiptList?.length > 0) {
-      morelist.value = data.receiptList.map(receipt => ({
+      morelist.value = data.receiptList.map((receipt) => ({
         itemName: receipt.itemName || '',
         note: receipt.note || '',
         fee: Number(receipt.fee) || 0,
-        keyword: Array.isArray(receipt.keyword) ? receipt.keyword : receipt.keyword ? [receipt.keyword] : [],
-        selectedItems: (receipt.paymentDetails || []).map(payment => ({
+        keyword: Array.isArray(receipt.keyword) 
+          ? receipt.keyword 
+          : receipt.keyword ? [receipt.keyword] : [],
+        selectedItems: (receipt.paymentDetails || []).map((payment) => ({
           moneyType: payment.moneyType,
           name: getPaymentTypeName(payment.moneyType),
           checked: true,
           amount: payment.amount || '',
           referenceNo: payment.referenceNo || '',
+          // เช็คธนาคาร
           checkNumber: payment.checkNumber || '',
           NumCheck: payment.checkNumber || '',
+          // ฝากเข้าบัญชี
           accountName: payment.accountName || '',
           AccountName: payment.accountName || '',
           accountNumber: payment.accountNumber || '',
@@ -394,21 +417,100 @@ onMounted(async () => {
           bankName: payment.bankName || '',
           BankName: payment.bankName || ''
         }))
-      }))
+      }));
     }
 
-    loading.value = false
-  } catch (error) {
-    console.error('❌ Error:', error)
-    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
-    router.back()
-  }
-})
+    loading.value = false;
+    console.log('✅ Data loaded successfully');
 
-// Helper functions (เหมือนหน้า Add)
-const allowOnlyDigits = (event) => {
-  if (!/\d/.test(event.key)) event.preventDefault()
-}
+  } catch (error) {
+    console.error('❌ Load Error:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'ข้อผิดพลาด',
+      text: 'ไม่สามารถโหลดข้อมูลได้',
+      confirmButtonText: 'ตกลง'
+    });
+    router.back();
+  }
+});
+
+
+// 🔥 Override function เพื่อรองรับการแก้ไข
+const openModalForRowEdit = (index) => {
+  console.log('🔍 Opening modal for row:', index);
+  console.log('Current row data:', morelist.value[index]);
+
+  // 🟢 Default ทั้ง 3 ประเภท
+  const defaultItems = [
+    { 
+      name: 'เงินสด',
+      moneyType: 'cash',
+      checked: false,
+      amount: '',
+      referenceNo: ''
+    },
+    { 
+      name: 'เช็ค',
+      moneyType: 'bank',
+      checked: false,
+      amount: '',
+      referenceNo: '',
+      NumCheck: '',
+      checkNumber: ''
+    },
+    { 
+      name: 'ฝากเข้าบัญชี',
+      moneyType: 'transfer',
+      checked: false,
+      amount: '',
+      referenceNo: '',
+      AccountNum: '',
+      accountNumber: '',
+      AccountName: '',
+      accountName: '',
+      BankName: '',
+      bankName: ''
+    }
+  ];
+
+  // ถ้ามี selectedItems ของแถวนี้
+  const existing = morelist.value[index]?.selectedItems || [];
+
+  // 🧩 สร้าง structure แบบ 3 ประเภทเสมอ
+  const mergedItems = defaultItems.map(def => {
+    // ค้นหาข้อมูลเก่า (ถ้ามี)
+    const exist = existing.find(i => i.moneyType === def.moneyType);
+
+    if (exist) {
+      // รวมข้อมูลเก่าเข้ากับ default
+      return {
+        ...def,
+        ...exist,
+        checked: true, // มีข้อมูลเก่า → เปิดใช้งาน
+        name: exist.name || getPaymentTypeName(exist.moneyType)
+      };
+    }
+
+    // ไม่มีข้อมูลเก่า → ใช้ค่า default
+    return { ...def };
+  });
+
+  // 🟣 เซตค่าเข้า modal
+  rowItems.value[index] = mergedItems;
+
+  console.log('✅ Final merged items:', mergedItems);
+
+  showModal.value = index;
+};
+
+
+watch(showModal, (newVal) => {
+  if (newVal !== null) {
+    console.log('📋 Modal opened for row:', newVal);
+    console.log('Items in modal:', rowItems.value[newVal]);
+  }
+});
 
 const formatNumber = (num) => {
   return Number(num).toLocaleString('th-TH', { minimumFractionDigits: 2 })
@@ -432,143 +534,157 @@ const totalAmount = computed(() => {
     return sum + (rowTotal - (Number(row.fee) || 0))
   }, 0)
 })
-
-const updateSelectedItems = (index, selected) => {
-  morelist.value[index].selectedItems = selected.filter(i => i.checked)
-}
-
-const openModalForRow = (index) => {
-  if (!rowItems.value[index]) {
-    if (morelist.value[index]?.selectedItems?.length > 0) {
-      rowItems.value[index] = JSON.parse(JSON.stringify(morelist.value[index].selectedItems))
-    } else {
-      rowItems.value[index] = [
-        { name: 'เงินสด', moneyType: 'cash', checked: false, amount: '', referenceNo: '' },
-        { name: 'เช็คธนาคาร', moneyType: 'bank', checked: false, amount: '', referenceNo: '', NumCheck: '' },
-        { name: 'ฝากเข้าบัญชี', moneyType: 'transfer', checked: false, amount: '', referenceNo: '', AccountNum: '', AccountName: '', BankName: '' }
-      ]
-    }
-  }
-  showModal.value = index
-}
-
-const addRow = () => {
-  morelist.value.push({
-    itemName: '',
-    note: '',
-    fee: 0,
-    keyword: [],
-    selectedItems: []
-  })
-}
-
-const removeRow = (index) => {
-  if (morelist.value.length > 1) {
-    morelist.value.splice(index, 1)
-  }
-}
-
-const getRowDetail = (index) => {
-  const row = morelist.value[index]
-  if (!row?.itemName || !row.selectedItems?.some(i => i.checked)) return null
-
-  const items = row.selectedItems
-    .filter(i => i.checked)
-    .map(i => ({
-      type: getPaymentTypeName(i.moneyType || i.name),
-      amount: Number(i.amount) || 0,
-      referenceNo: i.referenceNo,
-      checkNumber: i.NumCheck || i.checkNumber,
-      accountName: i.AccountName || i.accountName,
-      accountNumber: i.AccountNum || i.accountNumber,
-      bankName: i.BankName || i.bankName
-    }))
-
-  const subtotal = items.reduce((sum, i) => sum + i.amount, 0)
-  const fee = Number(row.fee) || 0
-
-  return {
-    hasItemName: !!row.itemName,
-    itemName: row.itemName,
-    items,
-    subtotal,
-    fee,
-    note: row.note,
-    netAmount: subtotal - fee
-  }
-}
-
 const saveData = async () => {
-  errors.value = {}
-
-  // Validation (เหมือนหน้า Add)
+  // รีเซ็ต error
+  errors.value = { rows: {} };
+  let hasError = false;
   if (!formData.value.fullName) {
-    errors.value.fullName = 'กรุณากรอก "ชื่อ"'
-    return
+    errors.value.fullName = 'กรุณากรอก "ชื่อ"';
+    hasError = true;
   }
-  // ... (ใส่ validation เหมือนหน้า Add)
+  if (!formData.value.phone) {
+    errors.value.phone = 'กรุณากรอก "เบอร์โทรติดต่อ"';
+    hasError = true;
+  }
+  if (!formData.value.fundName) {
+    errors.value.fundName = 'กรุณาเลือก "กองทุน"';
+    hasError = true;
+  }
+  if (!mainCategory.value) {
+    errors.value.mainCategory = 'กรุณาเลือก "หน่วยงาน"';
+    hasError = true;
+  }
+  if (!subCategory.value) {
+    errors.value.subCategory = 'กรุณาเลือก "หน่วยงานย่อย"';
+    hasError = true;
+  }
+  if (!formData.value.sendmoney) {
+    errors.value.sendmoney = 'กรุณาเลือก "ขอนำส่งเงิน"';
+    hasError = true;
+  }
+
+  // Validate แต่ละ row
+  morelist.value.forEach((row, index) => {
+    const rowErrors = {};
+    if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"';
+    if (!row.note) rowErrors.note = 'กรุณากรอก "หมายเหตุ"';
+
+    // เช็ค selectedItems
+    if (!row.selectedItems || row.selectedItems.filter(i => i.checked).length === 0) {
+      rowErrors.selectedItems = 'กรุณาเลือก "จำนวนเงิน" อย่างน้อย 1 รายการ';
+    } else if (row.selectedItems.some(i => i.checked && !i.amount)) {
+      rowErrors.selectedItems = 'กรุณากรอกจำนวนเงินให้ครบถ้วน';
+    }
+
+    if (Object.keys(rowErrors).length > 0) {
+      errors.value.rows[index] = rowErrors;
+      hasError = true;
+    }
+  });
+
+  if (hasError) {
+    Swal.fire({
+      icon: 'error',
+      title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+      text: 'มีข้อมูลบางช่องที่ยังไม่ได้กรอกหรือกรอกไม่ถูกต้อง',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#7E22CE'
+    });
+    return;
+  }
+
+  // แสดง loading
+  Swal.fire({
+    title: 'กำลังบันทึก...',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  // สร้าง payload
+  const updatedData = {
+    projectCode: formData.value.projectCode,
+    fullName: formData.value.fullName,
+    phone: formData.value.phone,
+    mainAffiliationName: mainCategory.value,
+    subAffiliationName: subCategory.value,
+    fundName: formData.value.fundName,
+    moneyTypeNote: formData.value.moneyTypeNote,
+    netTotalAmount: totalAmount.value,
+    receiptList: morelist.value.map(row => {
+      const rowTotal = (row.selectedItems || [])
+        .filter(i => i.checked)
+        .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      
+      const fee = Number(row.fee) || 0;
+
+      return {
+        itemName: row.itemName,
+        note: row.note || '',
+        fee: fee,
+        keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
+        subtotal: rowTotal,
+        amount: rowTotal - fee,
+        paymentDetails: (row.selectedItems || [])
+          .filter(i => i.checked)
+          .map(item => ({
+            moneyType: item.moneyType || getPaymentTypeCode(item.name),
+            amount: Number(item.amount) || 0,
+            referenceNo: item.referenceNo || '',
+            checkNumber: item.checkNumber || item.NumCheck || null,
+            accountName: item.accountName || item.AccountName || null,
+            accountNumber: item.accountNumber || item.AccountNum || null,
+            bankName: item.bankName || item.BankName || null
+          }))
+      };
+    })
+  };
 
   try {
-    Swal.fire({
-      title: 'กำลังบันทึก...',
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    })
+    console.log('📤 Sending update:', updatedData);
+    
+    // ✅ ใช้ encodeURIComponent เพื่อ encode projectCode
+    const response = await axios.put(
+      `/updateReceipt/${encodeURIComponent(projectCode.value)}`,
+      updatedData
+    );
 
-    const updatedData = {
-      projectCode: formData.value.projectCode,
-      fullName: formData.value.fullName,
-      phone: formData.value.phone,
-      mainAffiliationName: mainCategory.value,
-      subAffiliationName: subCategory.value,
-      fundName: formData.value.fundName,
-      moneyTypeNote: formData.value.sendmoney,
-      netTotalAmount: totalAmount.value,
-      receiptList: morelist.value.map(row => {
-        const rowTotal = (row.selectedItems || [])
-          .filter(i => i.checked)
-          .reduce((s, i) => s + (Number(i.amount) || 0), 0)
-        const fee = Number(row.fee) || 0
+    console.log('✅ Update successful:', response.data);
 
-        return {
-          itemName: row.itemName,
-          note: row.note || '',
-          fee,
-          keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
-          subtotal: rowTotal,
-          amount: rowTotal - fee,
-          paymentDetails: (row.selectedItems || [])
-            .filter(i => i.checked)
-            .map(i => ({
-              moneyType: i.moneyType || getPaymentTypeCode(i.name),
-              amount: Number(i.amount) || 0,
-              referenceNo: i.referenceNo || '',
-              checkNumber: i.checkNumber || i.NumCheck || null,
-              accountName: i.accountName || i.AccountName || null,
-              accountNumber: i.accountNumber || i.AccountNum || null,
-              bankName: i.bankName || i.BankName || null
-            }))
-        }
-      })
-    }
-
-    await axios.put(`/updateReceipt/${encodeURIComponent(projectCode.value)}`, formData.value)
-
-
-    Swal.fire({
+    await Swal.fire({
       icon: 'success',
       title: 'บันทึกสำเร็จ!',
-      timer: 1500,
-      showConfirmButton: false
-    })
+      text: 'แก้ไขข้อมูลเรียบร้อยแล้ว',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#7E22CE',
+      timer: 2000,
+      timerProgressBar: true
+    });
 
-    setTimeout(() => router.push('/waybill'), 1500)
+    // กลับไปหน้าหลัก
+    router.push('/');
 
   } catch (error) {
-    console.error('❌ Error:', error)
-    Swal.fire('ข้อผิดพลาด', error.response?.data?.message || 'ไม่สามารถบันทึกได้', 'error')
+    console.error('❌ Update Error:', error);
+    
+    let errorMessage = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+    
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Data:', error.response.data);
+      errorMessage = error.response.data.message || errorMessage;
+    } else if (error.request) {
+      errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+    }
+
+    Swal.fire({
+      icon: 'error',
+      title: 'บันทึกไม่สำเร็จ',
+      text: errorMessage,
+      confirmButtonText: 'ลองอีกครั้ง',
+      confirmButtonColor: '#DC2626'
+    });
   }
-}
+};
 
 const gotomainpage = () => {
   router.back()

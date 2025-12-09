@@ -49,7 +49,7 @@
               class="border-2 rounded-xl p-5 transition-all duration-200"
               :class="
                 item.checked
-                  ? getColorClasses(item.name) + ' shadow-md'
+                  ? getColorClasses(item) + ' shadow-md'
                   : 'border-gray-200 bg-white hover:border-gray-300'
               "
             >
@@ -59,7 +59,7 @@
                   <input
                     type="checkbox"
                     v-model="item.checked"
-                    @change="handleInput"
+                    @change="handleCheckboxChange(item)"
                     class="w-5 h-5 rounded border-2 border-gray-300 cursor-pointer transition-all"
                   />
                 </div>
@@ -68,72 +68,130 @@
                   class="p-2 rounded-lg transition-all"
                   :class="[
                     item.checked ? 'bg-white shadow-sm' : 'bg-gray-100',
-                    getIconColor(item.name),
+                    getIconColor(item),
                   ]"
                 >
-                  <component :is="getIcon(item.name)" class="w-5 h-5" />
+                  <component :is="getIcon(item)" class="w-5 h-5" />
                 </div>
 
                 <span
                   class="text-lg font-semibold transition-colors"
                   :class="item.checked ? 'text-gray-800' : 'text-gray-600'"
                 >
-                  {{ getDisplayName(item.name) }}
+                  {{ getDisplayName(item) }}
                 </span>
               </label>
 
               <!-- Form Fields - แสดงเมื่อ checked -->
               <transition name="slide-down">
                 <div v-if="item.checked" class="mt-4 space-y-3">
-                  <!-- เช็คธนาคาร -->
-                  <template v-if="item.NumCheck !== undefined">
+                  
+                  <!-- 💵 เงินสด -->
+                  <template v-if="getItemType(item) === 'cash'">
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        เลขที่อ้างอิง
+                      </label>
+                      <input
+                        type="text"
+                        v-model="item.referenceNo"
+                        @input="handleInput"
+                        placeholder="กรอกเลขที่อ้างอิง"
+                        class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                      />
+                    </div>
+
+                      <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        จำนวนเงิน <span class="text-red-500">*</span>
+                      </label>
+                      <div class="relative">
+                        <input
+                          type="number"
+                          v-model="item.amount"
+                          @input="handleInput"
+                          placeholder="0.00"
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                          :class="{ 'border-red-300 bg-red-50': !item.amount }"
+                        />
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">฿</span>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- 🏦 เช็คธนาคาร -->
+                  <template v-else-if="getItemType(item) === 'bank'">
+
                     <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1.5">
                         เลขที่เช็ค <span class="text-red-500">*</span>
                       </label>
                       <input
-                        type="number"
-                        v-model="item.NumCheck"
-                        @input="handleInput"
+                        type="text"
+                        :value="item.checkNumber || item.NumCheck"
+                        @input="handleCheckNumberInput(item, $event)"
                         placeholder="กรอกเลขที่เช็ค"
                         class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                        :class="{ 'border-red-300 bg-red-50': item.checked && !item.NumCheck }"
+                        :class="{ 'border-red-300 bg-red-50': !item.checkNumber && !item.NumCheck }"
                       />
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        เลขที่อ้างอิง
+                      </label>
+                      <input
+                        type="text"
+                        v-model="item.referenceNo"
+                        @input="handleInput"
+                        placeholder="กรอกเลขที่อ้างอิง"
+                        class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                      />
+                    </div>
+                                        <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        จำนวนเงิน <span class="text-red-500">*</span>
+                      </label>
+                      <div class="relative">
+                        <input
+                          type="number"
+                          v-model="item.amount"
+                          @input="handleInput"
+                          placeholder="0.00"
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                          :class="{ 'border-red-300 bg-red-50': !item.amount }"
+                        />
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">฿</span>
+                      </div>
                     </div>
                   </template>
 
-                  <!-- ฝากเข้าบัญชี -->
-                  <template v-if="item.AccountNum !== undefined">
-                    <div class="grid grid-cols-2 gap-2">
-                      <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                          ชื่อบัญชี <span class="text-red-500">*</span>
-                        </label>
-                        <select
-                          v-model="item.AccountName"
-                          @change="handleAccountChange(item)"
-                          class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
-                          :class="{ 'border-red-300 bg-red-50': item.checked && !item.AccountName }"
-                        >
-                          <option value="" disabled>เลือกบัญชี</option>
-                          <option v-for="acc in accounts" :key="acc.name" :value="acc.name">
-                            {{ acc.name }}
-                          </option>
-                        </select>
-                      </div>
-                      <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                          ชื่อธนาคาร <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          readonly
-                          v-model="item.BankName"
-                          placeholder="เลือกชื่อบัญชีก่อน"
-                          class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
-                        />
-                      </div>
-                      <!-- เลขบัญชี (Read-only) -->
+                  <!-- 💳 ฝากเข้าบัญชี -->
+                  <template v-else-if="getItemType(item) === 'transfer'">
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        ชื่อบัญชี <span class="text-red-500">*</span>
+                      </label>
+                      <select
+                        :value="item.accountName || item.AccountName"
+                        @change="handleAccountChange(item, $event)"
+                        class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                        :class="{ 'border-red-300 bg-red-50': !item.accountName && !item.AccountName }"
+                      >
+                        <option value="">เลือกบัญชี</option>
+                        <option v-for="acc in accounts" :key="acc.name" :value="acc.name">
+                          {{ acc.name }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
                       <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">
                           เลขบัญชี <span class="text-red-500">*</span>
@@ -141,49 +199,58 @@
                         <input
                           type="text"
                           readonly
-                          v-model="item.AccountNum"
+                          :value="item.accountNumber || item.AccountNum"
+                          placeholder="เลือกชื่อบัญชีก่อน"
+                          class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                        />
+                      </div>
+
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                          ชื่อธนาคาร <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          readonly
+                          :value="item.bankName || item.BankName"
                           placeholder="เลือกชื่อบัญชีก่อน"
                           class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
                         />
                       </div>
                     </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        เลขที่อ้างอิง
+                      </label>
+                      <input
+                        type="text"
+                        v-model="item.referenceNo"
+                        @input="handleInput"
+                        placeholder="กรอกเลขที่อ้างอิง"
+                        class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                      />
+                    </div>
+                                        <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        จำนวนเงิน <span class="text-red-500">*</span>
+                      </label>
+                      <div class="relative">
+                        <input
+                          type="number"
+                          v-model="item.amount"
+                          @input="handleInput"
+                          placeholder="0.00"
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                          :class="{ 'border-red-300 bg-red-50': !item.amount }"
+                        />
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">฿</span>
+                      </div>
+                    </div>
                   </template>
 
-                  <!-- Fields ทุกประเภท -->
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                      เลขที่อ้างอิง <span class="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      v-model="item.referenceNo"
-                      @input="handleInput"
-                      placeholder="กรอกเลขที่อ้างอิง"
-                      class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none"
-                      :class="{ 'border-red-300 bg-red-50': item.checked && !item.referenceNo }"
-                    />
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                      จำนวนเงิน <span class="text-red-500">*</span>
-                    </label>
-                    <div class="relative">
-                      <input
-                        type="number"
-                        v-model="item.amount"
-                        @input="handleInput"
-                        placeholder="0.00"
-                        class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none"
-                        :class="{ 'border-red-300 bg-red-50': item.checked && !item.amount }"
-                      />
-                      <span
-                        class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium"
-                      >
-                        ฿
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </transition>
             </div>
@@ -258,7 +325,8 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-// Icons as components
+
+// Icons
 const WalletIcon = {
   template: `
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,17 +356,6 @@ const accounts = ref([
   { name: 'มหาวิทยาลัยพะเยา(กองทุนทั่วไป)', number: '980-9-61729-1', bank: 'ธนาคารกรุงไทย' },
   { name: 'กองทุนเพื่อการจัดจั้งธนาคารเลือด', number: '662-0-96023-5', bank: 'ธนาคารกรุงไทย' },
 ])
-function handleAccountChange(item) {
-  const selected = accounts.value.find((acc) => acc.name === item.AccountName)
-  if (selected) {
-    item.AccountNum = selected.number
-    item.BankName = selected.bank
-  } else {
-    item.AccountName = ''
-    item.BankName = ''
-  }
-  handleInput()
-}
 
 const props = defineProps({
   show: Boolean,
@@ -310,6 +367,133 @@ const emit = defineEmits(['close', 'update:selected'])
 const hasConfirmed = ref(false)
 const errorMessage = ref('')
 const savedData = ref({})
+
+// 🔥 Helper Functions
+const getItemType = (item) => {
+  // ลำดับความสำคัญ: moneyType > name > type > paymentType
+  if (item.moneyType) return item.moneyType
+  
+  const typeMap = {
+    'cash': 'cash',
+    'เงินสด': 'cash',
+    'bank': 'bank',
+    'เช็ค': 'bank',
+    'เช็คธนาคาร': 'bank',
+    'transfer': 'transfer',
+    'ฝากเข้าบัญชี': 'transfer'
+  }
+  
+  return typeMap[item.name] || 
+         typeMap[item.type] || 
+         typeMap[item.paymentType] || 
+         'cash'
+}
+
+const getDisplayName = (item) => {
+  const type = getItemType(item)
+  const nameMap = {
+    'cash': 'เงินสด',
+    'bank': 'เช็คธนาคาร',
+    'transfer': 'ฝากเข้าบัญชี'
+  }
+  return nameMap[type] || 'เงินสด'
+}
+
+const getIcon = (item) => {
+  const type = getItemType(item)
+  if (type === 'cash') return WalletIcon
+  if (type === 'bank') return CreditCardIcon
+  if (type === 'transfer') return BuildingIcon
+  return WalletIcon
+}
+
+const getColorClasses = (item) => {
+  const type = getItemType(item)
+  switch (type) {
+    case 'cash':
+      return 'border-green-200 bg-green-50 hover:border-green-300'
+    case 'bank':
+      return 'border-blue-200 bg-blue-50 hover:border-blue-300'
+    case 'transfer':
+      return 'border-orange-200 bg-orange-50 hover:border-orange-300'
+    default:
+      return 'border-gray-200 bg-gray-50'
+  }
+}
+
+const getIconColor = (item) => {
+  const type = getItemType(item)
+  switch (type) {
+    case 'cash':
+      return 'text-green-600'
+    case 'bank':
+      return 'text-blue-600'
+    case 'transfer':
+      return 'text-orange-600'
+    default:
+      return 'text-gray-600'
+  }
+}
+
+const handleCheckboxChange = (item) => {
+  if (!item.checked) {
+    // ล้างข้อมูลทุก field ของ item ตาม type
+    item.amount = ''
+    item.referenceNo = ''
+    
+    const type = getItemType(item)
+    if (type === 'bank') {
+      item.checkNumber = ''
+      item.NumCheck = ''
+    }
+    if (type === 'transfer') {
+      item.accountName = ''
+      item.AccountName = ''
+      item.accountNumber = ''
+      item.AccountNum = ''
+      item.bankName = ''
+      item.BankName = ''
+    }
+  }
+
+  handleInput() // รีเซ็ต error / confirm state
+}
+
+
+// Input Handlers
+const handleCheckNumberInput = (item, event) => {
+  const value = event.target.value
+  item.checkNumber = value
+  item.NumCheck = value
+  handleInput()
+}
+
+const handleAccountChange = (item, event) => {
+  const selectedName = event.target.value
+  const selected = accounts.value.find((acc) => acc.name === selectedName)
+  
+  if (selected) {
+    item.accountName = selected.name
+    item.AccountName = selected.name
+    item.accountNumber = selected.number
+    item.AccountNum = selected.number
+    item.bankName = selected.bank
+    item.BankName = selected.bank
+  } else {
+    item.accountName = ''
+    item.AccountName = ''
+    item.accountNumber = ''
+    item.AccountNum = ''
+    item.bankName = ''
+    item.BankName = ''
+  }
+  handleInput()
+}
+
+const handleInput = () => {
+  hasConfirmed.value = false
+  errorMessage.value = ''
+}
 
 // Computed
 const checkedCount = computed(() => {
@@ -324,88 +508,41 @@ const isValid = computed(() => {
   }
 
   return checkedItems.every((item) => {
-    // ✅ เช็ค referenceNo และ amount ก่อน
-    const hasReferenceNo = item.referenceNo && String(item.referenceNo).trim() !== ''
     const hasAmount = item.amount && parseFloat(item.amount) > 0
+    const hasRef = item.referenceNo && String(item.referenceNo).trim() !== ''
 
-    if (!hasReferenceNo || !hasAmount) {
+
+    if (!item.referenceNo || item.referenceNo.trim() === '') {
       return false
     }
 
-    if (item.NumCheck !== undefined) {
-      return item.NumCheck && String(item.NumCheck).trim() !== ''
+    if (!hasAmount) {
+      return false
     }
-    if (item.AccountNum !== undefined) {
-      const hasAccountNum =
-        item.AccountNum !== null &&
-        item.AccountNum !== undefined &&
-        String(item.AccountNum).trim() !== ''
-      const hasAccountName = item.AccountName && String(item.AccountName).trim() !== ''
-      const hasBankName = item.BankName && String(item.BankName).trim() !== ''
 
-      console.log('Validating transfer:', {
-        AccountNum: item.AccountNum,
-        AccountName: item.AccountName,
-        hasAccountNum,
-        hasAccountName,
-      })
+    const type = getItemType(item)
 
-      return hasAccountNum && hasAccountName && hasBankName
+    if (type === 'bank') {
+      return hasRef && (item.checkNumber || item.NumCheck) && 
+             String(item.checkNumber || item.NumCheck).trim() !== ''
+    }
+
+    if (type === 'transfer') {
+      const hasAccountName = (item.accountName || item.AccountName) && 
+                            String(item.accountName || item.AccountName).trim() !== ''
+      const hasAccountNumber = (item.accountNumber || item.AccountNum) && 
+                              String(item.accountNumber || item.AccountNum).trim() !== ''
+      const hasBankName = (item.bankName || item.BankName) && 
+                         String(item.bankName || item.BankName).trim() !== ''
+      
+      return hasRef && hasAccountName && hasAccountNumber && hasBankName
     }
 
     return true
   })
 })
 
-// Methods
-const getIcon = (itemName) => {
-  const name = itemName.toLowerCase()
-  if (name.includes('cash') || name === 'เงินสด') return WalletIcon
-  if (name.includes('bank') || name === 'เช็คธนาคาร') return CreditCardIcon
-  if (name.includes('transfer') || name === 'ฝากเข้าบัญชี') return BuildingIcon
-  return WalletIcon
-}
-
-const getDisplayName = (itemName) => {
-  if (itemName === 'cash') return 'เงินสด'
-  if (itemName === 'bank') return 'เช็คธนาคาร'
-  if (itemName === 'transfer') return 'ฝากเข้าบัญชี'
-  return itemName
-}
-
-const getColorClasses = (itemName) => {
-  const name = getDisplayName(itemName)
-  switch (name) {
-    case 'เงินสด':
-      return 'border-green-200 bg-green-50 hover:border-green-300'
-    case 'เช็คธนาคาร':
-      return 'border-blue-200 bg-blue-50 hover:border-blue-300'
-    case 'ฝากเข้าบัญชี':
-      return 'border-orange-200 bg-orange-50 hover:border-orange-300'
-    default:
-      return 'border-gray-200 bg-gray-50'
-  }
-}
-
-const getIconColor = (itemName) => {
-  const name = getDisplayName(itemName)
-  switch (name) {
-    case 'เงินสด':
-      return 'text-green-600'
-    case 'เช็คธนาคาร':
-      return 'text-blue-600'
-    case 'ฝากเข้าบัญชี':
-      return 'text-orange-600'
-    default:
-      return 'text-gray-600'
-  }
-}
-
-const handleInput = () => {
-  hasConfirmed.value = false
-  errorMessage.value = ''
-}
-
+// Actions
 const confirmSelection = () => {
   if (!isValid.value) {
     errorMessage.value = 'กรุณากรอกข้อมูลให้ครบถ้วน'
@@ -416,46 +553,64 @@ const confirmSelection = () => {
     .filter((i) => i.checked)
     .map((i) => {
       const item = { ...i }
+      const type = getItemType(i)
 
-      if (i.name === 'cash' || i.name === 'เงินสด') {
-        item.moneyType = 'cash'
-      } else if (i.name === 'bank' || i.name === 'เช็คธนาคาร') {
-        item.moneyType = 'bank'
-        item.checkNumber = i.NumCheck
-      } else if (i.name === 'transfer' || i.name === 'ฝากเข้าบัญชี') {
-        item.moneyType = 'transfer'
-        item.accountNumber = i.AccountNum
-        item.AccountNum = i.AccountNum
-        item.accountName = i.AccountName
-        item.AccountName = i.AccountName
-        item.bankName = i.BankName
-        item.BankName = i.BankName
+      // Set moneyType
+      item.moneyType = type
+
+      // Sync fields
+      if (type === 'bank') {
+        const checkNum = item.checkNumber || item.NumCheck
+        item.checkNumber = checkNum
+        item.NumCheck = checkNum
+      } else if (type === 'transfer') {
+        const accName = item.accountName || item.AccountName
+        const accNum = item.accountNumber || item.AccountNum
+        const bankName = item.bankName || item.BankName
+        
+        item.accountName = accName
+        item.AccountName = accName
+        item.accountNumber = accNum
+        item.AccountNum = accNum
+        item.bankName = bankName
+        item.BankName = bankName
       }
 
       return item
     })
 
+  // Save data for restore
   props.items.forEach((item) => {
+    const type = getItemType(item)
+    const key = item.name || item.moneyType || type
+    
     const data = {
       checked: item.checked,
       amount: item.amount,
       referenceNo: item.referenceNo,
+      moneyType: type
     }
 
-    if (item.NumCheck !== undefined) {
-      data.NumCheck = item.NumCheck
+    if (type === 'bank') {
+      const checkNum = item.checkNumber || item.NumCheck
+      data.checkNumber = checkNum
+      data.NumCheck = checkNum
     }
 
-    if (item.AccountNum !== undefined) {
-      data.AccountNum = item.AccountNum
-      data.AccountName = item.AccountName
-      data.BankName = item.BankName
-      data.accountNumber = item.AccountNum
-      data.accountName = item.AccountName
-      data.bankName = item.BankName
+    if (type === 'transfer') {
+      const accName = item.accountName || item.AccountName
+      const accNum = item.accountNumber || item.AccountNum
+      const bankName = item.bankName || item.BankName
+      
+      data.accountName = accName
+      data.AccountName = accName
+      data.accountNumber = accNum
+      data.AccountNum = accNum
+      data.bankName = bankName
+      data.BankName = bankName
     }
-    data.moneyType = item.moneyType
-    savedData.value[item.name] = data
+
+    savedData.value[key] = data
   })
 
   errorMessage.value = ''
@@ -471,30 +626,44 @@ const closeModal = () => {
 
 const restoreSavedData = () => {
   props.items?.forEach((item) => {
-    const saved = savedData.value[item.name]
+    const type = getItemType(item)
+    const key = item.name || item.moneyType || type
+    const saved = savedData.value[key]
 
     if (saved) {
       item.checked = saved.checked
       item.amount = saved.amount ?? ''
       item.referenceNo = saved.referenceNo ?? ''
 
-      if (item.NumCheck !== undefined) {
+      if (type === 'bank') {
+        item.checkNumber = saved.checkNumber ?? ''
         item.NumCheck = saved.NumCheck ?? ''
       }
 
-      if (item.AccountNum !== undefined) {
-        item.AccountNum = saved.AccountNum ?? ''
+      if (type === 'transfer') {
+        item.accountName = saved.accountName ?? ''
         item.AccountName = saved.AccountName ?? ''
-        item.BankName = saved.BankName ??''
+        item.accountNumber = saved.accountNumber ?? ''
+        item.AccountNum = saved.AccountNum ?? ''
+        item.bankName = saved.bankName ?? ''
+        item.BankName = saved.BankName ?? ''
       }
     } else {
       item.checked = false
       item.amount = ''
       item.referenceNo = ''
-      if (item.NumCheck !== undefined) item.NumCheck = ''
-      if (item.AccountNum !== undefined) {
-        item.AccountNum = ''
+
+      if (type === 'bank') {
+        item.checkNumber = ''
+        item.NumCheck = ''
+      }
+
+      if (type === 'transfer') {
+        item.accountName = ''
         item.AccountName = ''
+        item.accountNumber = ''
+        item.AccountNum = ''
+        item.bankName = ''
         item.BankName = ''
       }
     }

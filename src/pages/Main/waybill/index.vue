@@ -238,7 +238,7 @@ const view = (item: any) => {
 }
 
 const edit = (item: any) => {
-  router.push(`/edit/${item.id}`)
+  router.push(`/waybill/edit/${item.id}`)
 }
 
 const toggleLock = (row: any) => {

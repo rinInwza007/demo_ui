@@ -27,7 +27,7 @@ export interface ReceiptItem {
   moneySource: moneySource;
   nagativeMoneyType: nagativeMoneyType;
   note?: string;
-  fee?: number; // 👈 fee อยู่ตรงนี้
+  fee?: number; //
   keyword?: string[];
   subtotal?: number;
   netAmount?: number;

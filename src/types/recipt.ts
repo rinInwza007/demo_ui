@@ -1,7 +1,11 @@
-export type moneySource = 'internal' | 'external';
+import {User} from './user';
+import { Affiliation } from './affiliation';
 
 
-export type Type = 'Waybill' | 'Debtor';
+export type moneySource = 'นำส่ง' | 'ลูกหนี้' | 'วิจัย';
+
+export type nagativeMoneyType = 'add' | 'other';
+
 export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other';
 
 export interface ReceiptItem {
@@ -17,20 +21,22 @@ export interface ReceiptItem {
   /** Type of money*/
   moneyType: MoneyType;
 
+  moneyTypeNote?: string;
+
  /** internal or external */
   moneySource: moneySource;
+  nagativeMoneyType: nagativeMoneyType;
   note?: string;
   fee?: number; // 👈 fee อยู่ตรงนี้
   keyword?: string[];
   subtotal?: number;
   netAmount?: number;
-  paymentDetails?: PaymentDetails[];
 }
 
 export interface Receipt {
   /** Full name */
   fullName: string;
-  moneyTypeNote?: Type;
+
   /** Phone number */
   phone: string;
 
@@ -52,47 +58,15 @@ export interface Receipt {
 
   /** List of receipt items */
   receiptList: ReceiptItem[];
+
+  /** Creation date */
+  createdAt: Date;
+  /** update date */
+  updatedAt: Date;
+  /** Created by user ID */
+  createdBy: User;
+  /** Affiliation  */
+  affiliation: Affiliation;
+
 }
 
-export interface user {
-  /** User ID */
-  id: string;
-  /** User full name */
-  fullName: string;
-  /** User affiliation */
-  affiliation: string;
-  /** User affiliation ID */
-  affiliation_ID: string;
-  // User role */
-  role: string;
-  // User email */
-  email: string;
-  // User phone */
-  phone: string;
-}
-
-
-export interface ReceiptTemplate {
-  /** Template ID */
-  id: string;
-  /** Template name */
-  name: string;
-  /** Template description */
-  description?: string;
-  /** List of receipt items in the template */
-  receiptItems: ReceiptItem[];
-}
-
-export interface PaymentDetails {
-  moneyType: string; // 'cash' | 'bank' | 'transfer'
-  amount: number;
-  referenceNo: string;
-  
-  // สำหรับเช็คธนาคาร
-  checkNumber?: string | null;
-  
-  // สำหรับฝากเข้าบัญชี
-  accountNumber?: string | null;
-  accountName?: string | null;
-  bankName?: string | null;
-}

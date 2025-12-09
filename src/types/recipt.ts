@@ -1,6 +1,10 @@
-export type moneySource = 'internal' | 'external';
+import {User} from './user';
+import { Affiliation } from './affiliation';
 
 
+export type moneySource = 'นำส่ง' | 'ลูกหนี้' | 'วิจัย';
+
+export type nagativeMoneyType = 'add' | 'other';
 
 export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other';
 
@@ -21,6 +25,7 @@ export interface ReceiptItem {
 
  /** internal or external */
   moneySource: moneySource;
+  nagativeMoneyType: nagativeMoneyType;
   note?: string;
   fee?: number; // 👈 fee อยู่ตรงนี้
   keyword?: string[];
@@ -53,33 +58,15 @@ export interface Receipt {
 
   /** List of receipt items */
   receiptList: ReceiptItem[];
+
+  /** Creation date */
+  createdAt: Date;
+  /** update date */
+  updatedAt: Date;
+  /** Created by user ID */
+  createdBy: User;
+  /** Affiliation  */
+  affiliation: Affiliation;
+
 }
 
-export interface user {
-  /** User ID */
-  id: string;
-  /** User full name */
-  fullName: string;
-  /** User affiliation */
-  affiliation: string;
-  /** User affiliation ID */
-  affiliation_ID: string;
-  // User role */
-  role: string;
-  // User email */
-  email: string;
-  // User phone */
-  phone: string;
-}
-
-
-export interface ReceiptTemplate {
-  /** Template ID */
-  id: string;
-  /** Template name */
-  name: string;
-  /** Template description */
-  description?: string;
-  /** List of receipt items in the template */
-  receiptItems: ReceiptItem[];
-}

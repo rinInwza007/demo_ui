@@ -5,7 +5,6 @@
 
     <div class="max-w-6xl mx-auto p-4 sm:p-6 pt-5">
       <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 sm:p-10 space-y-8">
-        <!-- Header Section -->
         <div class="text-center space-y-2 pb-4 border-b border-gray-200">
           <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">
             {{ isEditMode ? 'แก้ไขใบนำส่ง' : 'เพิ่มใบนำส่ง' }}
@@ -15,14 +14,10 @@
           </p>
         </div>
 
-        <!-- Loading State -->
         <div v-if="isLoading" class="flex justify-center items-center py-12">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
-
-        <!-- Form Section -->
         <div v-else class="max-w-5xl mx-auto space-y-8">
-          <!-- ข้อมูลผู้บันทึก -->
           <div class="space-y-4">
             <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
               <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
@@ -67,7 +62,7 @@
                   v-model="mainCategory"
                   class="h-[44px] w-full rounded-md border border-gray-500 px-2 text-sm"
                 >
-                  <option value="">-- เลือกหน่วยงาน --</option>
+                  <option value="">เลือกหน่วยงาน</option>
                   <option v-for="(sub, key) in options" :key="key" :value="key">
                     {{ key }}
                   </option>
@@ -85,7 +80,7 @@
                   v-model="subCategory"
                   class="h-[44px] w-full rounded-md border border-gray-500 px-2 text-sm disabled:bg-gray-200 disabled:text-gray-400"
                 >
-                  <option value="">-- เลือกหัวข้อย่อย --</option>
+                  <option value="">เลือกหัวข้อย่อย</option>
                   <option v-for="item in subOptions" :key="item" :value="item">
                     {{ item }}
                   </option>
@@ -159,12 +154,11 @@
 
             <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4">
               <!-- Header Labels -->
-              <div class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-2 pb-2 border-b border-gray-300 items-center text-center mr-5">
+              <div class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-2 pb-2 border-b border-gray-300 items-center text-center mr-5">
                 <div class="text-xs font-semibold text-gray-600 uppercase">รายการ</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">จำนวนเงิน</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">ค่าธรรมเนียม</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">หมายเหตุ</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase">คำสำคัญ</div>
               </div>
 
               <!-- Dynamic Rows -->
@@ -175,7 +169,7 @@
                   class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-200"
                 >
                   <div>
-                    <div class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-3 items-start">
+                    <div class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-3 items-start">
                       <div class="flex flex-col gap-2">
                         <ItemNameSelect
                           v-model="row.itemName"
@@ -229,14 +223,6 @@
                           {{ errors.rows[index].note }}
                         </span>
                       </div>
-
-                      <KeywordTomSelect
-                        v-model="row.keyword"
-                        :input-id="`keyword-${index}`"
-                        :error="errors.rows?.[index]?.keyword"
-                        @input="() => clearRowError(index, 'keyword')"
-                      />
-
                       <button
                         v-if="morelist.length > 1"
                         @click="removeRow(index)"
@@ -473,7 +459,6 @@ import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select/select.vue'
 import InputText from '@/components/input/inputtext.vue'
 import Modal from '@/components/modal/modalwaybill.vue'
-import KeywordTomSelect from '@/components/TomSelect/KeywordTomSelect.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 
 // Stores & Composables
@@ -593,7 +578,6 @@ const loadReceiptData = async () => {
         itemName: item.itemName || '',
         note: item.note || '',
         fee: item.fee || 0,
-        keyword: item.keyword || [],
         selectedItems: item.paymentDetails?.map(detail => ({
           checked: true,
           moneyType: detail.moneyType || '',
@@ -722,16 +706,13 @@ const saveData = async () => {
   errors.value.rows = {}
   morelist.value.forEach((row, index) => {
     const rowErrors = {}
-    if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
+    if (!row.itemName || row.itemName.trim() === '') rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
     if (!row.note) rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
-    if (!row.keyword) rowErrors.keyword = 'กรุณากรอก "keyword"'
-
     if (!row.selectedItems || row.selectedItems.filter((i) => i.checked).length === 0) {
       rowErrors.selectedItems = 'กรุณาเลือก "จำนวนเงิน" อย่างน้อย 1 รายการ'
     } else if (row.selectedItems.some((i) => i.checked && !i.amount)) {
       rowErrors.selectedItems = 'กรุณากรอกจำนวนเงินให้ครบถ้วน'
     }
-
     if (Object.keys(rowErrors).length > 0) {
       errors.value.rows[index] = rowErrors
       hasError = true
@@ -780,7 +761,6 @@ const saveData = async () => {
         itemName: row.itemName,
         note: row.note || '',
         fee: rowFee,
-        keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
         subtotal: rowTotal,
         amount: rowNetAmount,
         paymentDetails:

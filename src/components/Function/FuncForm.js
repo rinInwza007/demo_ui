@@ -95,29 +95,60 @@ const showModal = ref(null)
 const rowItems = ref([])
 
 const openModalForRow = (index) => {
-  // ถ้ายังไม่เคยมี selectedItems ให้ใช้ defaultItems
-  if (!morelist.value[index].selectedItems || morelist.value[index].selectedItems.length === 0) {
-    morelist.value[index].selectedItems = JSON.parse(JSON.stringify(defaultItems))
-  }
-  
-  // Merge: เอา defaultItems มาก่อน แล้ว override ด้วยข้อมูลที่มีอยู่
-  const merged = defaultItems.map(defaultItem => {
-    const existingItem = morelist.value[index].selectedItems.find(
-      item => item.name === defaultItem.name
-    )
-    
-    // ถ้ามีข้อมูลเดิมอยู่ ให้ใช้ข้อมูลเดิม
-    if (existingItem) {
-      return { ...existingItem }
+  const defaultItems = [
+    { 
+      name: 'เงินสด',
+      moneyType: 'cash',
+      checked: false,
+      amount: '',
+      referenceNo: ''
+    },
+    { 
+      name: 'เช็ค',
+      moneyType: 'bank',
+      checked: false,
+      amount: '',
+      referenceNo: '',
+      NumCheck: '',
+      checkNumber: ''
+    },
+    { 
+      name: 'ฝากเข้าบัญชี',
+      moneyType: 'transfer',
+      checked: false,
+      amount: '',
+      referenceNo: '',
+      AccountNum: '',
+      accountNumber: '',
+      AccountName: '',
+      accountName: '',
+      BankName: '',
+      bankName: ''
     }
-    
-    // ถ้าไม่มี ให้ใช้ defaultItem
-    return { ...defaultItem }
-  })
-  
-  rowItems.value[index] = merged
-  showModal.value = index
-}
+  ];
+
+  const existing = morelist.value[index]?.selectedItems || [];
+
+  const merged = defaultItems.map(def => {
+    const exist = existing.find(i => i.moneyType === def.moneyType);
+
+    if (exist) {
+      return {
+        ...def,
+        ...exist,
+        checked: exist.amount && Number(exist.amount) > 0 ? true : exist.checked,
+        name: exist.name || def.name
+      };
+    }
+
+    return { ...def };
+  });
+
+  rowItems.value[index] = merged;
+  showModal.value = index;
+
+  console.log('📌 Modal items for row', index, merged);
+};
 // ใน FuncForm.js หรือใน addwaybill.vue
 // แก้ไข function updateSelectedItems ให้เป็นแบบนี้:
 

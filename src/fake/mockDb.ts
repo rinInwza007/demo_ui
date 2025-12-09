@@ -80,7 +80,6 @@ export function sanitizeItem(it: ReceiptItem): ReceiptItem {
     itemName: (it.itemName ?? '').trim(),
     note: (it.note ?? '').trim(),
     fee: Number.isFinite(it.fee) ? it.fee : 0,
-    keyword: Array.isArray(it.keyword) ? it.keyword : [],
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
     amount: Number.isFinite(it.amount) ? it.amount : 0, // ✅ เพิ่ม amount
     paymentDetails: Array.isArray(it.paymentDetails)

@@ -93,7 +93,8 @@
                         v-model="item.referenceNo"
                         @input="handleInput"
                         placeholder="กรอกเลขที่อ้างอิง"
-                        class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
+                        class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                        :class="{ 'border-red-300 bg-red-50': !item.amount }"
                       />
                     </div>
 
@@ -145,7 +146,8 @@
                         v-model="item.referenceNo"
                         @input="handleInput"
                         placeholder="กรอกเลขที่อ้างอิง"
-                        class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                        class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                        :class="{ 'border-red-300 bg-red-50': !item.amount }"
                       />
                     </div>
                     <div>
@@ -229,7 +231,8 @@
                         v-model="item.referenceNo"
                         @input="handleInput"
                         placeholder="กรอกเลขที่อ้างอิง"
-                        class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
+                        class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                        :class="{ 'border-red-300 bg-red-50': !item.amount }"
                       />
                     </div>
                     <div>

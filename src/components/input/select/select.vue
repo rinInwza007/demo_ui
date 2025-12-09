@@ -1,19 +1,23 @@
 <template>
-  <div>
-    <label v-if="label" >
+  <div class="flex flex-col gap-1">
+
+    <!-- Label -->
+    <label v-if="label" class="text-gray-700 font-medium text-[15px]">
       {{ label }}
     </label>
 
+    <!-- GOOGLE STYLE SELECT -->
     <select
       :value="modelValueString"
       @change="onChange"
-      class="h-[44px] rounded-md border border-gray-500 px-[18px] block w-full
-             outline-none cursor-pointer transition-all focus:border-gray-700 focus:ring-1 focus:ring-gray-700 "
+      class="google-select"
     >
-      <!-- ถ้ามี placeholder -->
-      <option v-if="placeholder" value="">{{ placeholder }}</option>
+      <!-- Placeholder -->
+      <option v-if="placeholder" value="" disabled selected hidden>
+        {{ placeholder }}
+      </option>
 
-      <!-- options -->
+      <!-- Options -->
       <option
         v-for="(opt, idx) in options"
         :key="idx"
@@ -22,64 +26,90 @@
         {{ getOptionLabel(opt) }}
       </option>
     </select>
+
   </div>
 </template>
 
 
-
 <script setup>
-import { computed } from 'vue'
+import { computed } from "vue";
 
 const props = defineProps({
-  modelValue: { required: false }, // support v-model
-  options: { type: Array, default: () => [] }, // array of strings/numbers or objects
-  optionLabel: { type: String, default: 'label' }, // key for label if object
-  optionValue: { type: String, default: 'value' }, // key for value if object
-  placeholder: { type: String, default: '-' },
-  label: { type: String, default: '' },
-  valueType: { type: String, default: 'string' }, // 'string' or 'number'
-})
+  modelValue: { required: false },
+  options: { type: Array, default: () => [] },
+  optionLabel: { type: String, default: "label" },
+  optionValue: { type: String, default: "value" },
+  placeholder: { type: String, default: "-" },
+  label: { type: String, default: "" },
+  valueType: { type: String, default: "string" },
+});
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(["update:modelValue"]);
 
-// helper: return display label for an option
 function getOptionLabel(opt) {
-  if (opt === null || opt === undefined) return ''
-  if (typeof opt === 'string' || typeof opt === 'number') return String(opt)
-  // object
-  return String(opt[props.optionLabel] ?? '')
+  if (opt == null) return "";
+  if (typeof opt === "string" || typeof opt === "number") return String(opt);
+  return String(opt[props.optionLabel] ?? "");
 }
 
-// helper: return value (typed) for an option
 function getOptionValue(opt) {
-  if (opt === null || opt === undefined) return ''
-  if (typeof opt === 'string' || typeof opt === 'number') {
-    return props.valueType === 'number' ? Number(opt) : String(opt)
-  }
-  // object
-  const raw = opt[props.optionValue] ?? ''
-  return props.valueType === 'number' ? Number(raw) : String(raw)
+  if (opt == null) return "";
+  if (typeof opt === "string" || typeof opt === "number")
+    return props.valueType === "number" ? Number(opt) : String(opt);
+
+  const raw = opt[props.optionValue] ?? "";
+  return props.valueType === "number" ? Number(raw) : String(raw);
 }
 
-// since native <select> deals with strings, we convert modelValue to string for binding
 const modelValueString = computed(() => {
-  if (props.modelValue === null || props.modelValue === undefined) return ''
-  // if valueType is number, convert to string for matching option's value attr
-  return String(props.modelValue)
-})
+  if (props.modelValue == null) return "";
+  return String(props.modelValue);
+});
 
-// converts option to string for :value attr
 function getOptionValueString(opt) {
-  const v = getOptionValue(opt)
-  return v === null || v === undefined ? '' : String(v)
+  const v = getOptionValue(opt);
+  return v == null ? "" : String(v);
 }
 
 function onChange(e) {
-  let v = e.target.value
-  if (props.valueType === 'number') {
-    const n = Number(v)
-    v = Number.isNaN(n) ? v : n
+  let v = e.target.value;
+  if (props.valueType === "number") {
+    const n = Number(v);
+    v = Number.isNaN(n) ? v : n;
   }
-  emit('update:modelValue', v)
+  emit("update:modelValue", v);
 }
 </script>
+
+
+<style scoped>
+/* -------------------------
+   GOOGLE SELECT STYLE
+-------------------------- */
+.google-select {
+  @apply w-full h-[46px] px-4 bg-white text-gray-800
+         rounded-xl border border-gray-300 shadow-sm
+         text-[15px] cursor-pointer transition-all outline-none;
+
+  /* Animation */
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.google-select:hover {
+  @apply border-gray-400 shadow-md;
+}
+
+.google-select:focus {
+  @apply border-blue-500 ring-2 ring-blue-300 shadow-lg;
+}
+
+/* Hide default arrow in some browsers */
+.google-select::-ms-expand {
+  display: none;
+}
+
+/* Placeholder styling */
+.google-select option[disabled][hidden] {
+  color: #9ca3af !important;
+}
+</style>

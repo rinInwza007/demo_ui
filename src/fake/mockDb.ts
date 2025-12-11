@@ -60,18 +60,32 @@ export function loadReceipts(): Receipt[] {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) {
       const seed = defaultSeed();
-      saveReceipts(seed); // ✅ บันทึก seed data ลง localStorage
+      saveReceipts(seed);
       return seed;
     }
     const data = JSON.parse(raw) as Receipt[];
-    return Array.isArray(data) ? data : defaultSeed();
+    // ✅ แปลง string กลับเป็น Date
+    const receipts = Array.isArray(data) 
+      ? data.map(r => ({
+          ...r,
+          createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+          updatedAt: r.updatedAt ? new Date(r.updatedAt) : new Date(),
+        }))
+      : defaultSeed();
+    return receipts;
   } catch {
     return defaultSeed();
   }
 }
 
 export function saveReceipts(list: Receipt[]) {
-  localStorage.setItem(LS_KEY, JSON.stringify(list));
+  // ✅ แปลง Date เป็น string ก่อน save
+  const serialized = list.map(r => ({
+    ...r,
+    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+    updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : r.updatedAt,
+  }));
+  localStorage.setItem(LS_KEY, JSON.stringify(serialized));
 }
 
 // ✅ sanitize helpers
@@ -104,9 +118,13 @@ export function sanitizeReceipt(r: Receipt): Receipt {
     mainAffiliationName: (r.mainAffiliationName ?? '').trim(), // ✅ แก้ไข
     subAffiliationName: (r.subAffiliationName ?? '').trim(),
     fundName: (r.fundName ?? '').trim(),
+    sendmoney: (r.sendmoney ?? '').trim(),
     projectCode: (r.projectCode ?? '').trim(),
     moneyTypeNote: (r.moneyTypeNote ?? '').trim(), // ✅ เพิ่ม
     netTotalAmount: Number.isFinite(r.netTotalAmount) ? r.netTotalAmount : 0,
+// ✅ ตรวจสอบและแปลงเป็น Date object
+    createdAt: r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt || Date.now()),
+    updatedAt: r.updatedAt instanceof Date ? r.updatedAt : new Date(r.updatedAt || Date.now()),
     receiptList: Array.isArray(r.receiptList) ? r.receiptList.map(sanitizeItem) : [],
   };
 }

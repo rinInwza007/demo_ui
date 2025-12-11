@@ -17,7 +17,7 @@
 
       <!-- Filters Row -->
       <div class="flex flex-col gap-4 px-12 w-full md:flex-row md:items-end mt-12">
-        <selectdatetime />
+        <selectdatetime v-model="dateRange" label="ช่วงวันที่" />
 
         <CascadingSelect
     v-model:main="selectedMain"
@@ -112,6 +112,8 @@ const selectedMain = ref("");
 const selectedSub1 = ref("");
 const selectedSub2 = ref("");
 
+const dateRange = ref<[string, string] | null>(null)
+
 const moneyTypeLabel: Record<string, string> = {
   cash: 'เงินสด',
   bank: 'เช็คธนาคาร',
@@ -123,25 +125,25 @@ const moneyTypeLabel: Record<string, string> = {
 // ✅ ฟังก์ชัน Format วันที่แบบไทย
 const formatThaiDateTime = (date: Date | null) => {
   if (!date || isNaN(date.getTime())) return '-'
-  
+
   const day = date.getDate().toString().padStart(2, '0')
   const month = date.getMonth() + 1
   const year = date.getFullYear() + 543 // แปลงเป็น พ.ศ.
   const hours = date.getHours().toString().padStart(2, '0')
   const minutes = date.getMinutes().toString().padStart(2, '0')
-  
+
   const monthNames = [
     'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
     'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
   ]
-  
+
   return `${day} ${monthNames[month - 1]} ${year} ${hours}:${minutes} `
 }
 
 // ✅ ฟังก์ชันตรวจสอบว่ามีการแก้ไขหรือไม่
 const hasBeenEdited = (createdAt: Date | null, updatedAt: Date | null) => {
   if (!createdAt || !updatedAt) return false
-  
+
   // เปรียบเทียบเวลา (ถ้าต่างกันมากกว่า 1 วินาที = มีการแก้ไข)
   return Math.abs(updatedAt.getTime() - createdAt.getTime()) > 1000
 }
@@ -202,7 +204,7 @@ const loadData = async () => {
     const res = await axios.get('/getReceipt')
 
     console.log('📦 Raw API Response:', res.data)
-    
+
     rawData.value = res.data
       .filter((r: any) => r.moneyTypeNote === 'Waybill')
       .map((r: any) => ({
@@ -227,6 +229,7 @@ const loadData = async () => {
 const items = computed(() => {
   let filtered = [...rawData.value]
 
+  // 🔍 filter จาก searchText (ตามหน่วยงาน)
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
 
@@ -235,7 +238,6 @@ const items = computed(() => {
       const sub = (r.subAffiliationName || '').toLowerCase()
       const joinAff = `${main} - ${sub}`.toLowerCase()
 
-      // เลือกอย่างใดอย่างหนึ่ง หรือจะให้ค้นทุก field ก็ได้
       return (
         main.includes(s) ||
         sub.includes(s) ||
@@ -244,7 +246,7 @@ const items = computed(() => {
     })
   }
 
-  // (Filter หน่วยงานจาก CascadingSelect)
+  // 🧩 filter จาก CascadingSelect (main / sub1)
   if (selectedMain.value) {
     filtered = filtered.filter((r) =>
       r.mainAffiliationName === selectedMain.value ||
@@ -258,8 +260,26 @@ const items = computed(() => {
     )
   }
 
+
+  if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+    const [startStr, endStr] = dateRange.value
+
+    // แปลง 'YYYY-MM-DD HH:mm' -> Date ให้ชัวร์ด้วยการใส่ 'T'
+    const start = new Date(startStr.replace(' ', 'T'))
+    const end = new Date(endStr.replace(' ', 'T'))
+
+    filtered = filtered.filter((r) => {
+      // ใช้ updatedAt ถ้ามี, ถ้าไม่มีใช้ createdAt
+      const baseDate: Date | null = r.updatedAt || r.createdAt || null
+      if (!baseDate || isNaN(baseDate.getTime())) return false
+
+      return baseDate >= start && baseDate <= end
+    })
+  }
+
   return filtered.map(mapReceiptToRow)
 })
+
 
 onMounted(loadData)
 

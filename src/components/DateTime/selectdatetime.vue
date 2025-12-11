@@ -8,7 +8,7 @@
       {{ label }}
     </label>
 
-    <div >
+    <div>
       <VueDatePicker
         v-model="internalValue"
         :range="{ partialRange: false }"
@@ -18,7 +18,7 @@
         format="dd/MM/yyyy HH:mm"
         :clearable="true"
         :auto-apply="true"
-        placeholder="เลือกช่วงวัน"
+        placeholder="เลือกช่วงวันเวลา"
         :input-class="`
           h-[44px] w-full rounded-md border border-gray-100 px-2 text-sm
           bg-white
@@ -34,6 +34,7 @@ import { ref, watch } from 'vue'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 
 const props = defineProps<{
+  /** v-model: [start, end] ในรูปแบบ string 'YYYY-MM-DD HH:mm' */
   modelValue: [string, string] | null
   label?: string
 }>()
@@ -42,10 +43,13 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: [string, string] | null): void
 }>()
 
-
+/**
+ * ค่าใน VueDatePicker เป็น Date | null
+ * internalValue: [startDate, endDate] | null
+ */
 const internalValue = ref<[Date | null, Date | null] | null>(null)
 
-
+/** แปลง Date -> 'YYYY-MM-DD HH:mm' */
 const formatDateTime = (d: Date | null): string => {
   if (!d) return ''
   const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
@@ -59,7 +63,7 @@ const formatDateTime = (d: Date | null): string => {
   return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
-
+/** แปลง 'YYYY-MM-DD HH:mm' หรือ 'YYYY-MM-DDTHH:mm' -> Date */
 const parseDateTime = (s: string | null | undefined): Date | null => {
   if (!s) return null
 
@@ -89,7 +93,7 @@ const parseDateTime = (s: string | null | undefined): Date | null => {
   return new Date(year, month, day, hour, minute)
 }
 
-
+/** 🔄 sync จาก parent -> internalValue */
 watch(
   () => props.modelValue,
   (val) => {
@@ -109,6 +113,7 @@ watch(
   { immediate: true }
 )
 
+/** 🔄 sync จาก internalValue -> parent (v-model) */
 watch(
   () => internalValue.value,
   (val) => {
@@ -123,22 +128,20 @@ watch(
 </script>
 
 <style scoped>
-
+/* ปรับขนาดกล่อง input ของ VueDatePicker */
 :deep(.dp__input) {
   width: 360px !important;
   height: 44px !important;
-  border: color -50px ;: gray;
-
 }
 
-
+/* tablet */
 @media (max-width: 768px) {
   :deep(.dp__input) {
     width: 260px !important;
   }
 }
 
-
+/* mobile */
 @media (max-width: 640px) {
   :deep(.dp__input) {
     width: 100% !important;

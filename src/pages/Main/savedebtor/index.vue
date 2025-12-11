@@ -117,10 +117,6 @@ const selectedMain = ref("");
 const selectedSub1 = ref("");
 const selectedSub2 = ref("");
 
-
-
-
-
 const moneyTypeLabel: Record<string, string> = {
   cash: 'เงินสด',
   bank: 'เช็คธนาคาร',

@@ -62,7 +62,7 @@ const goTowaybilldebtor = () => router.push("/waybilldebtor");
 
 
 const actions = [
-  { key: "export", label: "Export", icon: "file_export", handler: () => {} },
+  { key: "export", label: "Export to excel", icon: "file_export", handler: () => {} },
   { key: "main", label: "ใบนำส่ง", icon: "add", handler: goTowaybill },
   { key: "main", label: "ใบนำลูกหนี้", icon: "add", handler: goTowaybilldebtor },
   { key: "research", label: "ใบนำส่งวิจัย", icon: "add", handler: goTowaybillResearch },

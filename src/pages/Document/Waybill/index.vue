@@ -104,6 +104,7 @@
                   :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
                   placeholder="เลือกกองทุน"
                   value-type="string"
+                  class="h-10 rounded-md"
                 />
                 <span v-if="errors.fundName" class="text-red-600 text-xs">
                   {{ errors.fundName }}
@@ -114,15 +115,20 @@
                 <label class="text-sm font-medium text-gray-700">
                   ขอนำส่งเงิน <span class="text-red-500">*</span>
                 </label>
-                <select
-                  id="sendmoney"
-                  v-model="formData.sendmoney"
-                  class="transition-all duration-200"
-                >
-                  <option value=""></option>
-                  <option value="รายได้">รายได้</option>
-                  <option value="เงินโครงการ">เงินโครงการ</option>
-                </select>
+              <SendMoneySelect
+                ref="sendmoneySelectRef"
+                v-model="formData.sendmoney"
+                input-id="sendmoney"
+                placeholder="เลือกประเภท"
+                :required="true"
+                :error-message="errors.sendmoney"
+                :options="[
+                  { value: 'รายได้', text: 'รายได้' },
+                  { value: 'เงินโครงการ', text: 'เงินโครงการ' }
+                ]"
+                :create-new-option="true"
+                @change="clearError('sendmoney')"
+              />
                 <span v-if="errors.sendmoney" class="text-red-600 text-xs">
                   {{ errors.sendmoney }}
                 </span>
@@ -159,12 +165,11 @@
 
             <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4">
               <!-- Header Labels -->
-              <div class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 px-2 pb-2 border-b border-gray-300 items-center text-center mr-5">
+              <div class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-2 pb-2 border-b border-gray-300 items-center text-center mr-5">
                 <div class="text-xs font-semibold text-gray-600 uppercase">รายการ</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">จำนวนเงิน</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">ค่าธรรมเนียม</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">หมายเหตุ</div>
-                <div class="text-xs font-semibold text-gray-600 uppercase">คำสำคัญ</div>
               </div>
 
               <!-- Dynamic Rows -->
@@ -175,7 +180,7 @@
                   class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-200"
                 >
                   <div>
-                    <div class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-3 items-start">
+                    <div class="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-3 items-start">
                       <div class="flex flex-col gap-2">
                         <ItemNameSelect
                           v-model="row.itemName"
@@ -229,13 +234,6 @@
                           {{ errors.rows[index].note }}
                         </span>
                       </div>
-
-                      <KeywordTomSelect
-                        v-model="row.keyword"
-                        :input-id="`keyword-${index}`"
-                        :error="errors.rows?.[index]?.keyword"
-                        @input="() => clearRowError(index, 'keyword')"
-                      />
 
                       <button
                         v-if="morelist.length > 1"
@@ -460,21 +458,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch,nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
-
 // Components
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import Selects from '@/components/input/select/select.vue'
 import InputText from '@/components/input/inputtext.vue'
 import Modal from '@/components/modal/modalwaybill.vue'
-import KeywordTomSelect from '@/components/TomSelect/KeywordTomSelect.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
+import SendMoneySelect from '@/components/TomSelect/SendMoneyTomSelect.vue'
 
 // Stores & Composables
 import { useReceiptStore } from '@/stores/recipt'
@@ -576,15 +573,23 @@ const loadReceiptData = async () => {
     const response = await axios.get(`/getReceipt/${receiptId.value}`)
     const data = response.data
 
+    console.log('Loaded data:', data) // เพิ่ม log เพื่อ debug
+
     // Populate form data
     formData.value.fullName = data.fullName || ''
     formData.value.phone = data.phone || ''
     formData.value.fundName = data.fundName || ''
-    formData.value.sendmoney = data.sendmoney || ''
     formData.value.projectCode = data.projectCode || ''
     
     mainCategory.value = data.mainAffiliationName || ''
     subCategory.value = data.subAffiliationName || ''
+
+    // *** แก้ไขส่วนนี้ ***
+    // ดึงค่า sendmoney โดยตรง
+    const moneyTypeValue = data.sendmoney || data.moneyType || ''
+    console.log('Money type value:', moneyTypeValue) // เพิ่ม log
+    
+    formData.value.sendmoney = moneyTypeValue
 
     // Populate receipt list
     if (data.receiptList && data.receiptList.length > 0) {
@@ -593,7 +598,6 @@ const loadReceiptData = async () => {
         itemName: item.itemName || '',
         note: item.note || '',
         fee: item.fee || 0,
-        keyword: item.keyword || [],
         selectedItems: item.paymentDetails?.map(detail => ({
           checked: true,
           moneyType: detail.moneyType || '',
@@ -627,7 +631,6 @@ const loadReceiptData = async () => {
     isLoading.value = false
   }
 }
-
 // Initialize TomSelect
 const initItemNameTomSelect = (index) => {
   const elementId = `itemName-${index}`
@@ -724,7 +727,6 @@ const saveData = async () => {
     const rowErrors = {}
     if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
     if (!row.note) rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
-    if (!row.keyword) rowErrors.keyword = 'กรุณากรอก "keyword"'
 
     if (!row.selectedItems || row.selectedItems.filter((i) => i.checked).length === 0) {
       rowErrors.selectedItems = 'กรุณาเลือก "จำนวนเงิน" อย่างน้อย 1 รายการ'
@@ -861,30 +863,21 @@ const saveData = async () => {
   }
 }
 
-// Mounted
-onMounted(() => {
-  const moneyTypeEl = document.getElementById('sendmoney')
-  if (moneyTypeEl && !moneyTypeEl.tomselect) {
-    new TomSelect(moneyTypeEl, {
-      create: true,
-      sortField: { field: 'text', direction: 'asc' },
-      allowEmptyOption: true,
-      placeholder: 'รายได้/เงินโครงการ',
-      onChange(value) {
-        formData.value.sendmoney = value
-      },
-    })
-    applyCSSToTomSelect(moneyTypeEl)
-  }
+// แก้ไข onMounted
+onMounted(async () => {
+  // Initialize TomSelect for sendmoney first
 
   morelist.value.forEach((_, i) => {
     initItemNameTomSelect(i)
     initTomSelect(i)
   })
 
+  // รอให้ TomSelect พร้อมใช้งาน
+  await nextTick()
+
   // Load data if edit mode
   if (isEditMode.value) {
-    loadReceiptData()
+    await loadReceiptData()
   }
 })
 

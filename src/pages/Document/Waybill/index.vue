@@ -104,7 +104,7 @@
                   :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
                   placeholder="เลือกกองทุน"
                   value-type="string"
-                  class="h-10 rounded-md"
+                  class=" rounded-md  "
                 />
                 <span v-if="errors.fundName" class="text-red-600 text-xs">
                   {{ errors.fundName }}
@@ -142,7 +142,7 @@
                   v-model="formData.projectCode"
                   placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
                   class="transition-all duration-200"
-                  :disabled="isEditMode"
+:class="{ 'readonly-force': isEditMode }"
                 />
                 <span v-if="errors.projectCode" class="text-red-600 text-xs">
                   {{ errors.projectCode }}
@@ -908,4 +908,10 @@ watch(
 )
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+  .readonly-force :deep(input) {
+  pointer-events: none;
+  background-color: #e9ecef;
+  color: #6c757d;
+}
+</style>

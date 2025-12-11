@@ -201,37 +201,43 @@ const items = computed(() => {
   // (Search Filter)
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
-
     filtered = filtered.filter((r) => {
       const main = (r.mainAffiliationName || r.affiliationName || '').toLowerCase()
       const sub = (r.subAffiliationName || '').toLowerCase()
       const joinAff = `${main} - ${sub}`.toLowerCase()
-
-      // เลือกอย่างใดอย่างหนึ่ง หรือจะให้ค้นทุก field ก็ได้
-      return (
-        main.includes(s) ||
-        sub.includes(s) ||
-        joinAff.includes(s)
-      )
+      return main.includes(s) || sub.includes(s) || joinAff.includes(s)
     })
   }
 
   // (Filter หน่วยงานจาก CascadingSelect)
   if (selectedMain.value) {
     filtered = filtered.filter((r) =>
-      r.mainAffiliationName === selectedMain.value ||
-      r.affiliationName === selectedMain.value
+      r.mainAffiliationName === selectedMain.value || r.affiliationName === selectedMain.value
     )
   }
-
   if (selectedSub1.value) {
     filtered = filtered.filter((r) =>
       r.subAffiliationName === selectedSub1.value
     )
   }
 
-  return filtered.map(mapReceiptToRow)
+  // 🔥 Group by mainAffiliationName และ sum netTotalAmount
+  const groupedMap: Record<string, any> = {}
+  filtered.forEach(r => {
+    const key = r.mainAffiliationName || r.affiliationName || 'อื่นๆ'
+    if (!groupedMap[key]) {
+      groupedMap[key] = {
+        ...r,
+        netTotalAmount: Number(r.netTotalAmount || 0)
+      }
+    } else {
+      groupedMap[key].netTotalAmount += Number(r.netTotalAmount || 0)
+    }
+  })
+
+  return Object.values(groupedMap).map(mapReceiptToRow)
 })
+
 
 onMounted(loadData)
 

@@ -8,14 +8,10 @@
       :id="inputId"
       class=" transition-all duration-200"
     >
-      <option value="">{{ placeholder }}</option>
       <option v-for="option in options" :key="option.value" :value="option.value">
         {{ option.text }}
       </option>
     </select>
-    <span v-if="errorMessage" class="text-red-600 text-xs">
-      {{ errorMessage }}
-    </span>
   </div>
 </template>
 
@@ -103,16 +99,19 @@ const initTomSelect = async () => {
 
   try {
     tomSelectInstance = new TomSelect(selectElement.value, {
-      create: props.createNewOption,
-      sortField: { field: 'text', direction: 'asc' },
-      allowEmptyOption: true,
-      placeholder: props.placeholder,
-      maxItems: 1,
-      onChange(value) {
+    create: false,                 // ไม่สร้างตัวเลือกใหม่
+    sortField: { field: 'text', direction: 'asc' },
+    allowEmptyOption: false,       // ปิด option ว่าง
+    placeholder: 'เลือกประเภท',    // ตัวนี้จะโชว์ก่อนเลือก
+    maxItems: 1,
+    onChange(value) {
         emit('update:modelValue', value)
         emit('change', value)
-      }
+    }
     })
+
+    // ตั้งค่าเริ่มต้นเป็นค่าว่าง (เพื่อให้ placeholder โชว์)
+    tomSelectInstance.clear(true)
 
     applyCSSToTomSelect(selectElement.value)
 

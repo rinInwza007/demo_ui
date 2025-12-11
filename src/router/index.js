@@ -22,6 +22,7 @@ const routes = [
   { path: '/pdfpage', name: 'pdfpage',component:pdfpage},
   { path: '/cleardebtor', name: 'cleardebtor',component:ClearDebtor},
   { path: '/waybill/edit/:id',name: 'WaybillEdit',component: Waybill},
+  { path: '/waybilldebtor/edit/:id',name: 'WaybillDebtorEdit',component: WaybillDebtor},
   { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor',component:indexwaybilldebtor}
 ]
 

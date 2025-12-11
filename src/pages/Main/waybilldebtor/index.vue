@@ -126,6 +126,31 @@ const moneyTypeLabel: Record<string, string> = {
   other: 'อื่นๆ',
 };
 
+const formatThaiDateTime = (date: Date | null) => {
+  if (!date || isNaN(date.getTime())) return '-'
+  
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = date.getMonth() + 1
+  const year = date.getFullYear() + 543 // แปลงเป็น พ.ศ.
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  
+  const monthNames = [
+    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+  ]
+  
+  return `${day} ${monthNames[month - 1]} ${year} ${hours}:${minutes} `
+}
+
+// ✅ ฟังก์ชันตรวจสอบว่ามีการแก้ไขหรือไม่
+const hasBeenEdited = (createdAt: Date | null, updatedAt: Date | null) => {
+  if (!createdAt || !updatedAt) return false
+  
+  // เปรียบเทียบเวลา (ถ้าต่างกันมากกว่า 1 วินาที = มีการแก้ไข)
+  return Math.abs(updatedAt.getTime() - createdAt.getTime()) > 1000
+}
+
 const mapReceiptToRow = (r: any) => {
   const fileTypesArray: string[] =
     r.receiptList?.flatMap((item: any) => {
@@ -143,6 +168,15 @@ const mapReceiptToRow = (r: any) => {
     ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
     : '-'
 
+  // ✅ แปลงวันที่เป็น Date object
+  const createdDate = r.createdAt ? new Date(r.createdAt) : null
+  const updatedDate = r.updatedAt ? new Date(r.updatedAt) : null
+
+  // ✅ ตรวจสอบว่ามีการแก้ไขหรือไม่
+  const isEdited = hasBeenEdited(createdDate, updatedDate)
+
+  // ✅ เลือกแสดงวันที่ตามเงื่อนไข
+  const displayDate = isEdited ? updatedDate : createdDate
   return {
     id: r.projectCode,
     statusColorClass: 'text-red-600',
@@ -151,7 +185,9 @@ const mapReceiptToRow = (r: any) => {
     project: r.fundName,
     year: '2568',
     owner: r.fullName,
-    time: '-',
+    time: `${formatThaiDateTime(displayDate)} `,  // ✅ แสดงวันที่ + ป้ายกำกับ
+    createdAt: formatThaiDateTime(createdDate),  // ✅ เก็บไว้ใช้ตอนดูรายละเอียด
+    updatedAt: formatThaiDateTime(updatedDate),  // ✅ เก็บไว้ใช้ตอนดูรายละเอียด
     fileType,
     amount: r.netTotalAmount
       ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', {
@@ -179,7 +215,8 @@ const loadData = async () => {
       .filter((r: any) => r.moneyTypeNote === 'Debtor')
       .map((r: any) => ({
         ...r,
-
+        createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+        updatedAt: r.updatedAt ? new Date(r.updatedAt) : new Date(),
         // 🔥 เพิ่มสถานะล็อกให้ทุกรายการ
         isLocked: r.isLocked ?? false,
       }))
@@ -242,7 +279,7 @@ const view = (item: any) => {
 }
 
 const edit = (item: any) => {
-  router.push(`/edit/${item.id}`)
+  router.push(`/waybilldebtor/edit/${item.id}`)
 }
 
 const toggleLock = (item: any) => {

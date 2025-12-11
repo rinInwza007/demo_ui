@@ -90,18 +90,18 @@ import { setupAxiosMock } from '@/fake/mockAxios'
 import {options} from "@/components/data/departments"
 
 
-import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
+//import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
 import Navbar from '@/components/bar/navbar.vue'
-import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Select from '@/components/input/select/select.vue'
+//import SecondNavbar from '@/components/bar/secoudnavbar.vue'
+//import Select from '@/components/input/select/select.vue'
 import search from '@/components/input/search.vue'
-import TableBase from '@/components/list/listbase.vue'
-import nextpage from '@/components/list/nextpage.vue'
-import selectdatetime from '@/components/DateTime/selectdatetime.vue'
+//import TableBase from '@/components/list/listbase.vue'
+//import nextpage from '@/components/list/nextpage.vue'
+//import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 import goback from '@/components/Button/goback.vue'
-import dropdrow from '@/components/dropdrow/dropdrow.vue'
-import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
-import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
+//import dropdrow from '@/components/dropdrow/dropdrow.vue'
+//import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
+//import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 
 setupAxiosMock()
 
@@ -151,23 +151,11 @@ const mapReceiptToRow = (r: any) => {
     project: r.fundName,
     year: '2568',
     owner: r.fullName,
-<<<<<<< Updated upstream
-    time: '-',
-    fileType,
-    amount: r.netTotalAmount
-      ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', {
-          minimumFractionDigits: 2,
-        }) + ' บาท'
-      : '0.00 บาท',
-
-    // 🔥🔥🔥 สำคัญที่สุด — ตรงนี้ต้องใช้ค่าจาก rawData
-    isLocked: r.isLocked ?? false,
-=======
     time: "-",
     fileType: r.receiptList.map((it: any) => it.moneyType),
     amount: r.receiptList.reduce((sum: number, it: any) => sum + it.amount, 0) + " บาท",
     isLocked: false,
->>>>>>> Stashed changes
+
   }
 }
 
@@ -245,15 +233,8 @@ const items = computed(() => {
 
 onMounted(loadData)
 
-<<<<<<< Updated upstream
-/* =================================
-    3) ACTION FUNCTIONS
-================================== */
-const view = (item: any) => {
-=======
 
 const view = (item:any) => {
->>>>>>> Stashed changes
   router.push(`/pdfpage/${item.id}`)
 }
 
@@ -270,11 +251,7 @@ const toggleLock = (item: any) => {
   Swal.fire({
     position: 'top-end',
     icon: 'success',
-<<<<<<< Updated upstream
-    title: target.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
-=======
     title: item.isLocked ? 'ล็อกรายการสำร็จ' : 'ปลดล็อกรายการสำเร็จ',
->>>>>>> Stashed changes
     showConfirmButton: false,
     timer: 1500,
   })

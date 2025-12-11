@@ -13,7 +13,7 @@ function defaultSeed(): Receipt[] {
       fundId: 'FUND-01',
       fundName: 'งบกลาง',
       projectCode: 'PRJ-0001',
-      receiptList: [  
+      receiptList: [
         {
           itemName: 'ค่าเอกสาร',
           referenceNo: 'ref-001',
@@ -33,7 +33,7 @@ function defaultSeed(): Receipt[] {
 
       ],
     },
-    
+
     {
       fullName: 'สุพชาย จันทร์เทอด',
       phone: '0899999999',
@@ -84,11 +84,7 @@ export function sanitizeItem(it: ReceiptItem): ReceiptItem {
     fee: Number.isFinite(it.fee) ? it.fee : 0,
     keyword: Array.isArray(it.keyword) ? it.keyword : [],
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
-<<<<<<< Updated upstream
-    amount: Number.isFinite(it.amount) ? it.amount : 0, // ✅ เพิ่ม amount
-=======
     netAmount: Number.isFinite(it.netAmount) ? it.netAmount : 0,
->>>>>>> Stashed changes
     paymentDetails: Array.isArray(it.paymentDetails)
       ? it.paymentDetails.map(p => ({
           moneyType: (p.moneyType ?? '').trim(),

@@ -157,11 +157,11 @@
                     <div class="relative">
                       <input
                         type="number"
-                        v-model="item.amount"
+                        v-model="item.fee"
                         @input="handleInput"
                         placeholder="0.00"
                         class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none"
-                        :class="{ 'border-red-300 bg-red-50': item.checked && !item.amount }"
+                        :class="{ 'border-red-300 bg-red-50': item.checked && !item.fee }"
                       />
                       <span
                         class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium"
@@ -306,23 +306,25 @@ const isValid = computed(() => {
   const checkedItems = props.items?.filter(i => i.checked) || []
   if (checkedItems.length === 0) return false
 
-  return checkedItems.every(item => {
-    const hasReferenceNo = item.referenceNo && String(item.referenceNo).trim() !== ''
-    const hasAmount = item.amount && parseFloat(item.amount) > 0
+return checkedItems.every(item => {
+  const hasReferenceNo = item.referenceNo && String(item.referenceNo).trim() !== ''
 
-    if (!hasReferenceNo || !hasAmount) return false
+ const hasAmount = item.fee && parseFloat(item.fee) > 0
 
-    // 💥 เช็คบัญชีเฉพาะ deposit/transfer เท่านั้น
-    if (item.name === 'transfer' || item.name === 'ฝากเข้าบัญชี') {
-      const hasAccountNum = item.AccountNum && String(item.AccountNum).trim() !== ''
-      const hasAccountName = item.AccountName && String(item.AccountName).trim() !== ''
-      const hasBankName = item.BankName && String(item.BankName).trim() !== ''
-      return hasAccountNum && hasAccountName && hasBankName
-    }
 
-    // item อื่นไม่ต้องเช็คบัญชี
-    return true
-  })
+  if (!hasReferenceNo || !hasAmount) return false
+
+  // 💥 เช็คบัญชีเฉพาะ deposit/transfer เท่านั้น
+  if (item.name === 'transfer' || item.name === 'ฝากเข้าบัญชี') {
+    const hasAccountNum = item.AccountNum && String(item.AccountNum).trim() !== ''
+    const hasAccountName = item.AccountName && String(item.AccountName).trim() !== ''
+    const hasBankName = item.BankName && String(item.BankName).trim() !== ''
+    return hasAccountNum && hasAccountName && hasBankName
+  }
+
+  return true
+})
+
 })
 
 
@@ -374,49 +376,27 @@ const confirmSelection = () => {
     .filter((i) => i.checked)
     .map((i) => {
       const item = { ...i }
-       if (i.name === 'transfer' || i.name === 'ฝากเข้าบัญชี') {
-        item.moneyType = 'transfer'
-        item.accountNumber = i.AccountNum
-        item.AccountNum = i.AccountNum
-        item.accountName = i.AccountName
-        item.AccountName = i.AccountName
-        item.bankName = i.BankName
-        item.BankName = i.BankName
-      }
-
+      item.fee = parseFloat(i.fee) || 0
       return item
     })
 
-  props.items.forEach((item) => {
-    const data = {
-      checked: item.checked,
-      amount: item.amount,
-      referenceNo: item.referenceNo,
-    }
-
-
-    if (item.AccountNum !== undefined) {
-      data.AccountNum = item.AccountNum
-      data.AccountName = item.AccountName
-      data.BankName = item.BankName
-      data.accountNumber = item.AccountNum
-      data.accountName = item.AccountName
-      data.bankName = item.BankName
-    }
-    data.moneyType = item.moneyType
-    savedData.value[item.name] = data
-  })
+  // ⭐ รวมค่าที่กรอกเพื่อนำไปหักยอดหนี้ ⭐
+  const totalFee = selected.reduce((sum, i) => {
+    return sum + (parseFloat(i.fee) || 0)
+  }, 0)
 
   errorMessage.value = ''
   hasConfirmed.value = true
-  emit('update:selected', selected)
+
+  // ⭐ ส่งทั้ง selected และ totalFee กลับไปให้ parent ⭐
+  emit('update:selected', {
+    selected,
+    totalFee
+  })
+
   emit('close')
 }
 
-const closeModal = () => {
-  errorMessage.value = ''
-  emit('close')
-}
 
 const restoreSavedData = () => {
   props.items?.forEach((item) => {
@@ -538,4 +518,3 @@ input[type='number'] {
   -moz-appearance: textfield;
 }
 </style>
-

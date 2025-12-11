@@ -9,8 +9,6 @@
         <div class="text-center space-y-2 pb-4 border-b border-gray-200">
           <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">เพิ่มใบนำส่ง</h1>
         </div>
-
-        <!-- Form Section -->
         <div class="max-w-5xl mx-auto space-y-8">
           <!-- ข้อมูลผู้บันทึก -->
           <div class="space-y-4">
@@ -382,16 +380,13 @@
               </button>
             </div>
           </div>
-<<<<<<< Updated upstream
+
             <div class="space-y-4">
               <!-- สรุปรายการทั้งหมด -->
-              <div 
+              <div
                 v-if="morelist.some(row => row.itemName && row.selectedItems?.some(item => item.checked))"
                 class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm"
-=======
-
-          <!-- Total Amount -->
-  <div>
+  >
     <div
       v-if="detailsByRow.length > 0"
       class="bg-white border border-gray-200 rounded-xl p-6 mb-6"
@@ -505,8 +500,7 @@
               <span class="font-bold text-gray-800">ยอดสุทธิ:</span>
               <span class="font-bold text-lg"
                 :class="detail.netAmount >= 0 ? 'text-green-600' : 'text-red-600'"
->>>>>>> Stashed changes
-              >
+            ></span>
                 <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
@@ -514,10 +508,10 @@
                   </svg>
                   สรุปรายการทั้งหมด
                 </h3>
-                
+
                 <div class="space-y-3">
-                  <div 
-                    v-for="(row, index) in morelist" 
+                  <div
+                    v-for="(row, index) in morelist"
                     :key="row.id"
                     v-show="row.itemName && row.selectedItems?.some(item => item.checked)"
                     class="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0"
@@ -584,6 +578,11 @@
         </div>
       </div>
     </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
 </template>
 
 <script setup>
@@ -832,17 +831,10 @@ const saveData = async () => {
     fullName: formData.value.fullName,
     moneyTypeNote:'Waybill',
     phone: formData.value.phone,
-<<<<<<< Updated upstream
-    mainAffiliationName: mainCategory.value,
-    subAffiliationName: subCategory.value,
-=======
 
-    // ข้อมูลหน่วยงาน
     mainAffiliationName: mainCategory.value,
     subAffiliationName: subCategory.value,
 
-    // ข้อมูลกองทุนและโครงการ
->>>>>>> Stashed changes
     fundName: formData.value.fundName,
     moneyType: formData.value.moneyType,
     projectCode: formData.value.projectCode,
@@ -857,7 +849,7 @@ const saveData = async () => {
       const rowFee = Number(row.fee) || 0
       const rowNetAmount = rowTotal - rowFee
 
-<<<<<<< Updated upstream
+
         return {
           itemName: row.itemName,
           note: row.note || '',
@@ -881,27 +873,7 @@ const saveData = async () => {
               })) || [],
         }
     }),
-=======
-      return {
-        itemName: row.itemName,
-        note: row.note || '',
-        fee: rowFee,
-        keyword: Array.isArray(row.keyword) ? row.keyword : (row.keyword ? [row.keyword] : []),
-        subtotal: rowTotal,
-        netAmount: rowNetAmount,
-        paymentDetails: row.selectedItems
-          ?.filter(item => item.checked)
-          .map(item => ({
-            type: item.type || item.paymentType || 'ไม่ระบุ',
-            amount: Number.isFinite(item.amount) ? item.amount : 0,
-            referenceNo: item.referenceNo || '',
-            checkNumber: item.checkNumber || item.NumCheck || null,
-            accountNumber: item.accountNumber || item.AccountNum || null,
-            accountName: item.accountName || item.AccountName || null
-          })) || []
-      }
-    })
->>>>>>> Stashed changes
+
   }
 
   try {

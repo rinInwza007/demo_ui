@@ -20,7 +20,7 @@
         :auto-apply="true"
         placeholder="เลือกช่วงวัน"
         :input-class="`
-          h-[44px] w-full rounded-md border border-gray-1000 px-2 text-sm
+          h-[44px] w-full rounded-md border border-gray-100 px-2 text-sm
           bg-white
           focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
         `"
@@ -127,7 +127,8 @@ watch(
 :deep(.dp__input) {
   width: 360px !important;
   height: 44px !important;
-  border-color: gray;
+  border: color -50px ;: gray;
+
 }
 
 

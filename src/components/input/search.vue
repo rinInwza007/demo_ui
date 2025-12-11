@@ -14,7 +14,6 @@
         v-model="searchText"
         placeholder="ค้นหา สังกัด / หน่วยงาน"
         class="google-input"
-        @input="filterOptions"
         @keydown.down.prevent="moveDown"
         @keydown.up.prevent="moveUp"
         @keydown.enter.prevent="selectActive"
@@ -86,6 +85,11 @@ const filterOptions = () => {
   activeIndex.value = 0;
 };
 
+watch(searchText, (v) => {
+  emit("update:modelValue", v);
+  filterOptions();
+});
+
 /* --- Select --- */
 const select = (item: { full: string }) => {
   searchText.value = item.full;
@@ -115,6 +119,10 @@ watch(
     if (v !== searchText.value) searchText.value = v || "";
   }
 );
+
+
+
+
 </script>
 
 <style scoped>

@@ -198,29 +198,38 @@ const items = computed(() => {
   // (Search Filter)
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
-    filtered = filtered.filter(r =>
-      r.projectCode?.toLowerCase().includes(s) ||
-      r.fullName?.toLowerCase().includes(s) ||
-      r.fundName?.toLowerCase().includes(s)
-    )
+
+    filtered = filtered.filter((r) => {
+      const main = (r.mainAffiliationName || r.affiliationName || '').toLowerCase()
+      const sub = (r.subAffiliationName || '').toLowerCase()
+      const joinAff = `${main} - ${sub}`.toLowerCase()
+
+      // เลือกอย่างใดอย่างหนึ่ง หรือจะให้ค้นทุก field ก็ได้
+      return (
+        main.includes(s) ||
+        sub.includes(s) ||
+        joinAff.includes(s)
+      )
+    })
   }
 
-  // (Filter หน่วยงาน)
+  // (Filter หน่วยงานจาก CascadingSelect)
   if (selectedMain.value) {
-    filtered = filtered.filter(r =>
+    filtered = filtered.filter((r) =>
       r.mainAffiliationName === selectedMain.value ||
       r.affiliationName === selectedMain.value
     )
   }
 
   if (selectedSub1.value) {
-    filtered = filtered.filter(r =>
+    filtered = filtered.filter((r) =>
       r.subAffiliationName === selectedSub1.value
     )
   }
 
   return filtered.map(mapReceiptToRow)
 })
+
 
 
 /* =================================
@@ -263,7 +272,7 @@ const removeItem = async (item: any) => {
     text: `${item.project}`,
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'ลบเลย',
+    confirmButtonText: 'ยืนยัน',
     cancelButtonText: 'ยกเลิก',
   })
 

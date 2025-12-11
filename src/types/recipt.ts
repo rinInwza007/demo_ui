@@ -46,7 +46,8 @@ export interface Receipt {
 
   /** Fund name */
   fundName: string;
-
+  sendmoney?: string;
+  netTotalAmount?: number;
   /** Project code */
   projectCode: string;
 

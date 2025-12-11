@@ -109,15 +109,11 @@
                 <label class="text-sm font-medium text-gray-700">
                   ขอนำส่งเงิน <span class="text-red-500">*</span>
                 </label>
-                <select
+                <ItemNameSelect
                   id="sendmoney"
                   v-model="formData.sendmoney"
                   class="transition-all duration-200"
-                >
-                  <option value=""></option>
-                  <option value="รายได้">รายได้</option>
-                  <option value="เงินโครงการ">เงินโครงการ</option>
-                </select>
+                />
                 <span v-if="errors.sendmoney" class="text-red-600 text-xs">
                   {{ errors.sendmoney }}
                 </span>
@@ -565,11 +561,19 @@ const loadReceiptData = async () => {
     formData.value.fullName = data.fullName || ''
     formData.value.phone = data.phone || ''
     formData.value.fundName = data.fundName || ''
-    formData.value.sendmoney = data.moneyType || ''
+    formData.value.sendmoney = data.sendmoney || ''
     formData.value.projectCode = data.projectCode || ''
     
     mainCategory.value = data.mainAffiliationName || ''
     subCategory.value = data.subAffiliationName || ''
+
+      const moneyTypeValue = data.moneyType || data.sendmoney || ''
+    formData.value.sendmoney = moneyTypeValue
+    
+    // Update TomSelect dropdown if it exists
+    if (sendmoneyTomSelectInstance) {
+      sendmoneyTomSelectInstance.setValue(moneyTypeValue, true)
+    }
 
     // Populate receipt list
     if (data.receiptList && data.receiptList.length > 0) {
@@ -748,6 +752,7 @@ const saveData = async () => {
     moneyType: formData.value.sendmoney,
     projectCode: formData.value.projectCode,
     netTotalAmount: netTotalAmount.value,
+    sendmoney: formData.value.sendmoney,
     receiptList: morelist.value.map((row) => {
       const rowTotal =
         row.selectedItems?.reduce((sum, item) => {

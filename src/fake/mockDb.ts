@@ -104,6 +104,7 @@ export function sanitizeReceipt(r: Receipt): Receipt {
     subAffiliationName: (r.subAffiliationName ?? '').trim(),
     fundName: (r.fundName ?? '').trim(),
     projectCode: (r.projectCode ?? '').trim(),
+    sendmoney: (r.sendmoney ?? '').trim(),
     moneyTypeNote: (r.moneyTypeNote ?? '').trim(), // ✅ เพิ่ม
     netTotalAmount: Number.isFinite(r.netTotalAmount) ? r.netTotalAmount : 0,
     receiptList: Array.isArray(r.receiptList) ? r.receiptList.map(sanitizeItem) : [],

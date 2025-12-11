@@ -7,7 +7,7 @@
     <select
       :value="modelValueString"
       @change="onChange"
-      class="h-[44px] rounded-md border border-gray-500 px-[18px] block w-full
+      class="h-10 rounded-md border border-gray-500 px-[18px] block w-full
              outline-none cursor-pointer transition-all focus:border-gray-700 focus:ring-1 focus:ring-gray-700 "
     >
       <!-- ถ้ามี placeholder -->

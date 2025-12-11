@@ -68,6 +68,8 @@
     @lock="toggleLock"
     @delete="removeItem"
     @view="view"
+    @cleardebtor="cleardebtor"
+
   />
 </template>
     </TableBase>
@@ -244,6 +246,9 @@ const view = (item: any) => {
 
 const edit = (item: any) => {
   router.push(`/edit/${item.id}`)
+}
+const cleardebtor = (items: any)=>{
+  router.push('/cleardebtor')
 }
 
 const toggleLock = (item: any) => {

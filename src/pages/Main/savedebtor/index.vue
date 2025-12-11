@@ -145,22 +145,18 @@ const mapReceiptToRow = (r: any) => {
     : '-'
 
   return {
-    id: r.projectCode,
+    id: r.mainAffiliationName || r.affiliationName || 'อื่นๆ', // ใช้ main เป็น id ก็ได้
     statusColorClass: 'text-red-600',
     org: r.mainAffiliationName || r.affiliationName || '-',
     subOrg1: r.subAffiliationName || '-',
-    project: r.fundName,
+    project: r.fundName || '-', // อันนี้ถ้า merge แล้วไม่มี project ก็ใส่ '-' ก็ได้
     year: '2568',
-    owner: r.fullName,
+    owner: r.fullName || '-', // ถ้า merge หลายคน จะเอาใครก็ต้องเลือกหรือ concat
     time: '-',
     fileType,
-    amount: r.netTotalAmount
-      ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', {
-          minimumFractionDigits: 2,
-        }) + ' บาท'
-      : '0.00 บาท',
-
-    // 🔥🔥🔥 สำคัญที่สุด — ตรงนี้ต้องใช้ค่าจาก rawData
+    amount: Number(r.netTotalAmount || 0).toLocaleString('th-TH', {
+      minimumFractionDigits: 2,
+    }) + ' บาท',
     isLocked: r.isLocked ?? false,
   }
 }

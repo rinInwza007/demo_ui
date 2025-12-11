@@ -152,21 +152,6 @@ const hasBeenEdited = (createdAt: Date | null, updatedAt: Date | null) => {
 }
 
 const mapReceiptToRow = (r: any) => {
-  const fileTypesArray: string[] =
-    r.receiptList?.flatMap((item: any) => {
-      const fromPaymentDetails = (item.paymentDetails || [])
-        .map((p: any) => p.moneyType?.trim())
-        .filter((t: string) => !!t)
-
-      const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : []
-
-      return [...fromPaymentDetails, ...fromReceiptItem]
-    }) || []
-
-  const uniqueFileTypes = Array.from(new Set(fileTypesArray))
-  const fileType = uniqueFileTypes.length > 0
-    ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
-    : '-'
 
   // ✅ แปลงวันที่เป็น Date object
   const createdDate = r.createdAt ? new Date(r.createdAt) : null
@@ -188,7 +173,8 @@ const mapReceiptToRow = (r: any) => {
     time: `${formatThaiDateTime(displayDate)} `,  // ✅ แสดงวันที่ + ป้ายกำกับ
     createdAt: formatThaiDateTime(createdDate),  // ✅ เก็บไว้ใช้ตอนดูรายละเอียด
     updatedAt: formatThaiDateTime(updatedDate),  // ✅ เก็บไว้ใช้ตอนดูรายละเอียด
-    fileType,
+    fileType: r.moneyTypeNote === 'Debtor' ? 'ลูกหนี้' : (r.moneyTypeNote || '-'),
+    
     amount: r.netTotalAmount
       ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', {
           minimumFractionDigits: 2,

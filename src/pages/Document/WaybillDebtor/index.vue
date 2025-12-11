@@ -507,6 +507,10 @@ const loadReceiptData = async () => {
         itemName: item.itemName || '',
         note: item.note || '',
         money: item.amount || 0,
+        selectedItems: item.paymentDetails?.map(detail => ({
+          checked: true,
+          moneyType: detail.moneyType || 'debtor'
+        })) || []
       }))
     }
 
@@ -610,15 +614,21 @@ const saveData = async () => {
     mainAffiliationName: mainCategory.value,
     subAffiliationName: subCategory.value,
     fundName: formData.value.fundName,
-    moneyType: formData.value.sendmoney,
+    moneyType: 'debtor',
     projectCode: formData.value.projectCode,
     sendmoney: formData.value.sendmoney,
     netTotalAmount: netTotalAmount.value,
-    receiptList: morelist.value.map((row) => ({
-      itemName: row.itemName,
-      note: row.note || '',
-      amount: Number(row.money) || 0,
-    })),
+  receiptList: morelist.value.map((row) => ({
+    itemName: row.itemName,
+    note: row.note || '',
+    amount: Number(row.money) || 0,
+paymentDetails: row.selectedItems
+  ?.filter(item => item.checked)
+  .map(item => ({
+    ...item,      // เอาค่าที่เหลือมาจาก UI
+    moneyType: 'debtor' // กำหนดตรงๆ เป็น 'debtor'
+  })) || []
+  })),
   }
 
   // เพิ่ม createdAt และ updatedAt

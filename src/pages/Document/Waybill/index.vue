@@ -580,7 +580,7 @@ const loadReceiptData = async () => {
     formData.value.fullName = data.fullName || ''
     formData.value.phone = data.phone || ''
     formData.value.fundName = data.fundName || ''
-    formData.value.sendmoney = data.moneyType || ''
+    formData.value.sendmoney = data.sendmoney || ''
     formData.value.projectCode = data.projectCode || ''
     
     mainCategory.value = data.mainAffiliationName || ''
@@ -756,7 +756,8 @@ const saveData = async () => {
       Swal.showLoading()
     },
   })
-
+  const currentDateTime = new Date().toISOString()
+  
   const payload = {
     fullName: formData.value.fullName,
     moneyTypeNote: 'Waybill',
@@ -766,6 +767,7 @@ const saveData = async () => {
     fundName: formData.value.fundName,
     moneyType: formData.value.sendmoney,
     projectCode: formData.value.projectCode,
+    sendmoney: formData.value.sendmoney,
     netTotalAmount: netTotalAmount.value,
     receiptList: morelist.value.map((row) => {
       const rowTotal =
@@ -798,7 +800,15 @@ const saveData = async () => {
       }
     }),
   }
-
+  // เพิ่ม createdAt และ updatedAt
+  if (isEditMode.value) {
+    // กรณีแก้ไข: เพิ่มเฉพาะ updatedAt (createdAt จะเก็บไว้เดิมที่ backend)
+    payload.updatedAt = currentDateTime
+  } else {
+    // กรณีสร้างใหม่: เพิ่มทั้ง createdAt และ updatedAt
+    payload.createdAt = currentDateTime
+    payload.updatedAt = currentDateTime
+  }
   try {
     let response
     if (isEditMode.value) {

@@ -90,7 +90,6 @@ import { useRouter } from 'vue-router'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import {options} from "@/components/data/departments"
 
-
 import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
@@ -113,10 +112,6 @@ const selectedMain = ref("");
 const selectedSub1 = ref("");
 const selectedSub2 = ref("");
 
-
-
-
-
 const moneyTypeLabel: Record<string, string> = {
   cash: 'เงินสด',
   bank: 'เช็คธนาคาร',
@@ -125,7 +120,31 @@ const moneyTypeLabel: Record<string, string> = {
   other: 'อื่นๆ',
 };
 
+// ✅ ฟังก์ชัน Format วันที่แบบไทย
+const formatThaiDateTime = (date: Date | null) => {
+  if (!date || isNaN(date.getTime())) return '-'
+  
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = date.getMonth() + 1
+  const year = date.getFullYear() + 543 // แปลงเป็น พ.ศ.
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  
+  const monthNames = [
+    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+  ]
+  
+  return `${day} ${monthNames[month - 1]} ${year} ${hours}:${minutes} `
+}
 
+// ✅ ฟังก์ชันตรวจสอบว่ามีการแก้ไขหรือไม่
+const hasBeenEdited = (createdAt: Date | null, updatedAt: Date | null) => {
+  if (!createdAt || !updatedAt) return false
+  
+  // เปรียบเทียบเวลา (ถ้าต่างกันมากกว่า 1 วินาที = มีการแก้ไข)
+  return Math.abs(updatedAt.getTime() - createdAt.getTime()) > 1000
+}
 
 const mapReceiptToRow = (r: any) => {
   const fileTypesArray: string[] =
@@ -144,15 +163,27 @@ const mapReceiptToRow = (r: any) => {
     ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
     : '-'
 
+  // ✅ แปลงวันที่เป็น Date object
+  const createdDate = r.createdAt ? new Date(r.createdAt) : null
+  const updatedDate = r.updatedAt ? new Date(r.updatedAt) : null
+
+  // ✅ ตรวจสอบว่ามีการแก้ไขหรือไม่
+  const isEdited = hasBeenEdited(createdDate, updatedDate)
+
+  // ✅ เลือกแสดงวันที่ตามเงื่อนไข
+  const displayDate = isEdited ? updatedDate : createdDate
+
   return {
     id: r.projectCode,
     statusColorClass: 'text-red-600',
-    org: r.mainAffiliationName || r.affiliationName || '-',  // ✅ ปรับให้ตรงกับ field จริง
-    subOrg1: r.subAffiliationName || '-',  // ✅ เพิ่ม field
+    org: r.mainAffiliationName || r.affiliationName || '-',
+    subOrg1: r.subAffiliationName || '-',
     project: r.fundName,
     year: '2568',
     owner: r.fullName,
-    time: '-',
+    time: `${formatThaiDateTime(displayDate)} `,  // ✅ แสดงวันที่ + ป้ายกำกับ
+    createdAt: formatThaiDateTime(createdDate),  // ✅ เก็บไว้ใช้ตอนดูรายละเอียด
+    updatedAt: formatThaiDateTime(updatedDate),  // ✅ เก็บไว้ใช้ตอนดูรายละเอียด
     fileType: fileType,
     amount: r.netTotalAmount
       ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', {
@@ -171,16 +202,18 @@ const loadData = async () => {
     const res = await axios.get('/getReceipt')
 
     console.log('📦 Raw API Response:', res.data)
+    
     rawData.value = res.data
-
       .filter((r: any) => r.moneyTypeNote === 'Waybill')
       .map((r: any) => ({
         ...r,
-
+        // ✅ แปลง string เป็น Date object
+        createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+        updatedAt: r.updatedAt ? new Date(r.updatedAt) : new Date(),
         isLocked: r.isLocked ?? false,
       }))
 
-    console.log('✅ Filtered + Added isLocked:', rawData.value)
+    console.log('✅ Filtered + Added isLocked + Dates:', rawData.value)
 
   } catch (error) {
     console.error('❌ Error loading data:', error)
@@ -188,14 +221,12 @@ const loadData = async () => {
   }
 }
 
-
 /* =================================
     🔥 COMPUTED: กรองข้อมูลตาม Filters
 ================================== */
 const items = computed(() => {
   let filtered = [...rawData.value]
 
-  // (Search Filter)
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
 
@@ -230,13 +261,6 @@ const items = computed(() => {
   return filtered.map(mapReceiptToRow)
 })
 
-
-
-/* =================================
-    🛠️ ACTION FUNCTIONS
-================================== */
-
-
 onMounted(loadData)
 
 /* =================================
@@ -264,7 +288,6 @@ const toggleLock = (row: any) => {
     timer: 1500,
   })
 }
-
 
 const removeItem = async (item: any) => {
   const result = await Swal.fire({

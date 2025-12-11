@@ -1,13 +1,11 @@
 <template>
   <div class="flex flex-col gap-2">
-
     <!-- Label -->
     <label v-if="label" class="font-medium text-gray-700">
       {{ label }}
     </label>
 
     <div class="flex gap-4 items-start">
-
       <!-- MAIN: เลือกคณะ -->
       <div class="flex-1">
         <Select
@@ -34,23 +32,22 @@
           :placeholder="placeholderSub2"
         />
       </div>
-
     </div>
-
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import Select from "@/components/input/select/select.vue";
 
 /* ===========================
-      PROPS
+      PROPS (รองรับ v-model:main)
 =========================== */
 const props = defineProps({
-  modelValueMain: { type: String, default: "" },   // คณะที่เลือก
-  modelValueSub1: { type: String, default: "" },   // รองที่เลือก
-  modelValueSub2: { type: String, default: "" },   // ย่อยที่เลือก
+  // 👇 ต้องชื่อแบบนี้ถึงจะใช้ v-model:main ได้
+  main: { type: String, default: "" },
+  sub1: { type: String, default: "" },
+  sub2: { type: String, default: "" },
 
   options: { type: Object, required: true },
 
@@ -62,17 +59,40 @@ const props = defineProps({
 });
 
 const emit = defineEmits([
-  "update:modelValueMain",
-  "update:modelValueSub1",
-  "update:modelValueSub2",
+  // 👇 ให้ตรงกับ v-model:main / :sub1 / :sub2
+  "update:main",
+  "update:sub1",
+  "update:sub2",
 ]);
 
 /* ===========================
-      STATE
+      STATE ภายใน
 =========================== */
-const mainValue = ref(props.modelValueMain);
-const sub1Value = ref(props.modelValueSub1);
-const sub2Value = ref(props.modelValueSub2);
+const mainValue = ref(props.main);
+const sub1Value = ref(props.sub1);
+const sub2Value = ref(props.sub2);
+
+/* ถ้า parent เปลี่ยนค่าจากข้างนอก → sync กลับเข้ามาใน component */
+watch(
+  () => props.main,
+  (v) => {
+    if (v !== mainValue.value) mainValue.value = v || "";
+  }
+);
+
+watch(
+  () => props.sub1,
+  (v) => {
+    if (v !== sub1Value.value) sub1Value.value = v || "";
+  }
+);
+
+watch(
+  () => props.sub2,
+  (v) => {
+    if (v !== sub2Value.value) sub2Value.value = v || "";
+  }
+);
 
 /* ===========================
    COMPUTED OPTIONS LOGIC
@@ -87,12 +107,10 @@ const sub1Options = computed(() => {
 
   const main = data.main;
 
-  // main = "string"
   if (typeof main === "string") {
     return [main];
   }
 
-  // main = array
   if (Array.isArray(main)) {
     return main;
   }
@@ -110,12 +128,10 @@ const sub2Options = computed(() => {
   const main = data.main;
   const subs = data.subs;
 
-  // กรณี main = array → ไม่มี subs
   if (Array.isArray(main)) {
     return [];
   }
 
-  // main = string → subs อาจมีหลายอัน
   if (Array.isArray(subs)) {
     return subs;
   }
@@ -124,28 +140,29 @@ const sub2Options = computed(() => {
 });
 
 /* ===========================
-      WATCHERS
+      WATCHERS (emit ออกไป)
 =========================== */
 
+// main เปลี่ยน → แจ้ง parent + reset sub1/sub2
 watch(mainValue, (val) => {
-  emit("update:modelValueMain", val);
+  emit("update:main", val);
 
-  // reset sub1 & sub2 เมื่อเปลี่ยน main
   sub1Value.value = "";
   sub2Value.value = "";
-  emit("update:modelValueSub1", "");
-  emit("update:modelValueSub2", "");
+  emit("update:sub1", "");
+  emit("update:sub2", "");
 });
 
+// sub1 เปลี่ยน → แจ้ง parent + reset sub2
 watch(sub1Value, (val) => {
-  emit("update:modelValueSub1", val);
+  emit("update:sub1", val);
 
-  // reset sub2 เมื่อเลือกระดับรองใหม่
   sub2Value.value = "";
-  emit("update:modelValueSub2", "");
+  emit("update:sub2", "");
 });
 
+// sub2 เปลี่ยน → แจ้ง parent
 watch(sub2Value, (val) => {
-  emit("update:modelValueSub2", val);
+  emit("update:sub2", val);
 });
 </script>

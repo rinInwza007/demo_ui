@@ -116,6 +116,7 @@
                   ขอนำส่งเงิน <span class="text-red-500">*</span>
                 </label>
               <SendMoneySelect
+              class="-mt-2"
                 ref="sendmoneySelectRef"
                 v-model="formData.sendmoney"
                 input-id="sendmoney"
@@ -186,7 +187,7 @@
                           v-model="row.itemName"
                           :input-id="`itemName-${index}`"
                           @input="() => clearRowError(index, 'itemName')"
-                          class="-ml-2 -mr-2"
+                          class="-ml-2 -mr-2 -mt-2"
                         />
                         <span v-if="errors.rows?.[index]?.itemName" class="text-red-600 text-xs">
                           {{ errors.rows[index].itemName }}

@@ -382,13 +382,6 @@
               </button>
             </div>
           </div>
-<<<<<<< Updated upstream
-            <div class="space-y-4">
-              <!-- สรุปรายการทั้งหมด -->
-              <div 
-                v-if="morelist.some(row => row.itemName && row.selectedItems?.some(item => item.checked))"
-                class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm"
-=======
 
           <!-- Total Amount -->
   <div>
@@ -505,8 +498,8 @@
               <span class="font-bold text-gray-800">ยอดสุทธิ:</span>
               <span class="font-bold text-lg"
                 :class="detail.netAmount >= 0 ? 'text-green-600' : 'text-red-600'"
->>>>>>> Stashed changes
               >
+              </span>
                 <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
@@ -514,10 +507,10 @@
                   </svg>
                   สรุปรายการทั้งหมด
                 </h3>
-                
+
                 <div class="space-y-3">
-                  <div 
-                    v-for="(row, index) in morelist" 
+                  <div
+                    v-for="(row, index) in morelist"
                     :key="row.id"
                     v-show="row.itemName && row.selectedItems?.some(item => item.checked)"
                     class="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0"
@@ -580,6 +573,10 @@
             >
               บันทึก
             </button>
+          </div>
+          </div>
+          </div>
+          </div>
           </div>
         </div>
       </div>
@@ -832,17 +829,12 @@ const saveData = async () => {
     fullName: formData.value.fullName,
     moneyTypeNote:'Waybill',
     phone: formData.value.phone,
-<<<<<<< Updated upstream
-    mainAffiliationName: mainCategory.value,
-    subAffiliationName: subCategory.value,
-=======
 
     // ข้อมูลหน่วยงาน
     mainAffiliationName: mainCategory.value,
     subAffiliationName: subCategory.value,
 
     // ข้อมูลกองทุนและโครงการ
->>>>>>> Stashed changes
     fundName: formData.value.fundName,
     moneyType: formData.value.moneyType,
     projectCode: formData.value.projectCode,
@@ -857,31 +849,6 @@ const saveData = async () => {
       const rowFee = Number(row.fee) || 0
       const rowNetAmount = rowTotal - rowFee
 
-<<<<<<< Updated upstream
-        return {
-          itemName: row.itemName,
-          note: row.note || '',
-          fee: rowFee,
-          keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
-          subtotal: rowTotal,
-          amount: rowNetAmount,
-          paymentDetails:
-            row.selectedItems
-              ?.filter((item) => item.checked)
-              .map((item) => ({
-                moneyType: item.moneyType,
-                amount: Number(item.amount) || 0,
-                referenceNo: item.referenceNo || '',
-                // เช็คธนาคาร
-                checkNumber: item.checkNumber || item.NumCheck || null,
-                // ✅ ฝากเข้าบัญชี - ใช้ชื่อที่ต้องการส่งไป API
-                accountName: item.accountName || item.AccountName || null,
-                accountNumber: item.accountNumber || item.AccountNum || null,
-                bankName: item.bankName || item.BankName || null,
-              })) || [],
-        }
-    }),
-=======
       return {
         itemName: row.itemName,
         note: row.note || '',
@@ -901,7 +868,6 @@ const saveData = async () => {
           })) || []
       }
     })
->>>>>>> Stashed changes
   }
 
   try {

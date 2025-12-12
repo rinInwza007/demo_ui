@@ -68,22 +68,35 @@
     @lock="toggleLock"
     @delete="removeItem"
     @view="view"
-  />
-</template>
-    </TableBase>
-      </div>
+  /></div>
 
-      <!-- Pagination + Back Button -->
-      <div class="flex items-center justify-between mt-6 ml-5">
-        <nextpage />
-        <goback />
-      </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Pagination -->
+                    <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between">
+                        <div class="text-xs text-slate-500">
+                            แสดง 1-4 จากทั้งหมด 12 รายการ
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 disabled:opacity-50 text-xs">Prev</button>
+                            <button class="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs shadow-md shadow-blue-500/30 font-medium">1</button>
+                            <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">2</button>
+                            <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">3</button>
+                            <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 text-xs">Next</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
     </div>
-  </div>
+</body>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
@@ -102,16 +115,24 @@ import goback from '@/components/Button/goback.vue'
 import dropdrow from '@/components/dropdrow/dropdrow.vue'
 import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
+import selectdatetime from '@/components/DateTime/selectdatetime.vue'
+import sidebar from '@/components/bar/sidebar.vue'
 
 setupAxiosMock()
 
 const router = useRouter()
-const searchText = ref('')
-const category = ref('')
+
+
+
+
+/* ===============================
+   1) state หลัก (เหมือนหน้าเก่า)
+================================= */
+const searchText = ref('')           // ใช้กับช่องค้นหา (v-model)
 const rawData = ref<any[]>([])
-const selectedMain = ref("");
-const selectedSub1 = ref("");
-const selectedSub2 = ref("");
+const selectedMain = ref('')
+const selectedSub1 = ref('')
+const selectedSub2 = ref('')
 
 
 
@@ -123,10 +144,50 @@ const moneyTypeLabel: Record<string, string> = {
   transfer: 'ฝากเข้าบัญชี',
   debtor: 'ลูกหนี้',
   other: 'อื่นๆ',
-};
+}
+
+// format วันที่แบบไทย
+const formatThaiDateTime = (date: Date | null) => {
+  if (!date || isNaN(date.getTime())) return '-'
+
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = date.getMonth() + 1
+  const year = date.getFullYear() + 543 // พ.ศ.
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+
+  const monthNames = [
+    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+  ]
+
+  return `${day} ${monthNames[month - 1]} ${year} ${hours}:${minutes} `
+}
+
+// ใช้กับคอลัมน์ "ยอดเงิน"
+const formatCurrency = (amount: number | string) => {
+  const n =
+    typeof amount === 'string'
+      ? Number(amount.toString().replace(/[^0-9.-]/g, ''))
+      : amount || 0
+
+  return n.toLocaleString('th-TH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+// เช็คว่ามีการแก้ไขไหม
+const hasBeenEdited = (createdAt: Date | null, updatedAt: Date | null) => {
+  if (!createdAt || !updatedAt) return false
+  return Math.abs(updatedAt.getTime() - createdAt.getTime()) > 1000
+}
 
 
-
+/* ===============================
+   3) map จาก rawData -> item ที่ UI ใช้
+      ให้ field ตรงกับ template ใหม่
+================================= */
 const mapReceiptToRow = (r: any) => {
   const fileTypesArray: string[] =
     r.receiptList?.flatMap((item: any) => {
@@ -145,27 +206,33 @@ const mapReceiptToRow = (r: any) => {
     : '-'
 
   return {
+    // ไว้ใช้เวลา view / edit / delete
     id: r.projectCode,
     statusColorClass: 'text-red-600',
     org: r.mainAffiliationName || r.affiliationName || '-',  // ✅ ปรับให้ตรงกับ field จริง
     subOrg1: r.subAffiliationName || '-',  // ✅ เพิ่ม field
     project: r.fundName,
+
+    // ปีงบ ฯ (ตอนนี้ fix 2568 เหมือนของเดิม)
     year: '2568',
     owner: r.fullName,
     time: '-',
     fileType: fileType,
     amount: r.netTotalAmount
-      ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', {
-          minimumFractionDigits: 2,
-        }) + ' บาท'
-      : '0.00 บาท',
+      ? Number(String(r.netTotalAmount).replace(/,/g, ''))
+      : 0,
+
+    // เก็บค่าบางอย่างเผื่อกดเข้าไปหน้ารายละเอียด
+    createdAt: createdDate,
+    updatedAt: updatedDate,
     isLocked: r.isLocked ?? false,
+    _raw: r,
   }
 }
 
-/* =================================
-    2) โหลดข้อมูลจาก Fake API
-================================== */
+/* ===============================
+   4) โหลดข้อมูลจาก Fake API (เหมือนหน้าเก่า)
+================================= */
 const loadData = async () => {
   try {
     const res = await axios.get('/getReceipt')
@@ -188,10 +255,13 @@ const loadData = async () => {
   }
 }
 
+const items = computed(() => {
+  let filtered = [...rawData.value]
+
+  // 🔍 filter จาก searchText (ค้นหาตามสังกัด / หน่วยงาน)
 
 /* =================================
     🔥 COMPUTED: กรองข้อมูลตาม Filters
-================================== */
 const items = computed(() => {
   let filtered = [...rawData.value]
 
@@ -225,14 +295,13 @@ const items = computed(() => {
 
 /* =================================
     🛠️ ACTION FUNCTIONS
-================================== */
 
 
 onMounted(loadData)
 
-/* =================================
-    3) ACTION FUNCTIONS
-================================== */
+/* ===============================
+   6) action ต่าง ๆ (ไว้เผื่อผูกกับปุ่มในอนาคต)
+================================= */
 const view = (item: any) => {
   router.push(`/pdfpage/${item.id}`)
 }

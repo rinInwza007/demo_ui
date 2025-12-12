@@ -24,7 +24,9 @@ const routes = [
   { path: '/edit', name: 'edit',component:edit},
   { path: '/cleardebtor', name: 'cleardebtor',component:ClearDebtor},
   {path: '/edit/:id',name: 'EditReceipt',component: edit},
-  { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor',component:indexwaybilldebtor}
+  { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor',component:indexwaybilldebtor},
+  { path: '/waybill/edit/:id',name: 'WaybillEdit',component: Waybill},
+  { path: '/waybilldebtor/edit/:id',name: 'WaybillDebtorEdit',component: WaybillDebtor},
 ]
 
 const router = createRouter({

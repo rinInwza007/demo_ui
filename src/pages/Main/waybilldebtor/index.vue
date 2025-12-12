@@ -165,7 +165,7 @@ const mapReceiptToRow = (r: any) => {
   return {
     id: r.projectCode,
     statusColorClass: 'text-red-600',
-    org: r.mainAffiliationName || r.affiliationName || '-',
+    org: r.mainAffiliationName || '-',
     subOrg1: r.subAffiliationName || '-',
     project: r.fundName,
     year: '2568',

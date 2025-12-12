@@ -68,6 +68,7 @@
     @lock="toggleLock"
     @delete="removeItem"
     @view="view"
+    @cleardebtor="clear"
   />
 </template>
     </TableBase>
@@ -126,23 +127,39 @@ const moneyTypeLabel: Record<string, string> = {
   debtor: 'ลูกหนี้',
   other: 'อื่นๆ',
 };
+const formatThaiDateTime = (date: Date | null) => {
+  if (!date || isNaN(date.getTime())) return '-'
+  
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = date.getMonth() + 1
+  const year = date.getFullYear() + 543 // แปลงเป็น พ.ศ.
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  
+  const monthNames = [
+    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+  ]
+  
+  return `${day} ${monthNames[month - 1]} ${year} ${hours}:${minutes} `
+}
 
+// ✅ ฟังก์ชันตรวจสอบว่ามีการแก้ไขหรือไม่
+const hasBeenEdited = (createdAt: Date | null, updatedAt: Date | null) => {
+  if (!createdAt || !updatedAt) return false
+  
+  // เปรียบเทียบเวลา (ถ้าต่างกันมากกว่า 1 วินาที = มีการแก้ไข)
+  return Math.abs(updatedAt.getTime() - createdAt.getTime()) > 1000
+}
 const mapReceiptToRow = (r: any) => {
-  const fileTypesArray: string[] =
-    r.receiptList?.flatMap((item: any) => {
-      const fromPaymentDetails = (item.paymentDetails || [])
-        .map((p: any) => p.moneyType?.trim())
-        .filter((t: string) => !!t)
+  const createdDate = r.createdAt ? new Date(r.createdAt) : null
+  const updatedDate = r.updatedAt ? new Date(r.updatedAt) : null
 
-      const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : []
+  // ✅ ตรวจสอบว่ามีการแก้ไขหรือไม่
+  const isEdited = hasBeenEdited(createdDate, updatedDate)
 
-      return [...fromPaymentDetails, ...fromReceiptItem]
-    }) || []
-
-  const uniqueFileTypes = Array.from(new Set(fileTypesArray))
-  const fileType = uniqueFileTypes.length > 0
-    ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
-    : '-'
+  // ✅ เลือกแสดงวันที่ตามเงื่อนไข
+  const displayDate = isEdited ? updatedDate : createdDate
 
   return {
     id: r.mainAffiliationName || r.affiliationName || 'อื่นๆ', // ใช้ main เป็น id ก็ได้
@@ -152,8 +169,10 @@ const mapReceiptToRow = (r: any) => {
     project: r.fundName || '-', // อันนี้ถ้า merge แล้วไม่มี project ก็ใส่ '-' ก็ได้
     year: '2568',
     owner: r.fullName || '-', // ถ้า merge หลายคน จะเอาใครก็ต้องเลือกหรือ concat
-    time: '-',
-    fileType,
+    time: `${formatThaiDateTime(displayDate)} `,  // ✅ แสดงวันที่ + ป้ายกำกับ
+    createdAt: formatThaiDateTime(createdDate),  // ✅ เก็บไว้ใช้ตอนดูรายละเอียด
+    updatedAt: formatThaiDateTime(updatedDate),  // ✅ เก็บไว้ใช้ตอนดูรายละเอียด
+    fileType: 'ลูกหนี้',
     amount: Number(r.netTotalAmount || 0).toLocaleString('th-TH', {
       minimumFractionDigits: 2,
     }) + ' บาท',
@@ -246,6 +265,10 @@ const view = (item: any) => {
 
 const edit = (item: any) => {
   router.push(`/edit/${item.id}`)
+}
+
+const clear = (item: any) => {
+  router.push(`/cleardebtor`)
 }
 
 const toggleLock = (item: any) => {

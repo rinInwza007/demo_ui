@@ -66,8 +66,8 @@
                 <select
                   v-model="mainCategory"
                   class="h-[44px] w-full rounded-md border border-gray-500 px-2 text-sm"
-                >
-                  <option value="">-- เลือกหน่วยงาน --</option>
+                
+                ><option value="" disabled selected class="text-gray-400">เลือกหน่วยงาน</option>
                   <option v-for="(sub, key) in options" :key="key" :value="key">
                     {{ key }}
                   </option>
@@ -85,7 +85,7 @@
                   v-model="subCategory"
                   class="h-[44px] w-full rounded-md border border-gray-500 px-2 text-sm disabled:bg-gray-200 disabled:text-gray-400"
                 >
-                  <option value="">-- เลือกหัวข้อย่อย --</option>
+                  <option value="" disabled selected class="text-gray-400">เลือกหน่วยงาน</option>
                   <option v-for="item in subOptions" :key="item" :value="item">
                     {{ item }}
                   </option>
@@ -784,7 +784,6 @@ const saveData = async () => {
         itemName: row.itemName,
         note: row.note || '',
         fee: rowFee,
-        keyword: Array.isArray(row.keyword) ? row.keyword : row.keyword ? [row.keyword] : [],
         subtotal: rowTotal,
         amount: rowNetAmount,
         paymentDetails:
@@ -896,15 +895,26 @@ watch(
 
 // Watch for form changes to clear errors
 watch(
-  [formData, mainCategory, subCategory],
-  ([newFormData]) => {
-    for (const key in newFormData) {
-      if (errors.value[key] && newFormData[key]) {
+  () => [formData.value, mainCategory.value, subCategory.value],
+  () => {
+    // Clear errors for formData
+    for (const key in formData.value) {
+      if (errors.value[key] && formData.value[key]) {
         delete errors.value[key]
       }
     }
+    
+    // Clear errors for mainCategory
+    if (errors.value.mainCategory && mainCategory.value) {
+      delete errors.value.mainCategory
+    }
+    
+    // Clear errors for subCategory
+    if (errors.value.subCategory && subCategory.value) {
+      delete errors.value.subCategory
+    }
   },
-  { deep: true },
+  { deep: true }
 )
 </script>
 

@@ -66,7 +66,10 @@
 
                 <div
                   class="p-2 rounded-lg transition-all"
-                  :class="[item.checked ? 'bg-white shadow-sm' : 'bg-gray-100', getIconColor(item)]"
+                  :class="[
+                    item.checked ? 'bg-white shadow-sm' : 'bg-gray-100',
+                    getIconColor(item),
+                  ]"
                 >
                   <component :is="getIcon(item)" class="w-5 h-5" />
                 </div>
@@ -82,8 +85,10 @@
               <!-- Form Fields - แสดงเมื่อ checked -->
               <transition name="slide-down">
                 <div v-if="item.checked" class="mt-4 space-y-3">
+                  
                   <!-- 💵 เงินสด -->
                   <template v-if="getItemType(item) === 'cash'">
+
                     <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1.5">
                         เลขที่อ้างอิง
@@ -97,7 +102,7 @@
                       />
                     </div>
 
-                    <div>
+                      <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1.5">
                         จำนวนเงิน <span class="text-red-500">*</span>
                       </label>
@@ -112,16 +117,14 @@
                           class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all outline-none"
                           :class="{ 'border-red-300 bg-red-50': !item.amount }"
                         />
-                        <span
-                          class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium"
-                          >฿</span
-                        >
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">฿</span>
                       </div>
                     </div>
                   </template>
 
                   <!-- 🏦 เช็คธนาคาร -->
                   <template v-else-if="getItemType(item) === 'bank'">
+
                     <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1.5">
                         เลขที่เช็ค <span class="text-red-500">*</span>
@@ -148,7 +151,7 @@
                         class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                       />
                     </div>
-                    <div>
+                                        <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1.5">
                         จำนวนเงิน <span class="text-red-500">*</span>
                       </label>
@@ -163,16 +166,14 @@
                           class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                           :class="{ 'border-red-300 bg-red-50': !item.amount }"
                         />
-                        <span
-                          class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium"
-                          >฿</span
-                        >
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">฿</span>
                       </div>
                     </div>
                   </template>
 
                   <!-- 💳 ฝากเข้าบัญชี -->
                   <template v-else-if="getItemType(item) === 'transfer'">
+
                     <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1.5">
                         ชื่อบัญชี <span class="text-red-500">*</span>
@@ -181,9 +182,7 @@
                         :value="item.accountName || item.AccountName"
                         @change="handleAccountChange(item, $event)"
                         class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
-                        :class="{
-                          'border-red-300 bg-red-50': !item.accountName && !item.AccountName,
-                        }"
+                        :class="{ 'border-red-300 bg-red-50': !item.accountName && !item.AccountName }"
                       >
                         <option value="">เลือกบัญชี</option>
                         <option v-for="acc in accounts" :key="acc.name" :value="acc.name">
@@ -232,7 +231,7 @@
                         class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
                       />
                     </div>
-                    <div>
+                                        <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1.5">
                         จำนวนเงิน <span class="text-red-500">*</span>
                       </label>
@@ -247,13 +246,11 @@
                           class="w-full px-4 py-2.5 pr-12 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
                           :class="{ 'border-red-300 bg-red-50': !item.amount }"
                         />
-                        <span
-                          class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium"
-                          >฿</span
-                        >
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">฿</span>
                       </div>
                     </div>
                   </template>
+
                 </div>
               </transition>
             </div>
@@ -375,26 +372,29 @@ const savedData = ref({})
 const getItemType = (item) => {
   // ลำดับความสำคัญ: moneyType > name > type > paymentType
   if (item.moneyType) return item.moneyType
-
+  
   const typeMap = {
-    cash: 'cash',
-    เงินสด: 'cash',
-    bank: 'bank',
-    เช็ค: 'bank',
-    เช็คธนาคาร: 'bank',
-    transfer: 'transfer',
-    ฝากเข้าบัญชี: 'transfer',
+    'cash': 'cash',
+    'เงินสด': 'cash',
+    'bank': 'bank',
+    'เช็ค': 'bank',
+    'เช็คธนาคาร': 'bank',
+    'transfer': 'transfer',
+    'ฝากเข้าบัญชี': 'transfer'
   }
-
-  return typeMap[item.name] || typeMap[item.type] || typeMap[item.paymentType] || 'cash'
+  
+  return typeMap[item.name] || 
+         typeMap[item.type] || 
+         typeMap[item.paymentType] || 
+         'cash'
 }
 
 const getDisplayName = (item) => {
   const type = getItemType(item)
   const nameMap = {
-    cash: 'เงินสด',
-    bank: 'เช็คธนาคาร',
-    transfer: 'ฝากเข้าบัญชี',
+    'cash': 'เงินสด',
+    'bank': 'เช็คธนาคาร',
+    'transfer': 'ฝากเข้าบัญชี'
   }
   return nameMap[type] || 'เงินสด'
 }
@@ -440,7 +440,7 @@ const handleCheckboxChange = (item) => {
     // ล้างข้อมูลทุก field ของ item ตาม type
     item.amount = ''
     item.referenceNo = ''
-
+    
     const type = getItemType(item)
     if (type === 'bank') {
       item.checkNumber = ''
@@ -459,6 +459,7 @@ const handleCheckboxChange = (item) => {
   handleInput() // รีเซ็ต error / confirm state
 }
 
+
 // Input Handlers
 const handleCheckNumberInput = (item, event) => {
   const value = event.target.value
@@ -470,7 +471,7 @@ const handleCheckNumberInput = (item, event) => {
 const handleAccountChange = (item, event) => {
   const selectedName = event.target.value
   const selected = accounts.value.find((acc) => acc.name === selectedName)
-
+  
   if (selected) {
     item.accountName = selected.name
     item.AccountName = selected.name
@@ -510,6 +511,7 @@ const isValid = computed(() => {
     const hasAmount = item.amount && parseFloat(item.amount) > 0
     const hasRef = item.referenceNo && String(item.referenceNo).trim() !== ''
 
+
     if (!item.referenceNo || item.referenceNo.trim() === '') {
       return false
     }
@@ -521,23 +523,18 @@ const isValid = computed(() => {
     const type = getItemType(item)
 
     if (type === 'bank') {
-      return (
-        hasRef &&
-        (item.checkNumber || item.NumCheck) &&
-        String(item.checkNumber || item.NumCheck).trim() !== ''
-      )
+      return hasRef && (item.checkNumber || item.NumCheck) && 
+             String(item.checkNumber || item.NumCheck).trim() !== ''
     }
 
     if (type === 'transfer') {
-      const hasAccountName =
-        (item.accountName || item.AccountName) &&
-        String(item.accountName || item.AccountName).trim() !== ''
-      const hasAccountNumber =
-        (item.accountNumber || item.AccountNum) &&
-        String(item.accountNumber || item.AccountNum).trim() !== ''
-      const hasBankName =
-        (item.bankName || item.BankName) && String(item.bankName || item.BankName).trim() !== ''
-
+      const hasAccountName = (item.accountName || item.AccountName) && 
+                            String(item.accountName || item.AccountName).trim() !== ''
+      const hasAccountNumber = (item.accountNumber || item.AccountNum) && 
+                              String(item.accountNumber || item.AccountNum).trim() !== ''
+      const hasBankName = (item.bankName || item.BankName) && 
+                         String(item.bankName || item.BankName).trim() !== ''
+      
       return hasRef && hasAccountName && hasAccountNumber && hasBankName
     }
 
@@ -570,7 +567,7 @@ const confirmSelection = () => {
         const accName = item.accountName || item.AccountName
         const accNum = item.accountNumber || item.AccountNum
         const bankName = item.bankName || item.BankName
-
+        
         item.accountName = accName
         item.AccountName = accName
         item.accountNumber = accNum
@@ -586,12 +583,12 @@ const confirmSelection = () => {
   props.items.forEach((item) => {
     const type = getItemType(item)
     const key = item.name || item.moneyType || type
-
+    
     const data = {
       checked: item.checked,
       amount: item.amount,
       referenceNo: item.referenceNo,
-      moneyType: type,
+      moneyType: type
     }
 
     if (type === 'bank') {
@@ -604,7 +601,7 @@ const confirmSelection = () => {
       const accName = item.accountName || item.AccountName
       const accNum = item.accountNumber || item.AccountNum
       const bankName = item.bankName || item.BankName
-
+      
       data.accountName = accName
       data.AccountName = accName
       data.accountNumber = accNum

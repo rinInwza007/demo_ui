@@ -1,13 +1,25 @@
+
 import axios from 'axios';
 import AxiosMockAdapter from 'axios-mock-adapter';
 import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb';
 import type { Receipt } from '@/types/recipt';
 
 export function setupAxiosMock() {
-  const mock = new AxiosMockAdapter(axios, { delayResponse: 300 });
+  const mock = new AxiosMockAdapter(axios, { delayResponse: 300 }); // ใส่ดีเลย์นิดหน่อยให้เหมือนจริง
 
-  // ✅ GET /getReceipt (ดึงข้อมูลทั้งหมด + filter)
-  mock.onGet(/\/getReceipt$/).reply(config => {
+  // GET /findOneReceipt/:id
+  mock.onGet(/\/findOneReceipt\/([^/]+)$/).reply(config => {
+    const id = config.url?.match(/\/findOneReceipt\/([^/]+)$/)?.[1];
+    if (!id) return [400, { message: 'id required' }];
+    const db = loadReceipts();
+    const found = db.find(r => r.projectCode === id || (r as any).id === id);
+    if (!found) return [404, { message: 'Not found' }];
+    console.log('✅ Found receipt:', found);
+    return [200, found];
+  });
+
+  // GET /getReceipt?...
+  mock.onGet(/\/getReceipt(?:\?.*)?$/).reply(config => {
     const db = loadReceipts();
     const url = new URL(config.url!, window.location.origin);
     const fullName = url.searchParams.get('fullName');
@@ -30,36 +42,7 @@ export function setupAxiosMock() {
     return [200, list];
   });
 
-  // ✅ GET /getReceipt/:id (ดึงข้อมูลเดี่ยว)
-  mock.onGet(/\/getReceipt\/([^/?]+)$/).reply(config => {
-    const id = config.url?.match(/\/getReceipt\/([^/?]+)$/)?.[1];
-    if (!id) return [400, { message: 'id required' }];
-    
-    const db = loadReceipts();
-    const found = db.find(r => r.projectCode === id || (r as any).id === id);
-    
-    if (!found) {
-      console.error('❌ Receipt not found:', id);
-      console.log('Available projectCodes:', db.map(r => r.projectCode));
-      return [404, { message: 'Receipt not found' }];
-    }
-    
-    console.log('✅ Found receipt:', found);
-    return [200, found];
-  });
-
-  // ✅ GET /findOneReceipt/:id (เก็บไว้เผื่อใช้ที่อื่น)
-  mock.onGet(/\/findOneReceipt\/([^/]+)$/).reply(config => {
-    const id = config.url?.match(/\/findOneReceipt\/([^/]+)$/)?.[1];
-    if (!id) return [400, { message: 'id required' }];
-    const db = loadReceipts();
-    const found = db.find(r => r.projectCode === id || (r as any).id === id);
-    if (!found) return [404, { message: 'Not found' }];
-    console.log('✅ Found receipt:', found);
-    return [200, found];
-  });
-
-  // ✅ POST /saveReceipt
+  // POST /saveReceipt
   mock.onPost('/saveReceipt').reply(config => {
     const incoming = sanitizeReceipt(JSON.parse(config.data));
     if (!incoming.projectCode) return [400, { message: 'projectCode is required' }];
@@ -73,9 +56,9 @@ export function setupAxiosMock() {
     return [201, incoming];
   });
 
-  // ✅ PUT /updateReceipt/:id
-  mock.onPut(/\/updateReceipt\/([^/]+)$/).reply(config => {
-    const matches = config.url?.match(/\/updateReceipt\/([^/]+)$/);
+  // PUT /updateReceipt
+ mock.onPut(/\/updateReceipt\/(.+)$/).reply(config => {
+    const matches = config.url?.match(/\/updateReceipt\/(.+)$/);
     const projectCode = matches ? decodeURIComponent(matches[1]) : '';
     const incoming = JSON.parse(config.data);
     
@@ -92,10 +75,11 @@ export function setupAxiosMock() {
       return [404, { message: 'Receipt not found' }];
     }
 
+    // Merge ข้อมูลเดิมกับข้อมูลใหม่
     const updated = sanitizeReceipt({
       ...db[idx],
       ...incoming,
-      projectCode
+      projectCode // ใช้ projectCode เดิม
     });
     
     db[idx] = updated;
@@ -105,7 +89,7 @@ export function setupAxiosMock() {
     return [200, updated];
   });
 
-  // ✅ DELETE /deleteReceipt/:id
+  // DELETE /deleteReceipt/:id
   mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply(config => {
     const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1];
     if (!id) return [400, { success: false, message: 'id required' }];

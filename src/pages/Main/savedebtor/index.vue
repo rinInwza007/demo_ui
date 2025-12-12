@@ -62,14 +62,12 @@
     :show-view="true"
     :showLock="true"
     :showDelete="true"
-    :show-cleardedtor="true"
+    :show-cleardedtorก="true"
 
     @edit="edit"
     @lock="toggleLock"
     @delete="removeItem"
     @view="view"
-    @cleardebtor="cleardebtor"
-
   />
 </template>
     </TableBase>
@@ -196,38 +194,42 @@ const loadData = async () => {
 const items = computed(() => {
   let filtered = [...rawData.value]
 
-  // (Search Filter)
+  // 1️⃣ Filter ตาม Search Text
   if (searchText.value.trim()) {
-    const s = searchText.value.toLowerCase()
-
-    filtered = filtered.filter((r) => {
-      const main = (r.mainAffiliationName || r.affiliationName || '').toLowerCase()
-      const sub = (r.subAffiliationName || '').toLowerCase()
-      const joinAff = `${main} - ${sub}`.toLowerCase()
-
-      // เลือกอย่างใดอย่างหนึ่ง หรือจะให้ค้นทุก field ก็ได้
-      return (
-        main.includes(s) ||
-        sub.includes(s) ||
-        joinAff.includes(s)
-      )
-    })
-  }
-
-  // (Filter หน่วยงานจาก CascadingSelect)
-  if (selectedMain.value) {
-    filtered = filtered.filter((r) =>
-      r.mainAffiliationName === selectedMain.value ||
-      r.affiliationName === selectedMain.value
+    const search = searchText.value.toLowerCase()
+    filtered = filtered.filter(r =>
+      r.projectCode?.toLowerCase().includes(search) ||
+      r.fullName?.toLowerCase().includes(search) ||
+      r.fundName?.toLowerCase().includes(search)
     )
   }
 
+  // 2️⃣ Filter ตาม หน่วยงานหลัก (selectedMain)
+  if (selectedMain.value) {
+    filtered = filtered.filter(r =>
+      r.mainAffiliationName === selectedMain.value ||
+      r.affiliationName === selectedMain.value  // fallback
+    )
+  }
+
+  // 3️⃣ Filter ตาม หน่วยงานย่อย (selectedSub1)
   if (selectedSub1.value) {
-    filtered = filtered.filter((r) =>
+    filtered = filtered.filter(r =>
       r.subAffiliationName === selectedSub1.value
     )
   }
 
+  // 4️⃣ (Optional) Filter ตาม selectedSub2 ถ้ามี
+  if (selectedSub2.value) {
+    // ปรับตามโครงสร้างข้อมูลจริง
+    filtered = filtered.filter(r =>
+      r.subAffiliationName2 === selectedSub2.value
+    )
+  }
+
+  console.log('🔍 Filtered Results:', filtered) // ✅ Debug
+
+  // แปลงเป็น Table Row Format
   return filtered.map(mapReceiptToRow)
 })
 
@@ -242,9 +244,6 @@ const view = (item: any) => {
 
 const edit = (item: any) => {
   router.push(`/edit/${item.id}`)
-}
-const cleardebtor = (items: any)=>{
-  router.push('/cleardebtor')
 }
 
 const toggleLock = (item: any) => {

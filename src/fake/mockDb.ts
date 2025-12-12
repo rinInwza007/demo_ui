@@ -30,8 +30,10 @@ function defaultSeed(): Receipt[] {
           moneySource: 'external',
           keyword: [],
         },
+
       ],
     },
+    
     {
       fullName: 'สุพชาย จันทร์เทอด',
       phone: '0899999999',
@@ -60,32 +62,18 @@ export function loadReceipts(): Receipt[] {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) {
       const seed = defaultSeed();
-      saveReceipts(seed);
+      saveReceipts(seed); // ✅ บันทึก seed data ลง localStorage
       return seed;
     }
     const data = JSON.parse(raw) as Receipt[];
-    // ✅ แปลง string กลับเป็น Date
-    const receipts = Array.isArray(data) 
-      ? data.map(r => ({
-          ...r,
-          createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
-          updatedAt: r.updatedAt ? new Date(r.updatedAt) : new Date(),
-        }))
-      : defaultSeed();
-    return receipts;
+    return Array.isArray(data) ? data : defaultSeed();
   } catch {
     return defaultSeed();
   }
 }
 
 export function saveReceipts(list: Receipt[]) {
-  // ✅ แปลง Date เป็น string ก่อน save
-  const serialized = list.map(r => ({
-    ...r,
-    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
-    updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : r.updatedAt,
-  }));
-  localStorage.setItem(LS_KEY, JSON.stringify(serialized));
+  localStorage.setItem(LS_KEY, JSON.stringify(list));
 }
 
 // ✅ sanitize helpers
@@ -96,7 +84,11 @@ export function sanitizeItem(it: ReceiptItem): ReceiptItem {
     fee: Number.isFinite(it.fee) ? it.fee : 0,
     keyword: Array.isArray(it.keyword) ? it.keyword : [],
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
+<<<<<<< Updated upstream
     amount: Number.isFinite(it.amount) ? it.amount : 0, // ✅ เพิ่ม amount
+=======
+    netAmount: Number.isFinite(it.netAmount) ? it.netAmount : 0,
+>>>>>>> Stashed changes
     paymentDetails: Array.isArray(it.paymentDetails)
       ? it.paymentDetails.map(p => ({
           moneyType: (p.moneyType ?? '').trim(),
@@ -118,13 +110,9 @@ export function sanitizeReceipt(r: Receipt): Receipt {
     mainAffiliationName: (r.mainAffiliationName ?? '').trim(), // ✅ แก้ไข
     subAffiliationName: (r.subAffiliationName ?? '').trim(),
     fundName: (r.fundName ?? '').trim(),
-    sendmoney: (r.sendmoney ?? '').trim(),
     projectCode: (r.projectCode ?? '').trim(),
     moneyTypeNote: (r.moneyTypeNote ?? '').trim(), // ✅ เพิ่ม
     netTotalAmount: Number.isFinite(r.netTotalAmount) ? r.netTotalAmount : 0,
-// ✅ ตรวจสอบและแปลงเป็น Date object
-    createdAt: r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt || Date.now()),
-    updatedAt: r.updatedAt instanceof Date ? r.updatedAt : new Date(r.updatedAt || Date.now()),
     receiptList: Array.isArray(r.receiptList) ? r.receiptList.map(sanitizeItem) : [],
   };
 }

@@ -151,6 +151,7 @@ const mapReceiptToRow = (r: any) => {
     project: r.fundName,
     year: '2568',
     owner: r.fullName,
+<<<<<<< Updated upstream
     time: '-',
     fileType,
     amount: r.netTotalAmount
@@ -161,6 +162,12 @@ const mapReceiptToRow = (r: any) => {
 
     // 🔥🔥🔥 สำคัญที่สุด — ตรงนี้ต้องใช้ค่าจาก rawData
     isLocked: r.isLocked ?? false,
+=======
+    time: "-",
+    fileType: r.receiptList.map((it: any) => it.moneyType),
+    amount: r.receiptList.reduce((sum: number, it: any) => sum + it.amount, 0) + " บาท",
+    isLocked: false,
+>>>>>>> Stashed changes
   }
 }
 
@@ -197,47 +204,56 @@ const loadData = async () => {
 const items = computed(() => {
   let filtered = [...rawData.value]
 
-  // (Search Filter)
+  // 1️⃣ Filter ตาม Search Text
   if (searchText.value.trim()) {
-    const s = searchText.value.toLowerCase()
-
-    filtered = filtered.filter((r) => {
-      const main = (r.mainAffiliationName || r.affiliationName || '').toLowerCase()
-      const sub = (r.subAffiliationName || '').toLowerCase()
-      const joinAff = `${main} - ${sub}`.toLowerCase()
-
-      // เลือกอย่างใดอย่างหนึ่ง หรือจะให้ค้นทุก field ก็ได้
-      return (
-        main.includes(s) ||
-        sub.includes(s) ||
-        joinAff.includes(s)
-      )
-    })
-  }
-
-  // (Filter หน่วยงานจาก CascadingSelect)
-  if (selectedMain.value) {
-    filtered = filtered.filter((r) =>
-      r.mainAffiliationName === selectedMain.value ||
-      r.affiliationName === selectedMain.value
+    const search = searchText.value.toLowerCase()
+    filtered = filtered.filter(r =>
+      r.projectCode?.toLowerCase().includes(search) ||
+      r.fullName?.toLowerCase().includes(search) ||
+      r.fundName?.toLowerCase().includes(search)
     )
   }
 
+  // 2️⃣ Filter ตาม หน่วยงานหลัก (selectedMain)
+  if (selectedMain.value) {
+    filtered = filtered.filter(r =>
+      r.mainAffiliationName === selectedMain.value ||
+      r.affiliationName === selectedMain.value  // fallback
+    )
+  }
+
+  // 3️⃣ Filter ตาม หน่วยงานย่อย (selectedSub1)
   if (selectedSub1.value) {
-    filtered = filtered.filter((r) =>
+    filtered = filtered.filter(r =>
       r.subAffiliationName === selectedSub1.value
     )
   }
 
+  // 4️⃣ (Optional) Filter ตาม selectedSub2 ถ้ามี
+  if (selectedSub2.value) {
+    // ปรับตามโครงสร้างข้อมูลจริง
+    filtered = filtered.filter(r =>
+      r.subAffiliationName2 === selectedSub2.value
+    )
+  }
+
+  console.log('🔍 Filtered Results:', filtered) // ✅ Debug
+
+  // แปลงเป็น Table Row Format
   return filtered.map(mapReceiptToRow)
 })
 
 onMounted(loadData)
 
+<<<<<<< Updated upstream
 /* =================================
     3) ACTION FUNCTIONS
 ================================== */
 const view = (item: any) => {
+=======
+
+const view = (item:any) => {
+>>>>>>> Stashed changes
   router.push(`/pdfpage/${item.id}`)
 }
 
@@ -254,7 +270,11 @@ const toggleLock = (item: any) => {
   Swal.fire({
     position: 'top-end',
     icon: 'success',
+<<<<<<< Updated upstream
     title: target.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
+=======
+    title: item.isLocked ? 'ล็อกรายการสำร็จ' : 'ปลดล็อกรายการสำเร็จ',
+>>>>>>> Stashed changes
     showConfirmButton: false,
     timer: 1500,
   })

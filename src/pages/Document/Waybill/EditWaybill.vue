@@ -538,69 +538,51 @@ const formatNumber = (num) => {
 }
 
 // Load receipt data for edit mode
-// waybill.vue
 const loadReceiptData = async () => {
-  if (!receiptId.value) return;
+  if (!receiptId.value) return
 
-  isLoading.value = true;
+  isLoading.value = true
   try {
-    const response = await axios.get(`/getReceipt/${receiptId.value}`);
-    const data = response.data;
+    const response = await axios.get(`/getReceipt/${receiptId.value}`)
+    const data = response.data
 
-    console.log('📥 Loaded data:', data);
+    console.log('Loaded data:', data) // เพิ่ม log เพื่อ debug
 
-    // ✅ Populate form data with fallbacks
-    formData.value.fullName = data.fullName || '';
-    formData.value.phone = data.phone || '';
-    formData.value.fundName = data.fundName || '';
-    formData.value.projectCode = data.projectCode || '';
+    // Populate form data
+    formData.value.fullName = data.fullName || ''
+    formData.value.phone = data.phone || ''
+    formData.value.fundName = data.fundName || ''
+    formData.value.projectCode = data.projectCode || ''
 
-    // ✅ Category with validation
-    mainCategory.value = data.mainAffiliationName || '';
-    subCategory.value = data.subAffiliationName || '';
+    mainCategory.value = data.mainAffiliationName || ''
+    subCategory.value = data.subAffiliationName || ''
 
-    // ✅ sendmoney with multiple fallbacks
-    const moneyTypeValue = data.sendmoney || data.moneyType || '';
-    console.log('💰 Money type value:', moneyTypeValue);
-    
-    formData.value.sendmoney = moneyTypeValue;
+    // *** แก้ไขส่วนนี้ ***
+    // ดึงค่า sendmoney โดยตรง
+    const moneyTypeValue = data.sendmoney || data.moneyType || ''
+    console.log('Money type value:', moneyTypeValue) // เพิ่ม log
 
-    // ✅ Wait for TomSelect to initialize
-    await nextTick();
+    formData.value.sendmoney = moneyTypeValue
 
-    // ✅ Force update TomSelect value
-    if (sendmoneySelectRef.value && formData.value.sendmoney) {
-      // ถ้า component มี method setValue
-      sendmoneySelectRef.value.setValue?.(formData.value.sendmoney);
-    }
-
-    // ✅ Populate receipt list with validation
-    if (data.receiptList && Array.isArray(data.receiptList) && data.receiptList.length > 0) {
+    // Populate receipt list
+    if (data.receiptList && data.receiptList.length > 0) {
       morelist.value = data.receiptList.map((item, index) => ({
         id: index + 1,
         itemName: item.itemName || '',
         note: item.note || '',
-        fee: Number(item.fee) || 0,
-        selectedItems: Array.isArray(item.paymentDetails)
-          ? item.paymentDetails.map((detail) => ({
-              checked: true,
-              moneyType: detail.moneyType || '',
-              amount: Number(detail.amount) || 0,
-              referenceNo: detail.referenceNo || '',
-              checkNumber: detail.checkNumber || '',
-              accountName: detail.accountName || '',
-              accountNumber: detail.accountNumber || '',
-              bankName: detail.bankName || '',
-            }))
-          : [],
-      }));
-
-      // ✅ Re-initialize TomSelect for all rows
-      await nextTick();
-      morelist.value.forEach((_, i) => {
-        initItemNameTomSelect(i);
-        initTomSelect(i);
-      });
+        fee: item.fee || 0,
+        selectedItems:
+          item.paymentDetails?.map((detail) => ({
+            checked: true,
+            moneyType: detail.moneyType || '',
+            amount: detail.amount || 0,
+            referenceNo: detail.referenceNo || '',
+            checkNumber: detail.checkNumber || '',
+            accountName: detail.accountName || '',
+            accountNumber: detail.accountNumber || '',
+            bankName: detail.bankName || '',
+          })) || [],
+      }))
     }
 
     Swal.fire({
@@ -608,23 +590,21 @@ const loadReceiptData = async () => {
       title: 'โหลดข้อมูลสำเร็จ',
       timer: 1500,
       showConfirmButton: false,
-    });
+    })
   } catch (err) {
-    console.error('❌ Load error:', err);
-    console.error('Error details:', err.response?.data);
-    
+    console.error('Load error:', err)
     Swal.fire({
       icon: 'error',
       title: 'ไม่พบข้อมูล',
-      text: err.response?.data?.message || 'ไม่สามารถโหลดข้อมูลใบนำส่งได้',
+      text: 'ไม่สามารถโหลดข้อมูลใบนำส่งได้',
       confirmButtonColor: '#DC2626',
     }).then(() => {
-      router.push('/');
-    });
+      router.push('/')
+    })
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 // Initialize TomSelect
 const initItemNameTomSelect = (index) => {
   const elementId = `itemName-${index}`

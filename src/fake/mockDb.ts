@@ -174,6 +174,8 @@ export function sanitizeReceipt(r: Receipt): Receipt {
     mainAffiliationName: (r.mainAffiliationName ?? '').trim(), // ✅ แก้ไข
     subAffiliationName: (r.subAffiliationName ?? '').trim(),
     fundName: (r.fundName ?? '').trim(),
+    moneyType: (r.moneyType ?? r.sendmoney ?? '').trim(),
+    isLocked: r.isLocked ?? false,
     sendmoney: (r.sendmoney ?? '').trim(),
     projectCode: (r.projectCode ?? '').trim(),
     moneyTypeNote: (r.moneyTypeNote ?? '').trim(), // ✅ เพิ่ม

@@ -304,7 +304,14 @@ onMounted(loadData)
 const view = (item: any) => router.push(`/pdfpage/${item.id}`)
 const edit = (item: any) => router.push(`/edit/${item.id}`)
 
-/* ✅ toggleLock เดิม (แก้บั๊ก title ให้ถูก: ใช้ target.isLocked) */
+const view = (item:any) => {
+  router.push(`/pdfpage/${item.id}`)
+}
+
+const edit = (item: any) => {
+    router.push(`/waybilldebtor/edit/${item.id}`)
+}
+
 const toggleLock = (item: any) => {
   const target = rawData.value.find(r => r.projectCode === item.id)
   if (!target) return

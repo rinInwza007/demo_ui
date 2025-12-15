@@ -85,8 +85,14 @@
               <!-- Form Fields - แสดงเมื่อ checked -->
               <transition name="slide-down">
                 <div v-if="item.checked" class="mt-4 space-y-3">
-                  <!-- เช็คธนาคาร -->
-
+                  <!-- แจ้งเตือนเมื่อไม่มีบัญชีให้เลือก -->
+                  <div v-if="availableAccounts.length === 0 && (item.name === 'transfer' || item.name === 'ฝากเข้าบัญชี')"
+                       class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
+                    <svg class="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-sm text-yellow-800">บัญชีทั้งหมดถูกใช้งานไปแล้ว ไม่สามารถเลือกได้อีก</span>
+                  </div>
 
                   <!-- ฝากเข้าบัญชี -->
                   <template v-if="item.AccountNum !== undefined">
@@ -100,10 +106,14 @@
                           @change="handleAccountChange(item)"
                           class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all outline-none"
                           :class="{ 'border-red-300 bg-red-50': item.checked && !item.AccountName }"
+                          :disabled="availableAccounts.length === 0"
                         >
                           <option value="" disabled>เลือกบัญชี</option>
-                          <option v-for="acc in accounts" :key="acc.name" :value="acc.name">
+                          <option v-for="acc in availableAccounts" :key="acc.name" :value="acc.name">
                             {{ acc.name }}
+                          </option>
+                          <option v-if="availableAccounts.length === 0" disabled>
+                            ไม่มีบัญชีที่สามารถเลือกได้
                           </option>
                         </select>
                       </div>
@@ -244,19 +254,12 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+
 // Icons as components
 const WalletIcon = {
   template: `
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
-  `,
-}
-
-const CreditCardIcon = {
-  template: `
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
     </svg>
   `,
 }
@@ -274,21 +277,14 @@ const accounts = ref([
   { name: 'มหาวิทยาลัยพะเยา(กองทุนทั่วไป)', number: '980-9-61729-1', bank: 'ธนาคารกรุงไทย' },
   { name: 'กองทุนเพื่อการจัดจั้งธนาคารเลือด', number: '662-0-96023-5', bank: 'ธนาคารกรุงไทย' },
 ])
-function handleAccountChange(item) {
-  const selected = accounts.value.find((acc) => acc.name === item.AccountName)
-  if (selected) {
-    item.AccountNum = selected.number
-    item.BankName = selected.bank
-  } else {
-    item.AccountName = ''
-    item.BankName = ''
-  }
-  handleInput()
-}
 
 const props = defineProps({
   show: Boolean,
   items: Array,
+  usedAccounts: {
+    type: Array,
+    default: () => []
+  }
 })
 
 const emit = defineEmits(['close', 'update:selected'])
@@ -296,6 +292,24 @@ const emit = defineEmits(['close', 'update:selected'])
 const hasConfirmed = ref(false)
 const errorMessage = ref('')
 const savedData = ref({})
+
+// กรองบัญชีที่ยังไม่ได้ใช้
+const availableAccounts = computed(() => {
+  return accounts.value.filter(acc => !props.usedAccounts.includes(acc.name))
+})
+
+function handleAccountChange(item) {
+  const selected = accounts.value.find((acc) => acc.name === item.AccountName)
+  if (selected) {
+    item.AccountNum = selected.number
+    item.BankName = selected.bank
+  } else {
+    item.AccountNum = ''
+    item.AccountName = ''
+    item.BankName = ''
+  }
+  handleInput()
+}
 
 // Computed
 const checkedCount = computed(() => {
@@ -312,7 +326,7 @@ const isValid = computed(() => {
 
     if (!hasReferenceNo || !hasAmount) return false
 
-    // 💥 เช็คบัญชีเฉพาะ deposit/transfer เท่านั้น
+    // เช็คบัญชีเฉพาะ deposit/transfer เท่านั้น
     if (item.name === 'transfer' || item.name === 'ฝากเข้าบัญชี') {
       const hasAccountNum = item.AccountNum && String(item.AccountNum).trim() !== ''
       const hasAccountName = item.AccountName && String(item.AccountName).trim() !== ''
@@ -320,12 +334,9 @@ const isValid = computed(() => {
       return hasAccountNum && hasAccountName && hasBankName
     }
 
-    // item อื่นไม่ต้องเช็คบัญชี
     return true
   })
 })
-
-
 
 // Methods
 const getIcon = (itemName) => {
@@ -364,57 +375,42 @@ const handleInput = () => {
   errorMessage.value = ''
 }
 
+const closeModal = () => {
+  emit('close')
+}
+
 const confirmSelection = () => {
   if (!isValid.value) {
     errorMessage.value = 'กรุณากรอกข้อมูลให้ครบถ้วน'
     return
   }
 
+  // 🔥 ใช้ amount แทน fee
   const selected = props.items
     .filter((i) => i.checked)
     .map((i) => {
       const item = { ...i }
-       if (i.name === 'transfer' || i.name === 'ฝากเข้าบัญชี') {
-        item.moneyType = 'transfer'
-        item.accountNumber = i.AccountNum
-        item.AccountNum = i.AccountNum
-        item.accountName = i.AccountName
-        item.AccountName = i.AccountName
-        item.bankName = i.BankName
-        item.BankName = i.BankName
-      }
-
+      item.amount = parseFloat(i.amount) || 0
+      item.type = item.type || item.paymentType || getDisplayName(item.name)
       return item
     })
 
-  props.items.forEach((item) => {
-    const data = {
-      checked: item.checked,
-      amount: item.amount,
-      referenceNo: item.referenceNo,
-    }
+  // รวมยอดเงินที่กรอก
+  const totalFee = selected.reduce((sum, i) => {
+    return sum + (parseFloat(i.amount) || 0)
+  }, 0)
 
-
-    if (item.AccountNum !== undefined) {
-      data.AccountNum = item.AccountNum
-      data.AccountName = item.AccountName
-      data.BankName = item.BankName
-      data.accountNumber = item.AccountNum
-      data.accountName = item.AccountName
-      data.bankName = item.BankName
-    }
-    data.moneyType = item.moneyType
-    savedData.value[item.name] = data
-  })
+  console.log('🔥 Data ที่ส่งออกจาก Modal:', { selected, totalFee })
 
   errorMessage.value = ''
   hasConfirmed.value = true
-  emit('update:selected', selected)
-  emit('close')
-}
 
-const closeModal = () => {
-  errorMessage.value = ''
+  // ส่งข้อมูลกลับไป
+  emit('update:selected', {
+    selected,
+    totalFee
+  })
+
   emit('close')
 }
 
@@ -434,7 +430,7 @@ const restoreSavedData = () => {
       if (item.AccountNum !== undefined) {
         item.AccountNum = saved.AccountNum ?? ''
         item.AccountName = saved.AccountName ?? ''
-        item.BankName = saved.BankName ??''
+        item.BankName = saved.BankName ?? ''
       }
     } else {
       item.checked = false

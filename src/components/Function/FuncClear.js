@@ -1,12 +1,10 @@
-import { ref, nextTick , computed } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import TomSelect from 'tom-select'
 
 export function useRowManager2() {
 
-// ยอดหนี้ทั้งหมด (ดึงจาก API จริงได้)
 const totalDebt = ref(50000)
 
-// รวมยอดฝากเข้าบัญชีทั้งหมด
 const totalDepositAmount = computed(() => {
   let sum = 0
 
@@ -27,15 +25,13 @@ const totalDepositAmount = computed(() => {
   return sum
 })
 
-// ยอดหนี้คงเหลือหลังหักยอดฝาก
 const remainingDebt = computed(() => {
   return totalDebt.value - totalDepositAmount.value
 })
 
-
 const morelist = ref([
   {
-     id: 1,   // 👈 เพิ่ม id
+    id: 1,
     itemName: null,
     referenceNo: '',
     keyword: null,
@@ -44,7 +40,9 @@ const morelist = ref([
     selectedItems: [],
   },
 ])
+
 const keywordInputs = []
+
 const initTomSelect = (index) => {
   nextTick(() => {
     const input = keywordInputs[index]
@@ -70,7 +68,7 @@ const addRow = () => {
     itemName: null,
     referenceNo: '',
     note: '',
-    Fee:'',
+    fee: '',
     keyword: null,
     selectedItems: [],
   })
@@ -117,6 +115,7 @@ const openModalForRow = (index) => {
           referenceNo: '',
           AccountNum: '',
           AccountName: '',
+          BankName: '',
           type: 'ฝากเข้าบัญชี',
           paymentType: 'ฝากเข้าบัญชี'
         },
@@ -125,17 +124,18 @@ const openModalForRow = (index) => {
   }
   showModal.value = index
 }
-  const updateSelectedItems = (rowIndex, selectedItems) => {
-    console.log('updateSelectedItems called:', { rowIndex, selectedItems }) // 👈 Debug
 
-    morelist.value[rowIndex].selectedItems = selectedItems.map(item => ({
-      ...item,
-      type: item.type || item.paymentType || 'ไม่ระบุ', // ตรวจสอบว่ามี type
-      checked: item.checked
-    }))
+const updateSelectedItems = (rowIndex, selectedItems) => {
+  console.log('updateSelectedItems called:', { rowIndex, selectedItems })
 
-    console.log('Updated morelist:', morelist.value[rowIndex]) // 👈 Debug
-  }
+  morelist.value[rowIndex].selectedItems = selectedItems.map(item => ({
+    ...item,
+    type: item.type || item.paymentType || 'ไม่ระบุ',
+    checked: item.checked
+  }))
+
+  console.log('Updated morelist:', morelist.value[rowIndex])
+}
 
 const summaryByType = computed(() => {
   const summary = {
@@ -162,7 +162,6 @@ const summaryByType = computed(() => {
   return summary
 })
 
-
 const totalAmount = computed(() => {
   return morelist.value.reduce((sum, row) => {
     if (!row.selectedItems) return sum
@@ -176,7 +175,6 @@ const totalAmount = computed(() => {
   }, 0)
 })
 
-// Computed: ค่าธรรมเนียมรวม
 const totalFee = computed(() => {
   return morelist.value.reduce((sum, row) => {
     const fee = Number(row.fee) || 0
@@ -184,12 +182,10 @@ const totalFee = computed(() => {
   }, 0)
 })
 
-// Computed: ยอดสุทธิหลังหักค่าธรรมเนียม
 const netTotalAmount = computed(() => {
   return totalAmount.value - totalFee.value
 })
 
-// Computed: รายละเอียดแต่ละแถว (ปรับปรุงให้มีข้อมูลครบ)
 const detailsByRow = computed(() => {
   return morelist.value
     .map((row, index) => {
@@ -200,16 +196,13 @@ const detailsByRow = computed(() => {
       const checkedItems = row.selectedItems
         .filter((item) => item.checked)
         .map((item) => {
-          // 👇 ใช้ type ที่ส่งมาจาก modal โดยตรง
           const itemType = item.type || item.paymentType || 'ไม่ระบุ'
 
           return {
             type: itemType,
             amount: Number(item.amount) || 0,
             referenceNo: item.referenceNo || '–',
-            // เช็คธนาคาร
             checkNumber: item.checkNumber || item.NumCheck || null,
-            // ฝากเข้าบัญชี
             accountNumber: item.accountNumber || item.AccountNum || null,
             accountName: item.accountName || item.AccountName || null,
           }
@@ -257,5 +250,5 @@ const detailsByRow = computed(() => {
     openModalForRow,
     updateSelectedItems,
   }
-
 }
+

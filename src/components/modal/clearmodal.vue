@@ -328,6 +328,11 @@ const isValid = computed(() => {
 
     // เช็คบัญชีเฉพาะ deposit/transfer เท่านั้น
     if (item.name === 'transfer' || item.name === 'ฝากเข้าบัญชี') {
+      // ✅ ถ้าไม่มีบัญชีให้เลือก ให้ข้าม validation ส่วนนี้
+      if (availableAccounts.value.length === 0) {
+        return true // หรือ return false ถ้าต้องการบังคับให้ต้องมีบัญชี
+      }
+
       const hasAccountNum = item.AccountNum && String(item.AccountNum).trim() !== ''
       const hasAccountName = item.AccountName && String(item.AccountName).trim() !== ''
       const hasBankName = item.BankName && String(item.BankName).trim() !== ''
@@ -534,4 +539,3 @@ input[type='number'] {
   -moz-appearance: textfield;
 }
 </style>
-

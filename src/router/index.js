@@ -22,7 +22,7 @@ const routes = [
   { path: '/indexsavedebtor', name: 'indexsavedebtor',component:indexsavedebtor},
   { path: '/pdfpage', name: 'pdfpage',component:pdfpage},
   { path: '/edit', name: 'edit',component:edit},
-  { path: '/cleardebtor', name: 'cleardebtor',component:ClearDebtor},
+  { path: '/cleardebtor/:id', name: 'cleardebtor',component:ClearDebtor},
   {path: '/edit/:id',name: 'EditReceipt',component: edit},
   { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor',component:indexwaybilldebtor}
 ]
@@ -33,4 +33,5 @@ const router = createRouter({
 })
 
 export default router
+
 

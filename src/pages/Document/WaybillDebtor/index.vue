@@ -1,29 +1,47 @@
 <template>
-  <div>
-    <Navbar />
-    <SecondNavbar />
-
-    <div class="max-w-6xl mx-auto p-4 sm:p-6 pt-5">
-      <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 sm:p-10 space-y-8">
-        <!-- Header Section -->
-        <div class="text-center space-y-2 pb-4 border-b border-gray-200">
-          <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">
-            {{ isEditMode ? 'แก้ไขใบนำส่งลูกหนี้' : 'เพิ่มใบนำส่งลูกหนี้' }}
-          </h1>
-          <p v-if="isEditMode" class="text-sm text-gray-500">
-            รหัส: {{ formData.projectCode }}
-          </p>
-        </div>
-
+  <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
+    <div id="app" class="relative w-full flex h-screen overflow-hidden">
+      <div class="mesh-bg"></div>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <sidebar />
+      <main class="flex-1 flex flex-col relative z-10">
+        <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              {{ isEditMode ? 'แก้ไขใบนำส่งลูกหนี้' : 'เพิ่มใบนำส่งลูกหนี้' }}
+            </h1>
+            <p class="text-xs text-slate-800 mt-0.5">
+              {{ isEditMode ? `รหัส: ${formData.projectCode}` : 'กรอกข้อมูลใบนำส่งลูกหนี้' }}
+            </p>
+          </div>
+                    <div class="flex items-center gap-3">
+            <button
+              class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
+            >
+              <i class="ph ph-bell text-xl"></i>
+            </button>
+            <button
+              class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
+            >
+              <i class="ph ph-gear text-xl"></i>
+            </button>
+          </div>
+        </header>
         <!-- Loading State -->
-        <div v-if="isLoading" class="flex justify-center items-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div v-if="isLoading" class="flex-1 flex justify-center items-center">
+          <div class="glass-panel rounded-2xl p-8 flex flex-col items-center gap-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            <p class="text-slate-600">กำลังโหลดข้อมูล...</p>
+          </div>
         </div>
 
         <!-- Form Section -->
-        <div v-else class="max-w-5xl mx-auto space-y-8">
+        <div v-else class="flex-1 overflow-y-auto px-8 pb-8">
           <!-- ข้อมูลผู้บันทึก -->
-          <div class="space-y-4">
+           <div class="max-w-6xl mx-auto space-y-6">
+          <div class="glass-panel rounded-2xl p-6 space-y-4">
             <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
               <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
               ข้อมูลผู้บันทึก
@@ -114,21 +132,21 @@
                 <label class="text-sm font-medium text-gray-700">
                   ขอนำส่งเงิน <span class="text-red-500">*</span>
                 </label>
-              <SendMoneySelect
-              class="-mt-2"
-                ref="sendmoneySelectRef"
-                v-model="formData.sendmoney"
-                input-id="sendmoney"
-                placeholder="เลือกประเภท"
-                :required="true"
-                :error-message="errors.sendmoney"
-                :options="[
-                  { value: 'รายได้', text: 'รายได้' },
-                  { value: 'เงินโครงการ', text: 'เงินโครงการ' }
-                ]"
-                :create-new-option="true"
-                @change="clearError('sendmoney')"
-              />
+                <SendMoneySelect
+                  class="-mt-2"
+                  ref="sendmoneySelectRef"
+                  v-model="formData.sendmoney"
+                  input-id="sendmoney"
+                  placeholder="เลือกประเภท"
+                  :required="true"
+                  :error-message="errors.sendmoney"
+                  :options="[
+                    { value: 'รายได้', text: 'รายได้' },
+                    { value: 'เงินโครงการ', text: 'เงินโครงการ' },
+                  ]"
+                  :create-new-option="true"
+                  @change="clearError('sendmoney')"
+                />
                 <span v-if="errors.sendmoney" class="text-red-600 text-xs">
                   {{ errors.sendmoney }}
                 </span>
@@ -151,7 +169,7 @@
           </div>
 
           <!-- รายการลูกหนี้ -->
-          <div class="space-y-4">
+          <div class="glass-panel rounded-2xl p-6 space-y-4">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
                 <span class="w-1 h-6 bg-green-500 rounded-full"></span>
@@ -162,9 +180,10 @@
               </span>
             </div>
 
-            <div class="bg-gray-50 rounded-xl p-4 sm:p-6 space-y-4">
               <!-- Header Labels -->
-              <div class="hidden sm:grid sm:grid-cols-[2fr_2fr_1.5fr] gap-3 px-2 pb-2 border-b border-gray-300 text-center mr-5">
+              <div
+                class="hidden sm:grid sm:grid-cols-[2fr_2fr_1.5fr_auto] gap-3 px-2 pb-2 border-b border-white/40 items-center text-center"
+              >
                 <div class="text-xs font-semibold text-gray-600 uppercase">รายการ</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">จำนวนเงิน</div>
                 <div class="text-xs font-semibold text-gray-600 uppercase">หมายเหตุ</div>
@@ -175,7 +194,7 @@
                 <div
                   v-for="(row, index) in morelist"
                   :key="row.id"
-                  class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:border-blue-300 transition-all"
+                  class="bg-white/40 rounded-xl p-4 border border-white/50 hover:bg-white/60 transition-all"
                 >
                   <div class="grid grid-cols-1 sm:grid-cols-[3fr_2fr_2fr_auto] gap-3 items-start">
                     <div class="flex flex-col gap-2">
@@ -220,7 +239,12 @@
                       title="ลบรายการ"
                     >
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -230,28 +254,34 @@
               <!-- Add Row Button -->
               <button
                 @click="addRow"
-                class="py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
+                class="py-3 px-4 border-2 border-dashed border-[#7E22CE] rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 เพิ่มรายการ
               </button>
-            </div>
           </div>
 
           <!-- รายละเอียดรายการ -->
-          <div v-if="detailsByRow.length > 0" class="bg-white border border-gray-200 rounded-xl p-6">
+          <div
+            v-if="detailsByRow.length > 0"
+            class="bg-white/40 border border-gray-200 rounded-xl p-6"
+          >
             <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
               รายละเอียดรายการ
             </h3>
 
-            <div class="space-y-4">
               <div
                 v-for="(detail, idx) in detailsByRow"
                 :key="idx"
-                class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                class="bg-white/40 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
               >
                 <div class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
@@ -270,13 +300,15 @@
 
                   <div class="flex justify-between items-center">
                     <span class="font-bold text-gray-800">จำนวนเงิน:</span>
-                    <span class="font-bold text-lg" :class="detail.netAmount >= 0 ? 'text-green-600' : 'text-red-600'">
+                    <span
+                      class="font-bold text-lg"
+                      :class="detail.netAmount >= 0 ? 'text-green-600' : 'text-red-600'"
+                    >
                       {{ formatNumber(detail.netAmount) }} ฿
                     </span>
                   </div>
                 </div>
               </div>
-            </div>
           </div>
 
           <!-- ยอดรวมทั้งหมด -->
@@ -293,8 +325,9 @@
           <div class="bg-yellow-50 border border-yellow-300 rounded p-3">
             <p class="text-sm text-yellow-900 m-0">
               <strong>หมายเหตุ:</strong>
-              กรุณาตรวจสอบข้อมูลให้ถูกต้องและครบถ้วนก่อนกด{{ isEditMode ? 'อัพเดต' : 'บันทึก' }}ข้อมูล 
-              (ช่องที่มีเครื่องหมาย * จำเป็นต้องกรอก)
+              กรุณาตรวจสอบข้อมูลให้ถูกต้องและครบถ้วนก่อนกด{{
+                isEditMode ? 'อัพเดต' : 'บันทึก'
+              }}ข้อมูล (ช่องที่มีเครื่องหมาย * จำเป็นต้องกรอก)
             </p>
           </div>
 
@@ -316,7 +349,8 @@
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   </div>
 </template>
@@ -330,8 +364,7 @@ import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
 
 // Components
-import Navbar from '@/components/bar/navbar.vue'
-import SecondNavbar from '@/components/bar/secoudnavbar.vue'
+import sidebar from '@/components/bar/sidebar.vue'
 import Selects from '@/components/input/select/select.vue'
 import InputText from '@/components/input/inputtext.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
@@ -494,7 +527,7 @@ const loadReceiptData = async () => {
     formData.value.phone = data.phone || ''
     formData.value.fundName = data.fundName || ''
     formData.value.projectCode = data.projectCode || ''
-    
+
     mainCategory.value = data.mainAffiliationName || ''
     subCategory.value = data.subAffiliationName || ''
 
@@ -508,10 +541,11 @@ const loadReceiptData = async () => {
         itemName: item.itemName || '',
         note: item.note || '',
         money: item.amount || 0,
-        selectedItems: item.paymentDetails?.map(detail => ({
-          checked: true,
-          moneyType: detail.moneyType || 'debtor'
-        })) || []
+        selectedItems:
+          item.paymentDetails?.map((detail) => ({
+            checked: true,
+            moneyType: detail.moneyType || 'debtor',
+          })) || [],
       }))
     }
 
@@ -607,7 +641,7 @@ const saveData = async () => {
 
   // สร้าง payload
   const currentDateTime = new Date().toISOString()
-  
+
   const payload = {
     fullName: formData.value.fullName,
     moneyTypeNote: 'Debtor',
@@ -619,17 +653,18 @@ const saveData = async () => {
     projectCode: formData.value.projectCode,
     sendmoney: formData.value.sendmoney,
     netTotalAmount: netTotalAmount.value,
-  receiptList: morelist.value.map((row) => ({
-    itemName: row.itemName,
-    note: row.note || '',
-    amount: Number(row.money) || 0,
-paymentDetails: row.selectedItems
-  ?.filter(item => item.checked)
-  .map(item => ({
-    ...item,      // เอาค่าที่เหลือมาจาก UI
-    moneyType: 'debtor' // กำหนดตรงๆ เป็น 'debtor'
-  })) || []
-  })),
+    receiptList: morelist.value.map((row) => ({
+      itemName: row.itemName,
+      note: row.note || '',
+      amount: Number(row.money) || 0,
+      paymentDetails:
+        row.selectedItems
+          ?.filter((item) => item.checked)
+          .map((item) => ({
+            ...item, // เอาค่าที่เหลือมาจาก UI
+            moneyType: 'debtor', // กำหนดตรงๆ เป็น 'debtor'
+          })) || [],
+    })),
   }
 
   // เพิ่ม createdAt และ updatedAt
@@ -664,7 +699,7 @@ paymentDetails: row.selectedItems
   } catch (err) {
     console.error('Error:', err)
 
-    let errorMessage = isEditMode.value 
+    let errorMessage = isEditMode.value
       ? 'เกิดข้อผิดพลาดในการอัพเดตข้อมูล'
       : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'
 
@@ -720,7 +755,7 @@ watch(
       initTomSelect(newIndex)
     }
   },
-  { deep: true }
+  { deep: true },
 )
 
 watch(
@@ -732,7 +767,7 @@ watch(
       }
     }
   },
-  { deep: true }
+  { deep: true },
 )
 </script>
 <style scoped>

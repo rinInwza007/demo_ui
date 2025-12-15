@@ -27,7 +27,7 @@ function defaultSeed(): Receipt[] {
       "keyword": [],
       "paymentDetails": [
         {
-          "moneyType": "cash",
+          "moneyType": "debtor",
           "amount": 8250,
           "referenceNo": "INV-8891",
           "checkNumber": null,
@@ -96,7 +96,7 @@ function defaultSeed(): Receipt[] {
       "keyword": [],
       "paymentDetails": [
         {
-          "moneyType": "bank",
+          "moneyType": "debtor",
           "amount": 1000,
           "referenceNo": "BK-881122",
           "checkNumber": null,

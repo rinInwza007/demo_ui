@@ -27,7 +27,7 @@ function defaultSeed(): Receipt[] {
       "keyword": [],
       "paymentDetails": [
         {
-          "moneyType": "cash",
+          "moneyType": "debtor",
           "amount": 8250,
           "referenceNo": "INV-8891",
           "checkNumber": null,
@@ -96,7 +96,7 @@ function defaultSeed(): Receipt[] {
       "keyword": [],
       "paymentDetails": [
         {
-          "moneyType": "bank",
+          "moneyType": "debtor",
           "amount": 1000,
           "referenceNo": "BK-881122",
           "checkNumber": null,
@@ -174,6 +174,8 @@ export function sanitizeReceipt(r: Receipt): Receipt {
     mainAffiliationName: (r.mainAffiliationName ?? '').trim(), // ✅ แก้ไข
     subAffiliationName: (r.subAffiliationName ?? '').trim(),
     fundName: (r.fundName ?? '').trim(),
+    moneyType: (r.moneyType ?? r.sendmoney ?? '').trim(),
+    isLocked: r.isLocked ?? false,
     sendmoney: (r.sendmoney ?? '').trim(),
     projectCode: (r.projectCode ?? '').trim(),
     moneyTypeNote: (r.moneyTypeNote ?? '').trim(), // ✅ เพิ่ม

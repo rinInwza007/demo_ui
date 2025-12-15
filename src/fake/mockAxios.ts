@@ -18,6 +18,56 @@ export function setupAxiosMock() {
     return [200, found];
   });
 
+    mock.onGet(/\/getReceipt\/([^?]+)$/).reply(config => {
+    const url = config.url || '';
+    console.log('📥 GET single receipt - URL:', url);
+    
+    const match = url.match(/\/getReceipt\/([^?]+)$/);
+    const projectCode = match?.[1];
+    
+    if (!projectCode) {
+      console.error('❌ No projectCode in URL');
+      return [400, { message: 'projectCode is required' }];
+    }
+
+    const decodedCode = decodeURIComponent(projectCode);
+    console.log('🔍 Looking for projectCode:', decodedCode);
+
+    const db = loadReceipts();
+    console.log('📊 Available receipts:', db.map(r => r.projectCode));
+
+    const found = db.find(r => r.projectCode === decodedCode);
+
+    if (!found) {
+      console.error('❌ Receipt not found:', decodedCode);
+      return [404, { 
+        message: 'Receipt not found',
+        requestedCode: decodedCode,
+        availableCodes: db.map(r => r.projectCode)
+      }];
+    }
+
+    console.log('✅ Found receipt:', {
+      projectCode: found.projectCode,
+      fullName: found.fullName
+    });
+
+    // ✅ Return with all fields
+    const response = {
+      ...found,
+      moneyType: found.moneyType || found.sendmoney || '',
+      isLocked: found.isLocked ?? false,
+      createdAt: found.createdAt instanceof Date 
+        ? found.createdAt.toISOString() 
+        : found.createdAt,
+      updatedAt: found.updatedAt instanceof Date 
+        ? found.updatedAt.toISOString() 
+        : found.updatedAt,
+    };
+
+    return [200, response];
+  });
+
   // GET /getReceipt?...
   mock.onGet(/\/getReceipt(?:\?.*)?$/).reply(config => {
     const db = loadReceipts();

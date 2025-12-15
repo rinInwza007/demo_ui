@@ -2,7 +2,7 @@
   <!-- ⭐ ลบ <body> tag ออก - ใช้ div แทน -->
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
 
-    <div id="app" class="relative w-full h-screen flex">
+    <div id="app" class="relative w-full h-screen flex overflow-hidden">
       <!-- ⭐ ลบ overflow-hidden ออกจาก #app -->
 
         <!-- Background Elements -->
@@ -450,4 +450,5 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(0,0,0,0.2);
 }
+
 </style>

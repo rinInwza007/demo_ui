@@ -39,7 +39,8 @@ export interface Receipt {
 
   /** Phone number */
   phone: string;
-
+isLocked?: boolean; 
+ moneyType: string;  
   /** Affiliation ID */
   affiliationId: string;
   mainAffiliationName?: string;

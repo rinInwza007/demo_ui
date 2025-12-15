@@ -24,7 +24,7 @@
                         <i class="ph ph-files"></i>
                         ใบนำส่งเงิน
                     </h1>
-                    <p class="text-xs text-slate-800 mt-0.5">จัดการใบนำส่งเงินและใบนำส่งลูกหนี้</p>
+                    <p class="text-xs text-slate-800 mt-0.5">จัดการใบนำส่งเงิน</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">

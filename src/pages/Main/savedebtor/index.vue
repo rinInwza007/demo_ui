@@ -62,12 +62,13 @@
     :show-view="true"
     :showLock="true"
     :showDelete="true"
-    :show-cleardedtorก="true"
+    :show-cleardedtor="true"
 
     @edit="edit"
     @lock="toggleLock"
     @delete="removeItem"
     @view="view"
+    @cleardebtor="cleardebtor"
   />
 </template>
     </TableBase>
@@ -103,6 +104,7 @@ import goback from '@/components/Button/goback.vue'
 import dropdrow from '@/components/dropdrow/dropdrow.vue'
 import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
+import Clearmodal from '@/components/modal/clearmodal.vue'
 
 setupAxiosMock()
 
@@ -246,9 +248,15 @@ const edit = (item: any) => {
   router.push(`/edit/${item.id}`)
 }
 
+const cleardebtor = (item: any) => {
+  router.push(`cleardebtor`)
+}
+
 const toggleLock = (item: any) => {
   const target = rawData.value.find(r => r.projectCode === item.id)
   if (!target) return
+
+
 
   target.isLocked = !target.isLocked
 

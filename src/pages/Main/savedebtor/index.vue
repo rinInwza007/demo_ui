@@ -1,139 +1,197 @@
 <template>
-
+  <!-- ⭐ ลบ <body> tag ออก - ใช้ div แทน -->
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
-    <div id="app" class="relative w-full flex h-screen overflow-hidden">
-      <sidebar/>
-      <!-- Background Effects -->
-      <div class="mesh-bg"></div>
-      <div class="orb orb-1"></div>
-      <div class="orb orb-2"></div>
-      <div class="orb orb-3"></div>
 
+    <div id="app" class="relative w-full h-screen flex overflow-hidden">
+      <!-- ⭐ ลบ overflow-hidden ออกจาก #app -->
 
+        <!-- Background Elements -->
+        <div class="mesh-bg"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
 
-      <main class="flex-1 flex flex-col relative z-10">
-        <!-- Header -->
-        <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2">
-          <div>
-            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              ล้างลูกหนี้
-            </h1>
-            <p class="text-xs text-slate-800 mt-0.5">
-              จัดการและติดตามรายการลูกหนี้
-            </p>
-          </div>
-          <div class="flex items-center gap-3">
-            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
-              <i class="ph ph-bell text-xl"></i>
-            </button>
-            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
-              <i class="ph ph-gear text-xl"></i>
-            </button>
-          </div>
-        </header>
+        <!-- Sidebar (Mac Style) -->
+        <sidebar />
 
-        <!-- Content -->
-        <div class="flex-1 overflow-y-auto px-8 pb-8">
-          <div class="max-w-7xl mx-auto">
-            <!-- Filters Section -->
-            <div class="glass-panel rounded-2xl p-6 mb-6">
-              <div class="flex items-center gap-2 mb-4">
-                <span class="w-1 h-6 bg-purple-500 rounded-full"></span>
-                <h2 class="text-lg font-semibold text-gray-700">ตัวกรอง</h2>
-              </div>
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col relative z-10 min-h-0">
 
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="flex flex-col gap-2">
-                  <label class="text-sm font-medium text-gray-700">เลือกวันที่</label>
-                  <selectdatetime />
+            <!-- Header Bar -->
+            <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2 flex-shrink-0">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                        <i class="ph ph-files"></i>
+                        ล้างลูกหนี้
+                    </h1>
+                    <p class="text-xs text-slate-800 mt-0.5">จัดการล้างลูกหนี้</p>
                 </div>
-
-                <div class="flex flex-col gap-2">
-                  <label class="text-sm font-medium text-gray-700">หน่วยงาน</label>
-                  <CascadingSelect
-                    v-model:main="selectedMain"
-                    v-model:sub1="selectedSub1"
-                    v-model:sub2="selectedSub2"
-                    :options="options"
-                  />
+                <div class="flex items-center gap-3">
+                    <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
+                        <i class="ph ph-bell text-xl"></i>
+                    </button>
+                    <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
+                        <i class="ph ph-gear text-xl"></i>
+                    </button>
                 </div>
+            </header>
 
-                <div class="flex flex-col gap-2">
-                  <label class="text-sm font-medium text-gray-700">ค้นหา</label>
-                  <search v-model="searchText" />
+            <!-- Filters Area -->
+            <div class="px-8 py-4 flex-shrink-0">
+                <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+                    <!-- Left Filters -->
+                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                        <div class="relative group">
+                            <i class="ph ph-calendar-blank absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors"></i>
+                            <input type="text" placeholder="เลือกช่วงวันเวลา..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full md:w-48 text-sm placeholder-slate-400 focus:placeholder-blue-300/50">
+                        </div>
+
+                        <CascadingSelect
+  v-model:modelValueMain="selectedMain"
+  v-model:modelValueSub1="selectedSub1"
+  v-model:modelValueSub2="selectedSub2"
+  :options="options"
+/>
+
+                    </div>
+
+                    <!-- Right Search & Action -->
+                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                        <div class="relative flex-1 md:w-64">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input v-model="searchText" type="text" placeholder="ค้นหา สังกัด / หน่วยงาน..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm">
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
 
-            <!-- Table Section -->
-            <div class="glass-panel rounded-2xl p-6">
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                  <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
-                  <h2 class="text-lg font-semibold text-gray-700">รายการลูกหนี้</h2>
+            <!-- Data Table Area -->
+            <div class="flex-1 px-8 pb-8 flex flex-col min-h-0">
+                <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
+
+
+                    <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold  uppercase tracking-wider flex-shrink-0">
+                        <div class="col-span-1 text-center">สถานะ</div>
+                        <div class="col-span-2 text-center ">สังกัด</div>
+                        <div class="col-span-1 text-center">รายได้/โครงการ</div>
+                        <div class="col-span-1 text-center">ปีงบฯ</div>
+                        <div class="col-span-2 text-center">ผู้รับผิดชอบ</div>
+                        <div class="col-span-1 text-center">รูปแบบ</div>
+                        <div class="col-span-1 text-center">เวลา</div>
+                        <div class="col-span-1 text-center">ยอดเงิน</div>
+                        <div class="col-span-2 text-center">จัดการ</div>
+                    </div>
+
+                    <!-- Table Body (Scrollable) -->
+                    <div class="overflow-y-auto overflow-x-hidden flex-1 p-2 min-h-0">
+                        <div v-for="(item, index) in items" :key="index"
+                             class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm">
+
+                            <!-- Status -->
+                            <div class="col-span-1 flex justify-center">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
+                                     :class="{
+                                        'bg-red-100 text-red-500': item.status === 'cancel',
+                                        'bg-yellow-100 text-yellow-600': item.status === 'pending',
+                                        'bg-green-100 text-green-500': item.status === 'success'
+                                     }">
+                                    <i v-if="item.status === 'cancel'" class="ph-fill ph-x-circle text-lg"></i>
+                                    <i v-if="item.status === 'pending'" class="ph-fill ph-clock text-lg"></i>
+                                    <i v-if="item.status === 'success'" class="ph-fill ph-check-circle text-lg"></i>
+                                </div>
+                            </div>
+
+                            <!-- Department -->
+                            <div class="col-span-2">
+                                <div class="font-medium text-slate-800 text- ">{{ item.department }}</div>
+                                <div class="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
+                                    <i class="ph ph-buildings text-xs"></i>
+                                    <span class="truncate">{{ item.subDepartment }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Project -->
+                            <div class="col-span-1">
+                                <span class="bg-blue-50/50 text-blue-700 text-xs px-2.5 py-1 rounded-lg border border-blue-100 font-medium">
+                                    {{ item.project }}
+                                </span>
+                            </div>
+
+                            <!-- Year -->
+                            <div class="col-span-1 text-center text-sm font-medium text-slate-600 font-mono">
+                                {{ item.year }}
+                            </div>
+
+                            <!-- Responsible -->
+                            <div class="col-span-2 flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
+                                    {{ item.responsible.charAt(0) }}
+                                </div>
+                                <span class="text-sm text-slate-700 truncate">{{ item.responsible }}</span>
+                            </div>
+
+                            <!-- Payment Type -->
+                            <div class="col-span-1">
+                                <div class="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                                    <i class="ph-fill text-slate-400"
+                                       :class="item.paymentType === 'เงินสด' ? 'ph-money' : (item.paymentType === 'เช็คธนาคาร' ? 'ph-scroll' : 'ph-bank')"></i>
+                                    {{ item.paymentType }}
+                                </div>
+                            </div>
+                            <div class="col-span-1 text-center">
+  <div class="text-xs font-medium text-slate-700 font-mono">
+    {{ item.time }}
+  </div>
+</div>
+
+                            <!-- Amount -->
+                            <div class="col-span-1 text-right">
+                                <div class="font-bold text-slate-800 font-mono text-sm">{{ formatCurrency(item.amount) }}</div>
+                                <div class="text-[10px] text-slate-400">บาท</div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="col-span-2 flex justify-center">
+                                <ActionButtons
+                                    :show-cleardedtor="cleardebtor"
+
+                                    @cleardebtor="cleardebtor"
+                                />
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Footer Pagination -->
+                    <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between flex-shrink-0">
+                        <div class="text-xs text-slate-500">
+                            แสดง 1-4 จากทั้งหมด 12 รายการ
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 disabled:opacity-50 text-xs">Prev</button>
+                            <button class="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs shadow-md shadow-blue-500/30 font-medium">1</button>
+                            <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">2</button>
+                            <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">3</button>
+                            <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 text-xs">Next</button>
+                        </div>
+                    </div>
+
                 </div>
-                <span class="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                  {{ items.length }} รายการ
-                </span>
-              </div>
-
-              <div class="overflow-x-auto">
-                <TableBase :items="items">
-                  <template #actions="{ item }">
-                    <ActionButtons
-                      :item="item"
-                      :showEdit="true"
-                      :show-view="true"
-                      :showLock="true"
-                      :showDelete="true"
-                      :show-cleardedtor="true"
-                      @edit="edit"
-                      @lock="toggleLock"
-                      @delete="removeItem"
-                      @view="view"
-                      @cleardebtor="cleardebtor"
-                    />
-                  </template>
-                </TableBase>
-              </div>
-
-              <!-- Pagination -->
-              <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                <nextpage />
-                <button
-                  @click="goback"
-                  class="px-6 py-2 rounded-md bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center gap-2"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  กลับ
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
-      </main>
+
+        </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
-import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import { options } from "@/components/data/departments"
 import sidebar from '@/components/bar/sidebar.vue'
 import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
-import Navbar from '@/components/bar/navbar.vue'
-import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import search from '@/components/input/search.vue'
-import TableBase from '@/components/list/listbase.vue'
-import nextpage from '@/components/list/nextpage.vue'
-import selectdatetime from '@/components/DateTime/selectdatetime.vue'
-import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 
 setupAxiosMock()
@@ -174,7 +232,7 @@ const mapFacultyToRow = (faculty: string, receipts: any[]) => {
     new Set(
       receipts
         .map(r => r.subAffiliationName)
-        .filter(name => name && name.trim())
+        .filter((name: string) => name && name.trim())
     )
   )
 
@@ -182,25 +240,34 @@ const mapFacultyToRow = (faculty: string, receipts: any[]) => {
     new Set(
       receipts
         .map(r => r.fundName)
-        .filter(name => name && name.trim())
+        .filter((name: string) => name && name.trim())
     )
   )
 
+  // ✅ ทำ key ให้ตรงกับ template ตารางของคุณ
   return {
     id: encodeURIComponent(faculty),
-    statusColorClass: 'text-red-600',
-    org: faculty,
-    subOrg1: subOrgs.length > 0 ? subOrgs.join(', ') : `${itemCount} รายการ`,
-    project: fundNames.length > 0 ? fundNames.join(', ') : '',
+
+    // template ใช้ item.status => ตั้งค่าให้เลย
+    status: 'pending', // (ลูกหนี้โดยรวมจะเป็น pending ก็เหมาะ)
+
+    // template ใช้ item.department / item.subDepartment
+    department: faculty,
+    subDepartment: subOrgs.length > 0 ? subOrgs.join(', ') : `${itemCount} รายการ`,
+
+    // template ใช้ item.project / item.year / item.responsible
+    project: fundNames.length > 0 ? fundNames.join(', ') : '-',
     year: '2568',
-    owner: receipts[0]?.fullName || '',
-    time: '',
-    fileType: 'ลูกหนี้',
-    amount: totalDebt.toLocaleString('th-TH', {
-      minimumFractionDigits: 2,
-    }) + ' บาท',
+    responsible: receipts[0]?.fullName || '-',
+
+    // template ใช้ item.paymentType / item.time / item.amount
+    paymentType: 'ลูกหนี้',
+    time: '-',              // ถ้าอยากใส่เวลาจริง บอกได้ เดี๋ยวจัดให้
+    amount: totalDebt,      // ✅ ให้เป็น number เพราะ template เรียก formatCurrency()
+    
   }
 }
+
 
 // โหลดข้อมูลจาก API
 const loadData = async () => {
@@ -255,26 +322,32 @@ const items = computed(() => {
   }
 
   if (selectedSub1.value) {
-    filtered = filtered.filter(r =>
-      r.subAffiliationName === selectedSub1.value
-    )
+    filtered = filtered.filter(r => r.subAffiliationName === selectedSub1.value)
   }
 
   if (selectedSub2.value) {
-    filtered = filtered.filter(r =>
-      r.subAffiliationName2 === selectedSub2.value
-    )
+    filtered = filtered.filter(r => r.subAffiliationName2 === selectedSub2.value)
   }
 
   const grouped = groupByFaculty(filtered)
 
   const result: any[] = []
   grouped.forEach((receipts, faculty) => {
-    result.push(mapFacultyToRow(faculty, receipts))
+    result.push(mapFacultyToRow(faculty, receipts)) // ✅ key ตรง template แล้ว
   })
 
   return result
 })
+const formatCurrency = (amount: number | string) => {
+  const n = typeof amount === 'string'
+    ? Number(amount.toString().replace(/[^0-9.-]/g, ''))
+    : amount || 0
+
+  return n.toLocaleString('th-TH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
 
 onMounted(() => {
   loadData()

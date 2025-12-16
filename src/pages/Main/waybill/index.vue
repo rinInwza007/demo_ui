@@ -1,4 +1,3 @@
-
 <template>
   <!-- ⭐ ลบ <body> tag ออก - ใช้ div แทน -->
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">

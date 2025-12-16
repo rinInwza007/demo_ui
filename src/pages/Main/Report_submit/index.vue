@@ -5,8 +5,7 @@
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
 
-    <!-- Sidebar (ถ้าคุณมี Sidebar component อยู่แล้ว เปลี่ยนเป็น <Sidebar /> ได้เลย) -->
-    <aside class="w-64 h-full flex flex-col glass-sidebar z-20 hidden md:flex shrink-0">
+    <aside class="w-64 h-full flex flex-col  z-20 hidden md:flex shrink-0">
       <sidebar />
     </aside>
 

@@ -48,11 +48,12 @@
                         </div>
 
                         <CascadingSelect
-          v-model:main="selectedMain"
-          v-model:sub1="selectedSub1"
-          v-model:sub2="selectedSub2"
-          :options="options"
-        />
+  v-model:modelValueMain="selectedMain"
+  v-model:modelValueSub1="selectedSub1"
+  v-model:modelValueSub2="selectedSub2"
+  :options="options"
+/>
+
                     </div>
 
                     <!-- Right Search & Action -->
@@ -74,15 +75,16 @@
             <div class="flex-1 px-8 pb-8 flex flex-col min-h-0">
                 <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
 
-                    <!-- Table Header -->
+
                     <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold  uppercase tracking-wider flex-shrink-0">
                         <div class="col-span-1 text-center">สถานะ</div>
-                        <div class="col-span-2">สังกัด</div>
-                        <div class="col-span-1">รายได้/โครงการ</div>
+                        <div class="col-span-2 text-center ">สังกัด</div>
+                        <div class="col-span-1 text-center">รายได้/โครงการ</div>
                         <div class="col-span-1 text-center">ปีงบฯ</div>
-                        <div class="col-span-2 ">ผู้รับผิดชอบ</div>
-                        <div class="col-span-1">รูปแบบ</div>
-                        <div class="col-span-2 text-right">ยอดเงิน</div>
+                        <div class="col-span-2 text-center">ผู้รับผิดชอบ</div>
+                        <div class="col-span-1 text-center">รูปแบบ</div>
+                        <div class="col-span-1 text-center">เวลา</div>
+                        <div class="col-span-1 text-center">ยอดเงิน</div>
                         <div class="col-span-2 text-center">จัดการ</div>
                     </div>
 
@@ -107,9 +109,10 @@
 
                             <!-- Department -->
                             <div class="col-span-2">
-                                <div class="font-medium text-slate-800 text-sm">{{ item.department }}</div>
-                                <div class="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
-                                    <i class="ph ph-calendar text-xs"></i> {{ item.date }}
+                                <div class="font-medium text-slate-800 text- ">{{ item.department }}</div>
+                                <div class="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
+                                    <i class="ph ph-buildings text-xs"></i>
+                                    <span class="truncate">{{ item.subDepartment }}</span>
                                 </div>
                             </div>
 
@@ -141,9 +144,14 @@
                                     {{ item.paymentType }}
                                 </div>
                             </div>
+                            <div class="col-span-1 text-center">
+  <div class="text-xs font-medium text-slate-700 font-mono">
+    {{ item.time }}
+  </div>
+</div>
 
                             <!-- Amount -->
-                            <div class="col-span-2 text-right">
+                            <div class="col-span-1 text-right">
                                 <div class="font-bold text-slate-800 font-mono text-sm">{{ formatCurrency(item.amount) }}</div>
                                 <div class="text-[10px] text-slate-400">บาท</div>
                             </div>
@@ -276,12 +284,16 @@ const mapReceiptToRow = (r: any) => {
   return {
     id: r.projectCode,
     status: r.isLocked ? 'success' : 'pending',
+
     department: r.mainAffiliationName || r.affiliationName || '-',
-    date: formatThaiDateTime(displayDate),
+    subDepartment: r.subAffiliationName || '-',     // ✅ เพิ่มสังกัดย่อย
+    time: formatThaiDateTime(displayDate),          // ✅ ย้ายเวลาไปคอลัมน์ เวลา
+
     project: r.fundName,
     year: '2568',
     responsible: r.fullName,
     paymentType: fileType,
+
     amount: r.netTotalAmount ? Number(String(r.netTotalAmount).replace(/,/g, '')) : 0,
     createdAt: createdDate,
     updatedAt: updatedDate,
@@ -289,6 +301,7 @@ const mapReceiptToRow = (r: any) => {
     _raw: r,
   }
 }
+
 
 const loadData = async () => {
   try {
@@ -310,17 +323,44 @@ const loadData = async () => {
 const items = computed(() => {
   let filtered = [...rawData.value]
 
+  // ✅ MAIN: ต้อง match คณะ
+  if (selectedMain.value) {
+    filtered = filtered.filter((r: any) => {
+      const main = (r.mainAffiliationName || r.affiliationName || '').trim()
+      return main === selectedMain.value.trim()
+    })
+  }
+
+  // ✅ SUB1: ถ้าเลือกแล้ว ให้ match กับชื่อสังกัดย่อย (ระดับที่คุณเก็บไว้ใน r.subAffiliationName)
+  if (selectedSub1.value) {
+    filtered = filtered.filter((r: any) => {
+      const sub1 = (r.subAffiliationName || '').trim()
+      return sub1 === selectedSub1.value.trim()
+    })
+  }
+
+  // ✅ SUB2: ถ้าคุณมี field สำหรับระดับย่อยจริง ให้เปลี่ยนชื่อ field ตรงนี้ให้ตรงกับ data
+  if (selectedSub2.value) {
+    filtered = filtered.filter((r: any) => {
+      const sub2 = (r.subAffiliationName2 || r.sub2AffiliationName || '').trim()
+      return sub2 === selectedSub2.value.trim()
+    })
+  }
+
+  // ✅ Search (ยังใช้ร่วมกันได้)
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
-    filtered = filtered.filter((r) => {
+    filtered = filtered.filter((r: any) => {
       const main = (r.mainAffiliationName || r.affiliationName || '').toLowerCase()
-      const sub = (r.subAffiliationName || '').toLowerCase()
-      return main.includes(s) || sub.includes(s)
+      const sub1 = (r.subAffiliationName || '').toLowerCase()
+      const sub2 = (r.subAffiliationName2 || r.sub2AffiliationName || '').toLowerCase()
+      return main.includes(s) || sub1.includes(s) || sub2.includes(s)
     })
   }
 
   return filtered.map(mapReceiptToRow)
 })
+
 
 onMounted(loadData)
 

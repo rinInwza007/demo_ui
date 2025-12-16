@@ -12,7 +12,7 @@
       <div class="flex-1">
         <Select
   v-model="mainValue"
-  :options="Object.keys(options)"
+  :options="[ALL_OPTION, ...Object.keys(options)]"
   :placeholder="placeholderMain"
   icon="ph ph-buildings"
 />
@@ -77,35 +77,41 @@ const mainValue = ref(props.modelValueMain);
 const sub1Value = ref(props.modelValueSub1);
 const sub2Value = ref(props.modelValueSub2);
 
+const ALL_OPTION = "เลือกทั้งหมด";
+
 /* ===========================
    COMPUTED OPTIONS LOGIC
 =========================== */
 
 // Level 2 options (SUB1)
 const sub1Options = computed(() => {
-  if (!mainValue.value) return [];
+  if (!mainValue.value || mainValue.value === ALL_OPTION) return [];
 
   const data = props.options[mainValue.value];
   if (!data) return [];
 
   const main = data.main;
 
-  // main = "string"
   if (typeof main === "string") {
-    return [main];
+    return [ALL_OPTION, main];
   }
 
-  // main = array
   if (Array.isArray(main)) {
-    return main;
+    return [ALL_OPTION, ...main];
   }
 
   return [];
 });
 
+
 // Level 3 options (SUB2)
 const sub2Options = computed(() => {
-  if (!mainValue.value) return [];
+  if (
+    !mainValue.value ||
+    mainValue.value === ALL_OPTION ||
+    sub1Value.value === ALL_OPTION
+  )
+    return [];
 
   const data = props.options[mainValue.value];
   if (!data) return [];
@@ -113,42 +119,57 @@ const sub2Options = computed(() => {
   const main = data.main;
   const subs = data.subs;
 
-  // กรณี main = array → ไม่มี subs
-  if (Array.isArray(main)) {
-    return [];
-  }
+  if (Array.isArray(main)) return [];
 
-  // main = string → subs อาจมีหลายอัน
   if (Array.isArray(subs)) {
-    return subs;
+    return [ALL_OPTION, ...subs];
   }
 
   return [];
 });
+
 
 /* ===========================
       WATCHERS
 =========================== */
 
 watch(mainValue, (val) => {
-  emit("update:modelValueMain", val);
+  if (val === ALL_OPTION) {
+    emit("update:modelValueMain", "");
+    emit("update:modelValueSub1", "");
+    emit("update:modelValueSub2", "");
+    sub1Value.value = "";
+    sub2Value.value = "";
+    return;
+  }
 
-  // reset sub1 & sub2 เมื่อเปลี่ยน main
+  emit("update:modelValueMain", val);
   sub1Value.value = "";
   sub2Value.value = "";
   emit("update:modelValueSub1", "");
   emit("update:modelValueSub2", "");
 });
 
-watch(sub1Value, (val) => {
-  emit("update:modelValueSub1", val);
 
-  // reset sub2 เมื่อเลือกระดับรองใหม่
+watch(sub1Value, (val) => {
+  if (val === ALL_OPTION) {
+    emit("update:modelValueSub1", "");
+    emit("update:modelValueSub2", "");
+    sub2Value.value = "";
+    return;
+  }
+
+  emit("update:modelValueSub1", val);
   sub2Value.value = "";
   emit("update:modelValueSub2", "");
 });
-
 watch(sub2Value, (val) => {
+  if (val === ALL_OPTION) {
+    emit("update:modelValueSub2", "");
+    return;
+  }
+
   emit("update:modelValueSub2", val);
 });
+
 </script>

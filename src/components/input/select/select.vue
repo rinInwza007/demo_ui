@@ -1,85 +1,68 @@
 <template>
-  <div>
-    <label v-if="label" >
-      {{ label }}
-    </label>
+  <div class="relative group w-full">
+    <!-- Left Icon -->
+    <i
+      v-if="icon"
+      :class="[
+        icon,
+        'absolute left-3 top-1/2 -translate-y-1/2',
+        'text-slate-400 group-hover:text-blue-500 transition-colors'
+      ]"
+    ></i>
 
     <select
-      :value="modelValueString"
-      @change="onChange"
-      class="h-[44px] rounded-md border border-gray-500 px-[18px] block w-full
-             outline-none cursor-pointer transition-all focus:border-gray-700 focus:ring-1 focus:ring-gray-700 "
+      class="glass-input w-full text-sm text-slate-700 appearance-none cursor-pointer
+             py-2.5 rounded-xl pr-10 focus:outline-none
+             focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30
+             hover:shadow-md transition-all"
+      :class="icon ? 'pl-10' : 'pl-3'"
+      :value="modelValue"
+      @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
     >
-      <!-- ถ้ามี placeholder -->
-      <option v-if="placeholder" value="">{{ placeholder }}</option>
+      <!-- Placeholder: แสดงเฉพาะตอนยังไม่เลือก -->
+      <option v-if="placeholder" value="" disabled hidden>
+        {{ placeholder }}
+      </option>
 
-      <!-- options -->
+      <!-- Options -->
       <option
-        v-for="(opt, idx) in options"
-        :key="idx"
-        :value="getOptionValueString(opt)"
+        v-for="(op, i) in normalizedOptions"
+        :key="i"
+        :value="op.value"
       >
-        {{ getOptionLabel(opt) }}
+        {{ op.label }}
       </option>
     </select>
+
+    <!-- Caret -->
+    <i
+      class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2
+             text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors"
+    ></i>
   </div>
 </template>
 
+<script setup lang="ts">
+import { computed } from "vue"
 
+type Option = string | { label: string; value: string }
 
-<script setup>
-import { computed } from 'vue'
+const props = defineProps<{
+  modelValue: string
+  options: Option[]
+  placeholder?: string
+  icon?: string
+}>()
 
-const props = defineProps({
-  modelValue: { required: false }, // support v-model
-  options: { type: Array, default: () => [] }, // array of strings/numbers or objects
-  optionLabel: { type: String, default: 'label' }, // key for label if object
-  optionValue: { type: String, default: 'value' }, // key for value if object
-  placeholder: { type: String, default: '-' },
-  label: { type: String, default: '' },
-  valueType: { type: String, default: 'string' }, // 'string' or 'number'
+defineEmits<{
+  (e: "update:modelValue", v: string): void
+}>()
+
+const normalizedOptions = computed(() => {
+  const ops = props.options ?? []
+  return ops.map((o) => {
+    if (typeof o === "string") return { label: o, value: o }
+    return { label: o.label, value: o.value }
+  })
 })
-
-const emit = defineEmits(['update:modelValue'])
-
-// helper: return display label for an option
-function getOptionLabel(opt) {
-  if (opt === null || opt === undefined) return ''
-  if (typeof opt === 'string' || typeof opt === 'number') return String(opt)
-  // object
-  return String(opt[props.optionLabel] ?? '')
-}
-
-// helper: return value (typed) for an option
-function getOptionValue(opt) {
-  if (opt === null || opt === undefined) return ''
-  if (typeof opt === 'string' || typeof opt === 'number') {
-    return props.valueType === 'number' ? Number(opt) : String(opt)
-  }
-  // object
-  const raw = opt[props.optionValue] ?? ''
-  return props.valueType === 'number' ? Number(raw) : String(raw)
-}
-
-// since native <select> deals with strings, we convert modelValue to string for binding
-const modelValueString = computed(() => {
-  if (props.modelValue === null || props.modelValue === undefined) return ''
-  // if valueType is number, convert to string for matching option's value attr
-  return String(props.modelValue)
-})
-
-// converts option to string for :value attr
-function getOptionValueString(opt) {
-  const v = getOptionValue(opt)
-  return v === null || v === undefined ? '' : String(v)
-}
-
-function onChange(e) {
-  let v = e.target.value
-  if (props.valueType === 'number') {
-    const n = Number(v)
-    v = Number.isNaN(n) ? v : n
-  }
-  emit('update:modelValue', v)
-}
 </script>

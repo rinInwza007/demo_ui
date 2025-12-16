@@ -4,18 +4,21 @@
     class="w-20 lg:w-64 h-full flex flex-col glass-panel border-r border-white/40 z-20 transition-all duration-300"
   >
     <!-- Logo -->
-    <div class="p-6 flex items-center gap-2">
-      <img
-        src="https://www.up.ac.th/en/img/logo_up.png"
-        class="w-9 h-12 rounded-full shadow-sm"
-        alt="UP Logo"
-      />
+    <div class="p-6 flex flex-col items-center text-center gap-2">
+  <!-- Logo center -->
+  <img
+    src="/src/assets/Gemini_Generated_Image_f4qddcf4qddcf4qd.png"
+    class="size-54 rounded-full shadow-sm"
+    alt="UP Logo"
+  />
 
-      <div class="text-center"><span class="font-bold text-[18px] hidden lg:block text-slate-800 text-purple-800">
-        UP<br></span><span class="font-bold text-[18px]">ระบบใบนำส่งเงิน</span>
+  <!-- Text under logo -->
+  <div class="hidden lg:block leading-tight">
+    <div class="font-bold text-[18px] text-purple-800">UP</div>
+    <div class="font-bold text-[18px] text-slate-800">ระบบใบนำส่งเงิน</div>
+  </div>
+</div>
 
-      </div>
-    </div>
 
     <!-- Menu -->
     <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">

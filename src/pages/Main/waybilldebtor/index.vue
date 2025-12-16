@@ -69,7 +69,7 @@
                             <input v-model="searchText" type="text" placeholder="ค้นหา สังกัด / หน่วยงาน..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm">
                         </div>
 
-                        <button @click="gotowaybil" class="glass-button-primary px-5 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-95">
+                        <button @click="" class="glass-button-primary px-5 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-95">
                             <i class="ph ph-plus-circle text-lg"></i>
                             <span>เพิ่มใบนำส่งลูกหนี้</span>
                         </button>
@@ -301,8 +301,8 @@ const items = computed(() => {
 onMounted(loadData)
 
 /* ✅ routing เดิม */
-const view = (item: any) => router.push(`/pdfpage/${item.id}`)
-const edit = (item: any) => router.push(`/edit/${item.id}`)
+
+
 
 const view = (item:any) => {
   router.push(`/pdfpage/${item.id}`)

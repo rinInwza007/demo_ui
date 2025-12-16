@@ -171,7 +171,7 @@
                   >{{ morelist.length }} รายการ</span
                 >
               </div>
-              
+
               <div
                 class="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-3 px-2 pb-2 border-b border-white/40 items-center text-center"
               >
@@ -467,6 +467,7 @@ import sidebar from '@/components/bar/sidebar.vue'
 import { useReceiptStore } from '@/stores/recipt'
 import { useRowManager } from '@/components/Function/FuncForm'
 import { setupAxiosMock } from '@/fake/mockAxios'
+
 
 // Initialize
 const route = useRoute()

@@ -216,7 +216,7 @@ const loadReceipts = () => {
     const raw = localStorage.getItem('fakeApi.receipts')
     if (!raw) return []
     const data = JSON.parse(raw)
-    return Array.isArray(data) 
+    return Array.isArray(data)
       ? data.map(r => ({
           ...r,
           createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
@@ -253,30 +253,30 @@ const usedAccounts = ref([])
 onMounted(() => {
   // ดึง affiliationName จาก URL params
   const affiliationName = route.params.id ? decodeURIComponent(route.params.id) : null
-  
+
   // โหลดข้อมูลจาก localStorage
   const receipts = loadReceipts()
-  
+
   // กรองเฉพาะ Debtor
   const debtorReceipts = receipts.filter(r => r.moneyTypeNote === 'Debtor')
-  
+
   // หาหน่วยงานที่ต้องการ
   let targetAffiliation = affiliationName
-  
+
   // ถ้าไม่มีใน URL ให้ใช้หน่วยงานแรกที่เจอ
   if (!targetAffiliation && debtorReceipts.length > 0) {
     targetAffiliation = debtorReceipts[0].mainAffiliationName
   }
-  
+
   if (targetAffiliation) {
     // กรองข้อมูลตามหน่วยงาน
     const filteredData = debtorReceipts.filter(
       r => r.mainAffiliationName === targetAffiliation
     )
-    
+
     // คำนวณยอดหนี้รวม
     const totalDebt = filteredData.reduce((sum, r) => sum + Number(r.netTotalAmount || 0), 0)
-    
+
     // แปลงข้อมูลเป็น items
     const items = filteredData.map(r => ({
       id: r.projectCode || Math.random().toString(),
@@ -288,7 +288,7 @@ onMounted(() => {
       fullName: r.fullName || '-',
       selected: false
     }))
-    
+
     debtor.fullName = targetAffiliation
     debtor.totalDebt = totalDebt
     debtor.items = items

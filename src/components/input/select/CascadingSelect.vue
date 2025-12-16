@@ -11,28 +11,31 @@
       <!-- MAIN: เลือกคณะ -->
       <div class="flex-1">
         <Select
-          v-model="mainValue"
-          :options="Object.keys(options)"
-          :placeholder="placeholderMain"
-        />
+  v-model="mainValue"
+  :options="Object.keys(options)"
+  :placeholder="placeholderMain"
+  icon="ph ph-buildings"
+/>
       </div>
 
       <!-- SUB1: เลือกหัวข้อรอง -->
       <div v-if="sub1Options.length > 0" class="flex-1">
         <Select
-          v-model="sub1Value"
-          :options="sub1Options"
-          :placeholder="placeholderSub1"
-        />
+  v-model="sub1Value"
+  :options="sub1Options"
+  :placeholder="placeholderSub1"
+  icon="ph ph-squares-four"
+/>
       </div>
 
       <!-- SUB2: เลือกหัวข้อย่อย -->
       <div v-if="sub2Options.length > 0" class="flex-1">
         <Select
-          v-model="sub2Value"
-          :options="sub2Options"
-          :placeholder="placeholderSub2"
-        />
+  v-model="sub2Value"
+  :options="sub2Options"
+  :placeholder="placeholderSub2"
+  icon="ph ph-list-bullets"
+/>
       </div>
 
     </div>

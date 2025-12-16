@@ -1,14 +1,18 @@
 <template>
   <div class="flex flex-col gap-1">
     <!-- label -->
-    <label
-      v-if="label"
-      class="text-sm font-medium text-gray-700 flex"
-    >
+    <label v-if="label" class="text-sm font-medium text-gray-700 flex">
       {{ label }}
     </label>
 
-    <div >
+    <!-- wrapper แบบเดียวกับ input ที่คุณส่ง -->
+    <div class="relative group w-full md:w-48">
+      <!-- icon ซ้าย -->
+      <i
+        class="ph ph-calendar-blank absolute left-3 top-1/2 -translate-y-1/2
+               text-slate-400 group-hover:text-blue-500 transition-colors z-10"
+      ></i>
+
       <VueDatePicker
         v-model="internalValue"
         :range="{ partialRange: false }"
@@ -18,11 +22,14 @@
         format="dd/MM/yyyy HH:mm"
         :clearable="true"
         :auto-apply="true"
-        placeholder="เลือกช่วงวัน"
+        placeholder="เลือกช่วงวันเวลา..."
         :input-class="`
-          h-[44px] w-full rounded-md border border-gray-1000 px-2 text-sm
-          bg-white
-          focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+          glass-input w-full text-sm text-slate-700
+          pl-10 pr-4 py-2.5 rounded-xl
+          placeholder-slate-400 focus:placeholder-blue-300/50
+          appearance-none cursor-pointer
+          focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30
+          hover:shadow-md transition-all
         `"
       />
     </div>
@@ -42,27 +49,21 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: [string, string] | null): void
 }>()
 
-
 const internalValue = ref<[Date | null, Date | null] | null>(null)
-
 
 const formatDateTime = (d: Date | null): string => {
   if (!d) return ''
   const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
-
   const year = d.getFullYear()
   const month = pad(d.getMonth() + 1)
   const day = pad(d.getDate())
   const hour = pad(d.getHours())
   const minute = pad(d.getMinutes())
-
   return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
-
 const parseDateTime = (s: string | null | undefined): Date | null => {
   if (!s) return null
-
   const cleaned = s.replace('T', ' ')
   const [datePart, timePart] = cleaned.split(' ')
   if (!datePart) return null
@@ -76,19 +77,9 @@ const parseDateTime = (s: string | null | undefined): Date | null => {
   const hour = Number(hourStr)
   const minute = Number(minuteStr)
 
-  if (
-    Number.isNaN(year) ||
-    Number.isNaN(month) ||
-    Number.isNaN(day) ||
-    Number.isNaN(hour) ||
-    Number.isNaN(minute)
-  ) {
-    return null
-  }
-
+  if ([year, month, day, hour, minute].some(Number.isNaN)) return null
   return new Date(year, month, day, hour, minute)
 }
-
 
 watch(
   () => props.modelValue,
@@ -97,11 +88,7 @@ watch(
       const [startStr, endStr] = val
       const start = parseDateTime(startStr)
       const end = parseDateTime(endStr)
-      if (start || end) {
-        internalValue.value = [start, end]
-      } else {
-        internalValue.value = null
-      }
+      internalValue.value = start || end ? [start, end] : null
     } else {
       internalValue.value = null
     }
@@ -123,24 +110,14 @@ watch(
 </script>
 
 <style scoped>
-
+/* ให้ input ของ datepicker กว้างตาม wrapper และไม่ชนไอคอน */
 :deep(.dp__input) {
-  width: 360px !important;
+  width: 100% !important;
   height: 44px !important;
-  border-color: gray;
 }
 
-
-@media (max-width: 768px) {
-  :deep(.dp__input) {
-    width: 260px !important;
-  }
-}
-
-
-@media (max-width: 640px) {
-  :deep(.dp__input) {
-    width: 100% !important;
-  }
+/* กันปุ่ม/ไอคอนภายในของ datepicker ซ้อนกับ caret/พื้นที่ขวา */
+:deep(.dp__input_wrap) {
+  width: 100%;
 }
 </style>

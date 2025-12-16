@@ -346,46 +346,49 @@ const paymentHistory = ref([])
 const usedAccounts = ref([])
 
 onMounted(() => {
-  // รับชื่อคณะจาก URL params
-  const facultyName = route.params.id ? decodeURIComponent(route.params.id) : null
+  // ดึง affiliationName จาก URL params
+  const affiliationName = route.params.id ? decodeURIComponent(route.params.id) : null
 
-  if (!facultyName) {
-    console.error('❌ ไม่พบชื่อคณะใน URL')
-    return
-  }
-
+  // โหลดข้อมูลจาก localStorage
   const receipts = loadReceipts()
+
+  // กรองเฉพาะ Debtor
   const debtorReceipts = receipts.filter(r => r.moneyTypeNote === 'Debtor')
 
-  // กรองข้อมูลตามคณะที่เลือก
-  const filteredData = debtorReceipts.filter(
-    r => r.mainAffiliationName === facultyName || r.affiliationName === facultyName
-  )
+  // หาหน่วยงานที่ต้องการ
+  let targetAffiliation = affiliationName
 
-  console.log('📦 Filtered Data for Faculty:', facultyName, filteredData)
+  // ถ้าไม่มีใน URL ให้ใช้หน่วยงานแรกที่เจอ
+  if (!targetAffiliation && debtorReceipts.length > 0) {
+    targetAffiliation = debtorReceipts[0].mainAffiliationName
+  }
 
-  // คำนวณยอดหนี้รวม
-  const totalDebt = filteredData.reduce((sum, r) => sum + Number(r.netTotalAmount || 0), 0)
+  if (targetAffiliation) {
+    // กรองข้อมูลตามหน่วยงาน
+    const filteredData = debtorReceipts.filter(
+      r => r.mainAffiliationName === targetAffiliation
+    )
 
-  // สร้างรายการหนี้แต่ละรายการ
-  const items = filteredData.map(r => ({
-    id: r.projectCode || Math.random().toString(),
-    title: r.receiptList?.[0]?.itemName || 'รายการ',
-    amount: Number(r.netTotalAmount || 0),
-    createdAt: formatDate(r.createdAt),
-    note: r.receiptList?.[0]?.note || '-',
-    subOrg: r.subAffiliationName || '-',
-    fullName: r.fullName || '-',
-     selected: false
-  }))
+    // คำนวณยอดหนี้รวม
+    const totalDebt = filteredData.reduce((sum, r) => sum + Number(r.netTotalAmount || 0), 0)
 
-  // อัปเดตข้อมูล
-  debtor.fullName = facultyName
-  debtor.totalDebt = totalDebt
-  debtor.items = items
-  netTotalAmount.value = totalDebt
+    // แปลงข้อมูลเป็น items
+    const items = filteredData.map(r => ({
+      id: r.projectCode || Math.random().toString(),
+      title: r.receiptList?.[0]?.itemName || 'รายการ',
+      amount: Number(r.netTotalAmount || 0),
+      createdAt: formatDate(r.createdAt),
+      note: r.receiptList?.[0]?.note || '-',
+      subOrg: r.subAffiliationName || '-',
+      fullName: r.fullName || '-',
+      selected: false
+    }))
 
-  console.log('✅ Debtor Data:', debtor)
+    debtor.fullName = targetAffiliation
+    debtor.totalDebt = totalDebt
+    debtor.items = items
+    netTotalAmount.value = totalDebt
+  }
 })
 
 const totalPaid = computed(() => {

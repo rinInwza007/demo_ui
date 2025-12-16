@@ -31,16 +31,23 @@
       <!-- Table List -->
       <div class="pt-10 px-6 mt-1">
         <TableBase :items="items">
-          <template #actions="{ item }">
-            <ActionButtons
-              :item="item"
-              :show-view="true"
-              :show-cleardedtor="true"
-              @view="view"
-              @cleardebtor="clearDebtor"
-            />
-          </template>
-        </TableBase>
+      <template #actions="{ item }">
+  <ActionButtons
+    :item="item"
+    :showEdit="true"
+    :show-view="true"
+    :showLock="true"
+    :showDelete="true"
+    :show-cleardedtor="true"
+
+    @edit="edit"
+    @lock="toggleLock"
+    @delete="removeItem"
+    @view="view"
+    @cleardebtor="cleardebtor"
+  />
+</template>
+    </TableBase>
       </div>
 
       <!-- Pagination + Back Button -->
@@ -70,6 +77,7 @@ import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 import goback from '@/components/Button/goback.vue'
 import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
+import Clearmodal from '@/components/modal/clearmodal.vue'
 
 setupAxiosMock()
 
@@ -214,8 +222,32 @@ onMounted(loadData)
 
 // Functions
 const view = (item: any) => {
-  // ดูรายละเอียดของคณะ
-  router.push(`/cleardebtor/${item.id}`)
+  router.push(`/pdfpage/${item.id}`)
+}
+
+const edit = (item: any) => {
+  router.push(`/edit/${item.id}`)
+}
+
+const cleardebtor = (item: any) => {
+  router.push(`cleardebtor`)
+}
+
+const toggleLock = (item: any) => {
+  const target = rawData.value.find(r => r.projectCode === item.id)
+  if (!target) return
+
+
+
+  target.isLocked = !target.isLocked
+
+  Swal.fire({
+    position: 'top-end',
+    icon: 'success',
+    title: target.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
+    showConfirmButton: false,
+    timer: 1500,
+  })
 }
 
 const clearDebtor = (item: any) => {

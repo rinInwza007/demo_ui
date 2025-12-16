@@ -1,132 +1,222 @@
 <template>
-  <div>
-    <Navbar />
-    <SecondNavbar />
+  <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
+    <div id="app" class="relative w-full h-screen flex overflow-hidden">
+      <!-- Background Elements -->
+      <div class="mesh-bg"></div>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
 
-    <div class="border border-gray-300 rounded-xl shadow m-6 bg-white">
-      <!-- Header 3 Columns -->
-      <div class="ml-12 mt-8 grid grid-cols-3 items-center">
-        <div class="flex">
-          <dropdrowwork />
-        </div>
+      <!-- ✅ คุณมี sidebar อยู่แล้ว: จะใช้ก็ใส่ component ของคุณเอง -->
+      <sidebar />
 
-        <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">ใบนำส่งลูกหนี้</h1>
+      <!-- Main Content -->
+      <main class="flex-1 flex flex-col relative z-10 min-h-0">
+        <!-- Header Bar -->
+        <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2 flex-shrink-0">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <i class="ph ph-files"></i>
+              ใบนำส่งลูกหนี้
+            </h1>
+            <p class="text-xs text-slate-800 mt-0.5">จัดการใบนำส่งลูกหนี้ </p>
+          </div>
 
-      </div>
+          <div class="flex items-center gap-3">
+            <!-- ปุ่มเดิมของคุณ (dropdrowwork) ถ้าต้องการ -->
+            <dropdrowwork />
 
-      <!-- Filters Row -->
-      <div class="flex flex-col gap-4 px-12 w-full md:flex-row md:items-end mt-12">
-        <selectdatetime />
+            <button
+              class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
+              title="แจ้งเตือน"
+            >
+              <i class="ph ph-bell text-xl"></i>
+            </button>
+            <button
+              class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
+              title="ตั้งค่า"
+            >
+              <i class="ph ph-gear text-xl"></i>
+            </button>
+          </div>
+        </header>
 
-        <CascadingSelect
-    v-model:main="selectedMain"
-    v-model:sub1="selectedSub1"
-    v-model:sub2="selectedSub2"
-    :options="options"
-    label="หน่วยงาน"
-  />
+        <!-- Filters Area -->
+        <div class="px-8 py-4 flex-shrink-0">
+                <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+                    <!-- Left Filters -->
+                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                        <div class="relative group">
+                            <i class="ph ph-calendar-blank absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors"></i>
+                            <input type="text" placeholder="เลือกช่วงวันเวลา..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full md:w-48 text-sm placeholder-slate-400 focus:placeholder-blue-300/50">
+                        </div>
 
-        <search v-model="searchText" />
+                        <div class="relative group">
+                            <i class="ph ph-buildings absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors"></i>
+                            <select class="glass-input pl-10 pr-8 py-2.5 rounded-xl w-full md:w-56 text-sm text-slate-600 appearance-none cursor-pointer">
+                                <option>ทุกคณะ/หน่วยงาน</option>
+                                <option>คณะสหเวชศาสตร์</option>
+                                <option>กองทรัพย์สิน</option>
+                            </select>
+                            <i class="ph ph-caret-down absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                        </div>
 
-        <!-- Action Dropdown -->
-        <div class="ml-auto">
-          <dropdrow>
-            <template #icon>
-              <i class="material-symbols-outlined text-[22px]"></i>
-            </template>
 
-            <template #menu>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                        <div class="relative flex-1 md:w-64">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input v-model="searchText" type="text" placeholder="ค้นหา สังกัด / หน่วยงาน..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm">
+                        </div>
+
+                        <button @click="" class="glass-button-primary px-5 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-95">
+                            <i class="ph ph-plus-circle text-lg"></i>
+                            <span>เพิ่มใบนำส่งลูกหนี้</span>
+                        </button>
+                    </div>
+                    </div>
+                    </div>
+
+        <!-- Data Table Area -->
+        <div class="flex-1 px-8 pb-8 flex flex-col min-h-0">
+          <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
+            <!-- Table Header -->
+            <div
+              class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold text-slate-500 uppercase tracking-wider flex-shrink-0"
+            >
+              <div class="col-span-1 text-center">สถานะ</div>
+              <div class="col-span-3">สังกัด</div>
+              <div class="col-span-2">รายได้/โครงการ</div>
+              <div class="col-span-1 text-center">ปีงบฯ</div>
+              <div class="col-span-2">ผู้รับผิดชอบ</div>
+              <div class="col-span-1">รูปแบบ</div>
+              <div class="col-span-2 text-center">จัดการ</div>
+            </div>
+
+            <!-- Table Body (Scrollable) -->
+            <div class="overflow-y-auto overflow-x-hidden flex-1 p-2 min-h-0">
               <div
-                v-for="btn in actions"
-                :key="btn.key"
-                class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 cursor-pointer"
-                @click="btn.handler"
+                v-for="(item, index) in items"
+                :key="index"
+                class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm"
               >
-                <i class="material-symbols-outlined text-[20px]">
-                  {{ btn.icon }}
-                </i>
-                <span class="text-sm">{{ btn.label }}</span>
+                <!-- Status -->
+                <div class="col-span-1 flex justify-center">
+                  <div
+                    class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
+                    :class="item.isLocked ? 'bg-green-100 text-green-500' : 'bg-yellow-100 text-yellow-600'"
+                    :title="item.isLocked ? 'ล็อกแล้ว' : 'ยังไม่ล็อก'"
+                  >
+                    <i v-if="item.isLocked" class="ph-fill ph-check-circle text-lg"></i>
+                    <i v-else class="ph-fill ph-clock text-lg"></i>
+                  </div>
+                </div>
+
+                <!-- Department -->
+                <div class="col-span-3">
+                  <div class="font-medium text-slate-800 text-sm">{{ item.org }}</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
+                    <i class="ph ph-buildings text-xs"></i> {{ item.subOrg1 }}
+                  </div>
+                </div>
+
+                <!-- Project -->
+                <div class="col-span-2">
+                  <span class="bg-blue-50/50 text-blue-700 text-xs px-2.5 py-1 rounded-lg border border-blue-100 font-medium">
+                    {{ item.project }}
+                  </span>
+                </div>
+
+                <!-- Year -->
+                <div class="col-span-1 text-center text-sm font-medium text-slate-600 font-mono">
+                  {{ item.year }}
+                </div>
+
+                <!-- Responsible -->
+                <div class="col-span-2 flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
+                    {{ (item.owner || '-').charAt(0) }}
+                  </div>
+                  <span class="text-sm text-slate-700 truncate">{{ item.owner }}</span>
+                </div>
+
+                <!-- Payment Type -->
+                <div class="col-span-1">
+                  <div class="text-xs font-medium text-slate-600 truncate">
+                    {{ item.fileTypeLabel }}
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="col-span-2 flex justify-center">
+                  <ActionButtons
+                    :item="item"
+                    :showEdit="true"
+                    :showView="true"
+                    :showLock="true"
+                    :showDelete="true"
+                    @edit="edit"
+                    @lock="toggleLock"
+                    @delete="removeItem"
+                    @view="view"
+                  />
+                </div>
               </div>
-            </template>
-          </dropdrow>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between flex-shrink-0">
+              <div class="text-xs text-slate-500">
+                แสดง {{ items.length }} รายการ
+              </div>
+              <div class="flex items-center gap-2">
+                <nextpage />
+                <goback />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <!-- Table List -->
-      <div class="pt-10 px-6 mt-1 ">
-        <TableBase :items="items">
-      <template #actions="{ item }">
-  <ActionButtons
-    :item="item"
-    :showEdit="true"
-    :show-view="true"
-    :showLock="true"
-    :showDelete="true"
-
-    @edit="edit"
-    @lock="toggleLock"
-    @delete="removeItem"
-    @view="view"
-  />
-</template>
-    </TableBase>
-      </div>
-
-      <!-- Pagination + Back Button -->
-      <div class="flex items-center justify-between mt-6 ml-5">
-        <nextpage />
-        <goback />
-      </div>
+      </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 import { setupAxiosMock } from '@/fake/mockAxios'
-import {options} from "@/components/data/departments"
+import { options } from '@/components/data/departments'
 
-
-import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
-import Navbar from '@/components/bar/navbar.vue'
-import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Select from '@/components/input/select/select.vue'
-import search from '@/components/input/search.vue'
-import TableBase from '@/components/list/listbase.vue'
+import ActionButtons from '@/components/Actionbutton/ActionButtons.vue'
 import nextpage from '@/components/list/nextpage.vue'
-import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 import goback from '@/components/Button/goback.vue'
 import dropdrow from '@/components/dropdrow/dropdrow.vue'
 import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
+import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
+import sidebar from '@/components/bar/sidebar.vue'
 
 setupAxiosMock()
-
 const router = useRouter()
 
 const searchText = ref('')
-const category = ref('')
 const rawData = ref<any[]>([])
-const selectedMain = ref("");
-const selectedSub1 = ref("");
-const selectedSub2 = ref("");
+const selectedMain = ref('')
+const selectedSub1 = ref('')
+const selectedSub2 = ref('')
 
-
-
-
-
+/** ✅ moneyTypeLabel เดิม (คงไว้) */
 const moneyTypeLabel: Record<string, string> = {
   cash: 'เงินสด',
   bank: 'เช็คธนาคาร',
   transfer: 'ฝากเข้าบัญชี',
   debtor: 'ลูกหนี้',
   other: 'อื่นๆ',
-};
+}
 
-const mapReceiptToRow = (r: any) => {
+const getFileTypeLabel = (r: any) => {
   const fileTypesArray: string[] =
     r.receiptList?.flatMap((item: any) => {
       const fromPaymentDetails = (item.paymentDetails || [])
@@ -134,64 +224,49 @@ const mapReceiptToRow = (r: any) => {
         .filter((t: string) => !!t)
 
       const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : []
-
       return [...fromPaymentDetails, ...fromReceiptItem]
     }) || []
 
-  const uniqueFileTypes = Array.from(new Set(fileTypesArray))
-  const fileType = uniqueFileTypes.length > 0
-    ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
-    : '-'
+  const unique = Array.from(new Set(fileTypesArray))
+  return unique.length > 0 ? unique.map(t => moneyTypeLabel[t] || t).join(', ') : '-'
+}
 
+/** ✅ mapReceiptToRow เดิม แต่เพิ่ม fileTypeLabel สำหรับโชว์ใน UI ใหม่ */
+const mapReceiptToRow = (r: any) => {
   return {
     id: r.projectCode,
-    statusColorClass: 'text-red-600',
     org: r.mainAffiliationName || r.affiliationName || '-',
     subOrg1: r.subAffiliationName || '-',
     project: r.fundName,
     year: '2568',
     owner: r.fullName,
-    time: "-",
-    fileType: r.receiptList.map((it: any) => it.moneyType),
-    amount: r.receiptList.reduce((sum: number, it: any) => sum + it.amount, 0) + " บาท",
-    isLocked: false,
+    fileTypeLabel: getFileTypeLabel(r),
+    // คงสถานะล็อกเหมือนเดิม
+    isLocked: r.isLocked ?? false,
+    _raw: r,
   }
 }
 
-
-/* =================================
-    2) โหลดข้อมูลจาก Fake API
-================================== */
+/* ✅ โหลดข้อมูลเดิม: กรองเฉพาะ Debtor */
 const loadData = async () => {
   try {
     const res = await axios.get('/getReceipt')
-
-    console.log('📦 Raw API Response:', res.data)
-
-    // 1) กรองเฉพาะ type = 'Debtor'
     rawData.value = res.data
       .filter((r: any) => r.moneyTypeNote === 'Debtor')
       .map((r: any) => ({
         ...r,
-
-        // 🔥 เพิ่มสถานะล็อกให้ทุกรายการ
         isLocked: r.isLocked ?? false,
       }))
-
-    console.log('✅ Filtered + Added isLocked:', rawData.value)
-
   } catch (error) {
     console.error('❌ Error loading data:', error)
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
   }
 }
-/* =================================
-    🔥 COMPUTED: กรองข้อมูลตาม Filters
-================================== */
+
+/* ✅ computed เดิม: search + cascading filters */
 const items = computed(() => {
   let filtered = [...rawData.value]
 
-  // 1️⃣ Filter ตาม Search Text
   if (searchText.value.trim()) {
     const search = searchText.value.toLowerCase()
     filtered = filtered.filter(r =>
@@ -201,36 +276,32 @@ const items = computed(() => {
     )
   }
 
-  // 2️⃣ Filter ตาม หน่วยงานหลัก (selectedMain)
   if (selectedMain.value) {
     filtered = filtered.filter(r =>
       r.mainAffiliationName === selectedMain.value ||
-      r.affiliationName === selectedMain.value  // fallback
+      r.affiliationName === selectedMain.value
     )
   }
 
-  // 3️⃣ Filter ตาม หน่วยงานย่อย (selectedSub1)
   if (selectedSub1.value) {
     filtered = filtered.filter(r =>
       r.subAffiliationName === selectedSub1.value
     )
   }
 
-  // 4️⃣ (Optional) Filter ตาม selectedSub2 ถ้ามี
   if (selectedSub2.value) {
-    // ปรับตามโครงสร้างข้อมูลจริง
     filtered = filtered.filter(r =>
       r.subAffiliationName2 === selectedSub2.value
     )
   }
 
-  console.log('🔍 Filtered Results:', filtered) // ✅ Debug
-
-  // แปลงเป็น Table Row Format
   return filtered.map(mapReceiptToRow)
 })
 
 onMounted(loadData)
+
+/* ✅ routing เดิม */
+
 
 
 const view = (item:any) => {
@@ -238,7 +309,7 @@ const view = (item:any) => {
 }
 
 const edit = (item: any) => {
-  router.push(`/edit/${item.id}`)
+    router.push(`/waybilldebtor/edit/${item.id}`)
 }
 
 const toggleLock = (item: any) => {
@@ -250,13 +321,13 @@ const toggleLock = (item: any) => {
   Swal.fire({
     position: 'top-end',
     icon: 'success',
-    title: item.isLocked ? 'ล็อกรายการสำร็จ' : 'ปลดล็อกรายการสำเร็จ',
+    title: target.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
     showConfirmButton: false,
     timer: 1500,
   })
 }
 
-
+/* ✅ remove เดิม */
 const removeItem = async (item: any) => {
   const result = await Swal.fire({
     title: 'ต้องการลบ?',
@@ -271,8 +342,77 @@ const removeItem = async (item: any) => {
 
   await axios.delete(`/deleteReceipt/${item.id}`)
   await loadData()
-
   Swal.fire('ลบแล้ว', '', 'success')
 }
+
+/* ✅ actions เดิม (คุณเติมตามของเดิมได้เลย) */
+const actions = [
+  { key: 'refresh', icon: 'refresh', label: 'รีเฟรช', handler: () => loadData() },
+]
 </script>
 
+<style>
+:global(body) {
+  font-family: 'Prompt', 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Animated Background Mesh */
+.mesh-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f0f2f5;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+  background-size: cover;
+  z-index: -2;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  opacity: 0.8;
+  animation: float 10s infinite ease-in-out;
+}
+
+.orb-1 { width: 600px; height: 600px; background: #56CCF2; top: -100px; left: -100px; animation-delay: 0s; }
+.orb-2 { width: 500px; height: 500px; background: #AC32E4; bottom: -50px; right: -100px; animation-delay: 2s; }
+.orb-3 { width: 400px; height: 400px; background: #7918F2; top: 40%; left: 40%; animation-delay: 4s; }
+
+@keyframes float {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(20px, 40px) rotate(10deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+</style>

@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed ,onBeforeUnmount } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
@@ -108,13 +108,11 @@ const groupByFaculty = (receipts: any[]) => {
 
 // แปลงข้อมูลเป็น row สำหรับแสดงในตาราง
 const mapFacultyToRow = (faculty: string, receipts: any[]) => {
-  // คำนวณยอดรวมจาก receiptList
-  const totalDebt = receipts.reduce((sum, r) => {
-    const receiptTotal = (r.receiptList || []).reduce((subSum: number, it: any) => {
-      return subSum + (Number(it.amount) || 0)
-    }, 0)
-    return sum + receiptTotal
-  }, 0)
+
+
+ const totalDebt = receipts.reduce((sum, r) => {
+  return sum + (Number(r.netTotalAmount) || 0)
+}, 0)
 
   const itemCount = receipts.length
 
@@ -155,20 +153,38 @@ const mapFacultyToRow = (faculty: string, receipts: any[]) => {
 // โหลดข้อมูลจาก API
 const loadData = async () => {
   try {
-    const res = await axios.get('/getReceipt')
+    // อ่านจาก localStorage แทน API
+    const stored = localStorage.getItem('fakeApi.receipts')
 
-    // กรองเฉพาะประเภทลูกหนี้
-    const debtorReceipts = res.data.filter((r: any) => r.moneyTypeNote === 'Debtor')
+    // ✅ ตรวจสอบว่ามีข้อมูลหรือไม่
+    if (!stored) {
+      rawData.value = []
+      console.log('⚠️ No data in localStorage')
+      return
+    }
 
+    const allReceipts = JSON.parse(stored)
+
+    // ✅ ตรวจสอบว่าเป็น Array หรือไม่
+    if (!Array.isArray(allReceipts)) {
+      rawData.value = []
+      console.log('⚠️ Data is not array')
+      return
+    }
+
+    // กรองเฉพาะ Debtor
+    const debtorReceipts = allReceipts.filter((r: any) => r.moneyTypeNote === 'Debtor')
     rawData.value = debtorReceipts
 
     console.log('✅ Loaded Debtor Receipts:', rawData.value.length)
 
   } catch (error) {
     console.error('❌ Error loading data:', error)
+    rawData.value = []
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
   }
 }
+
 
 // Computed สำหรับกรองและจัดกลุ่มข้อมูล
 const items = computed(() => {
@@ -218,7 +234,12 @@ const items = computed(() => {
   return result
 })
 
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+
+  // เมื่อ focus กลับมาหน้านี้ ให้ reload ข้อมูลใหม่
+  window.addEventListener('focus', loadData)
+})
 
 // Functions
 const view = (item: any) => {

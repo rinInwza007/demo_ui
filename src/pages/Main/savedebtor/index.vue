@@ -11,7 +11,6 @@
         </div>
 
         <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">ล้างลูกหนี้</h1>
-
       </div>
 
       <!-- Filters Row -->
@@ -19,41 +18,18 @@
         <selectdatetime />
 
         <CascadingSelect
-    v-model:main="selectedMain"
-    v-model:sub1="selectedSub1"
-    v-model:sub2="selectedSub2"
-    :options="options"
-    label="หน่วยงาน"
-  />
+          v-model:main="selectedMain"
+          v-model:sub1="selectedSub1"
+          v-model:sub2="selectedSub2"
+          :options="options"
+          label="หน่วยงาน"
+        />
 
         <search v-model="searchText" />
-
-        <!-- Action Dropdown -->
-        <div class="ml-auto">
-          <dropdrow>
-            <template #icon>
-              <i class="material-symbols-outlined text-[22px]"></i>
-            </template>
-
-            <template #menu>
-              <div
-                v-for="btn in actions"
-                :key="btn.key"
-                class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 cursor-pointer"
-                @click="btn.handler"
-              >
-                <i class="material-symbols-outlined text-[20px]">
-                  {{ btn.icon }}
-                </i>
-                <span class="text-sm">{{ btn.label }}</span>
-              </div>
-            </template>
-          </dropdrow>
-        </div>
       </div>
 
       <!-- Table List -->
-      <div class="pt-10 px-6 mt-1 ">
+      <div class="pt-10 px-6 mt-1">
         <TableBase :items="items">
       <template #actions="{ item }">
   <ActionButtons
@@ -84,24 +60,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 import { setupAxiosMock } from '@/fake/mockAxios'
-import {options} from "@/components/data/departments"
-
+import { options } from "@/components/data/departments"
 
 import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-import Select from '@/components/input/select/select.vue'
 import search from '@/components/input/search.vue'
 import TableBase from '@/components/list/listbase.vue'
 import nextpage from '@/components/list/nextpage.vue'
 import selectdatetime from '@/components/DateTime/selectdatetime.vue'
 import goback from '@/components/Button/goback.vue'
-import dropdrow from '@/components/dropdrow/dropdrow.vue'
 import dropdrowwork from '@/components/dropdrow/dropdrowwork.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 import Clearmodal from '@/components/modal/clearmodal.vue'
@@ -111,88 +84,93 @@ setupAxiosMock()
 const router = useRouter()
 
 const searchText = ref('')
-const category = ref('')
 const rawData = ref<any[]>([])
-const selectedMain = ref("");
-const selectedSub1 = ref("");
-const selectedSub2 = ref("");
+const selectedMain = ref("")
+const selectedSub1 = ref("")
+const selectedSub2 = ref("")
 
-const moneyTypeLabel: Record<string, string> = {
-  cash: 'เงินสด',
-  bank: 'เช็คธนาคาร',
-  transfer: 'ฝากเข้าบัญชี',
-  debtor: 'ลูกหนี้',
-  other: 'อื่นๆ',
-};
+// ฟังก์ชันจัดกลุ่มตามคณะ
+const groupByFaculty = (receipts: any[]) => {
+  const grouped = new Map<string, any[]>()
 
-const mapReceiptToRow = (r: any) => {
-  const fileTypesArray: string[] =
-    r.receiptList?.flatMap((item: any) => {
-      const fromPaymentDetails = (item.paymentDetails || [])
-        .map((p: any) => p.moneyType?.trim())
-        .filter((t: string) => !!t)
+  receipts.forEach(receipt => {
+    // ใช้ชื่อจริงของคณะ ไม่ใช้ '-'
+    const faculty = receipt.mainAffiliationName || receipt.affiliationName || 'ไม่ระบุหน่วยงาน'
 
-      const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : []
+    if (!grouped.has(faculty)) {
+      grouped.set(faculty, [])
+    }
+    grouped.get(faculty)!.push(receipt)
+  })
 
-      return [...fromPaymentDetails, ...fromReceiptItem]
-    }) || []
+  return grouped
+}
 
-  const uniqueFileTypes = Array.from(new Set(fileTypesArray))
-  const fileType = uniqueFileTypes.length > 0
-    ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
-    : '-'
+// แปลงข้อมูลเป็น row สำหรับแสดงในตาราง
+const mapFacultyToRow = (faculty: string, receipts: any[]) => {
+  // คำนวณยอดรวมจาก receiptList
+  const totalDebt = receipts.reduce((sum, r) => {
+    const receiptTotal = (r.receiptList || []).reduce((subSum: number, it: any) => {
+      return subSum + (Number(it.amount) || 0)
+    }, 0)
+    return sum + receiptTotal
+  }, 0)
+
+  const itemCount = receipts.length
+
+  // หา subAffiliationName ที่ไม่ซ้ำกัน
+  const subOrgs = Array.from(
+    new Set(
+      receipts
+        .map(r => r.subAffiliationName)
+        .filter(name => name && name.trim())
+    )
+  )
+
+  // หา fundName ที่ไม่ซ้ำกัน
+  const fundNames = Array.from(
+    new Set(
+      receipts
+        .map(r => r.fundName)
+        .filter(name => name && name.trim())
+    )
+  )
 
   return {
-    id: r.projectCode,
+    id: encodeURIComponent(faculty),
     statusColorClass: 'text-red-600',
-    org: r.mainAffiliationName || r.affiliationName || '-',
-    subOrg1: r.subAffiliationName || '-',
-    project: r.fundName,
+    org: faculty, // ชื่อคณะ
+    subOrg1: subOrgs.length > 0 ? subOrgs.join(', ') : `${itemCount} รายการ`, // แสดงหน่วยงานย่อยหรือจำนวนรายการ
+    project: fundNames.length > 0 ? fundNames.join(', ') : '', // ใช้ fundName
     year: '2568',
-    owner: r.fullName,
-    time: '-',
-    fileType,
-    amount: r.netTotalAmount
-      ? Number(String(r.netTotalAmount).replace(/,/g, '')).toLocaleString('th-TH', {
-          minimumFractionDigits: 2,
-        }) + ' บาท'
-      : '0.00 บาท',
-
-    // 🔥🔥🔥 สำคัญที่สุด — ตรงนี้ต้องใช้ค่าจาก rawData
-    isLocked: r.isLocked ?? false,
+    owner: receipts[0]?.fullName || '', // ชื่อผู้รับผิดชอบคนแรก
+    time: '', // ไม่ใช้ '-'
+    fileType: 'ลูกหนี้',
+    amount: totalDebt.toLocaleString('th-TH', {
+      minimumFractionDigits: 2,
+    }) + ' บาท',
   }
 }
 
-
-/* =================================
-    2) โหลดข้อมูลจาก Fake API
-================================== */
+// โหลดข้อมูลจาก API
 const loadData = async () => {
   try {
     const res = await axios.get('/getReceipt')
 
-    console.log('📦 Raw API Response:', res.data)
+    // กรองเฉพาะประเภทลูกหนี้
+    const debtorReceipts = res.data.filter((r: any) => r.moneyTypeNote === 'Debtor')
 
-    // 1) กรองเฉพาะ type = 'Debtor'
-    rawData.value = res.data
-      .filter((r: any) => r.moneyTypeNote === 'Debtor')
-      .map((r: any) => ({
-        ...r,
+    rawData.value = debtorReceipts
 
-        // 🔥 เพิ่มสถานะล็อกให้ทุกรายการ
-        isLocked: r.isLocked ?? false,
-      }))
-
-    console.log('✅ Filtered + Added isLocked:', rawData.value)
+    console.log('✅ Loaded Debtor Receipts:', rawData.value.length)
 
   } catch (error) {
     console.error('❌ Error loading data:', error)
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
   }
 }
-/* =================================
-    🔥 COMPUTED: กรองข้อมูลตาม Filters
-================================== */
+
+// Computed สำหรับกรองและจัดกลุ่มข้อมูล
 const items = computed(() => {
   let filtered = [...rawData.value]
 
@@ -200,46 +178,49 @@ const items = computed(() => {
   if (searchText.value.trim()) {
     const search = searchText.value.toLowerCase()
     filtered = filtered.filter(r =>
-      r.projectCode?.toLowerCase().includes(search) ||
+      r.mainAffiliationName?.toLowerCase().includes(search) ||
+      r.affiliationName?.toLowerCase().includes(search) ||
       r.fullName?.toLowerCase().includes(search) ||
       r.fundName?.toLowerCase().includes(search)
     )
   }
 
-  // 2️⃣ Filter ตาม หน่วยงานหลัก (selectedMain)
+  // 2️⃣ Filter ตาม หน่วยงานหลัก
   if (selectedMain.value) {
     filtered = filtered.filter(r =>
       r.mainAffiliationName === selectedMain.value ||
-      r.affiliationName === selectedMain.value  // fallback
+      r.affiliationName === selectedMain.value
     )
   }
 
-  // 3️⃣ Filter ตาม หน่วยงานย่อย (selectedSub1)
+  // 3️⃣ Filter ตาม หน่วยงานย่อย
   if (selectedSub1.value) {
     filtered = filtered.filter(r =>
       r.subAffiliationName === selectedSub1.value
     )
   }
 
-  // 4️⃣ (Optional) Filter ตาม selectedSub2 ถ้ามี
   if (selectedSub2.value) {
-    // ปรับตามโครงสร้างข้อมูลจริง
     filtered = filtered.filter(r =>
       r.subAffiliationName2 === selectedSub2.value
     )
   }
 
-  console.log('🔍 Filtered Results:', filtered) // ✅ Debug
+  // จัดกลุ่มตามคณะ
+  const grouped = groupByFaculty(filtered)
 
-  // แปลงเป็น Table Row Format
-  return filtered.map(mapReceiptToRow)
+  // แปลงเป็น array สำหรับแสดงในตาราง
+  const result: any[] = []
+  grouped.forEach((receipts, faculty) => {
+    result.push(mapFacultyToRow(faculty, receipts))
+  })
+
+  return result
 })
 
 onMounted(loadData)
 
-/* =================================
-    3) ACTION FUNCTIONS
-================================== */
+// Functions
 const view = (item: any) => {
   router.push(`/pdfpage/${item.id}`)
 }
@@ -269,23 +250,8 @@ const toggleLock = (item: any) => {
   })
 }
 
-
-const removeItem = async (item: any) => {
-  const result = await Swal.fire({
-    title: 'ต้องการลบ?',
-    text: `${item.project}`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'ลบเลย',
-    cancelButtonText: 'ยกเลิก',
-  })
-
-  if (!result.isConfirmed) return
-
-  await axios.delete(`/deleteReceipt/${item.id}`)
-  await loadData()
-
-  Swal.fire('ลบแล้ว', '', 'success')
+const clearDebtor = (item: any) => {
+  // ไปหน้าล้างลูกหนี้
+  router.push(`/cleardebtor/${item.id}`)
 }
 </script>
-

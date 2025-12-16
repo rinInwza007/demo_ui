@@ -1,216 +1,294 @@
 <template>
-  <div>
-    <Navbar />
-    <SecondNavbar />
+  <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
+    <div id="app" class="relative w-full h-screen flex">
+      <!-- Background Elements -->
+      <div class="mesh-bg"></div>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
 
-    <!-- Header -->
-    <div class="bg-white border rounded-2xl p-8 space-y-6 ml-5 mr-5">
-      <h1 class="text-3xl font-bold text-gray-800">รายละเอียดหนี้</h1>
+      <!-- Sidebar -->
+      <sidebar />
 
-      <!-- Debtor Info -->
-      <div class="space-y-2">
-        <p class="text-xl text-gray-700">
-          <span class="font-semibold">หน่วยงาน: </span>
-          {{ debtor.fullName }}
-        </p>
+      <!-- Main Content -->
+      <main class="flex-1 flex flex-col relative z-10 min-h-0">
+        <!-- Header Bar -->
+        <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2 flex-shrink-0">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <i class="ph ph-receipt"></i>
+              รายละเอียดหนี้
+            </h1>
+            <p class="text-xs text-slate-800 mt-0.5">จัดการและติดตามรายละเอียดหนี้ของหน่วยงาน</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
+              <i class="ph ph-bell text-xl"></i>
+            </button>
+            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
+              <i class="ph ph-gear text-xl"></i>
+            </button>
+          </div>
+        </header>
 
-        <p class="text-xl text-gray-700">
-          <span class="font-semibold">ยอดหนี้รวม: </span>
-          <span class="text-red-600 font-bold text-2xl">
-            {{ formatMoney(debtor.totalDebt) }} บาท
-          </span>
-        </p>
+        <!-- Content Area -->
+        <div class="flex-1 px-8 pb-8 overflow-y-auto">
+          <div class="max-w-7xl mx-auto space-y-6">
 
-        <p class="text-lg text-gray-600">
-          <span class="font-semibold">จำนวนรายการ: </span>
-          {{ debtor.items.length }} รายการ
-        </p>
-      </div>
+            <!-- Debtor Info Card -->
+            <div class="glass-panel rounded-2xl p-6 shadow-lg">
+              <div class="space-y-4">
+                <div class="flex items-center justify-between border-b border-white/40 pb-4">
+                  <span class="text-sm font-medium text-slate-600">หน่วยงาน</span>
+                  <span class="text-lg font-semibold text-slate-900">{{ debtor.fullName }}</span>
+                </div>
+
+                <div class="flex items-center justify-between border-b border-white/40 pb-4">
+                  <span class="text-sm font-medium text-slate-600">ยอดหนี้รวม</span>
+                  <span class="text-2xl font-bold text-red-600">
+                    {{ formatMoney(debtor.totalDebt) }} <span class="text-base">บาท</span>
+                  </span>
+                </div>
+
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-slate-600">จำนวนรายการ</span>
+                  <span class="text-lg font-semibold text-slate-900">
+                    {{ debtor.items.length }} <span class="text-sm text-slate-500">รายการ</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Debt Items Table -->
+            <div class="glass-panel rounded-2xl shadow-lg overflow-hidden">
+              <div class="px-6 py-4 border-b border-white/40 bg-white/20">
+                <h2 class="text-xl font-bold text-slate-900">รายการหนี้ที่ยังไม่ชำระ</h2>
+              </div>
+
+              <!-- Table Header -->
+  <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+
+  <div class="col-span-2">รายการ</div>
+  <div class="col-span-2">หน่วยงานย่อย</div>
+  <div class="col-span-2">ผู้ทำรายการ</div>
+  <div class="col-span-2 text-right pr-8">จำนวนเงิน</div>
+  <div class="col-span-2 text-center px-4">วันที่</div>
+  <div class="col-span-1 pl-6">หมายเหตุ</div>
+  <div class="col-span-1 text-center">เลือก</div>
+</div>
+
+
+<div
+  v-for="item in debtor.items"
+  :key="item.id"
+  class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl
+         transition-all duration-200 border"
+  :class="item.selected
+    ? 'bg-green-50 border-green-300'
+    : 'border-transparent hover:border-white/50 hover:bg-white/50'"
+>
+  <!-- Checkbox -->
+ <!-- Select Button (แทน checkbox) -->
+
+
+
+  <!-- Item Name -->
+  <div class="col-span-2">
+    <div class="font-medium text-slate-800 text-sm">{{ item.title }}</div>
+  </div>
+
+  <!-- Sub Org -->
+  <div class="col-span-2">
+    <div class="text-sm text-slate-600">{{ item.subOrg }}</div>
+  </div>
+
+  <!-- Full Name -->
+  <div class="col-span-2 flex items-center gap-2">
+    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
+      {{ item.fullName.charAt(0) }}
     </div>
+    <span class="text-sm text-slate-700 truncate">{{ item.fullName }}</span>
+  </div>
 
-    <!-- Debt Table -->
-    <div class="bg-white border rounded-2xl shadow-lg p-6 mt-6 ml-5 mr-5">
-      <h2 class="text-2xl font-semibold pb-4 border-b">รายการหนี้ที่ยังไม่ชำระ</h2>
+  <!-- Amount -->
+  <div class="col-span-2 text-right pr-8">
+    <div class="font-bold text-red-600 font-mono text-sm">
+      {{ formatMoney(item.amount) }}
+    </div>
+    <div class="text-[10px] text-slate-400">บาท</div>
+  </div>
 
-      <div class="table-responsive overflow-x-auto mt-6">
-        <table class="w-full table-fixed">
-          <thead>
-            <tr>
-              <th class="w-[150px] px-2 py-3 bg-primary-50 text-center text-sm">รายการ</th>
-              <th class="w-[150px] px-2 py-3 bg-primary-50 text-center text-sm">หน่วยงานย่อย</th>
-              <th class="w-[120px] px-2 py-3 bg-primary-50 text-center text-sm">ชื่อผู้ทำรายการ</th>
-              <th class="w-[120px] px-2 py-3 bg-primary-50 text-center text-sm">จำนวนเงิน</th>
-              <th class="w-[100px] px-2 py-3 bg-primary-50 text-center text-sm">วันที่สร้าง</th>
-              <th class="w-[150px] px-2 py-3 bg-primary-50 text-center text-sm">หมายเหตุ</th>
-              <th class="w-[100px] px-2 py-3 bg-primary-50 text-center text-sm">สถานะ</th>
-              <th class="w-[80px] px-2 py-3 bg-primary-50 text-center text-sm"></th>
-            </tr>
-          </thead>
+  <!-- Date -->
+  <div class="col-span-2 text-center px-4">
+    <div class="text-xs text-slate-600">
+      {{ item.createdAt }}
+    </div>
+  </div>
 
-          <tbody>
-            <tr
-              v-for="item in debtor.items"
-              :key="item.id"
-              class="border-b border-gray-300"
-              :class="{ 'bg-green-50': item.selected }"
-            >
-              <td class="px-2 py-3 text-center text-sm">{{ item.title }}</td>
-              <td class="px-2 py-3 text-center text-sm text-gray-600">{{ item.subOrg }}</td>
-              <td class="px-2 py-3 text-center text-sm text-gray-600">{{ item.fullName }}</td>
-              <td class="px-2 py-3 text-center font-semibold text-red-600">{{ formatMoney(item.amount) }}</td>
-              <td class="px-2 py-3 text-center text-sm">{{ item.createdAt }}</td>
-              <td class="px-2 py-3 text-center text-sm">{{ item.note }}</td>
+  <!-- Note -->
+  <div class="col-span-1 pl-6">
+    <div class="text-sm text-slate-600 truncate">
+      {{ item.note }}
+    </div>
+  </div>
+  <div class="col-span-1 flex justify-center">
+  <button @click="toggleSelect(item)">
+    <i
+      class="material-symbols-outlined text-2xl transition-colors"
+      :class="item.selected ? 'text-green-600' : 'text-red-600'"
+    >
+      {{ item.selected ? 'check_circle' : 'cancel' }}
+    </i>
+  </button>
+</div>
+</div>
 
-              <!-- Status -->
-              <td class="px-2 py-3 text-center">
-                <span
-                  class="px-3 py-1 rounded-full text-sm font-medium"
-                  :class="{
-                    'bg-yellow-100 text-yellow-700': !item.selected,
-                    'bg-green-100 text-green-700': item.selected
-                  }"
+            </div>
+
+            <!-- Payment Section -->
+            <div class="glass-panel rounded-2xl p-6 shadow-lg">
+              <button
+                class="glass-button-primary px-6 py-3 rounded-xl text-sm font-medium flex items-center gap-2 transition-all active:scale-95 mb-6"
+                @click="openModalForRow(0)"
+              >
+                <i class="ph ph-plus-circle text-lg"></i>
+                <span>เพิ่มข้อมูลการชำระเงิน</span>
+              </button>
+
+              <!-- Payment History -->
+              <div v-if="paymentHistory.length > 0" class="space-y-3 mb-6">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b border-white/40 pb-3">
+                  <i class="ph ph-clock-clockwise text-xl"></i>
+                  ประวัติการชำระเงิน
+                </h3>
+
+                <div
+                  v-for="payment in paymentHistory"
+                  :key="payment.id"
+                  class="glass-input rounded-xl p-4 hover:shadow-md transition-all"
                 >
-                  {{ item.selected ? 'ชำระแล้ว' : 'ค้างชำระ' }}
-                </span>
-              </td>
+                  <div class="flex items-center justify-between mb-3">
+                    <span
+                      class="px-3 py-1 rounded-lg text-xs font-medium border"
+                      :class="{
+                        'bg-green-50/50 text-green-700 border-green-100': payment.type === 'เงินสด',
+                        'bg-blue-50/50 text-blue-700 border-blue-100': payment.type === 'เช็คธนาคาร',
+                        'bg-orange-50/50 text-orange-700 border-orange-100': payment.type === 'ฝากเข้าบัญชี',
+                        'bg-gray-50/50 text-gray-700 border-gray-100': !['เงินสด', 'เช็คธนาคาร', 'ฝากเข้าบัญชี'].includes(payment.type)
+                      }"
+                    >
+                      {{ payment.type }}
+                    </span>
+                    <span class="text-xs text-slate-500">{{ payment.timestamp }}</span>
+                  </div>
 
-              <td class="px-2 py-3 text-center">
-                <button @click="toggleSelect(item)">
-                  <i
-                    class="material-symbols-outlined"
-                    :class="item.selected ? 'text-green-600' : 'text-red-600'"
-                  >
-                    {{ item.selected ? 'check_circle' : 'cancel' }}
-                  </i>
+                  <div class="space-y-2 text-sm mb-3">
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">เลขที่อ้างอิง:</span>
+                      <span class="text-slate-700 font-medium">{{ payment.referenceNo }}</span>
+                    </div>
+
+                    <div v-if="payment.AccountName" class="flex justify-between items-center">
+                      <span class="text-slate-500">ชื่อบัญชี:</span>
+                      <span class="text-slate-700">{{ payment.AccountName }}</span>
+                    </div>
+
+                    <div v-if="payment.BankName" class="flex justify-between items-center">
+                      <span class="text-slate-500">ธนาคาร:</span>
+                      <span class="text-slate-700">{{ payment.BankName }}</span>
+                    </div>
+
+                    <div v-if="payment.AccountNum" class="flex justify-between items-center">
+                      <span class="text-slate-500">เลขที่บัญชี:</span>
+                      <span class="text-slate-700">{{ payment.AccountNum }}</span>
+                    </div>
+
+                    <div v-if="payment.NumCheck" class="flex justify-between items-center">
+                      <span class="text-slate-500">เลขที่เช็ค:</span>
+                      <span class="text-slate-700">{{ payment.NumCheck }}</span>
+                    </div>
+                  </div>
+
+                  <div class="border-t border-slate-200 pt-3 flex justify-between items-center">
+                    <span class="font-semibold text-slate-800">ยอดชำระ</span>
+                    <span class="font-bold text-lg text-red-600">
+                      - {{ formatNumber(payment.amount) }} ฿
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Total Paid -->
+                <div class="glass-input rounded-xl p-4 border-2 border-blue-200/50">
+                  <div class="flex justify-between items-center">
+                    <span class="text-lg font-bold text-slate-800">ยอดชำระรวม</span>
+                    <span class="text-xl font-bold text-red-600">
+                      - {{ formatNumber(totalPaid) }} ฿
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Remaining Debt -->
+              <div
+  class="rounded-xl p-6 shadow-lg mb-4"
+  style="background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);"
+>
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
+    <div class="flex items-center gap-3">
+      <i class="ph-fill ph-wallet text-3xl"></i>
+      <span class="text-xl font-bold">ยอดหนี้ที่เลือก</span>
+    </div>
+    <span class="text-3xl font-bold">
+      {{ formatNumber(remainingAmount) }} บาท
+    </span>
+  </div>
+</div>
+
+
+              <!-- Action Button -->
+              <div class="flex justify-end">
+                <button
+                  class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all active:scale-95"
+                  style="background: linear-gradient(135deg, #10B981 0%, #059669 100%);"
+                  @click="clearAllDebts"
+                >
+                  <span class="flex items-center gap-2 text-white">
+                    <i class="ph ph-eraser text-lg"></i>
+                    ยืนยันการล้างหนี้
+                  </span>
                 </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Payment Section -->
-    <div class="bg-white border rounded-2xl shadow-lg p-6 mt-6 ml-5 mr-5">
-
-      <button
-        class="w-full sm:w-32 px-4 py-2 bg-[#7E22CE] text-white rounded-md"
-        @click="openModalForRow(0)"
-      >
-        เพิ่มข้อมูลการชำระเงิน
-      </button>
-
-      <Modal
-        :show="showModal === 0"
-        :items="rowItems[0]"
-        :usedAccounts="usedAccounts"
-        @close="showModal = null"
-        @update:selected="applyPayment"
-      />
-
-      <!-- แสดงรายการชำระเงินทั้งหมด -->
-      <div v-if="paymentHistory.length > 0" class="bg-white border border-gray-200 rounded-xl p-6 mt-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
-          ประวัติการชำระเงิน
-        </h3>
-
-        <div class="space-y-4">
-          <div
-            v-for="payment in paymentHistory"
-            :key="payment.id"
-            class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-          >
-            <div class="font-semibold text-gray-700 mb-3 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
-                  {{ payment.type }}
-                </span>
-              </div>
-              <span class="text-xs text-gray-500">{{ payment.timestamp }}</span>
-            </div>
-
-            <div class="border-t border-gray-200 pt-3 space-y-2">
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-gray-600">เลขที่อ้างอิง:</span>
-                <span class="text-gray-700 font-medium">{{ payment.referenceNo }}</span>
-              </div>
-
-              <!-- แสดงข้อมูลเพิ่มเติมตามประเภท -->
-              <div v-if="payment.AccountName" class="flex justify-between items-center text-sm">
-                <span class="text-gray-600">ชื่อบัญชี:</span>
-                <span class="text-gray-700">{{ payment.AccountName }}</span>
-              </div>
-
-              <div v-if="payment.BankName" class="flex justify-between items-center text-sm">
-                <span class="text-gray-600">ธนาคาร:</span>
-                <span class="text-gray-700">{{ payment.BankName }}</span>
-              </div>
-
-              <div v-if="payment.AccountNum" class="flex justify-between items-center text-sm">
-                <span class="text-gray-600">เลขที่บัญชี:</span>
-                <span class="text-gray-700">{{ payment.AccountNum }}</span>
-              </div>
-
-              <div v-if="payment.NumCheck" class="flex justify-between items-center text-sm">
-                <span class="text-gray-600">เลขที่เช็ค:</span>
-                <span class="text-gray-700">{{ payment.NumCheck }}</span>
-              </div>
-
-              <div class="border-t border-gray-300 my-2"></div>
-
-              <div class="flex justify-between items-center">
-                <span class="font-bold text-gray-800">ยอดชำระ:</span>
-                <span class="font-bold text-lg text-red-600">
-                  - {{ formatNumber(payment.amount) }} ฿
-                </span>
               </div>
             </div>
+
           </div>
         </div>
-
-        <!-- สรุปยอดชำระรวม -->
-        <div class="mt-4 pt-4 border-t-2 border-gray-300">
-          <div class="flex justify-between items-center">
-            <span class="text-lg font-bold text-gray-800">ยอดชำระรวม:</span>
-            <span class="text-xl font-bold text-red-600">
-              - {{ formatNumber(totalPaid) }} ฿
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- กล่องม่วง -->
-      <div class="bg-[#7E22CE] border rounded p-6 mb-6 mt-6">
-        <div class="flex justify-between items-center">
-          <span class="text-2xl font-bold text-white">ยอดหนี้คงเหลือ</span>
-          <span class="text-3xl font-bold text-white">
-            {{ formatNumber(netTotalAmount) }} บาท
-          </span>
-        </div>
-      </div>
-
-      <div class="text-right mt-6">
-        <button class="px-6 py-3 bg-green-600 text-white rounded-xl" @click="clearAllDebts">
-          ล้างหนี้ทั้งหมด
-        </button>
-      </div>
+      </main>
     </div>
+            <Teleport to="body">
+      <div v-if="showModal !== null" class="modal-portal-container">
+                      <Modal
+                :show="showModal === 0"
+                :items="rowItems[0]"
+                :usedAccounts="usedAccounts"
+                @close="showModal = null"
+                @update:selected="applyPayment"
+              />
+              </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { reactive, computed, ref, onMounted } from "vue"
 import { useRoute } from "vue-router"
-import Navbar from "@/components/bar/navbar.vue"
-import SecondNavbar from "@/components/bar/secoudnavbar.vue"
+import sidebar from '@/components/bar/sidebar.vue'
 import Modal from "@/components/modal/clearmodal.vue"
 import { useRowManager2 } from "@/components/Function/FuncClear.js"
 import Swal from "sweetalert2"
+
 const { showModal, rowItems, openModalForRow } = useRowManager2()
 const route = useRoute()
 
-// ฟังก์ชันโหลดข้อมูลจาก localStorage
 const loadReceipts = () => {
   try {
     const raw = localStorage.getItem('fakeApi.receipts')
@@ -238,18 +316,35 @@ const formatDate = (date) => {
   })
 }
 
-// ข้อมูลลูกหนี้
 const debtor = reactive({
   fullName: "",
   totalDebt: 0,
   items: []
 })
+// ยอดหนี้ที่เลือก (จากติ๊ก)
+const selectedTotalAmount = computed(() =>
+  debtor.items
+    .filter(i => i.selected)
+    .reduce((sum, i) => sum + i.amount, 0)
+)
+
+// 💜 ยอดเงินที่ถูกจ่ายไปแล้ว (จาก Modal)
+const paidAmount = ref(0)
+
+// 💜 ยอดคงเหลือ (แสดงในกล่องม่วง)
+const remainingAmount = computed(() =>
+  Math.max(0, selectedTotalAmount.value - paidAmount.value)
+)
+function toggleSelect(item) {
+  item.selected = !item.selected
+}
+
+
 
 const netTotalAmount = ref(0)
 const paymentHistory = ref([])
 const usedAccounts = ref([])
 
-// โหลดข้อมูลตอน mounted
 onMounted(() => {
   // ดึง affiliationName จาก URL params
   const affiliationName = route.params.id ? decodeURIComponent(route.params.id) : null
@@ -296,7 +391,6 @@ onMounted(() => {
   }
 })
 
-// คำนวณยอดชำระรวมทั้งหมด
 const totalPaid = computed(() => {
   return paymentHistory.value.reduce((sum, payment) => {
     return sum + payment.amount
@@ -304,25 +398,18 @@ const totalPaid = computed(() => {
 })
 
 function applyPayment({ selected, totalFee }) {
-  console.log("ค่าที่ส่งกลับจาก Modal:", selected, totalFee)
+  if (!totalFee || isNaN(totalFee)) return
 
-  if (!totalFee || isNaN(totalFee)) {
-    console.warn("totalFee ไม่ใช่ตัวเลข!")
-    return
-  }
+  // ✅ ตรงนี้คือหัวใจ
+  paidAmount.value += totalFee
 
-  // หักยอดหนี้
-  netTotalAmount.value = Math.max(0, netTotalAmount.value - totalFee)
-
-  // เพิ่มรายการชำระเงินเข้า history (แยกแต่ละ item ที่ checked)
   selected.forEach(item => {
-    // เก็บบัญชีที่ถูกใช้ไปแล้ว
     if (item.AccountName && !usedAccounts.value.includes(item.AccountName)) {
       usedAccounts.value.push(item.AccountName)
     }
 
     paymentHistory.value.push({
-      id: Date.now() + Math.random(), // สร้าง unique id
+      id: Date.now() + Math.random(),
       type: item.type || item.paymentType || 'ไม่ระบุ',
       amount: parseFloat(item.amount) || 0,
       referenceNo: item.referenceNo || '-',
@@ -333,15 +420,9 @@ function applyPayment({ selected, totalFee }) {
       timestamp: new Date().toLocaleString('th-TH')
     })
   })
-
-  console.log("✅ Payment History:", paymentHistory.value)
-  console.log("✅ Used Accounts:", usedAccounts.value)
 }
 
-// Toggle select
-const toggleSelect = (item) => { item.selected = !item.selected }
 
-// format number
 const formatNumber = (num) => Number(num).toLocaleString("th-TH", { minimumFractionDigits: 2 })
 const formatMoney = (num) => formatNumber(num)
 
@@ -352,10 +433,14 @@ function clearAllDebts() {
     showCancelButton: true,
     cancelButtonText: 'ยกเลิก',
     confirmButtonText: 'ยืนยัน',
+    confirmButtonColor: '#7E22CE',
+    cancelButtonColor: '#6B7280',
     reverseButtons: true
   }).then((result) => {
     if (result.isConfirmed) {
-      netTotalAmount.value = 0
+      const remainingDebt = debtor.totalDebt - totalPaid.value
+      netTotalAmount.value = Math.max(0, remainingDebt)
+
       paymentHistory.value = []
       usedAccounts.value = []
 
@@ -371,7 +456,95 @@ function clearAllDebts() {
 }
 </script>
 
-<style>
-.ts-wrapper { width: 100% !important; margin-top: .5rem; }
-.ts-control { height: 42px; border-radius: 8px; padding: 6px 0; border-color: #d1d5db; }
+<style scoped>
+body {
+  font-family: 'Prompt', 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.mesh-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f0f2f5;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+  background-size: cover;
+  z-index: -2;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  opacity: 0.8;
+  animation: float 10s infinite ease-in-out;
+}
+
+.orb-1 { width: 600px; height: 600px; background: #56CCF2; top: -100px; left: -100px; animation-delay: 0s; }
+.orb-2 { width: 500px; height: 500px; background: #AC32E4; bottom: -50px; right: -100px; animation-delay: 2s; }
+.orb-3 { width: 400px; height: 400px; background: #7918F2; top: 40%; left: 40%; animation-delay: 4s; }
+
+@keyframes float {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(20px, 40px) rotate(10deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.glass-button-primary {
+  background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+}
+
+.glass-button-primary:hover {
+  box-shadow: 0 6px 20px rgba(126, 34, 206, 0.4);
+  transform: translateY(-1px);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.2);
+}
 </style>

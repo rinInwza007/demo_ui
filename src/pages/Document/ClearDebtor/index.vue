@@ -328,10 +328,10 @@ const selectedTotalAmount = computed(() =>
     .reduce((sum, i) => sum + i.amount, 0)
 )
 
-// 💜 ยอดเงินที่ถูกจ่ายไปแล้ว (จาก Modal)
+//  ยอดเงินที่ถูกจ่ายไปแล้ว (จาก Modal)
 const paidAmount = ref(0)
 
-// 💜 ยอดคงเหลือ (แสดงในกล่องม่วง)
+// ยอดคงเหลือ (แสดงในกล่องม่วง)
 const remainingAmount = computed(() =>
   Math.max(0, selectedTotalAmount.value - paidAmount.value)
 )
@@ -427,30 +427,93 @@ const formatNumber = (num) => Number(num).toLocaleString("th-TH", { minimumFract
 const formatMoney = (num) => formatNumber(num)
 
 function clearAllDebts() {
+  // ตรวจสอบว่ามีการชำระเงินหรือไม่
+  if (paymentHistory.value.length === 0) {
+    Swal.fire({
+      title: 'ไม่สามารถล้างหนี้ได้',
+      text: 'กรุณาเพิ่มข้อมูลการชำระเงินก่อน',
+      icon: 'warning',
+      confirmButtonColor: '#7E22CE'
+    })
+    return
+  }
+
+  // ตรวจสอบว่ามีรายการที่เลือกหรือไม่
+  const selectedItems = debtor.items.filter(i => i.selected)
+  if (selectedItems.length === 0) {
+    Swal.fire({
+      title: 'ไม่สามารถล้างหนี้ได้',
+      text: 'กรุณาเลือกรายการหนี้ที่ต้องการล้างก่อน',
+      icon: 'warning',
+      confirmButtonColor: '#7E22CE'
+    })
+    return
+  }
+
   Swal.fire({
     title: 'ต้องการล้างหนี้ทั้งหมดหรือไม่?',
     icon: 'warning',
     showCancelButton: true,
     cancelButtonText: 'ยกเลิก',
-    confirmButtonText: 'ยืนยัน',
+    confirmButtonText: 'ยืนยันการล้างหนี้',
     confirmButtonColor: '#7E22CE',
     cancelButtonColor: '#6B7280',
     reverseButtons: true
   }).then((result) => {
     if (result.isConfirmed) {
-      const remainingDebt = debtor.totalDebt - totalPaid.value
-      netTotalAmount.value = Math.max(0, remainingDebt)
+      try {
+        const receipts = loadReceipts()
+        let remainingPayment = totalPaid.value // ยอดเงินที่จ่ายมา
+        const updatedReceipts = []
 
-      paymentHistory.value = []
-      usedAccounts.value = []
+        receipts.forEach(r => {
+          const receiptId = r.projectCode || Math.random().toString()
+          const isSelected = selectedItems.some(item => item.id === receiptId)
 
-      Swal.fire({
-        title: 'ล้างหนี้สำเร็จ',
-        text: 'ข้อมูลทั้งหมดถูกล้างเรียบร้อย',
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-      })
+          // ถ้าไม่ใช่รายการที่เลือก หรือไม่ใช่ Debtor ของหน่วยงานนี้ -> เก็บไว้
+          if (!isSelected || r.moneyTypeNote !== 'Debtor' || r.mainAffiliationName !== debtor.fullName) {
+            updatedReceipts.push(r)
+            return
+          }
+
+          // รายการที่เลือก -> ลดยอดหนี้ตามที่จ่าย
+          const currentDebt = Number(r.netTotalAmount || 0)
+
+          if (remainingPayment >= currentDebt) {
+            // จ่ายครบ -> ลบรายการนี้ทิ้ง
+            remainingPayment -= currentDebt
+          } else if (remainingPayment > 0) {
+            // จ่ายไม่ครบ -> ลดยอดหนี้
+            r.netTotalAmount = currentDebt - remainingPayment
+            remainingPayment = 0
+            updatedReceipts.push(r)
+          } else {
+            // ไม่มีเงินเหลือจ่ายแล้ว -> เก็บรายการไว้เหมือนเดิม
+            updatedReceipts.push(r)
+          }
+        })
+
+        // บันทึกกลับเข้า localStorage
+        localStorage.setItem('fakeApi.receipts', JSON.stringify(updatedReceipts))
+
+        Swal.fire({
+          title: 'ล้างหนี้สำเร็จ',
+
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          window.location.href = '/indexsavedebtor'
+        })
+      } catch (error) {
+        console.error('Error clearing debts:', error)
+        Swal.fire({
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถล้างหนี้ได้ กรุณาลองใหม่อีกครั้ง',
+          icon: 'error',
+          confirmButtonColor: '#7E22CE'
+        })
+      }
     }
   })
 }

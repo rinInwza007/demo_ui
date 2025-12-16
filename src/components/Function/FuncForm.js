@@ -12,7 +12,7 @@ const morelist = ref([
     note: '',
     fee: '',
     selectedItems: [],
-    
+
   },
 ])
 const keywordInputs = []
@@ -40,29 +40,29 @@ const allowOnlyDigits = (e) => {
   }
 }
 const defaultItems = [
-  { 
-    name: 'cash', 
-    checked: false, 
-    amount: '', 
+  {
+    name: 'cash',
+    checked: false,
+    amount: '',
     referenceNo: '',
     type: 'เงินสด',
     paymentType: 'เงินสด'
   },
-  { 
-    name: 'bank', 
-    checked: false, 
-    amount: '', 
+  {
+    name: 'bank',
+    checked: false,
+    amount: '',
     referenceNo: '',
     NumCheck: '',
     type: 'เช็คธนาคาร',
     paymentType: 'เช็คธนาคาร'
   },
-  { 
-    name: 'transfer', 
-    checked: false, 
-    amount: '', 
+  {
+    name: 'transfer',
+    checked: false,
+    amount: '',
     referenceNo: '',
-    AccountNum: '', 
+    AccountNum: '',
     AccountName: '',
     type: 'ฝากเข้าบัญชี',
     paymentType: 'ฝากเข้าบัญชี'
@@ -71,7 +71,7 @@ const defaultItems = [
 
 const addRow = () => {
   morelist.value.push({
-    id: morelist.value.length + 1, 
+    id: morelist.value.length + 1,
     itemName: null,
     referenceNo: '',
     note: '',
@@ -93,28 +93,49 @@ const removeRow = (index) => {
 
 const showModal = ref(null)
 const rowItems = ref([])
-
 const openModalForRow = (index) => {
   // ถ้ายังไม่เคยมี selectedItems ให้ใช้ defaultItems
   if (!morelist.value[index].selectedItems || morelist.value[index].selectedItems.length === 0) {
     morelist.value[index].selectedItems = JSON.parse(JSON.stringify(defaultItems))
   }
-  
+
   // Merge: เอา defaultItems มาก่อน แล้ว override ด้วยข้อมูลที่มีอยู่
   const merged = defaultItems.map(defaultItem => {
-    const existingItem = morelist.value[index].selectedItems.find(
-      item => item.name === defaultItem.name
-    )
-    
-    // ถ้ามีข้อมูลเดิมอยู่ ให้ใช้ข้อมูลเดิม
+    // หา existing item โดยเทียบทั้ง name และ moneyType
+    const existingItem = morelist.value[index].selectedItems.find(item => {
+      // เทียบ name ตรงๆ
+      if (item.name === defaultItem.name) return true
+
+      // หรือเทียบผ่าน moneyType mapping
+      const typeMap = {
+        'cash': 'cash',
+        'เงินสด': 'cash',
+        'bank': 'bank',
+        'เช็คธนาคาร': 'bank',
+        'transfer': 'transfer',
+        'ฝากเข้าบัญชี': 'transfer'
+      }
+
+      const itemType = typeMap[item.moneyType] || typeMap[item.type] || typeMap[item.name]
+      const defaultType = defaultItem.name
+
+      return itemType === defaultType
+    })
+
+    // ถ้ามีข้อมูลเดิมอยู่ ให้ใช้ข้อมูลเดิม พร้อมเติม name ให้ตรงกับ defaultItem
     if (existingItem) {
-      return { ...existingItem }
+      return {
+        ...existingItem,
+        name: defaultItem.name, // ให้ name ตรงกับ defaultItem เสมอ
+        paymentType: defaultItem.paymentType,
+        type: defaultItem.type
+      }
     }
-    
+
     // ถ้าไม่มี ให้ใช้ defaultItem
     return { ...defaultItem }
   })
-  
+
   rowItems.value[index] = merged
   showModal.value = index
 }
@@ -123,7 +144,7 @@ const openModalForRow = (index) => {
 
 const updateSelectedItems = (index, selected) => {
   console.log('📥 Received from Modal:', selected)
-  
+
   morelist.value[index].selectedItems = selected.map(item => {
     // ✅ สร้าง object ใหม่ที่มีข้อมูลครบถ้วน
     const mappedItem = {
@@ -146,7 +167,7 @@ const updateSelectedItems = (index, selected) => {
       mappedItem.AccountNum = item.AccountNum || item.accountNumber || ''
       mappedItem.AccountName = item.AccountName || item.accountName || ''
       mappedItem.BankName = item.BankName || item.bankName || ''
-      
+
       mappedItem.accountNumber = item.accountNumber || item.AccountNum || ''
       mappedItem.accountName = item.accountName || item.AccountName || ''
       mappedItem.bankName = item.bankName || item.BankName || ''
@@ -154,7 +175,7 @@ const updateSelectedItems = (index, selected) => {
 
     return mappedItem
   })
-  
+
   console.log('💾 Saved to morelist:', morelist.value[index].selectedItems)
 }
 
@@ -220,7 +241,7 @@ const netTotalAmount = computed(() => {
 // Computed: รายละเอียดแต่ละแถว (ปรับปรุงให้มีข้อมูลครบ)
 const detailsByRow = computed(() => {
   console.log('detailsByRow computing...', morelist.value)
-  
+
   return morelist.value
     .map((row, index) => {
       // ✅ เปลี่ยนเงื่อนไข: แสดงถ้ามีข้อมูลอย่างใดอย่างหนึ่ง
@@ -240,9 +261,9 @@ const detailsByRow = computed(() => {
             .filter((item) => item.checked)
             .map((item) => {
               console.log('Item:', item)
-              
+
               let itemType = 'ไม่ระบุ'
-              
+
               if (item.moneyType) {
                 if (item.moneyType === 'cash') itemType = 'เงินสด'
                 else if (item.moneyType === 'bank') itemType = 'เช็คธนาคาร'

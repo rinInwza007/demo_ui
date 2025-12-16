@@ -66,63 +66,83 @@
               </div>
 
               <!-- Table Header -->
-              <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                <div class="col-span-2">รายการ</div>
-                <div class="col-span-2">หน่วยงานย่อย</div>
-                <div class="col-span-2">ผู้ทำรายการ</div>
-                <div class="col-span-2 text-right pr-8">จำนวนเงิน</div>
-                <div class="col-span-2 text-center px-4">วันที่</div>
-                <div class="col-span-2 pl-8">หมายเหตุ</div>
-              </div>
+  <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
 
-              <!-- Table Body -->
-              <div class="p-2 max-h-96 overflow-y-auto">
-                <div
-                  v-for="item in debtor.items"
-                  :key="item.id"
-                  class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl transition-all duration-200 border border-transparent hover:border-white/50 hover:bg-white/50"
-                >
-                  <!-- Item Name -->
-                  <div class="col-span-2">
-                    <div class="font-medium text-slate-800 text-sm">{{ item.title }}</div>
-                  </div>
+  <div class="col-span-2">รายการ</div>
+  <div class="col-span-2">หน่วยงานย่อย</div>
+  <div class="col-span-2">ผู้ทำรายการ</div>
+  <div class="col-span-2 text-right pr-8">จำนวนเงิน</div>
+  <div class="col-span-2 text-center px-4">วันที่</div>
+  <div class="col-span-1 pl-6">หมายเหตุ</div>
+  <div class="col-span-1 text-center">เลือก</div>
+</div>
 
-                  <!-- Sub Org -->
-                  <div class="col-span-2">
-                    <div class="text-sm text-slate-600">{{ item.subOrg }}</div>
-                  </div>
 
-                  <!-- Full Name -->
-                  <div class="col-span-2 flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
-                      {{ item.fullName.charAt(0) }}
-                    </div>
-                    <span class="text-sm text-slate-700 truncate">{{ item.fullName }}</span>
-                  </div>
+<div
+  v-for="item in debtor.items"
+  :key="item.id"
+  class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl
+         transition-all duration-200 border"
+  :class="item.selected
+    ? 'bg-green-50 border-green-300'
+    : 'border-transparent hover:border-white/50 hover:bg-white/50'"
+>
+  <!-- Checkbox -->
+ <!-- Select Button (แทน checkbox) -->
 
-                  <!-- Amount -->
-                  <div class="col-span-2 text-right pr-8">
-                    <div class="font-bold text-red-600 font-mono text-sm">
-                      {{ formatMoney(item.amount) }}
-                    </div>
-                    <div class="text-[10px] text-slate-400">บาท</div>
-                  </div>
 
-                  <!-- Date -->
-                  <div class="col-span-2 text-center px-4">
-                    <div class="text-xs text-slate-600">
-                      {{ item.createdAt }}
-                    </div>
-                  </div>
 
-                  <!-- Note -->
-                  <div class="col-span-2 pl-8">
-                    <div class="text-sm text-slate-600 truncate">
-                      {{ item.note }}
-                    </div>
-                  </div>
-                </div>
-              </div>
+  <!-- Item Name -->
+  <div class="col-span-2">
+    <div class="font-medium text-slate-800 text-sm">{{ item.title }}</div>
+  </div>
+
+  <!-- Sub Org -->
+  <div class="col-span-2">
+    <div class="text-sm text-slate-600">{{ item.subOrg }}</div>
+  </div>
+
+  <!-- Full Name -->
+  <div class="col-span-2 flex items-center gap-2">
+    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
+      {{ item.fullName.charAt(0) }}
+    </div>
+    <span class="text-sm text-slate-700 truncate">{{ item.fullName }}</span>
+  </div>
+
+  <!-- Amount -->
+  <div class="col-span-2 text-right pr-8">
+    <div class="font-bold text-red-600 font-mono text-sm">
+      {{ formatMoney(item.amount) }}
+    </div>
+    <div class="text-[10px] text-slate-400">บาท</div>
+  </div>
+
+  <!-- Date -->
+  <div class="col-span-2 text-center px-4">
+    <div class="text-xs text-slate-600">
+      {{ item.createdAt }}
+    </div>
+  </div>
+
+  <!-- Note -->
+  <div class="col-span-1 pl-6">
+    <div class="text-sm text-slate-600 truncate">
+      {{ item.note }}
+    </div>
+  </div>
+  <div class="col-span-1 flex justify-center">
+  <button @click="toggleSelect(item)">
+    <i
+      class="material-symbols-outlined text-2xl transition-colors"
+      :class="item.selected ? 'text-green-600' : 'text-red-600'"
+    >
+      {{ item.selected ? 'check_circle' : 'cancel' }}
+    </i>
+  </button>
+</div>
+</div>
+
             </div>
 
             <!-- Payment Section -->
@@ -209,17 +229,21 @@
               </div>
 
               <!-- Remaining Debt -->
-              <div class="rounded-xl p-6 shadow-lg mb-4" style="background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);">
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
-                  <div class="flex items-center gap-3">
-                    <i class="ph-fill ph-wallet text-3xl"></i>
-                    <span class="text-xl font-bold">ยอดหนี้คงเหลือ</span>
-                  </div>
-                  <span class="text-3xl font-bold">
-                    {{ formatNumber(netTotalAmount) }} บาท
-                  </span>
-                </div>
-              </div>
+              <div
+  class="rounded-xl p-6 shadow-lg mb-4"
+  style="background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);"
+>
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
+    <div class="flex items-center gap-3">
+      <i class="ph-fill ph-wallet text-3xl"></i>
+      <span class="text-xl font-bold">ยอดหนี้ที่เลือก</span>
+    </div>
+    <span class="text-3xl font-bold">
+      {{ formatNumber(remainingAmount) }} บาท
+    </span>
+  </div>
+</div>
+
 
               <!-- Action Button -->
               <div class="flex justify-end">
@@ -230,7 +254,7 @@
                 >
                   <span class="flex items-center gap-2 text-white">
                     <i class="ph ph-eraser text-lg"></i>
-                    ล้างหนี้ทั้งหมด
+                    ยืนยันการล้างหนี้
                   </span>
                 </button>
               </div>
@@ -297,6 +321,25 @@ const debtor = reactive({
   totalDebt: 0,
   items: []
 })
+// ยอดหนี้ที่เลือก (จากติ๊ก)
+const selectedTotalAmount = computed(() =>
+  debtor.items
+    .filter(i => i.selected)
+    .reduce((sum, i) => sum + i.amount, 0)
+)
+
+// 💜 ยอดเงินที่ถูกจ่ายไปแล้ว (จาก Modal)
+const paidAmount = ref(0)
+
+// 💜 ยอดคงเหลือ (แสดงในกล่องม่วง)
+const remainingAmount = computed(() =>
+  Math.max(0, selectedTotalAmount.value - paidAmount.value)
+)
+function toggleSelect(item) {
+  item.selected = !item.selected
+}
+
+
 
 const netTotalAmount = ref(0)
 const paymentHistory = ref([])
@@ -333,6 +376,7 @@ onMounted(() => {
     note: r.receiptList?.[0]?.note || '-',
     subOrg: r.subAffiliationName || '-',
     fullName: r.fullName || '-',
+     selected: false
   }))
 
   // อัปเดตข้อมูล
@@ -351,12 +395,10 @@ const totalPaid = computed(() => {
 })
 
 function applyPayment({ selected, totalFee }) {
-  if (!totalFee || isNaN(totalFee)) {
-    console.warn("totalFee ไม่ใช่ตัวเลข!")
-    return
-  }
+  if (!totalFee || isNaN(totalFee)) return
 
-  netTotalAmount.value = Math.max(0, netTotalAmount.value - totalFee)
+  // ✅ ตรงนี้คือหัวใจ
+  paidAmount.value += totalFee
 
   selected.forEach(item => {
     if (item.AccountName && !usedAccounts.value.includes(item.AccountName)) {
@@ -376,6 +418,7 @@ function applyPayment({ selected, totalFee }) {
     })
   })
 }
+
 
 const formatNumber = (num) => Number(num).toLocaleString("th-TH", { minimumFractionDigits: 2 })
 const formatMoney = (num) => formatNumber(num)

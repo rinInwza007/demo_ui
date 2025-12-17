@@ -82,5 +82,12 @@ const menuItems = [
     icon: 'ph ph-chart-bar',
     routeName: 'Report_submit',
   },
+  {
+    id: 'daily_closing',
+    label: 'สรุปยอดรายวัน',
+    icon: 'ph ph-files',
+    routeName: 'daily_closing',
+  },
+
 ]
 </script>

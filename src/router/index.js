@@ -10,6 +10,7 @@ import pdfpage from "@/pages/Document/Pdfpage/index.vue"
 import indexsavedebtor from "@/pages/Main/savedebtor/index.vue"
 import indexwaybilldebtor from "@/pages/Main/waybilldebtor/index.vue"
 import ClearDebtor from '@/pages/Document/ClearDebtor/index.vue'
+import daily_closing from '@/pages/Main/daily_closing/index.vue'
 
 const routes = [
   { path: '/', name: 'main', component: Main },
@@ -32,6 +33,7 @@ const routes = [
   { path: '/indexsavedebtor', name: 'indexsavedebtor', component: indexsavedebtor },
   { path: '/cleardebtor', name: 'cleardebtor', component: ClearDebtor },
   { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor', component: indexwaybilldebtor },
+  { path: '/daily_closing', name: 'daily_closing', component: daily_closing },
 ]
 
 const router = createRouter({

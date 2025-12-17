@@ -56,6 +56,27 @@
       <i class="material-symbols-outlined text-red-500">credit_card</i>
     </button>
 
+    <!--อนุมัติ -->
+    <button
+    v-if="showApprove"
+    @click="$emit('approve',item)"
+    v-tippy="'อนุมัติ'"
+    class="hvr-bob"
+    >
+    <i class="material-symbols-outlined text-green-500">domain_verification</i>
+    </button>
+
+    <!--ไม่อนุมัติ -->
+    <button
+    v-if="shownotApprove"
+    @click="$emit('notapprove',item)"
+    v-tippy="'ไม่อนุมัติ'"
+    class="hvr-bob"
+    >
+    <i class="material-symbols-outlined text-green-500">domain_verification_off</i>
+    </button>
+
+
 
   </div>
 </template>
@@ -63,12 +84,24 @@
 <script setup lang="ts">
 defineProps({
   item: { type: Object, required: true },
+
   showView: { type: Boolean, default: false },
   showEdit: { type: Boolean, default: false },
   showLock: { type: Boolean, default: false },
   showDelete: { type: Boolean, default: false },
-  showCleardedtor:{type:Boolean,default :false}
+  showCleardedtor: { type: Boolean, default: false },
+  showApprove: { type: Boolean, default: false },
+  shownotApprove: { type: Boolean, default: false },
 })
 
-defineEmits(["view", "edit", "lock", "delete","cleardebtor"])
+defineEmits([
+  'view',
+  'edit',
+  'lock',
+  'delete',
+  'cleardebtor',
+  'approve',
+  'notapprove',
+])
 </script>
+

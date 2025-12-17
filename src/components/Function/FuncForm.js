@@ -12,6 +12,7 @@ const morelist = ref([
     note: '',
     fee: '',
     selectedItems: [],
+    expanded: false,
 
   },
 ])
@@ -76,8 +77,8 @@ const addRow = () => {
     referenceNo: '',
     note: '',
     Fee:'',
-    keyword: null,
     selectedItems: JSON.parse(JSON.stringify(defaultItems)),
+    expanded: false,
   })
 
   nextTick(() => {

@@ -153,7 +153,8 @@
                             <!-- Actions -->
                             <div class="col-span-2 flex justify-center">
                                 <ActionButtons
-                                    :show-cleardedtor="cleardebtor"
+                                :item="item" 
+                                    :show-cleardedtor="true"
 
                                     @cleardebtor="cleardebtor"
                                 />
@@ -264,7 +265,7 @@ const mapFacultyToRow = (faculty: string, receipts: any[]) => {
     paymentType: 'ลูกหนี้',
     time: '-',              // ถ้าอยากใส่เวลาจริง บอกได้ เดี๋ยวจัดให้
     amount: totalDebt,      // ✅ ให้เป็น number เพราะ template เรียก formatCurrency()
-    
+
   }
 }
 
@@ -358,17 +359,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('focus', loadData)
 })
 
-// Functions
-const view = (item: any) => {
-  router.push(`/pdfpage/${item.id}`)
-}
 
-const edit = (item: any) => {
-  router.push(`/edit/${item.id}`)
-}
 
 const cleardebtor = (item: any) => {
-  router.push(`cleardebtor`)
+  router.push(`/cleardebtor/${item.id}`)
 }
 
 const toggleLock = (item: any) => {

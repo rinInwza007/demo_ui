@@ -30,7 +30,7 @@ const routes = [
   { path: '/Report_submit', name: 'Report_submit', component: Report_submit },
   { path: '/pdfpage/:id?', name: 'pdfpage', component: pdfpage }, // ✅ เพิ่ม :id parameter
   { path: '/indexsavedebtor', name: 'indexsavedebtor', component: indexsavedebtor },
-  { path: '/cleardebtor', name: 'cleardebtor', component: ClearDebtor },
+  { path: '/cleardebtor/:id', name: 'cleardebtor', component: ClearDebtor },
   { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor', component: indexwaybilldebtor },
 ]
 

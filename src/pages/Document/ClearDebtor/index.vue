@@ -498,7 +498,6 @@ function clearAllDebts() {
 
         Swal.fire({
           title: 'ล้างหนี้สำเร็จ',
-
           icon: 'success',
           timer: 2000,
           showConfirmButton: false

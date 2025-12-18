@@ -130,7 +130,8 @@
                             <!-- Actions -->
                             <div class="col-span-2 flex justify-center">
                                 <ActionButtons
-                                    :show-cleardedtor="cleardebtor"
+                                :item="item" 
+                                    :show-cleardedtor="true"
 
                                     @cleardebtor="cleardebtor"
                                 />
@@ -335,17 +336,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('focus', loadData)
 })
 
-// Functions
-const view = (item: any) => {
-  router.push(`/pdfpage/${item.id}`)
-}
 
-const edit = (item: any) => {
-  router.push(`/edit/${item.id}`)
-}
 
 const cleardebtor = (item: any) => {
-  router.push(`cleardebtor`)
+  router.push(`/cleardebtor/${item.id}`)
 }
 
 const toggleLock = (item: any) => {

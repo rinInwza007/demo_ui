@@ -3,7 +3,7 @@
     <select
       :id="inputId"
       v-model="localValue"
-      class="w-full px-2 text-sm "
+      class="w-full px-2 text-sm"
     >
       <option value=""></option>
       <option value="ค่าบริการทางการแพทย์ (สปสช)">ค่าบริการทางการแพทย์ (สปสช)</option>
@@ -59,23 +59,54 @@ onMounted(() => {
       }
     })
 
-    // Apply CSS
+    // Apply glass-input CSS styles
     const control = tomSelectInstance.control
-    control.style.height = '2.5rem'
     control.style.width = '100%'
-    control.style.padding = '0 0.5rem'
+    control.style.height = '2.70rem'
+    control.style.padding = '0.625rem 0.5rem' // py-2.5 px-2
+    control.style.paddingRight = '2.5rem' // pr-10
     control.style.display = 'flex'
     control.style.alignItems = 'center'
-    control.style.borderRadius = '0.375rem'
-    control.style.border = '1px solid #6b7280'
-    control.style.fontSize = '1rem'
+    control.style.fontSize = '0.875rem' // text-sm
+    control.style.color = '#334155' // text-slate-700
+    control.style.borderRadius = '0.75rem' // rounded-xl
+    control.style.border = '1px solid rgba(203, 213, 225, 0.5)'
+    control.style.background = 'rgba(255, 255, 255, 0.9)'
+    control.style.backdropFilter = 'blur(10px)'
+    control.style.cursor = 'pointer'
+    control.style.transition = 'all 0.2s'
+    control.style.appearance = 'none'
 
     const input = control.querySelector('input')
     if (input) {
-      input.style.fontSize = '1.01rem'
-      input.style.height = '1rem'
-      input.style.padding = '0.5rem'
+      input.style.fontSize = '0.875rem'
+      input.style.height = 'auto'
+      input.style.padding = '0.25rem'
+      input.style.color = '#334155'
     }
+
+    // Add focus styles
+    control.addEventListener('focus', () => {
+      control.style.outline = 'none'
+      control.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.3)'
+      control.style.borderColor = 'rgba(59, 130, 246, 0.3)'
+    })
+
+    control.addEventListener('blur', () => {
+      control.style.boxShadow = ''
+      control.style.borderColor = 'rgba(203, 213, 225, 0.5)'
+    })
+
+    // Add hover effect
+    control.addEventListener('mouseenter', () => {
+      control.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+    })
+
+    control.addEventListener('mouseleave', () => {
+      if (document.activeElement !== control) {
+        control.style.boxShadow = ''
+      }
+    })
   }
 })
 
@@ -86,3 +117,19 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style>
+/* Global styles for TomSelect dropdown */
+.ts-dropdown {
+  @apply rounded-xl shadow-lg border border-gray-200;
+}
+
+.ts-dropdown .option {
+  @apply text-sm text-slate-700 py-2 px-3 cursor-pointer transition-colors;
+}
+
+.ts-dropdown .option:hover,
+.ts-dropdown .option.active {
+  @apply bg-blue-50;
+}
+</style>

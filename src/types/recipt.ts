@@ -44,7 +44,8 @@ isLocked?: boolean;
   /** Affiliation ID */
   affiliationId: string;
   mainAffiliationName?: string;
-  subAffiliationName?: string;
+  subAffiliationName1?: string;
+  subAffiliationName2?: string;
   /** Affiliation name */
   affiliationName: string;
 

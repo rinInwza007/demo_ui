@@ -63,7 +63,7 @@
                         </div>
 
                         <button @click="gotowaybil" class="glass-button-primary px-5 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-95">
-                            <i class="ph ph-plus-circle text-lg"></i>
+                            <i class="ph ph-file-plus text-lg"></i>
                             <span>เพิ่มใบนำส่งเงิน</span>
                         </button>
                     </div>

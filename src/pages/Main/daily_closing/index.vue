@@ -1,4 +1,3 @@
-
 <template>
   <!-- ⭐ ลบ <body> tag ออก - ใช้ div แทน -->
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
@@ -23,9 +22,8 @@
                 <div>
                     <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
                         <i class="ph ph-files"></i>
-                        ใบนำส่งลูกหนี้
+                        สรุปยอดรายวัน
                     </h1>
-                    <p class="text-xs text-slate-800 mt-0.5">จัดการใบนำส่งลูกหนี้</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
@@ -46,13 +44,12 @@
                             <i class="ph ph-calendar-blank absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors"></i>
                             <input type="text" placeholder="เลือกช่วงวันเวลา..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full md:w-48 text-sm placeholder-slate-400 focus:placeholder-blue-300/50">
                         </div>
-
                         <CascadingSelect
-  v-model:modelValueMain="selectedMain"
-  v-model:modelValueSub1="selectedSub1"
-  v-model:modelValueSub2="selectedSub2"
-  :options="options"
-/>
+                        v-model:modelValueMain="selectedMain"
+                        v-model:modelValueSub1="selectedSub1"
+                        v-model:modelValueSub2="selectedSub2"
+                        :options="options"
+                        />
 
                     </div>
 
@@ -62,11 +59,6 @@
                             <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
                             <input v-model="searchText" type="text" placeholder="ค้นหา สังกัด / หน่วยงาน..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm">
                         </div>
-
-                        <button @click="gotowaybilldebtor" class="glass-button-primary px-5 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-95">
-                            <i class="ph ph-file-plus text-lg"></i>
-                            <span>เพิ่มใบนำส่งลูกหนี้</span>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -77,15 +69,10 @@
 
 
                     <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold  uppercase tracking-wider flex-shrink-0">
-                        <div class="col-span-1 text-center">สถานะ</div>
-                        <div class="col-span-2 text-center ">สังกัด</div>
-                        <div class="col-span-1 text-center">รายได้/โครงการ</div>
-                        <div class="col-span-1 text-center">ปีงบฯ</div>
-                        <div class="col-span-2 text-center">ผู้รับผิดชอบ</div>
-                        <div class="col-span-1 text-center">รูปแบบ</div>
-                        <div class="col-span-1 text-center">เวลา</div>
-                        <div class="col-span-1 text-center">ยอดเงิน</div>
-                        <div class="col-span-2 text-center">จัดการ</div>
+                        <div class="col-span-3 text-center">วัน/เดือน/ปี</div>
+                        <div class="col-span-3 text-center "></div>
+                        <div class="col-span-3 text-center">รายได้/โครงการ</div>
+                        <div class="col-span-3 text-center">ปีงบฯ</div>
                     </div>
 
                     <!-- Table Body (Scrollable) -->
@@ -159,15 +146,11 @@
                             <!-- Actions -->
                             <div class="col-span-2 flex justify-center">
                                 <ActionButtons
-                                    :item="item"
-                                    :showEdit="true"
-                                    :show-view="true"
-                                    :showLock="true"
-                                    :showDelete="true"
-                                    @edit="edit"
-                                    @lock="toggleLock"
-                                    @delete="removeItem"
-                                    @view="view"
+                                    :showCleardedtor="cleardebtor"
+                                    
+                                    @cleardebtor="cleardebtor"
+
+
                                 />
                             </div>
 
@@ -197,16 +180,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
+import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import { options } from "@/components/data/departments"
-
-
-import ActionButtons from '@/components/Actionbutton/ActionButtons.vue'
 import sidebar from '@/components/bar/sidebar.vue'
+import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 
 setupAxiosMock()
@@ -219,32 +199,140 @@ const selectedMain = ref("")
 const selectedSub1 = ref("")
 const selectedSub2 = ref("")
 
+// ฟังก์ชันจัดกลุ่มตามคณะ
+const groupByFaculty = (receipts: any[]) => {
+  const grouped = new Map<string, any[]>()
 
-const moneyTypeLabel: Record<string, string> = {
-  cash: 'เงินสด',
-  bank: 'เช็คธนาคาร',
-  transfer: 'ฝากเข้าบัญชี',
-  debtor: 'ลูกหนี้',
-  other: 'อื่นๆ',
+  receipts.forEach(receipt => {
+    const faculty = receipt.mainAffiliationName || receipt.affiliationName || 'ไม่ระบุหน่วยงาน'
+
+    if (!grouped.has(faculty)) {
+      grouped.set(faculty, [])
+    }
+    grouped.get(faculty)!.push(receipt)
+  })
+
+  return grouped
 }
 
-const formatThaiDateTime = (date: Date | null) => {
-  if (!date || isNaN(date.getTime())) return '-'
+// แปลงข้อมูลเป็น row สำหรับแสดงในตาราง
+const mapFacultyToRow = (faculty: string, receipts: any[]) => {
+  const totalDebt = receipts.reduce((sum, r) => {
+    return sum + (Number(r.netTotalAmount) || 0)
+  }, 0)
 
-  const day = date.getDate().toString().padStart(2, '0')
-  const month = date.getMonth() + 1
-  const year = date.getFullYear() + 543
-  const hours = date.getHours().toString().padStart(2, '0')
-  const minutes = date.getMinutes().toString().padStart(2, '0')
+  const itemCount = receipts.length
 
-  const monthNames = [
-    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
-  ]
+  const subOrgs = Array.from(
+    new Set(
+      receipts
+        .map(r => r.subAffiliationName)
+        .filter((name: string) => name && name.trim())
+    )
+  )
 
-  return `${day} ${monthNames[month - 1]} ${year} ${hours}:${minutes}`
+  const fundNames = Array.from(
+    new Set(
+      receipts
+        .map(r => r.fundName)
+        .filter((name: string) => name && name.trim())
+    )
+  )
+
+  // ✅ ทำ key ให้ตรงกับ template ตารางของคุณ
+  return {
+    id: encodeURIComponent(faculty),
+
+    // template ใช้ item.status => ตั้งค่าให้เลย
+    status: 'pending', // (ลูกหนี้โดยรวมจะเป็น pending ก็เหมาะ)
+
+    // template ใช้ item.department / item.subDepartment
+    department: faculty,
+    subDepartment: subOrgs.length > 0 ? subOrgs.join(', ') : `${itemCount} รายการ`,
+
+    // template ใช้ item.project / item.year / item.responsible
+    project: fundNames.length > 0 ? fundNames.join(', ') : '-',
+    year: '2568',
+    responsible: receipts[0]?.fullName || '-',
+
+    // template ใช้ item.paymentType / item.time / item.amount
+    paymentType: 'ลูกหนี้',
+    time: '-',              // ถ้าอยากใส่เวลาจริง บอกได้ เดี๋ยวจัดให้
+    amount: totalDebt,      // ✅ ให้เป็น number เพราะ template เรียก formatCurrency()
+
+  }
 }
 
+
+// โหลดข้อมูลจาก API
+const loadData = async () => {
+  try {
+    const stored = localStorage.getItem('fakeApi.receipts')
+
+    if (!stored) {
+      rawData.value = []
+      console.log('⚠️ No data in localStorage')
+      return
+    }
+
+    const allReceipts = JSON.parse(stored)
+
+    if (!Array.isArray(allReceipts)) {
+      rawData.value = []
+      console.log('⚠️ Data is not array')
+      return
+    }
+
+    const debtorReceipts = allReceipts.filter((r: any) => r.moneyTypeNote === 'Debtor')
+    rawData.value = debtorReceipts
+
+    console.log('✅ Loaded Debtor Receipts:', rawData.value.length)
+
+  } catch (error) {
+    console.error('❌ Error loading data:', error)
+    rawData.value = []
+    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
+  }
+}
+
+// Computed สำหรับกรองและจัดกลุ่มข้อมูล
+const items = computed(() => {
+  let filtered = [...rawData.value]
+
+  if (searchText.value.trim()) {
+    const search = searchText.value.toLowerCase()
+    filtered = filtered.filter(r =>
+      r.mainAffiliationName?.toLowerCase().includes(search) ||
+      r.affiliationName?.toLowerCase().includes(search) ||
+      r.fullName?.toLowerCase().includes(search) ||
+      r.fundName?.toLowerCase().includes(search)
+    )
+  }
+
+  if (selectedMain.value) {
+    filtered = filtered.filter(r =>
+      r.mainAffiliationName === selectedMain.value ||
+      r.affiliationName === selectedMain.value
+    )
+  }
+
+  if (selectedSub1.value) {
+    filtered = filtered.filter(r => r.subAffiliationName === selectedSub1.value)
+  }
+
+  if (selectedSub2.value) {
+    filtered = filtered.filter(r => r.subAffiliationName2 === selectedSub2.value)
+  }
+
+  const grouped = groupByFaculty(filtered)
+
+  const result: any[] = []
+  grouped.forEach((receipts, faculty) => {
+    result.push(mapFacultyToRow(faculty, receipts)) // ✅ key ตรง template แล้ว
+  })
+
+  return result
+})
 const formatCurrency = (amount: number | string) => {
   const n = typeof amount === 'string'
     ? Number(amount.toString().replace(/[^0-9.-]/g, ''))
@@ -256,121 +344,25 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
-const hasBeenEdited = (createdAt: Date | null, updatedAt: Date | null) => {
-  if (!createdAt || !updatedAt) return false
-  return Math.abs(updatedAt.getTime() - createdAt.getTime()) > 1000
-}
-
-const mapReceiptToRow = (r: any) => {
-  const fileTypesArray: string[] = r.receiptList?.flatMap((item: any) => {
-    const fromPaymentDetails = (item.paymentDetails || [])
-      .map((p: any) => p.moneyType?.trim())
-      .filter((t: string) => !!t)
-
-    const fromReceiptItem = item.moneyType ? [item.moneyType.trim()] : []
-    return [...fromPaymentDetails, ...fromReceiptItem]
-  }) || []
-
-  const uniqueFileTypes = Array.from(new Set(fileTypesArray))
-  const fileType = uniqueFileTypes.length > 0
-    ? uniqueFileTypes.map(t => moneyTypeLabel[t] || t).join(', ')
-    : '-'
-
-  const createdDate = r.createdAt ? new Date(r.createdAt) : null
-  const updatedDate = r.updatedAt ? new Date(r.updatedAt) : null
-  const isEdited = hasBeenEdited(createdDate, updatedDate)
-  const displayDate = isEdited ? updatedDate : createdDate
-
-  return {
-    id: r.projectCode,
-    status: r.isLocked ? 'success' : 'pending',
-
-    department: r.mainAffiliationName || r.affiliationName || '-',
-    subDepartment: r.subAffiliationName || '-',
-    time: formatThaiDateTime(displayDate),
-
-    project: r.fundName,
-    year: '2568',
-    responsible: r.fullName,
-    paymentType: "ลูกหนี้",
-
-    amount: r.netTotalAmount ? Number(String(r.netTotalAmount).replace(/,/g, '')) : 0,
-    createdAt: createdDate,
-    updatedAt: updatedDate,
-    isLocked: r.isLocked ?? false,
-    _raw: r,
-  }
-}
-
-
-const loadData = async () => {
-  try {
-    const res = await axios.get('/getReceipt')
-    rawData.value = res.data
-      .filter((r: any) => r.moneyTypeNote === 'Debtor')
-      .map((r: any) => ({
-        ...r,
-        isLocked: r.isLocked ?? false,
-      }))
-  } catch (error) {
-    console.error('❌ Error loading data:', error)
-    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
-  }
-}
-
-const items = computed(() => {
-  let filtered = [...rawData.value]
-
-  // ✅ MAIN: ต้อง match คณะ
-  if (selectedMain.value) {
-    filtered = filtered.filter((r: any) => {
-      const main = (r.mainAffiliationName || r.affiliationName || '').trim()
-      return main === selectedMain.value.trim()
-    })
-  }
-
-  // ✅ SUB1: ถ้าเลือกแล้ว ให้ match กับชื่อสังกัดย่อย (ระดับที่คุณเก็บไว้ใน r.subAffiliationName)
-  if (selectedSub1.value) {
-    filtered = filtered.filter((r: any) => {
-      const sub1 = (r.subAffiliationName || '').trim()
-      return sub1 === selectedSub1.value.trim()
-    })
-  }
-
-  // ✅ SUB2: ถ้าคุณมี field สำหรับระดับย่อยจริง ให้เปลี่ยนชื่อ field ตรงนี้ให้ตรงกับ data
-  if (selectedSub2.value) {
-    filtered = filtered.filter((r: any) => {
-      const sub2 = (r.subAffiliationName2 || r.sub2AffiliationName || '').trim()
-      return sub2 === selectedSub2.value.trim()
-    })
-  }
-
-  // ✅ Search (ยังใช้ร่วมกันได้)
-  if (searchText.value.trim()) {
-    const s = searchText.value.toLowerCase()
-    filtered = filtered.filter((r: any) => {
-      const main = (r.mainAffiliationName || r.affiliationName || '').toLowerCase()
-      const sub1 = (r.subAffiliationName || '').toLowerCase()
-      const sub2 = (r.subAffiliationName2 || r.sub2AffiliationName || '').toLowerCase()
-      return main.includes(s) || sub1.includes(s) || sub2.includes(s)
-    })
-  }
-
-  return filtered.map(mapReceiptToRow)
+onMounted(() => {
+  loadData()
+  window.addEventListener('focus', loadData)
 })
 
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', loadData)
+})
 
-onMounted(loadData)
+const cleardebtor = (item: any) => {
+  router.push(`cleardebtor`)
+}
 
-const view = (item: any) => router.push(`/pdfpage/${item.id}`)
-const edit = (item: any) => router.push(`/waybill/edit/${item.id}`)
-const gotowaybilldebtor = () => router.push("/waybilldebtor")
-
-const toggleLock = (row: any) => {
-  const target = rawData.value.find(r => r.projectCode === row.id)
+const toggleLock = (item: any) => {
+  const target = rawData.value.find(r => r.projectCode === item.id)
   if (!target) return
 
   target.isLocked = !target.isLocked
+
   Swal.fire({
     position: 'top-end',
     icon: 'success',
@@ -380,55 +372,62 @@ const toggleLock = (row: any) => {
   })
 }
 
-const removeItem = async (item: any) => {
-  const result = await Swal.fire({
-    title: 'ต้องการลบ?',
-    text: `${item.project}`,
+const removeItem = (item: any) => {
+  Swal.fire({
+    title: 'ยืนยันการลบ?',
+    text: "คุณต้องการลบรายการนี้ใช่หรือไม่",
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'ยืนยัน',
-    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#DC2626',
+    cancelButtonColor: '#6B7280',
+    confirmButtonText: 'ลบ',
+    cancelButtonText: 'ยกเลิก'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.fire({
+        icon: 'success',
+        title: 'ลบสำเร็จ',
+        showConfirmButton: false,
+        timer: 1500
+      })
+    }
   })
+}
 
-  if (!result.isConfirmed) return
-
-  await axios.delete(`/deleteReceipt/${item.id}`)
-  await loadData()
-  Swal.fire('ลบแล้ว', '', 'success')
+const goback = () => {
+  router.back()
 }
 </script>
 
-<style>
+<style scoped>
 body {
-    font-family: 'Prompt', 'Inter', sans-serif;
-    margin: 0;
-    padding: 0;
-    /* ⭐ ลบ overflow: hidden; ออก */
+  font-family: 'Prompt', 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-/* Animated Background Mesh */
 .mesh-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: #f0f2f5;
-    background-image:
-        radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
-        radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-    background-size: cover;
-    z-index: -2;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f0f2f5;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+  background-size: cover;
+  z-index: -2;
 }
 
 .orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    z-index: -1;
-    opacity: 0.8;
-    animation: float 10s infinite ease-in-out;
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  opacity: 0.8;
+  animation: float 10s infinite ease-in-out;
 }
 
 .orb-1 { width: 600px; height: 600px; background: #56CCF2; top: -100px; left: -100px; animation-delay: 0s; }
@@ -436,62 +435,59 @@ body {
 .orb-3 { width: 400px; height: 400px; background: #7918F2; top: 40%; left: 40%; animation-delay: 4s; }
 
 @keyframes float {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    50% { transform: translate(20px, 40px) rotate(10deg); }
-    100% { transform: translate(0, 0) rotate(0deg); }
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(20px, 40px) rotate(10deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
 }
 
-/* Glassmorphism Utilities */
 .glass-panel {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
 }
 
 .glass-input {
-    background: rgba(255, 255, 255, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(4px);
-    transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
 }
 
 .glass-input:focus {
-    background: rgba(255, 255, 255, 0.8);
-    border-color: #3b82f6;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background: rgba(255, 255, 255, 0.8);
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .glass-button-primary {
-    background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+  background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
 }
 
 .glass-button-primary:hover {
-    box-shadow: 0 6px 20px rgba(126, 34, 206, 0.4);
-    transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(126, 34, 206, 0.4);
+  transform: translateY(-1px);
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.1);
-    border-radius: 4px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.2);
 }
-
 </style>

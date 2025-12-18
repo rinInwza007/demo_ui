@@ -71,15 +71,13 @@
 
 
                     <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold  uppercase tracking-wider flex-shrink-0">
-                        <div class="col-span-1 text-center">สถานะ</div>
-                        <div class="col-span-2 text-center ">สังกัด</div>
-                        <div class="col-span-1 text-center">รายได้/โครงการ</div>
-                        <div class="col-span-1 text-center">ปีงบฯ</div>
-                        <div class="col-span-2 text-center">ผู้รับผิดชอบ</div>
-                        <div class="col-span-1 text-center">รูปแบบ</div>
-                        <div class="col-span-1 text-center">เวลา</div>
-                        <div class="col-span-1 text-center">ยอดเงิน</div>
+                        <div class="col-span-2 text-center">สถานะ</div>
+                        <div class="col-span-2 text-center">รายการ</div>
+                        <div class="col-span-2 text-center">ยอดหนี้รายวัน</div>
+                        <div class="col-span-2 text-center">ยอดหนี้ค้างชำระ</div>
+                        <div class="col-span-2 text-center">ยอดสุทธิ</div>
                         <div class="col-span-2 text-center">จัดการ</div>
+
                     </div>
 
                     <!-- Table Body (Scrollable) -->
@@ -88,7 +86,7 @@
                              class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm">
 
                             <!-- Status -->
-                            <div class="col-span-1 flex justify-center">
+                            <div class="col-span-2 flex justify-center">
                                 <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
                                      :class="{
                                         'bg-red-100 text-red-500': item.status === 'cancel',
@@ -110,42 +108,21 @@
                                 </div>
                             </div>
 
-                            <!-- Project -->
-                            <div class="col-span-1">
-                                <span class="bg-blue-50/50 text-blue-700 text-xs px-2.5 py-1 rounded-lg border border-blue-100 font-medium">
-                                    {{ item.project }}
-                                </span>
-                            </div>
-
-                            <!-- Year -->
-                            <div class="col-span-1 text-center text-sm font-medium text-slate-600 font-mono">
-                                {{ item.year }}
-                            </div>
-
                             <!-- Responsible -->
                             <div class="col-span-2 flex items-center gap-2">
                                 <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
                                     {{ item.responsible.charAt(0) }}
                                 </div>
                                 <span class="text-sm text-slate-700 truncate">{{ item.responsible }}</span>
+                              </div>
+                              <div class="col-span-2 text-center">
+                              <div class="text-xs font-medium text-slate-700 font-mono">
+                                {{ item.time }}
+                              </div>
                             </div>
-
-                            <!-- Payment Type -->
-                            <div class="col-span-1">
-                                <div class="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                                    <i class="ph-fill text-slate-400"
-                                       :class="item.paymentType === 'เงินสด' ? 'ph-money' : (item.paymentType === 'เช็คธนาคาร' ? 'ph-scroll' : 'ph-bank')"></i>
-                                    {{ item.paymentType }}
-                                </div>
-                            </div>
-                            <div class="col-span-1 text-center">
-  <div class="text-xs font-medium text-slate-700 font-mono">
-    {{ item.time }}
-  </div>
-</div>
 
                             <!-- Amount -->
-                            <div class="col-span-1 text-right">
+                            <div class="col-span-2 text-right">
                                 <div class="font-bold text-slate-800 font-mono text-sm">{{ formatCurrency(item.amount) }}</div>
                                 <div class="text-[10px] text-slate-400">บาท</div>
                             </div>
@@ -153,7 +130,8 @@
                             <!-- Actions -->
                             <div class="col-span-2 flex justify-center">
                                 <ActionButtons
-                                    :show-cleardedtor="cleardebtor"
+                                :item="item" 
+                                    :show-cleardedtor="true"
 
                                     @cleardebtor="cleardebtor"
                                 />
@@ -264,7 +242,7 @@ const mapFacultyToRow = (faculty: string, receipts: any[]) => {
     paymentType: 'ลูกหนี้',
     time: '-',              // ถ้าอยากใส่เวลาจริง บอกได้ เดี๋ยวจัดให้
     amount: totalDebt,      // ✅ ให้เป็น number เพราะ template เรียก formatCurrency()
-    
+
   }
 }
 
@@ -358,17 +336,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('focus', loadData)
 })
 
-// Functions
-const view = (item: any) => {
-  router.push(`/pdfpage/${item.id}`)
-}
 
-const edit = (item: any) => {
-  router.push(`/edit/${item.id}`)
-}
 
 const cleardebtor = (item: any) => {
-  router.push(`cleardebtor`)
+  router.push(`/cleardebtor/${item.id}`)
 }
 
 const toggleLock = (item: any) => {

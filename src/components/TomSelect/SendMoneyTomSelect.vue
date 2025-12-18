@@ -67,7 +67,7 @@ const applyCSSToTomSelect = (element) => {
   if (!element || !element.tomselect) return
   
   const control = element.tomselect.control
-  control.style.height = '2.75rem'
+  control.style.height = '2.50rem'
   control.style.width = '100%'
   control.style.padding = '0 0.5rem'
   control.style.display = 'flex'

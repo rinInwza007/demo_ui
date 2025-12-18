@@ -1,45 +1,42 @@
 <template>
   <div class="flex flex-col gap-2">
-
     <!-- Label -->
     <label v-if="label" class="font-medium text-gray-700">
       {{ label }}
     </label>
 
-    <div class="flex gap-4 items-start">
-
+    <!-- เปลี่ยนจาก flex เป็น grid -->
+    <div class="grid grid-cols-1 gap-4">
       <!-- MAIN: เลือกคณะ -->
-      <div class="flex-1">
+      <div>
         <Select
-  v-model="mainValue"
-  :options="[ALL_OPTION, ...Object.keys(options)]"
-  :placeholder="placeholderMain"
-  icon="ph ph-buildings"
-/>
+          v-model="mainValue"
+          :options="[ALL_OPTION, ...Object.keys(options)]"
+          :placeholder="placeholderMain"
+          icon="ph ph-buildings"
+        />
       </div>
 
       <!-- SUB1: เลือกหัวข้อรอง -->
-      <div v-if="sub1Options.length > 0" class="flex-1">
+      <div v-if="sub1Options.length > 0">
         <Select
-  v-model="sub1Value"
-  :options="sub1Options"
-  :placeholder="placeholderSub1"
-  icon="ph ph-squares-four"
-/>
+          v-model="sub1Value"
+          :options="sub1Options"
+          :placeholder="placeholderSub1"
+          icon="ph ph-squares-four"
+        />
       </div>
 
       <!-- SUB2: เลือกหัวข้อย่อย -->
-      <div v-if="sub2Options.length > 0" class="flex-1">
+      <div v-if="sub2Options.length > 0">
         <Select
-  v-model="sub2Value"
-  :options="sub2Options"
-  :placeholder="placeholderSub2"
-  icon="ph ph-list-bullets"
-/>
+          v-model="sub2Value"
+          :options="sub2Options"
+          :placeholder="placeholderSub2"
+          icon="ph ph-list-bullets"
+        />
       </div>
-
     </div>
-
   </div>
 </template>
 

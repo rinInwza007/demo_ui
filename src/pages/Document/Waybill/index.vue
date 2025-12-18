@@ -1274,7 +1274,11 @@ watch(
 [role='dialog'] {
   z-index: 99999 !important;
 }
-
+.readonly-force :deep(input) {
+  pointer-events: none;
+  background-color: #e9ecef;
+  color: #6c757d;
+}
 .detail-toggle-bar {
   margin-top: 10px;
   padding: 8px 0;

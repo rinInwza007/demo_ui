@@ -153,25 +153,28 @@ export function sanitizeItem(it: ReceiptItem): ReceiptItem {
   return {
     itemName: (it.itemName ?? '').trim(),
     note: (it.note ?? '').trim(),
+
+    // ✅ เพิ่มตรงนี้
+    debtorAmount: Number.isFinite(it.debtorAmount) ? it.debtorAmount : 0,
+    depositSubtotal: Number.isFinite(it.depositSubtotal) ? it.depositSubtotal : 0,
+    depositNetAmount: Number.isFinite(it.depositNetAmount) ? it.depositNetAmount : 0,
+
     fee: Number.isFinite(it.fee) ? it.fee : 0,
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
     amount: Number.isFinite(it.amount) ? it.amount : 0,
-    referenceNo: (it.referenceNo ?? '').trim(),
-    moneyType: it.moneyType || 'cash',
-    moneySource: it.moneySource || 'นำส่ง',
-    nagativeMoneyType: it.nagativeMoneyType || 'add',
+
     paymentDetails: Array.isArray(it.paymentDetails)
       ? it.paymentDetails.map(p => ({
           moneyType: (p.moneyType ?? '').trim(),
           amount: Number.isFinite(p.amount) ? p.amount : 0,
-          referenceNo: (p.referenceNo != null ? String(p.referenceNo) : '').trim(),
-          checkNumber: p.checkNumber != null ? String(p.checkNumber).trim() : null,
-          accountNumber: p.accountNumber != null ? String(p.accountNumber).trim() : null,
-          accountName: p.accountName?.trim() || null,
-          bankName: p.bankName != null ? String(p.bankName).trim() : null,
+          referenceNo: p.referenceNo ? String(p.referenceNo).trim() : '',
+          checkNumber: p.checkNumber ?? null,
+          accountNumber: p.accountNumber ?? null,
+          accountName: p.accountName ?? null,
+          bankName: p.bankName ?? null,
         }))
       : [],
-  };
+  }
 }
 
 export function sanitizeReceipt(r: Receipt): Receipt {
@@ -192,4 +195,4 @@ export function sanitizeReceipt(r: Receipt): Receipt {
     updatedAt: r.updatedAt instanceof Date ? r.updatedAt : new Date(r.updatedAt || Date.now()),
     receiptList: Array.isArray(r.receiptList) ? r.receiptList.map(sanitizeItem) : [],
   };
-}
+}      

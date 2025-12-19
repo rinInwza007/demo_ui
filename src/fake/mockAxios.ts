@@ -21,10 +21,10 @@ export function setupAxiosMock() {
     mock.onGet(/\/getReceipt\/([^?]+)$/).reply(config => {
     const url = config.url || '';
     console.log('📥 GET single receipt - URL:', url);
-    
+
     const match = url.match(/\/getReceipt\/([^?]+)$/);
     const projectCode = match?.[1];
-    
+
     if (!projectCode) {
       console.error('❌ No projectCode in URL');
       return [400, { message: 'projectCode is required' }];
@@ -40,7 +40,7 @@ export function setupAxiosMock() {
 
     if (!found) {
       console.error('❌ Receipt not found:', decodedCode);
-      return [404, { 
+      return [404, {
         message: 'Receipt not found',
         requestedCode: decodedCode,
         availableCodes: db.map(r => r.projectCode)
@@ -57,11 +57,11 @@ export function setupAxiosMock() {
       ...found,
       moneyType: found.moneyType || found.sendmoney || '',
       isLocked: found.isLocked ?? false,
-      createdAt: found.createdAt instanceof Date 
-        ? found.createdAt.toISOString() 
+      createdAt: found.createdAt instanceof Date
+        ? found.createdAt.toISOString()
         : found.createdAt,
-      updatedAt: found.updatedAt instanceof Date 
-        ? found.updatedAt.toISOString() 
+      updatedAt: found.updatedAt instanceof Date
+        ? found.updatedAt.toISOString()
         : found.updatedAt,
     };
 
@@ -111,14 +111,14 @@ export function setupAxiosMock() {
     const matches = config.url?.match(/\/updateReceipt\/(.+)$/);
     const projectCode = matches ? decodeURIComponent(matches[1]) : '';
     const incoming = JSON.parse(config.data);
-    
+
     console.log('🔄 Update Request:', { projectCode, incoming });
-    
+
     if (!projectCode) return [400, { message: 'projectCode is required' }];
 
     const db = loadReceipts();
     const idx = db.findIndex(r => r.projectCode === projectCode);
-    
+
     if (idx === -1) {
       console.error('❌ Not found:', projectCode);
       console.log('Available projectCodes:', db.map(r => r.projectCode));
@@ -131,10 +131,10 @@ export function setupAxiosMock() {
       ...incoming,
       projectCode // ใช้ projectCode เดิม
     });
-    
+
     db[idx] = updated;
     saveReceipts(db);
-    
+
     console.log('✅ Updated successfully:', updated);
     return [200, updated];
   });
@@ -151,4 +151,6 @@ export function setupAxiosMock() {
   });
 
   return mock;
+
+  
 }

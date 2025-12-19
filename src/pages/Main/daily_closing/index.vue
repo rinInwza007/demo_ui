@@ -37,22 +37,21 @@
             <!-- Left Filters -->
             <div class="flex items-center gap-3 w-full md:w-auto">
               <button
-  type="button"
-  :disabled="isTodayClosed"
-  class="px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm border border-white/40 transition text-slate-700"
-  :class="isTodayClosed ? 'bg-white/10 opacity-60 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20'"
-  v-tippy="'ปิดยอดประจำวัน (วันนี้)'"
-  @click="closeDaily"
->
-  <i class="ph ph-lock-key mr-2"></i>
-  ปิดยอดประจำวัน
-</button>
-
+                type="button"
+                :disabled="isTodayClosed"
+                class="px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm border border-white/40 transition text-slate-700"
+                :class="isTodayClosed ? 'bg-white/10 opacity-60 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20'"
+                v-tippy="isTodayClosed ? 'วันนี้ปิดยอดแล้ว (Frozen)' : 'ปิดยอดประจำวัน (วันนี้)'"
+                @click="closeDaily"
+              >
+                <i class="ph ph-lock-key mr-2"></i>
+                ปิดยอดประจำวัน
+              </button>
 
               <button
                 type="button"
                 class="px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm border border-white/40 bg-white/10 hover:bg-white/20 transition text-slate-700"
-                v-tippy="'ดูรายละเอียด/มุมมองเพิ่มเติม'"
+                v-tippy="'ดูรายละเอียดประจำวัน'"
               >
                 <i class="ph ph-eye mr-2"></i>
                 View
@@ -65,15 +64,25 @@
                 <button
                   class="glass-button-primary px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm"
                   @click="manualRefresh"
-                  v-tippy="'รีเฟรชข้อมูลทันที'"
+                  :disabled="isTodayClosed"
+                  :class="isTodayClosed ? 'opacity-60 cursor-not-allowed' : ''"
+                  v-tippy="isTodayClosed ? 'วันนี้ปิดยอดแล้ว (Frozen)' : 'รีเฟรชข้อมูลทันที'"
                 >
                   <i class="ph ph-arrows-clockwise mr-2"></i> รีเฟรช
                 </button>
 
                 <div class="text-xs text-slate-500 flex items-center gap-2 px-1">
                   <i class="ph ph-clock"></i>
-                  อัปเดตทุก 1 นาที • อัปเดตล่าสุด:
-                  <span class="font-semibold text-slate-600">{{ lastUpdatedText }}</span>
+
+                  <template v-if="isTodayClosed">
+                     หยุดอัปเดตอัตโนมัติ • ล่าสุด:
+                    <span class="font-semibold text-slate-600">{{ lastUpdatedText }}</span>
+                  </template>
+
+                  <template v-else>
+                    อัปเดตทุก 1 นาที • อัปเดตล่าสุด:
+                    <span class="font-semibold text-slate-600">{{ lastUpdatedText }}</span>
+                  </template>
                 </div>
               </div>
             </div>
@@ -274,11 +283,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import sidebar from '@/components/bar/sidebar.vue'
 import Swal from 'sweetalert2'
-
-
+import axios from 'axios'
 
 /**
  * ✅ ถ้า true = วันไหนยังไม่ปิดยอด "ห้ามกดขยาย"
@@ -351,47 +359,6 @@ const mockEventsBase = ref<SummaryEvent[]>([
 ])
 
 /**
- * Auto refresh
- */
-const POLL_MS = 60_000
-const timer = ref<number | null>(null)
-const lastUpdatedAt = ref<Date | null>(null)
-
-const isTodayClosed = computed(() => {
-  const todayKey = getTodayDateKey()
-  return !!closedMap.value[todayKey]?.isClosed
-})
-
-
-
-const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)]
-
-const loadLatest = async () => {
-  const faculties = ['คณะวิศวกรรมศาสตร์', 'คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ', 'คณะพยาบาลศาสตร์', 'คณะนิติศาสตร์']
-  const types: EventType[] = ['WAYBILL', 'DEBTOR_NEW', 'CLEAR_DEBTOR']
-  const t = pick(types)
-  const f = pick(faculties)
-
-  const newEvent: SummaryEvent = {
-    createdAt: nowISO(),
-    type: t,
-    faculty: f,
-    amount: Math.floor(1000 + Math.random() * 20000),
-    sub1: 'สำนักงานคณบดี',
-    sub2: 'งานการเงิน',
-    fundName: t === 'WAYBILL' ? 'รายได้คณะ' : (t === 'DEBTOR_NEW' ? 'ลูกหนี้โครงการ' : undefined),
-    fullName: 'System',
-  }
-
-  mockEventsBase.value = [newEvent, ...mockEventsBase.value]
-  lastUpdatedAt.value = new Date()
-}
-
-const manualRefresh = async () => {
-  await loadLatest()
-}
-
-/**
  * Helpers: dateKey + parse range
  */
 const dateKeyOf = (iso: string) => {
@@ -423,20 +390,107 @@ const parseDateRange = (text: string): { start?: Date; end?: Date } => {
 
 /**
  * ✅ Close State Store (ต่อวัน)
- * - key: dateKey
- * - value: { isClosed, closedAt }
- * ตอนนี้เก็บใน memory; ถ้าอยาก persist ให้ใช้ localStorage เพิ่มได้
  */
 type CloseState = { isClosed: boolean; closedAt?: string }
 const closedMap = ref<Record<string, CloseState>>({})
 
 const getTodayDateKey = () => dateKeyOf(new Date().toISOString())
+const isDateClosed = (dateKey: string) => !!closedMap.value[dateKey]?.isClosed
 
+const isTodayClosed = computed(() => isDateClosed(getTodayDateKey()))
+
+/**
+ * ✅ Freeze Mode (เข้ม)
+ * - ถ้าวันนี้ปิดยอด -> freeze = true -> หยุด poll + ห้ามเพิ่ม mock
+ */
+const freezeMode = ref(false)
+
+/**
+ * Polling
+ */
+const POLL_MS = 60_000
+const pollTimer = ref<number | null>(null)
+
+// ตัวเช็คเปลี่ยนวัน (เพื่อปลด freeze อัตโนมัติเมื่อขึ้นวันใหม่)
+const dayWatcherTimer = ref<number | null>(null)
+const DAY_WATCH_MS = 15_000 // เช็คทุก 15 วินาทีพอ (เบาๆ)
+
+const lastUpdatedAt = ref<Date | null>(null)
+const lastUpdatedText = computed(() => {
+  if (!lastUpdatedAt.value) return '-'
+  return lastUpdatedAt.value.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+})
+
+/**
+ * utils
+ */
+const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)]
+
+/**
+ * ✅ Start/Stop Poll (Frozen แบบเข้ม)
+ */
+const stopPoll = () => {
+  if (pollTimer.value) {
+    window.clearInterval(pollTimer.value)
+    pollTimer.value = null
+  }
+}
+
+const startPoll = () => {
+  // กันซ้อน
+  stopPoll()
+
+  // ถ้าวันนี้ปิดยอด => ไม่เริ่ม poll
+  if (isTodayClosed.value) return
+
+  pollTimer.value = window.setInterval(loadLatest, POLL_MS)
+}
+
+/**
+ * ✅ เพิ่ม mock event เฉพาะตอน "ไม่ Frozen"
+ */
+const loadLatest = async () => {
+  // ✅ เข้ม: freezeMode true = หยุดเพิ่มทันที
+  if (freezeMode.value) return
+
+  const todayKey = getTodayDateKey()
+
+  // ✅ กันซ้ำอีกชั้น: วันนี้ปิดยอดแล้ว = ห้ามเพิ่ม
+  if (isDateClosed(todayKey)) return
+
+  const faculties = ['คณะวิศวกรรมศาสตร์', 'คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ', 'คณะพยาบาลศาสตร์', 'คณะนิติศาสตร์']
+  const types: EventType[] = ['WAYBILL', 'DEBTOR_NEW', 'CLEAR_DEBTOR']
+  const t = pick(types)
+  const f = pick(faculties)
+
+  const newEvent: SummaryEvent = {
+    createdAt: nowISO(),
+    type: t,
+    faculty: f,
+    amount: Math.floor(1000 + Math.random() * 20000),
+    sub1: 'สำนักงานคณบดี',
+    sub2: 'งานการเงิน',
+    fundName: t === 'WAYBILL' ? 'รายได้คณะ' : (t === 'DEBTOR_NEW' ? 'ลูกหนี้โครงการ' : undefined),
+    fullName: 'System',
+  }
+
+  mockEventsBase.value = [newEvent, ...mockEventsBase.value]
+  lastUpdatedAt.value = new Date()
+}
+
+const manualRefresh = async () => {
+  // ✅ เข้ม: กดรีเฟรชตอนปิดยอดแล้ว = ไม่ทำงาน
+  if (freezeMode.value || isTodayClosed.value) return
+  await loadLatest()
+}
+
+/**
+ * ✅ Close Daily (เปิด Freeze แบบเข้มทันที)
+ */
 const closeDaily = async () => {
   const todayKey = getTodayDateKey()
 
-  // ถ้าปิดยอดแล้ว ไม่ให้ปิดซ้ำ
-  if (closedMap.value[todayKey]?.isClosed) {
+  if (isDateClosed(todayKey)) {
     await Swal.fire({
       icon: 'info',
       title: 'ปิดยอดแล้ว',
@@ -453,7 +507,7 @@ const closeDaily = async () => {
     html: `
       <div style="text-align:left">
         <div><b>วันที่:</b> ${formatThaiDate(todayKey)}</div>
-        <div><b>คำเตือน:</b> เมื่อปิดยอดแล้วควรล็อก/ไม่แก้ไขข้อมูลของวันนั้น</div>
+        <div><b>คำเตือน:</b> เมื่อปิดยอดแล้วจะ “Frozen” ไม่ให้เพิ่ม/แก้ไขข้อมูลของวันนั้น</div>
       </div>
     `,
     showCancelButton: true,
@@ -478,15 +532,72 @@ const closeDaily = async () => {
     }),
   }
 
+  // ✅ เข้ม: เปิด freeze + หยุด poll ทันที
+  freezeMode.value = true
+  stopPoll()
+  lastUpdatedAt.value = new Date()
+
   await Swal.fire({
     icon: 'success',
     title: 'ปิดยอดสำเร็จ',
-    text: `ปิดยอดวันที่ ${formatThaiDate(todayKey)} แล้ว`,
+    text: `ปิดยอดวันที่ ${formatThaiDate(todayKey)} แล้ว (Frozen)`,
     confirmButtonText: 'ตกลง',
     confirmButtonColor: '#6366f1',
   })
 }
 
+/**
+ * ✅ Watch freeze condition จาก isTodayClosed
+ * - ถ้าวันนี้ถูกปิดยอด -> freezeMode true + stopPoll
+ * - ถ้าวันนี้ยังไม่ปิดยอด -> freezeMode false + startPoll
+ */
+watch(
+  isTodayClosed,
+  (closed) => {
+    if (closed) {
+      freezeMode.value = true
+      stopPoll()
+    } else {
+      // ถ้าวันใหม่ยังไม่ปิดยอด ปลด freeze และเริ่ม poll
+      freezeMode.value = false
+      startPoll()
+    }
+  },
+  { immediate: true }
+)
+
+/**
+ * ✅ Day watcher: เมื่อวันเปลี่ยน (เช่นข้ามเที่ยงคืน)
+ * - ถ้าวันใหม่ยังไม่ปิดยอด -> ปลด freeze + startPoll
+ */
+const currentDayKey = ref(getTodayDateKey())
+
+const startDayWatcher = () => {
+  if (dayWatcherTimer.value) window.clearInterval(dayWatcherTimer.value)
+
+  dayWatcherTimer.value = window.setInterval(() => {
+    const nowKey = getTodayDateKey()
+    if (nowKey !== currentDayKey.value) {
+      currentDayKey.value = nowKey
+
+      // วันเปลี่ยนแล้ว:
+      if (!isDateClosed(nowKey)) {
+        freezeMode.value = false
+        startPoll()
+      } else {
+        freezeMode.value = true
+        stopPoll()
+      }
+    }
+  }, DAY_WATCH_MS)
+}
+
+const stopDayWatcher = () => {
+  if (dayWatcherTimer.value) {
+    window.clearInterval(dayWatcherTimer.value)
+    dayWatcherTimer.value = null
+  }
+}
 
 /**
  * Filters
@@ -590,10 +701,10 @@ const buildDaily = (events: SummaryEvent[]): DailySummary[] => {
 
     delete day.facMap
 
-    // ✅ restore expanded state
+    // restore expanded
     day.expanded = !!expandedMap.value[day.dateKey]
 
-    // ✅ inject close state
+    // inject close
     const closeState = closedMap.value[day.dateKey]
     day.isClosed = closeState?.isClosed ?? false
     day.closedAt = closeState?.closedAt
@@ -618,21 +729,24 @@ const formatThaiDate = (dateKey: string) => {
   return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-const lastUpdatedText = computed(() => {
-  if (!lastUpdatedAt.value) return '-'
-  return lastUpdatedAt.value.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
-})
-
+/**
+ * Mount lifecycle
+ */
 onMounted(async () => {
-  await loadLatest()
-  timer.value = window.setInterval(loadLatest, POLL_MS)
+  // โหลดครั้งแรก 1 ที (ถ้าวันนี้ยังไม่ปิดยอด)
+  if (!isTodayClosed.value) {
+    await loadLatest()
+  }
+
+  // เริ่ม poll ตามสถานะวันนี้
+  startPoll()
+
+  // ตัวเช็คเปลี่ยนวัน
+  startDayWatcher()
 })
 
 onBeforeUnmount(() => {
-  if (timer.value) window.clearInterval(timer.value)
+  stopPoll()
+  stopDayWatcher()
 })
 </script>
-
-
-
-

@@ -123,10 +123,6 @@ function createDocDefinition() {
     item.paymentDetails.some(p => p.moneyType === 'bank')
   ) || false
 
-  const hasTransfer = receipt.receiptList?.some(item =>
-    item.paymentDetails.some(p => p.moneyType === 'transfer')
-  ) || false
-
   const checkDetails = receipt.receiptList?.flatMap(item => {
     const checks = item.paymentDetails.filter(p => p.moneyType === 'bank')
     const fee = item.fee || 0
@@ -321,14 +317,13 @@ function createDocDefinition() {
 
 ...(isCash ? [{
   columns: [
-    { text: 'นำส่งเป็น', style: 'form', margin: [20, 0, 0, 0] },
-
     {
       columns: [
         {
           text: 'เงินสด',
           style: 'form',
-          margin: [-194.5, 0, 0, 0],
+          margin: [83, 0, 0, 0],
+          noWrap: true,
           width: 'auto'
         },              {
                 text: 'จำนวนเงิน',
@@ -780,6 +775,7 @@ receiptData.value.receiptList.forEach((item) => {
       const total = receiptData.value.netTotalAmount || 0
       summary.text = convertNumberToThaiText(total)
       summary.total = total.toLocaleString('th-TH', { minimumFractionDigits: 2 })
+      
     }
 
     previewPdf()

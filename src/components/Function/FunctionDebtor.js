@@ -7,7 +7,7 @@ export function useRowManagerDebtor() {
     {
       id: 1,
       itemName: null,
-      note: '',
+      debtornote: '',
       money: '',
     },
   ])
@@ -17,7 +17,7 @@ export function useRowManagerDebtor() {
     {
       id: 1,
       itemName: null,
-      note: '',
+      depositnote: '',
       fee: '',
       selectedItems: [],
       expanded: true,
@@ -72,7 +72,7 @@ export function useRowManagerDebtor() {
     debtorList.value.push({
       id: debtorList.value.length + 1,
       itemName: null,
-      note: '',
+      debtornote: '',
       money: '',
     })
 
@@ -92,7 +92,7 @@ export function useRowManagerDebtor() {
     depositList.value.push({
       id: depositList.value.length + 1,
       itemName: null,
-      note: '',
+      depositnote: '',
       fee: '',
       selectedItems: JSON.parse(JSON.stringify(defaultItems)),
       expanded: true,
@@ -279,7 +279,7 @@ const updateSelectedItems = (index, selected) => {
       .map((row, index) => {
         const hasItemName = row.itemName && row.itemName.trim() !== ''
         const hasFee = row.fee && row.fee !== ''
-        const hasNote = row.note && row.note.trim() !== ''
+        const hasNote = row.depositnote && row.depositnote.trim() !== ''
         const hasSelectedItems = row.selectedItems && row.selectedItems.some((item) => item.checked)
 
         if (!hasItemName && !hasFee && !hasNote && !hasSelectedItems) {
@@ -318,7 +318,7 @@ const updateSelectedItems = (index, selected) => {
           itemName: row.itemName || 'ยังไม่ระบุชื่อรายการ',
           items: checkedItems,
           fee: fee,
-          note: row.note || '',
+          note: row.depositnote || '',
           subtotal: subtotal,
           netAmount: netAmount,
           keyword: row.keyword,

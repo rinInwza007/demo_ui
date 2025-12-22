@@ -59,7 +59,14 @@ isLocked?: boolean;
   subAffiliationName2?: string;
   /** Affiliation name */
   affiliationName: string;
-
+sendmoney?: string;
+  moneyTypeNote?: string;
+  
+  /** Net total amount */
+  netTotalAmount: number;
+  totalDebtorAmount?: number;
+  totalDepositAmount?: number;
+  totalFee?: number;
   /** Fund ID */
   fundId: string;
 
@@ -83,3 +90,25 @@ isLocked?: boolean;
 
 }
 
+export interface debtorList {
+  itemName: string;
+  debtornote: string;
+  amount: number;
+}
+
+export interface depositList {
+  itemName: string;
+  depositnote: string;
+  subtotal: number;
+  fee: number;
+  netAmount: number;
+  paymentDetails: {
+    moneyType: string
+    amount: number
+    referenceNo?: string
+    checkNumber?: string | null
+    accountNumber?: string | null
+    accountName?: string | null
+    bankName?: string | null
+  }[]
+}

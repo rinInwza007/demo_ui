@@ -14,7 +14,7 @@
       class="glass-input w-full text-sm text-slate-700 appearance-none cursor-pointer
              py-2.5 rounded-xl pr-10 focus:outline-none
              focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30
-             hover:shadow-md transition-all"
+             hover:shadow-md transition-all px-2 "
       :class="icon ? 'pl-10' : 'pl-3'"
       :value="modelValue"
       @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"

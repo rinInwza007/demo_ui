@@ -362,8 +362,8 @@ const items = computed(() => {
 
 onMounted(loadData)
 
-const view = (item: any) => router.push(`/pdfpage/${item.id}`)
-const edit = (item: any) => router.push(`/waybill/edit/${item.id}`)
+const view = (item: any) => router.push(`/pdfDebtor/${item.id}`)
+const edit = (item: any) => router.push(`/waybilldebtor/edit/${item.id}`)
 const gotowaybilldebtor = () => router.push("/waybilldebtor")
 
 const toggleLock = (row: any) => {

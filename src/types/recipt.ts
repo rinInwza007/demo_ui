@@ -17,7 +17,9 @@ export interface ReceiptItem {
 
   /** Amount */
   amount: number;
-
+  debtorAmount?: number
+  depositSubtotal?: number
+  depositNetAmount?: number
   /** Type of money*/
   moneyType: MoneyType;
 
@@ -31,6 +33,15 @@ export interface ReceiptItem {
   keyword?: string[];
   subtotal?: number;
   netAmount?: number;
+    paymentDetails: {
+    moneyType: string
+    amount: number
+    referenceNo?: string
+    checkNumber?: string | null
+    accountNumber?: string | null
+    accountName?: string | null
+    bankName?: string | null
+  }[]
 }
 
 export interface Receipt {
@@ -44,7 +55,8 @@ isLocked?: boolean;
   /** Affiliation ID */
   affiliationId: string;
   mainAffiliationName?: string;
-  subAffiliationName?: string;
+  subAffiliationName1?: string;
+  subAffiliationName2?: string;
   /** Affiliation name */
   affiliationName: string;
 

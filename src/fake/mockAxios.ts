@@ -146,10 +146,10 @@ export function setupAxiosMock() {
   mock.onGet(/\/getReceipt\/([^?]+)$/).reply(config => {
     const url = config.url || '';
     console.log('📥 GET single receipt - URL:', url);
-    
+
     const match = url.match(/\/getReceipt\/([^?]+)$/);
     const projectCode = match?.[1];
-    
+
     if (!projectCode) {
       console.error('❌ No projectCode in URL');
       return [400, { message: 'projectCode is required' }];
@@ -163,7 +163,7 @@ export function setupAxiosMock() {
 
     if (!found) {
       console.error('❌ Receipt not found:', decodedCode);
-      return [404, { 
+      return [404, {
         message: 'Receipt not found',
         requestedCode: decodedCode,
         availableCodes: db.map(r => r.projectCode)
@@ -180,15 +180,15 @@ export function setupAxiosMock() {
     const withOldFormat = normalizeToOldFormat(normalized);
 
     const response = {
-      ...withOldFormat,
-      moneyType: withOldFormat.moneyType || withOldFormat.sendmoney || '',
-      isLocked: withOldFormat.isLocked ?? false,
-      createdAt: withOldFormat.createdAt instanceof Date 
-        ? withOldFormat.createdAt.toISOString() 
-        : withOldFormat.createdAt,
-      updatedAt: withOldFormat.updatedAt instanceof Date 
-        ? withOldFormat.updatedAt.toISOString() 
-        : withOldFormat.updatedAt,
+      ...found,
+      moneyType: found.moneyType || found.sendmoney || '',
+      isLocked: found.isLocked ?? false,
+      createdAt: found.createdAt instanceof Date
+        ? found.createdAt.toISOString()
+        : found.createdAt,
+      updatedAt: found.updatedAt instanceof Date
+        ? found.updatedAt.toISOString()
+        : found.updatedAt,
     };
 
     return [200, response];
@@ -259,16 +259,14 @@ export function setupAxiosMock() {
     const matches = config.url?.match(/\/updateReceipt\/(.+)$/);
     const projectCode = matches ? decodeURIComponent(matches[1]) : '';
     const incoming = JSON.parse(config.data);
-    
+
     console.log('🔄 Update Request:', { projectCode, incoming });
-    
-    if (!projectCode) {
-      return [400, { message: 'projectCode is required' }];
-    }
+
+    if (!projectCode) return [400, { message: 'projectCode is required' }];
 
     const db = loadReceipts();
     const idx = db.findIndex(r => r.projectCode === projectCode);
-    
+
     if (idx === -1) {
       console.error('❌ Not found:', projectCode);
       console.log('Available projectCodes:', db.map(r => r.projectCode));
@@ -286,10 +284,10 @@ export function setupAxiosMock() {
       projectCode, // ใช้ projectCode เดิม
       createdAt: db[idx].createdAt, // เก็บ createdAt เดิม
     });
-    
+
     db[idx] = updated;
     saveReceipts(db);
-    
+
     console.log('✅ Updated successfully:', updated);
     return [200, updated];
   });
@@ -309,6 +307,8 @@ export function setupAxiosMock() {
 
   console.log('✅ Axios Mock Setup Complete - Backward Compatible Mode');
   return mock;
+
+  
 }
 
 // ========== ตัวอย่างการใช้งาน ==========

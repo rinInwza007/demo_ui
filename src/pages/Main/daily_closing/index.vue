@@ -1,493 +1,752 @@
 <template>
-  <!-- ⭐ ลบ <body> tag ออก - ใช้ div แทน -->
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
-
     <div id="app" class="relative w-full h-screen flex overflow-hidden">
-      <!-- ⭐ ลบ overflow-hidden ออกจาก #app -->
+      <!-- Background Elements -->
+      <div class="mesh-bg"></div>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
 
-        <!-- Background Elements -->
-        <div class="mesh-bg"></div>
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
+      <!-- Sidebar -->
+      <sidebar />
 
-        <!-- Sidebar (Mac Style) -->
-        <sidebar />
+      <!-- Main Content -->
+      <main class="flex-1 flex flex-col relative z-10 min-h-0">
+        <!-- Header Bar -->
+        <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2 flex-shrink-0">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <i class="ph ph-files"></i>
+              สรุปยอดรายวัน
+            </h1>
+          </div>
 
-        <!-- Main Content -->
-        <main class="flex-1 flex flex-col relative z-10 min-h-0">
+          <div class="flex items-center gap-3">
+            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
+              <i class="ph ph-bell text-xl"></i>
+            </button>
+            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
+              <i class="ph ph-gear text-xl"></i>
+            </button>
+          </div>
+        </header>
 
-            <!-- Header Bar -->
-            <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2 flex-shrink-0">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <i class="ph ph-files"></i>
-                        สรุปยอดรายวัน
-                    </h1>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
-                        <i class="ph ph-bell text-xl"></i>
-                    </button>
-                    <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
-                        <i class="ph ph-gear text-xl"></i>
-                    </button>
-                </div>
-            </header>
+        <!-- Filters Area -->
+        <div class="px-8 py-4 flex-shrink-0">
+          <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+            <!-- Left Filters -->
+            <div class="flex items-center gap-3 w-full md:w-auto">
+              <button
+                type="button"
+                :disabled="isTodayClosed"
+                class="px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm border border-white/40 transition text-slate-700"
+                :class="isTodayClosed ? 'bg-white/10 opacity-60 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20'"
+                v-tippy="isTodayClosed ? 'วันนี้ปิดยอดแล้ว (Frozen)' : 'ปิดยอดประจำวัน (วันนี้)'"
+                @click="closeDaily"
+              >
+                <i class="ph ph-lock-key mr-2"></i>
+                ปิดยอดประจำวัน
+              </button>
 
-            <!-- Filters Area -->
-            <div class="px-8 py-4 flex-shrink-0">
-                <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-                    <!-- Left Filters -->
-                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                        <div class="relative group">
-                            <i class="ph ph-calendar-blank absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors"></i>
-                            <input type="text" placeholder="เลือกช่วงวันเวลา..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full md:w-48 text-sm placeholder-slate-400 focus:placeholder-blue-300/50">
-                        </div>
-                        <CascadingSelect
-                        v-model:modelValueMain="selectedMain"
-                        v-model:modelValueSub1="selectedSub1"
-                        v-model:modelValueSub2="selectedSub2"
-                        :options="options"
-                        />
-
-                    </div>
-
-                    <!-- Right Search & Action -->
-                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                        <div class="relative flex-1 md:w-64">
-                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                            <input v-model="searchText" type="text" placeholder="ค้นหา สังกัด / หน่วยงาน..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm">
-                        </div>
-                    </div>
-                </div>
+              <button
+                type="button"
+                class="px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm border border-white/40 bg-white/10 hover:bg-white/20 transition text-slate-700"
+                v-tippy="'ดูรายละเอียดประจำวัน'"
+              >
+                <i class="ph ph-eye mr-2"></i>
+                View
+              </button>
             </div>
 
-            <!-- Data Table Area -->
-            <div class="flex-1 px-8 pb-8 flex flex-col min-h-0">
-                <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
+            <!-- Right Actions -->
+            <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto">
+              <div class="flex flex-col items-end gap-1">
+                <button
+                  class="glass-button-primary px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm"
+                  @click="manualRefresh"
+                  :disabled="isTodayClosed"
+                  :class="isTodayClosed ? 'opacity-60 cursor-not-allowed' : ''"
+                  v-tippy="isTodayClosed ? 'วันนี้ปิดยอดแล้ว (Frozen)' : 'รีเฟรชข้อมูลทันที'"
+                >
+                  <i class="ph ph-arrows-clockwise mr-2"></i> รีเฟรช
+                </button>
 
+                <div class="text-xs text-slate-500 flex items-center gap-2 px-1">
+                  <i class="ph ph-clock"></i>
 
-                    <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold  uppercase tracking-wider flex-shrink-0">
-                        <div class="col-span-3 text-center">วัน/เดือน/ปี</div>
-                        <div class="col-span-3 text-center "></div>
-                        <div class="col-span-3 text-center">รายได้/โครงการ</div>
-                        <div class="col-span-3 text-center">ปีงบฯ</div>
-                    </div>
+                  <template v-if="isTodayClosed">
+                     หยุดอัปเดตอัตโนมัติ • ล่าสุด:
+                    <span class="font-semibold text-slate-600">{{ lastUpdatedText }}</span>
+                  </template>
 
-                    <!-- Table Body (Scrollable) -->
-                    <div class="overflow-y-auto overflow-x-hidden flex-1 p-2 min-h-0">
-                        <div v-for="(item, index) in items" :key="index"
-                             class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm">
+                  <template v-else>
+                    อัปเดตทุก 1 นาที • อัปเดตล่าสุด:
+                    <span class="font-semibold text-slate-600">{{ lastUpdatedText }}</span>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                            <!-- Status -->
-                            <div class="col-span-1 flex justify-center">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
-                                     :class="{
-                                        'bg-red-100 text-red-500': item.status === 'cancel',
-                                        'bg-yellow-100 text-yellow-600': item.status === 'pending',
-                                        'bg-green-100 text-green-500': item.status === 'success'
-                                     }">
-                                    <i v-if="item.status === 'cancel'" class="ph-fill ph-x-circle text-lg"></i>
-                                    <i v-if="item.status === 'pending'" class="ph-fill ph-clock text-lg"></i>
-                                    <i v-if="item.status === 'success'" class="ph-fill ph-check-circle text-lg"></i>
-                                </div>
-                            </div>
+        <!-- Data Area -->
+        <div class="flex-1 px-8 pb-8 flex flex-col min-h-0">
+          <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
+            <!-- Header (small) -->
+            <div class="px-6 py-4 border-b border-white/40 bg-white/20 flex items-center justify-between flex-shrink-0">
+              <div class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <i class="ph ph-chart-bar"></i>
+                Daily Overview
+              </div>
+              <div class="text-xs text-slate-500">
+                แสดงทั้งหมด {{ dailyItems.length }} วัน
+              </div>
+            </div>
 
-                            <!-- Department -->
-                            <div class="col-span-2">
-                                <div class="font-medium text-slate-800 text- ">{{ item.department }}</div>
-                                <div class="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
-                                    <i class="ph ph-buildings text-xs"></i>
-                                    <span class="truncate">{{ item.subDepartment }}</span>
-                                </div>
-                            </div>
+            <!-- BODY: Accordion List -->
+            <div class="overflow-y-auto overflow-x-hidden flex-1 p-3 min-h-0 space-y-3">
+              <div
+                v-for="day in dailyItems"
+                :key="day.dateKey"
+                class="rounded-2xl border border-white/40 bg-white/10"
+              >
+                <!-- LEVEL 1 -->
+                <button
+                  class="w-full px-5 py-4 rounded-2xl transition"
+                  :class="(!day.isClosed && LOCK_EXPAND_WHEN_NOT_CLOSED)
+                    ? 'opacity-80 cursor-not-allowed'
+                    : 'hover:bg-white/20'"
+                  @click="onClickDay(day)"
+                  type="button"
+                >
+                  <div class="grid grid-cols-12 items-center gap-4">
+                    <!-- LEFT -->
+                    <div class="col-span-12 lg:col-span-4 flex items-center gap-3 min-w-0">
+                      <div class="w-10 h-10 rounded-xl bg-white/30 border border-white/40 flex items-center justify-center flex-shrink-0">
+                        <i class="ph ph-calendar text-lg text-slate-600"></i>
+                      </div>
 
-                            <!-- Project -->
-                            <div class="col-span-1">
-                                <span class="bg-blue-50/50 text-blue-700 text-xs px-2.5 py-1 rounded-lg border border-blue-100 font-medium">
-                                    {{ item.project }}
-                                </span>
-                            </div>
+                      <div class="min-w-0">
+                        <div class="font-semibold text-slate-800 truncate flex items-center gap-2">
+                          {{ formatThaiDate(day.dateKey) }}
 
-                            <!-- Year -->
-                            <div class="col-span-1 text-center text-sm font-medium text-slate-600 font-mono">
-                                {{ item.year }}
-                            </div>
+                          <!-- ✅ STATUS BADGE -->
+                          <span
+                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border"
+                            :class="day.isClosed
+                              ? 'bg-green-100/70 text-green-700 border-green-200'
+                              : 'bg-amber-100/70 text-amber-700 border-amber-200'"
+                          >
+                            <i class="ph" :class="day.isClosed ? 'ph-check-circle' : 'ph-clock'"></i>
+                            {{ day.isClosed ? 'ปิดยอดแล้ว' : 'ยังไม่ปิดยอด' }}
+                          </span>
 
-                            <!-- Responsible -->
-                            <div class="col-span-2 flex items-center gap-2">
-                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
-                                    {{ item.responsible.charAt(0) }}
-                                </div>
-                                <span class="text-sm text-slate-700 truncate">{{ item.responsible }}</span>
-                            </div>
-
-                            <!-- Payment Type -->
-                            <div class="col-span-1">
-                                <div class="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                                    <i class="ph-fill text-slate-400"
-                                       :class="item.paymentType === 'เงินสด' ? 'ph-money' : (item.paymentType === 'เช็คธนาคาร' ? 'ph-scroll' : 'ph-bank')"></i>
-                                    {{ item.paymentType }}
-                                </div>
-                            </div>
-                            <div class="col-span-1 text-center">
-  <div class="text-xs font-medium text-slate-700 font-mono">
-    {{ item.time }}
-  </div>
-</div>
-
-                            <!-- Amount -->
-                            <div class="col-span-1 text-right">
-                                <div class="font-bold text-slate-800 font-mono text-sm">{{ formatCurrency(item.amount) }}</div>
-                                <div class="text-[10px] text-slate-400">บาท</div>
-                            </div>
-
-                            <!-- Actions -->
-                            <div class="col-span-2 flex justify-center">
-                                <ActionButtons
-                                    :showCleardedtor="cleardebtor"
-                                    
-                                    @cleardebtor="cleardebtor"
-
-
-                                />
-                            </div>
-
+                          <span
+                            v-if="day.isClosed && day.closedAt"
+                            class="text-[11px] text-slate-400 hidden sm:inline"
+                          >
+                            ({{ day.closedAt }})
+                          </span>
                         </div>
-                    </div>
 
-                    <!-- Footer Pagination -->
-                    <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between flex-shrink-0">
                         <div class="text-xs text-slate-500">
-                            แสดง 1-4 จากทั้งหมด 12 รายการ
+                          รวม {{ day.total.countWaybill + day.total.countDebtor + day.total.countClear }} รายการ
+                          • สุทธิ
+                          <span class="font-semibold" :class="day.total.net >= 0 ? 'text-green-600' : 'text-red-600'">
+                            {{ formatCurrency(day.total.net) }}
+                          </span>
                         </div>
-                        <div class="flex items-center gap-1">
-                            <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 disabled:opacity-50 text-xs">Prev</button>
-                            <button class="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs shadow-md shadow-blue-500/30 font-medium">1</button>
-                            <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">2</button>
-                            <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">3</button>
-                            <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 text-xs">Next</button>
-                        </div>
+                      </div>
                     </div>
 
+                    <!-- MID -->
+                    <div class="col-span-12 lg:col-span-7">
+                      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="rounded-xl border border-white/40 bg-white/10 px-3 py-2">
+                          <div class="text-[11px] text-slate-500">ใบนำส่ง</div>
+                          <div class="text-sm font-semibold font-mono text-slate-800">
+                            {{ day.total.countWaybill }} • {{ formatCurrency(day.total.sumWaybill) }}
+                          </div>
+                        </div>
+
+                        <div class="rounded-xl border border-white/40 bg-white/10 px-3 py-2">
+                          <div class="text-[11px] text-slate-500">ลูกหนี้ใหม่</div>
+                          <div class="text-sm font-semibold font-mono text-slate-800">
+                            {{ day.total.countDebtor }} • {{ formatCurrency(day.total.sumDebtor) }}
+                          </div>
+                        </div>
+
+                        <div class="rounded-xl border border-white/40 bg-white/10 px-3 py-2">
+                          <div class="text-[11px] text-slate-500">ล้างลูกหนี้</div>
+                          <div class="text-sm font-semibold font-mono text-slate-800">
+                            {{ day.total.countClear }} • {{ formatCurrency(day.total.sumClear) }}
+                          </div>
+                        </div>
+
+                        <div class="rounded-xl border border-white/40 bg-white/10 px-3 py-2">
+                          <div class="text-[11px] text-slate-500">ยอดสุทธิ</div>
+                          <div class="text-sm font-bold font-mono" :class="day.total.net >= 0 ? 'text-green-600' : 'text-red-600'">
+                            {{ formatCurrency(day.total.net) }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- RIGHT -->
+                    <div class="col-span-12 lg:col-span-1 flex items-center justify-between lg:justify-end gap-3">
+                      <span class="inline-flex text-xs px-3 py-1 rounded-full border border-white/40 bg-white/20 text-slate-600 whitespace-nowrap">
+                        {{ day.faculties.length }} หน่วยงาน
+                      </span>
+
+                      <i
+                        class="ph ph-caret-down text-lg text-slate-500 transition"
+                        :class="day.expanded ? 'rotate-180' : ''"
+                      ></i>
+                    </div>
+                  </div>
+
+                  <div v-if="!day.isClosed" class="mt-2 text-[11px] text-amber-700/90 flex items-center gap-2">
+                    <i class="ph ph-warning-circle"></i>
+                    ยังไม่ปิดยอด
+                    <span v-if="LOCK_EXPAND_WHEN_NOT_CLOSED">• (ล็อกไม่ให้ขยายจนกว่าจะปิดยอด)</span>
+                  </div>
+                </button>
+
+                <!-- LEVEL 2 -->
+                <div v-if="day.expanded" class="px-5 pb-4">
+                  <div class="mt-2 grid grid-cols-12 text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">
+                    <div class="col-span-5">คณะ/หน่วยงาน</div>
+                    <div class="col-span-2 text-right">ใบนำส่ง</div>
+                    <div class="col-span-2 text-right">ลูกหนี้</div>
+                    <div class="col-span-2 text-right">ล้างลูกหนี้</div>
+                    <div class="col-span-1 text-right">สุทธิ</div>
+                  </div>
+
+                  <div class="space-y-2">
+                    <div
+                      v-for="f in day.faculties"
+                      :key="day.dateKey + '_' + f.faculty"
+                      class="grid grid-cols-12 items-center px-3 py-3 rounded-xl border border-white/40 bg-white/10 hover:bg-white/20 transition"
+                    >
+                      <div class="col-span-5 min-w-0">
+                        <div class="font-medium text-slate-800 truncate">
+                          {{ f.faculty }}
+                        </div>
+                        <div class="text-xs text-slate-500">
+                          รวม {{ f.countWaybill + f.countDebtor + f.countClear }} รายการ
+                        </div>
+                      </div>
+
+                      <div class="col-span-2 text-right text-sm font-mono">
+                        {{ f.countWaybill }} • {{ formatCurrency(f.sumWaybill) }}
+                      </div>
+
+                      <div class="col-span-2 text-right text-sm font-mono">
+                        {{ f.countDebtor }} • {{ formatCurrency(f.sumDebtor) }}
+                      </div>
+
+                      <div class="col-span-2 text-right text-sm font-mono">
+                        {{ f.countClear }} • {{ formatCurrency(f.sumClear) }}
+                      </div>
+
+                      <div
+                        class="col-span-1 text-right font-bold font-mono"
+                        :class="(f.sumWaybill + f.sumClear - f.sumDebtor) >= 0 ? 'text-green-600' : 'text-red-600'"
+                      >
+                        {{ formatCurrency(f.sumWaybill + f.sumClear - f.sumDebtor) }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              <div v-if="dailyItems.length === 0" class="p-10 text-center text-slate-500">
+                <i class="ph ph-info text-2xl"></i>
+                <div class="mt-2">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</div>
+              </div>
             </div>
 
-        </main>
+            <!-- Footer -->
+            <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between flex-shrink-0">
+              <div class="text-xs text-slate-500">
+                โหมดทดสอบ: Mock data • Poll: 60s
+              </div>
+              <div class="text-xs text-slate-500">
+                Tips: พิมพ์ช่วงวัน เช่น <span class="font-mono">2025-12-01 ถึง 2025-12-18</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
-import Swal from 'sweetalert2'
-import { useRouter } from 'vue-router'
-import { setupAxiosMock } from '@/fake/mockAxios'
-import { options } from "@/components/data/departments"
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import sidebar from '@/components/bar/sidebar.vue'
-import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
-import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
+import Swal from 'sweetalert2'
+import axios from 'axios'
 
-setupAxiosMock()
+/**
+ * ✅ ถ้า true = วันไหนยังไม่ปิดยอด "ห้ามกดขยาย"
+ * ถ้า false = ยังไม่ปิดยอด "กดขยายได้"
+ */
+const LOCK_EXPAND_WHEN_NOT_CLOSED = false
 
-const router = useRouter()
+type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
+type SummaryEvent = {
+  createdAt: string
+  type: EventType
+  faculty: string
+  amount: number
+  sub1?: string
+  sub2?: string
+  fundName?: string
+  fullName?: string
+}
 
+type FacultySummary = {
+  faculty: string
+  countWaybill: number
+  sumWaybill: number
+  countDebtor: number
+  sumDebtor: number
+  countClear: number
+  sumClear: number
+}
+
+type DailySummary = {
+  dateKey: string
+  expanded: boolean
+
+  // ✅ เพิ่มสถานะปิดยอด
+  isClosed: boolean
+  closedAt?: string
+
+  total: {
+    countWaybill: number; sumWaybill: number
+    countDebtor: number;  sumDebtor: number
+    countClear: number;   sumClear: number
+    net: number
+  }
+  faculties: FacultySummary[]
+}
+
+/**
+ * Filters
+ */
 const searchText = ref('')
-const rawData = ref<any[]>([])
-const selectedMain = ref("")
-const selectedSub1 = ref("")
-const selectedSub2 = ref("")
+const selectedMain = ref('')
+const selectedSub1 = ref('')
+const selectedSub2 = ref('')
+const dateRangeText = ref('')
 
-// ฟังก์ชันจัดกลุ่มตามคณะ
-const groupByFaculty = (receipts: any[]) => {
-  const grouped = new Map<string, any[]>()
+/**
+ * Mock Data
+ */
+const nowISO = () => new Date().toISOString()
+const yesterdayISO = () => new Date(Date.now() - 86400000).toISOString()
 
-  receipts.forEach(receipt => {
-    const faculty = receipt.mainAffiliationName || receipt.affiliationName || 'ไม่ระบุหน่วยงาน'
+const mockEventsBase = ref<SummaryEvent[]>([
+  { createdAt: nowISO(), type: 'WAYBILL', faculty: 'คณะวิศวกรรมศาสตร์', amount: 12500, sub1: 'สำนักงานคณบดี', sub2: 'งานการเงิน', fundName: 'รายได้คณะ', fullName: 'Apiwat P.' },
+  { createdAt: nowISO(), type: 'DEBTOR_NEW', faculty: 'คณะวิศวกรรมศาสตร์', amount: 8900, sub1: 'ภาควิชาวิศวกรรมคอมพิวเตอร์', sub2: '', fundName: 'โครงการอบรม', fullName: 'Nuttapong K.' },
+  { createdAt: nowISO(), type: 'WAYBILL', faculty: 'คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ', amount: 22000, sub1: 'ศูนย์ฝึกอบรมวิชาชีพฯ', sub2: '', fundName: 'รายได้บริการวิชาการ', fullName: 'Somchai S.' },
+  { createdAt: nowISO(), type: 'CLEAR_DEBTOR', faculty: 'คณะวิศวกรรมศาสตร์', amount: 3000, sub1: 'สำนักงานคณบดี', sub2: 'งานการเงิน' },
 
-    if (!grouped.has(faculty)) {
-      grouped.set(faculty, [])
-    }
-    grouped.get(faculty)!.push(receipt)
+  { createdAt: yesterdayISO(), type: 'WAYBILL', faculty: 'คณะวิศวกรรมศาสตร์', amount: 5000, sub1: 'สำนักงานคณบดี', sub2: '', fundName: 'รายได้คณะ', fullName: 'Admin' },
+  { createdAt: yesterdayISO(), type: 'CLEAR_DEBTOR', faculty: 'คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ', amount: 1500, sub1: 'ศูนย์ฝึกอบรมวิชาชีพฯ', sub2: '' },
+])
+
+/**
+ * Helpers: dateKey + parse range
+ */
+const dateKeyOf = (iso: string) => {
+  const d = new Date(iso)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const parseDateRange = (text: string): { start?: Date; end?: Date } => {
+  const cleaned = (text || '').trim()
+  if (!cleaned) return {}
+
+  const parts = cleaned
+    .replace('ถึง', '-')
+    .split('-')
+    .map(s => s.trim())
+    .filter(Boolean)
+
+  if (parts.length < 2) return {}
+
+  const start = new Date(parts[0] + 'T00:00:00')
+  const end = new Date(parts[1] + 'T23:59:59')
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return {}
+
+  return { start, end }
+}
+
+/**
+ * ✅ Close State Store (ต่อวัน)
+ */
+type CloseState = { isClosed: boolean; closedAt?: string }
+const closedMap = ref<Record<string, CloseState>>({})
+
+const getTodayDateKey = () => dateKeyOf(new Date().toISOString())
+const isDateClosed = (dateKey: string) => !!closedMap.value[dateKey]?.isClosed
+
+const isTodayClosed = computed(() => isDateClosed(getTodayDateKey()))
+
+/**
+ * ✅ Freeze Mode (เข้ม)
+ * - ถ้าวันนี้ปิดยอด -> freeze = true -> หยุด poll + ห้ามเพิ่ม mock
+ */
+const freezeMode = ref(false)
+
+/**
+ * Polling
+ */
+const POLL_MS = 60_000
+const pollTimer = ref<number | null>(null)
+
+// ตัวเช็คเปลี่ยนวัน (เพื่อปลด freeze อัตโนมัติเมื่อขึ้นวันใหม่)
+const dayWatcherTimer = ref<number | null>(null)
+const DAY_WATCH_MS = 15_000 // เช็คทุก 15 วินาทีพอ (เบาๆ)
+
+const lastUpdatedAt = ref<Date | null>(null)
+const lastUpdatedText = computed(() => {
+  if (!lastUpdatedAt.value) return '-'
+  return lastUpdatedAt.value.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+})
+
+/**
+ * utils
+ */
+const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)]
+
+/**
+ * ✅ Start/Stop Poll (Frozen แบบเข้ม)
+ */
+const stopPoll = () => {
+  if (pollTimer.value) {
+    window.clearInterval(pollTimer.value)
+    pollTimer.value = null
+  }
+}
+
+const startPoll = () => {
+  // กันซ้อน
+  stopPoll()
+
+  // ถ้าวันนี้ปิดยอด => ไม่เริ่ม poll
+  if (isTodayClosed.value) return
+
+  pollTimer.value = window.setInterval(loadLatest, POLL_MS)
+}
+
+/**
+ * ✅ เพิ่ม mock event เฉพาะตอน "ไม่ Frozen"
+ */
+const loadLatest = async () => {
+  // ✅ เข้ม: freezeMode true = หยุดเพิ่มทันที
+  if (freezeMode.value) return
+
+  const todayKey = getTodayDateKey()
+
+  // ✅ กันซ้ำอีกชั้น: วันนี้ปิดยอดแล้ว = ห้ามเพิ่ม
+  if (isDateClosed(todayKey)) return
+
+  const faculties = ['คณะวิศวกรรมศาสตร์', 'คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ', 'คณะพยาบาลศาสตร์', 'คณะนิติศาสตร์']
+  const types: EventType[] = ['WAYBILL', 'DEBTOR_NEW', 'CLEAR_DEBTOR']
+  const t = pick(types)
+  const f = pick(faculties)
+
+  const newEvent: SummaryEvent = {
+    createdAt: nowISO(),
+    type: t,
+    faculty: f,
+    amount: Math.floor(1000 + Math.random() * 20000),
+    sub1: 'สำนักงานคณบดี',
+    sub2: 'งานการเงิน',
+    fundName: t === 'WAYBILL' ? 'รายได้คณะ' : (t === 'DEBTOR_NEW' ? 'ลูกหนี้โครงการ' : undefined),
+    fullName: 'System',
+  }
+
+  mockEventsBase.value = [newEvent, ...mockEventsBase.value]
+  lastUpdatedAt.value = new Date()
+}
+
+const manualRefresh = async () => {
+  // ✅ เข้ม: กดรีเฟรชตอนปิดยอดแล้ว = ไม่ทำงาน
+  if (freezeMode.value || isTodayClosed.value) return
+  await loadLatest()
+}
+
+/**
+ * ✅ Close Daily (เปิด Freeze แบบเข้มทันที)
+ */
+const closeDaily = async () => {
+  const todayKey = getTodayDateKey()
+
+  if (isDateClosed(todayKey)) {
+    await Swal.fire({
+      icon: 'info',
+      title: 'ปิดยอดแล้ว',
+      text: `วันนี้ (${formatThaiDate(todayKey)}) ถูกปิดยอดไปแล้ว`,
+      confirmButtonText: 'รับทราบ',
+      confirmButtonColor: '#6366f1',
+    })
+    return
+  }
+
+  const result = await Swal.fire({
+    icon: 'warning',
+    title: 'ยืนยันปิดยอดประจำวัน',
+    html: `
+      <div style="text-align:left">
+        <div><b>วันที่:</b> ${formatThaiDate(todayKey)}</div>
+        <div><b>คำเตือน:</b> เมื่อปิดยอดแล้วจะ “Frozen” ไม่ให้เพิ่ม/แก้ไขข้อมูลของวันนั้น</div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'ใช่, ปิดยอดเลย',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#10b981',
+    cancelButtonColor: '#ef4444',
+    reverseButtons: true,
   })
 
-  return grouped
+  if (!result.isConfirmed) return
+
+  // ✅ ปิดยอดจริง
+  closedMap.value[todayKey] = {
+    isClosed: true,
+    closedAt: new Date().toLocaleString('th-TH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+  }
+
+  // ✅ เข้ม: เปิด freeze + หยุด poll ทันที
+  freezeMode.value = true
+  stopPoll()
+  lastUpdatedAt.value = new Date()
+
+  await Swal.fire({
+    icon: 'success',
+    title: 'ปิดยอดสำเร็จ',
+    text: `ปิดยอดวันที่ ${formatThaiDate(todayKey)} แล้ว (Frozen)`,
+    confirmButtonText: 'ตกลง',
+    confirmButtonColor: '#6366f1',
+  })
 }
 
-// แปลงข้อมูลเป็น row สำหรับแสดงในตาราง
-const mapFacultyToRow = (faculty: string, receipts: any[]) => {
-  const totalDebt = receipts.reduce((sum, r) => {
-    return sum + (Number(r.netTotalAmount) || 0)
-  }, 0)
+/**
+ * ✅ Watch freeze condition จาก isTodayClosed
+ * - ถ้าวันนี้ถูกปิดยอด -> freezeMode true + stopPoll
+ * - ถ้าวันนี้ยังไม่ปิดยอด -> freezeMode false + startPoll
+ */
+watch(
+  isTodayClosed,
+  (closed) => {
+    if (closed) {
+      freezeMode.value = true
+      stopPoll()
+    } else {
+      // ถ้าวันใหม่ยังไม่ปิดยอด ปลด freeze และเริ่ม poll
+      freezeMode.value = false
+      startPoll()
+    }
+  },
+  { immediate: true }
+)
 
-  const itemCount = receipts.length
+/**
+ * ✅ Day watcher: เมื่อวันเปลี่ยน (เช่นข้ามเที่ยงคืน)
+ * - ถ้าวันใหม่ยังไม่ปิดยอด -> ปลด freeze + startPoll
+ */
+const currentDayKey = ref(getTodayDateKey())
 
-  const subOrgs = Array.from(
-    new Set(
-      receipts
-        .map(r => r.subAffiliationName)
-        .filter((name: string) => name && name.trim())
-    )
-  )
+const startDayWatcher = () => {
+  if (dayWatcherTimer.value) window.clearInterval(dayWatcherTimer.value)
 
-  const fundNames = Array.from(
-    new Set(
-      receipts
-        .map(r => r.fundName)
-        .filter((name: string) => name && name.trim())
-    )
-  )
+  dayWatcherTimer.value = window.setInterval(() => {
+    const nowKey = getTodayDateKey()
+    if (nowKey !== currentDayKey.value) {
+      currentDayKey.value = nowKey
 
-  // ✅ ทำ key ให้ตรงกับ template ตารางของคุณ
-  return {
-    id: encodeURIComponent(faculty),
+      // วันเปลี่ยนแล้ว:
+      if (!isDateClosed(nowKey)) {
+        freezeMode.value = false
+        startPoll()
+      } else {
+        freezeMode.value = true
+        stopPoll()
+      }
+    }
+  }, DAY_WATCH_MS)
+}
 
-    // template ใช้ item.status => ตั้งค่าให้เลย
-    status: 'pending', // (ลูกหนี้โดยรวมจะเป็น pending ก็เหมาะ)
-
-    // template ใช้ item.department / item.subDepartment
-    department: faculty,
-    subDepartment: subOrgs.length > 0 ? subOrgs.join(', ') : `${itemCount} รายการ`,
-
-    // template ใช้ item.project / item.year / item.responsible
-    project: fundNames.length > 0 ? fundNames.join(', ') : '-',
-    year: '2568',
-    responsible: receipts[0]?.fullName || '-',
-
-    // template ใช้ item.paymentType / item.time / item.amount
-    paymentType: 'ลูกหนี้',
-    time: '-',              // ถ้าอยากใส่เวลาจริง บอกได้ เดี๋ยวจัดให้
-    amount: totalDebt,      // ✅ ให้เป็น number เพราะ template เรียก formatCurrency()
-
+const stopDayWatcher = () => {
+  if (dayWatcherTimer.value) {
+    window.clearInterval(dayWatcherTimer.value)
+    dayWatcherTimer.value = null
   }
 }
 
+/**
+ * Filters
+ */
+const filteredEvents = computed(() => {
+  let arr = [...mockEventsBase.value]
 
-// โหลดข้อมูลจาก API
-const loadData = async () => {
-  try {
-    const stored = localStorage.getItem('fakeApi.receipts')
-
-    if (!stored) {
-      rawData.value = []
-      console.log('⚠️ No data in localStorage')
-      return
-    }
-
-    const allReceipts = JSON.parse(stored)
-
-    if (!Array.isArray(allReceipts)) {
-      rawData.value = []
-      console.log('⚠️ Data is not array')
-      return
-    }
-
-    const debtorReceipts = allReceipts.filter((r: any) => r.moneyTypeNote === 'Debtor')
-    rawData.value = debtorReceipts
-
-    console.log('✅ Loaded Debtor Receipts:', rawData.value.length)
-
-  } catch (error) {
-    console.error('❌ Error loading data:', error)
-    rawData.value = []
-    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
+  const { start, end } = parseDateRange(dateRangeText.value)
+  if (start && end) {
+    arr = arr.filter(e => {
+      const d = new Date(e.createdAt)
+      return d >= start && d <= end
+    })
   }
-}
-
-// Computed สำหรับกรองและจัดกลุ่มข้อมูล
-const items = computed(() => {
-  let filtered = [...rawData.value]
 
   if (searchText.value.trim()) {
-    const search = searchText.value.toLowerCase()
-    filtered = filtered.filter(r =>
-      r.mainAffiliationName?.toLowerCase().includes(search) ||
-      r.affiliationName?.toLowerCase().includes(search) ||
-      r.fullName?.toLowerCase().includes(search) ||
-      r.fundName?.toLowerCase().includes(search)
+    const s = searchText.value.toLowerCase()
+    arr = arr.filter(e =>
+      e.faculty?.toLowerCase().includes(s) ||
+      e.sub1?.toLowerCase().includes(s) ||
+      e.sub2?.toLowerCase().includes(s) ||
+      e.fundName?.toLowerCase().includes(s) ||
+      e.fullName?.toLowerCase().includes(s)
     )
   }
 
-  if (selectedMain.value) {
-    filtered = filtered.filter(r =>
-      r.mainAffiliationName === selectedMain.value ||
-      r.affiliationName === selectedMain.value
-    )
-  }
+  if (selectedMain.value) arr = arr.filter(e => e.faculty === selectedMain.value)
+  if (selectedSub1.value) arr = arr.filter(e => (e.sub1 || '') === selectedSub1.value)
+  if (selectedSub2.value) arr = arr.filter(e => (e.sub2 || '') === selectedSub2.value)
 
-  if (selectedSub1.value) {
-    filtered = filtered.filter(r => r.subAffiliationName === selectedSub1.value)
-  }
-
-  if (selectedSub2.value) {
-    filtered = filtered.filter(r => r.subAffiliationName2 === selectedSub2.value)
-  }
-
-  const grouped = groupByFaculty(filtered)
-
-  const result: any[] = []
-  grouped.forEach((receipts, faculty) => {
-    result.push(mapFacultyToRow(faculty, receipts)) // ✅ key ตรง template แล้ว
-  })
-
-  return result
+  return arr
 })
-const formatCurrency = (amount: number | string) => {
-  const n = typeof amount === 'string'
-    ? Number(amount.toString().replace(/[^0-9.-]/g, ''))
-    : amount || 0
 
-  return n.toLocaleString('th-TH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+/**
+ * Preserve expanded state
+ */
+const expandedMap = ref<Record<string, boolean>>({})
+
+const toggleDay = (dateKey: string) => {
+  expandedMap.value[dateKey] = !expandedMap.value[dateKey]
 }
 
-onMounted(() => {
-  loadData()
-  window.addEventListener('focus', loadData)
+const onClickDay = (day: DailySummary) => {
+  if (LOCK_EXPAND_WHEN_NOT_CLOSED && !day.isClosed) return
+  toggleDay(day.dateKey)
+}
+
+/**
+ * Build DailySummary + inject close state
+ */
+const buildDaily = (events: SummaryEvent[]): DailySummary[] => {
+  const dayMap = new Map<string, any>()
+
+  for (const e of events) {
+    const dk = dateKeyOf(e.createdAt)
+
+    if (!dayMap.has(dk)) {
+      dayMap.set(dk, {
+        dateKey: dk,
+        total: {
+          countWaybill: 0, sumWaybill: 0,
+          countDebtor: 0,  sumDebtor: 0,
+          countClear: 0,   sumClear: 0,
+          net: 0,
+        },
+        facMap: new Map<string, any>(),
+      })
+    }
+
+    const day = dayMap.get(dk)
+
+    if (!day.facMap.has(e.faculty)) {
+      day.facMap.set(e.faculty, {
+        faculty: e.faculty,
+        countWaybill: 0, sumWaybill: 0,
+        countDebtor: 0,  sumDebtor: 0,
+        countClear: 0,   sumClear: 0,
+      })
+    }
+
+    const f = day.facMap.get(e.faculty)
+
+    const apply = (t: any) => {
+      if (e.type === 'WAYBILL') { t.countWaybill++; t.sumWaybill += e.amount }
+      if (e.type === 'DEBTOR_NEW') { t.countDebtor++; t.sumDebtor += e.amount }
+      if (e.type === 'CLEAR_DEBTOR') { t.countClear++; t.sumClear += e.amount }
+    }
+
+    apply(day.total)
+    apply(f)
+  }
+
+  const result: DailySummary[] = Array.from(dayMap.values()).map(day => {
+    day.total.net = day.total.sumWaybill + day.total.sumClear - day.total.sumDebtor
+
+    day.faculties = Array.from(day.facMap.values()).sort((a: FacultySummary, b: FacultySummary) => {
+      const netB = b.sumWaybill + b.sumClear - b.sumDebtor
+      const netA = a.sumWaybill + a.sumClear - a.sumDebtor
+      return netB - netA
+    })
+
+    delete day.facMap
+
+    // restore expanded
+    day.expanded = !!expandedMap.value[day.dateKey]
+
+    // inject close
+    const closeState = closedMap.value[day.dateKey]
+    day.isClosed = closeState?.isClosed ?? false
+    day.closedAt = closeState?.closedAt
+
+    return day as DailySummary
+  })
+
+  result.sort((a, b) => (a.dateKey < b.dateKey ? 1 : -1))
+  return result
+}
+
+const dailyItems = computed(() => buildDaily(filteredEvents.value))
+
+/**
+ * Display helpers
+ */
+const formatCurrency = (n: number) =>
+  (Number(n || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+const formatThaiDate = (dateKey: string) => {
+  const d = new Date(dateKey + 'T00:00:00')
+  return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+/**
+ * Mount lifecycle
+ */
+onMounted(async () => {
+  // โหลดครั้งแรก 1 ที (ถ้าวันนี้ยังไม่ปิดยอด)
+  if (!isTodayClosed.value) {
+    await loadLatest()
+  }
+
+  // เริ่ม poll ตามสถานะวันนี้
+  startPoll()
+
+  // ตัวเช็คเปลี่ยนวัน
+  startDayWatcher()
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('focus', loadData)
+  stopPoll()
+  stopDayWatcher()
 })
-
-const cleardebtor = (item: any) => {
-  router.push(`cleardebtor`)
-}
-
-const toggleLock = (item: any) => {
-  const target = rawData.value.find(r => r.projectCode === item.id)
-  if (!target) return
-
-  target.isLocked = !target.isLocked
-
-  Swal.fire({
-    position: 'top-end',
-    icon: 'success',
-    title: target.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
-    showConfirmButton: false,
-    timer: 1500,
-  })
-}
-
-const removeItem = (item: any) => {
-  Swal.fire({
-    title: 'ยืนยันการลบ?',
-    text: "คุณต้องการลบรายการนี้ใช่หรือไม่",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#DC2626',
-    cancelButtonColor: '#6B7280',
-    confirmButtonText: 'ลบ',
-    cancelButtonText: 'ยกเลิก'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Swal.fire({
-        icon: 'success',
-        title: 'ลบสำเร็จ',
-        showConfirmButton: false,
-        timer: 1500
-      })
-    }
-  })
-}
-
-const goback = () => {
-  router.back()
-}
 </script>
-
-<style scoped>
-body {
-  font-family: 'Prompt', 'Inter', sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
-.mesh-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: #f0f2f5;
-  background-image:
-    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
-    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-  background-size: cover;
-  z-index: -2;
-}
-
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  z-index: -1;
-  opacity: 0.8;
-  animation: float 10s infinite ease-in-out;
-}
-
-.orb-1 { width: 600px; height: 600px; background: #56CCF2; top: -100px; left: -100px; animation-delay: 0s; }
-.orb-2 { width: 500px; height: 500px; background: #AC32E4; bottom: -50px; right: -100px; animation-delay: 2s; }
-.orb-3 { width: 400px; height: 400px; background: #7918F2; top: 40%; left: 40%; animation-delay: 4s; }
-
-@keyframes float {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(20px, 40px) rotate(10deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
-}
-
-.glass-panel {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-}
-
-.glass-input {
-  background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(4px);
-  transition: all 0.3s ease;
-}
-
-.glass-input:focus {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: #3b82f6;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
-.glass-button-primary {
-  background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
-}
-
-.glass-button-primary:hover {
-  box-shadow: 0 6px 20px rgba(126, 34, 206, 0.4);
-  transform: translateY(-1px);
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.1);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0,0,0,0.2);
-}
-</style>

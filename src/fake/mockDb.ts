@@ -4,6 +4,7 @@ const LS_KEY = 'fakeApi.receipts';
 
 function defaultSeed(): Receipt[] {
   return [
+    // ========== Debtor Example (โครงสร้างใหม่) ==========
     {
       "createdAt": "2025-11-20T09:15:42.000Z",
       "updatedAt": "2025-11-20T09:15:42.000Z",
@@ -12,34 +13,48 @@ function defaultSeed(): Receipt[] {
       "fundName": "กองทุนทั่วไป",
       "mainAffiliationName": "คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ",
       "subAffiliationName1": "ศูนย์ฝึกอบรมวิชาชีพและบริการนานาชาติด้านเกษตรและอาหาร",
-      "subAffiliationName2": "", // ✅ เพิ่ม field นี้
+      "subAffiliationName2": "",
       "projectCode": "SCI-2025-002",
       "moneyTypeNote": "Debtor",
       "sendmoney": "รายได้",
       "moneyType": "รายได้",
       "netTotalAmount": 8200,
-      "receiptList": [
+      "totalDebtorAmount": 8250,
+      "totalDepositAmount": 8250,
+      "totalFee": 50,
+
+      // ========== รายการลูกหนี้ (แยกออกมา) ==========
+      "debtorList": [
         {
           "itemName": "ค่าบริการทางการแพทย์ (สปสช)",
           "note": "ใช้ในงานทดลอง Quantum Lab",
-          "fee": 50,
+          "amount": 8250
+        }
+      ],
+
+      // ========== รายการเงินฝาก (แยกออกมา) ==========
+      "depositList": [
+        {
+          "itemName": "ค่าบริการทางการแพทย์ (สปสช)",
+          "note": "ใช้ในงานทดลอง Quantum Lab",
           "subtotal": 8250,
-          "amount": 8200,
-          "keyword": [],
+          "fee": 50,
+          "netAmount": 8200,
           "paymentDetails": [
             {
-              "moneyType": "debtor",
+              "moneyType": "transfer",
               "amount": 8250,
               "referenceNo": "INV-8891",
-              "checkNumber": null,
-              "accountName": null,
-              "accountNumber": null,
-              "bankName": null
+              "accountName": "คณะเกษตรศาสตร์",
+              "accountNumber": "123-4-56789-0",
+              "bankName": "ธนาคารกรุงไทย"
             }
           ]
         }
       ]
     },
+
+    // ========== Waybill Example (โครงสร้างเดิม - ยังคงรองรับ) ==========
     {
       "createdAt": "2025-10-05T14:22:10.000Z",
       "updatedAt": "2025-10-05T14:22:10.000Z",
@@ -48,12 +63,14 @@ function defaultSeed(): Receipt[] {
       "fundName": "กองทุนพิเศษ",
       "mainAffiliationName": "คณะทันตแพทยศาสตร์",
       "subAffiliationName1": "โรงพยาบาลทันตกรรมมหาวิทยาลัยพะเยา",
-      "subAffiliationName2": "", // ✅ เพิ่ม field นี้
+      "subAffiliationName2": "",
       "projectCode": "ENG-ME-778",
       "moneyTypeNote": "Waybill",
       "sendmoney": "รายได้",
       "moneyType": "รายได้",
       "netTotalAmount": 4500,
+
+      // ========== ใช้ receiptList แบบเดิม (Waybill) ==========
       "receiptList": [
         {
           "itemName": "ค่าบริการทางการแพทย์ (ประกันสังคม)",
@@ -76,6 +93,8 @@ function defaultSeed(): Receipt[] {
         }
       ]
     },
+
+    // ========== Debtor Example 2 (โครงสร้างใหม่) ==========
     {
       "createdAt": "2025-09-18T07:55:30.000Z",
       "updatedAt": "2025-09-18T07:55:30.000Z",
@@ -84,26 +103,36 @@ function defaultSeed(): Receipt[] {
       "fundName": "กองทุนทั่วไป",
       "mainAffiliationName": "คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ",
       "subAffiliationName1": "ศูนย์ศึกษาเศรษฐกิจพอเพียงและความอยู่รอดของมนุษยชาติ",
-      "subAffiliationName2": "", // ✅ เพิ่ม field นี้
+      "subAffiliationName2": "",
       "projectCode": "STD-AC-112",
       "moneyTypeNote": "Debtor",
       "sendmoney": "เงินโครงการ",
       "moneyType": "เงินโครงการ",
       "netTotalAmount": 980,
-      "receiptList": [
+      "totalDebtorAmount": 1000,
+      "totalDepositAmount": 1000,
+      "totalFee": 20,
+
+      "debtorList": [
         {
           "itemName": "ค่าบริการทางการแพทย์ (ประกันสังคม)",
           "note": "ค่ายพัฒนาทักษะภาคฤดูร้อน",
-          "fee": 20,
+          "amount": 1000
+        }
+      ],
+
+      "depositList": [
+        {
+          "itemName": "ค่าบริการทางการแพทย์ (ประกันสังคม)",
+          "note": "ค่ายพัฒนาทักษะภาคฤดูร้อน",
           "subtotal": 1000,
-          "amount": 980,
-          "keyword": [],
+          "fee": 20,
+          "netAmount": 980,
           "paymentDetails": [
             {
-              "moneyType": "debtor",
+              "moneyType": "transfer",
               "amount": 1000,
               "referenceNo": "BK-881122",
-              "checkNumber": null,
               "accountName": "กองกิจการนิสิต",
               "accountNumber": "100-2-55882-0",
               "bankName": "ธนาคารไทยพาณิชย์"
@@ -130,6 +159,15 @@ export function loadReceipts(): Receipt[] {
           createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
           updatedAt: r.updatedAt ? new Date(r.updatedAt) : new Date(),
           subAffiliationName2: r.subAffiliationName2 || '',
+          
+          // ========== รองรับทั้งสองโครงสร้าง ==========
+          debtorList: r.debtorList || [],
+          depositList: r.depositList || [],
+          receiptList: r.receiptList || [],
+          
+          totalDebtorAmount: r.totalDebtorAmount || 0,
+          totalDepositAmount: r.totalDepositAmount || 0,
+          totalFee: r.totalFee || 0,
         }))
       : defaultSeed();
     return receipts;
@@ -143,8 +181,16 @@ export function saveReceipts(list: Receipt[]) {
     ...r,
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
     updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : r.updatedAt,
-    // ✅ รับประกันว่า subAffiliationName2 ถูก save
     subAffiliationName2: r.subAffiliationName2 || '',
+    
+    // ========== บันทึกทั้งสองโครงสร้าง ==========
+    debtorList: r.debtorList || [],
+    depositList: r.depositList || [],
+    receiptList: r.receiptList || [],
+    
+    totalDebtorAmount: r.totalDebtorAmount || 0,
+    totalDepositAmount: r.totalDepositAmount || 0,
+    totalFee: r.totalFee || 0,
   }));
   localStorage.setItem(LS_KEY, JSON.stringify(serialized));
 }
@@ -153,16 +199,12 @@ export function sanitizeItem(it: ReceiptItem): ReceiptItem {
   return {
     itemName: (it.itemName ?? '').trim(),
     note: (it.note ?? '').trim(),
-
-    // ✅ เพิ่มตรงนี้
     debtorAmount: Number.isFinite(it.debtorAmount) ? it.debtorAmount : 0,
     depositSubtotal: Number.isFinite(it.depositSubtotal) ? it.depositSubtotal : 0,
     depositNetAmount: Number.isFinite(it.depositNetAmount) ? it.depositNetAmount : 0,
-
     fee: Number.isFinite(it.fee) ? it.fee : 0,
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
     amount: Number.isFinite(it.amount) ? it.amount : 0,
-
     paymentDetails: Array.isArray(it.paymentDetails)
       ? it.paymentDetails.map(p => ({
           moneyType: (p.moneyType ?? '').trim(),
@@ -183,7 +225,7 @@ export function sanitizeReceipt(r: Receipt): Receipt {
     phone: (r.phone ?? '').trim(),
     mainAffiliationName: (r.mainAffiliationName ?? '').trim(),
     subAffiliationName1: (r.subAffiliationName1 ?? '').trim(),
-    subAffiliationName2: (r.subAffiliationName2 ?? '').trim(), // ✅ เพิ่ม sanitize
+    subAffiliationName2: (r.subAffiliationName2 ?? '').trim(),
     fundName: (r.fundName ?? '').trim(),
     moneyType: (r.moneyType ?? r.sendmoney ?? '').trim(),
     isLocked: r.isLocked ?? false,
@@ -191,8 +233,18 @@ export function sanitizeReceipt(r: Receipt): Receipt {
     projectCode: (r.projectCode ?? '').trim(),
     moneyTypeNote: (r.moneyTypeNote ?? '').trim(),
     netTotalAmount: Number.isFinite(r.netTotalAmount) ? r.netTotalAmount : 0,
+    
+    // ========== รองรับทั้งสองโครงสร้าง ==========
+    totalDebtorAmount: Number.isFinite(r.totalDebtorAmount) ? r.totalDebtorAmount : 0,
+    totalDepositAmount: Number.isFinite(r.totalDepositAmount) ? r.totalDepositAmount : 0,
+    totalFee: Number.isFinite(r.totalFee) ? r.totalFee : 0,
+    
     createdAt: r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt || Date.now()),
     updatedAt: r.updatedAt instanceof Date ? r.updatedAt : new Date(r.updatedAt || Date.now()),
+    
+    // ========== รองรับทั้งสองโครงสร้าง ==========
+    debtorList: Array.isArray(r.debtorList) ? r.debtorList : [],
+    depositList: Array.isArray(r.depositList) ? r.depositList : [],
     receiptList: Array.isArray(r.receiptList) ? r.receiptList.map(sanitizeItem) : [],
   };
-}      
+}

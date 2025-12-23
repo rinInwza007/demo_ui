@@ -6,19 +6,19 @@
       class="w-full px-2 text-sm"
     >
       <option value=""></option>
-      <option value="ค่าบริการทางการแพทย์ (สปสช)">ค่าบริการทางการแพทย์ (สปสช)</option>
-      <option value="ค่าบริการทางการแพทย์ (กรมบัญชีกลาง)">ค่าบริการทางการแพทย์ (กรมบัญชีกลาง)</option>
-      <option value="ค่าบริการทางการแพทย์ (ประกันสังคม)">ค่าบริการทางการแพทย์ (ประกันสังคม)</option>
-      <option value="ค่าบริการทางการแพทย์ (อื่นๆ)">ค่าบริการทางการแพทย์ (อื่นๆ)</option>
-      <option value="ค่าบริการทางการแพทย์ (อื่นๆสิทธิ - ค้างชำระ)">ค่าบริการทางการแพทย์ (อื่นๆสิทธิ - ค้างชำระ)</option>
-      <option value="ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย">ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย</option>
-      <option value="ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย">ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย</option>
+      <option
+        v-for="option in itemOptions"
+        :key="option.value"
+        :value="option.value"
+      >
+        {{ option.label }}
+      </option>
     </select>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import TomSelect from 'tom-select'
 
 const props = defineProps({
@@ -26,6 +26,18 @@ const props = defineProps({
   inputId: {
     type: String,
     required: true
+  },
+  options: {
+    type: Array,
+    default: () => []
+  },
+  placeholder: {
+    type: String,
+    default: 'ระบุรายการ'
+  },
+  allowCreate: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -33,6 +45,22 @@ const emit = defineEmits(['update:modelValue', 'input'])
 
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
+
+// ใช้ options ที่ส่งมา ถ้าไม่มีจะใช้ array ว่าง
+const itemOptions = computed(() => {
+  if (!props.options || props.options.length === 0) return []
+
+  // รองรับหลายรูปแบบ: string, {value, label}, {id, name}
+  return props.options.map(opt => {
+    if (typeof opt === 'string') {
+      return { value: opt, label: opt }
+    }
+    return {
+      value: opt.value || opt.name || opt.label,
+      label: opt.label || opt.name || opt.value
+    }
+  })
+})
 
 watch(() => props.modelValue, (newVal) => {
   localValue.value = newVal
@@ -51,8 +79,8 @@ onMounted(() => {
 
   if (el && !el.tomselect) {
     tomSelectInstance = new TomSelect(el, {
-      create: true,
-      placeholder: 'ระบุรายการ',
+      create: props.allowCreate,
+      placeholder: props.placeholder,
       allowEmptyOption: true,
       onChange(value) {
         localValue.value = value
@@ -63,13 +91,13 @@ onMounted(() => {
     const control = tomSelectInstance.control
     control.style.width = '100%'
     control.style.height = '2.70rem'
-    control.style.padding = '0.625rem 0.5rem' // py-2.5 px-2
-    control.style.paddingRight = '2.5rem' // pr-10
+    control.style.padding = '0.625rem 0.5rem'
+    control.style.paddingRight = '2.5rem'
     control.style.display = 'flex'
     control.style.alignItems = 'center'
-    control.style.fontSize = '0.875rem' // text-sm
-    control.style.color = '#334155' // text-slate-700
-    control.style.borderRadius = '0.75rem' // rounded-xl
+    control.style.fontSize = '0.875rem'
+    control.style.color = '#334155'
+    control.style.borderRadius = '0.75rem'
     control.style.border = '1px solid rgba(203, 213, 225, 0.5)'
     control.style.background = 'rgba(255, 255, 255, 0.9)'
     control.style.backdropFilter = 'blur(10px)'

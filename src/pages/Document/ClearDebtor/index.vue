@@ -346,49 +346,59 @@ const paymentHistory = ref([])
 const usedAccounts = ref([])
 
 onMounted(() => {
-  // ดึง affiliationName จาก URL params
-  const affiliationName = route.params.id ? decodeURIComponent(route.params.id) : null
+  // ดึง receiptId จาก URL params
+  const receiptId = route.params.id ? decodeURIComponent(route.params.id) : null
+
+  if (!receiptId) {
+    Swal.fire({
+      title: 'ข้อผิดพลาด',
+      text: 'ไม่พบข้อมูลใบเสร็จ',
+      icon: 'error',
+      confirmButtonColor: '#7E22CE'
+    }).then(() => {
+      window.location.href = '/indexsavedebtor'
+    })
+    return
+  }
 
   // โหลดข้อมูลจาก localStorage
   const receipts = loadReceipts()
 
-  // กรองเฉพาะ Debtor
-  const debtorReceipts = receipts.filter(r => r.moneyTypeNote === 'Debtor')
+  // หาใบเสร็จที่ตรงกับ receiptId
+  const receipt = receipts.find(r => r.projectCode === receiptId)
 
-  // หาหน่วยงานที่ต้องการ
-  let targetAffiliation = affiliationName
-
-  // ถ้าไม่มีใน URL ให้ใช้หน่วยงานแรกที่เจอ
-  if (!targetAffiliation && debtorReceipts.length > 0) {
-    targetAffiliation = debtorReceipts[0].mainAffiliationName
+  if (!receipt || receipt.moneyTypeNote !== 'Debtor') {
+    Swal.fire({
+      title: 'ไม่พบข้อมูล',
+      text: 'ไม่พบรายการลูกหนี้นี้ในระบบ',
+      icon: 'error',
+      confirmButtonColor: '#7E22CE'
+    }).then(() => {
+      window.location.href = '/indexsavedebtor'
+    })
+    return
   }
 
-  if (targetAffiliation) {
-    // กรองข้อมูลตามหน่วยงาน
-    const filteredData = debtorReceipts.filter(
-      r => r.mainAffiliationName === targetAffiliation
-    )
+  // แปลงข้อมูลเป็น items
+  const items = (receipt.receiptList || []).map((item, idx) => ({
+    id: `${receipt.projectCode}-item-${idx}`,
+    title: item.itemName || 'รายการ',
+    amount: Number(item.debtorAmount || 0),
+    createdAt: formatDate(receipt.createdAt),
+    note: item.note || '-',
+    subOrg: receipt.subAffiliationName1 || '-',
+    fullName: receipt.fullName || '-',
+    selected: false
+  }))
 
-    // คำนวณยอดหนี้รวม
-    const totalDebt = filteredData.reduce((sum, r) => sum + Number(r.netTotalAmount || 0), 0)
+  // คำนวณยอดหนี้รวม
+  const totalDebt = items.reduce((sum, item) => sum + item.amount, 0)
 
-    // แปลงข้อมูลเป็น items
-    const items = filteredData.map(r => ({
-      id: r.projectCode || Math.random().toString(),
-      title: r.receiptList?.[0]?.itemName || 'รายการ',
-      amount: Number(r.netTotalAmount || 0),
-      createdAt: formatDate(r.createdAt),
-      note: r.receiptList?.[0]?.note || '-',
-      subOrg: r.subAffiliationName || '-',
-      fullName: r.fullName || '-',
-      selected: false
-    }))
-
-    debtor.fullName = targetAffiliation
-    debtor.totalDebt = totalDebt
-    debtor.items = items
-    netTotalAmount.value = totalDebt
-  }
+  // ตั้งค่าข้อมูล
+  debtor.fullName = receipt.mainAffiliationName || 'ไม่ระบุหน่วยงาน'
+  debtor.totalDebt = totalDebt
+  debtor.items = items
+  netTotalAmount.value = totalDebt
 })
 
 const totalPaid = computed(() => {

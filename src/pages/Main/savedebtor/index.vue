@@ -1,163 +1,138 @@
 <template>
-  <!-- ⭐ ลบ <body> tag ออก - ใช้ div แทน -->
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
-
     <div id="app" class="relative w-full h-screen flex overflow-hidden">
-      <!-- ⭐ ลบ overflow-hidden ออกจาก #app -->
+      <div class="mesh-bg"></div>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
 
-        <!-- Background Elements -->
-        <div class="mesh-bg"></div>
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
+      <sidebar />
 
-        <!-- Sidebar (Mac Style) -->
-        <sidebar />
+      <main class="flex-1 flex flex-col relative z-10 min-h-0">
+        <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2 flex-shrink-0">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <i class="ph ph-files"></i>
+              ล้างลูกหนี้
+            </h1>
+            <p class="text-xs text-slate-800 mt-0.5">จัดการล้างลูกหนี้ทั้งหมด {{ items.length }} รายการ</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
+              <i class="ph ph-bell text-xl"></i>
+            </button>
+            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
+              <i class="ph ph-gear text-xl"></i>
+            </button>
+          </div>
+        </header>
 
-        <!-- Main Content -->
-        <main class="flex-1 flex flex-col relative z-10 min-h-0">
-
-            <!-- Header Bar -->
-            <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2 flex-shrink-0">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <i class="ph ph-files"></i>
-                        ล้างลูกหนี้
-                    </h1>
-                    <p class="text-xs text-slate-800 mt-0.5">จัดการล้างลูกหนี้</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
-                        <i class="ph ph-bell text-xl"></i>
-                    </button>
-                    <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
-                        <i class="ph ph-gear text-xl"></i>
-                    </button>
-                </div>
-            </header>
-
-            <!-- Filters Area -->
-            <div class="px-8 py-4 flex-shrink-0">
-                <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-                    <!-- Left Filters -->
-                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                        <div class="relative group">
-                            <i class="ph ph-calendar-blank absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors"></i>
-                            <input type="text" placeholder="เลือกช่วงวันเวลา..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full md:w-48 text-sm placeholder-slate-400 focus:placeholder-blue-300/50">
-                        </div>
-
-                        <CascadingSelect
-  v-model:modelValueMain="selectedMain"
-  v-model:modelValueSub1="selectedSub1"
-  v-model:modelValueSub2="selectedSub2"
-  :options="options"
-/>
-
-                    </div>
-
-                    <!-- Right Search & Action -->
-                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                        <div class="relative flex-1 md:w-64">
-                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                            <input v-model="searchText" type="text" placeholder="ค้นหา สังกัด / หน่วยงาน..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm">
-                        </div>
-                    </div>
-                </div>
+        <!-- Filters -->
+        <div class="px-8 py-4 flex-shrink-0">
+          <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+            <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+              <CascadingSelect
+                v-model:modelValueMain="selectedMain"
+                v-model:modelValueSub1="selectedSub1"
+                v-model:modelValueSub2="selectedSub2"
+                :options="options"
+              />
             </div>
 
-            <!-- Data Table Area -->
-            <div class="flex-1 px-8 pb-8 flex flex-col min-h-0">
-                <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
+            <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+              <div class="relative flex-1 md:w-64">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                <input v-model="searchText" type="text" placeholder="ค้นหา รายการลูกหนี้..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm">
+              </div>
+            </div>
+          </div>
+        </div>
 
-
-                    <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold  uppercase tracking-wider flex-shrink-0">
-                        <div class="col-span-2 text-center">สถานะ</div>
-                        <div class="col-span-2 text-center">รายการ</div>
-                        <div class="col-span-2 text-center">ยอดหนี้รายวัน</div>
-                        <div class="col-span-2 text-center">ยอดหนี้ค้างชำระ</div>
-                        <div class="col-span-2 text-center">ยอดสุทธิ</div>
-                        <div class="col-span-2 text-center">จัดการ</div>
-
-                    </div>
-
-                    <!-- Table Body (Scrollable) -->
-                    <div class="overflow-y-auto overflow-x-hidden flex-1 p-2 min-h-0">
-                        <div v-for="(item, index) in items" :key="index"
-                             class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm">
-
-                            <!-- Status -->
-                            <div class="col-span-2 flex justify-center">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
-                                     :class="{
-                                        'bg-red-100 text-red-500': item.status === 'cancel',
-                                        'bg-yellow-100 text-yellow-600': item.status === 'pending',
-                                        'bg-green-100 text-green-500': item.status === 'success'
-                                     }">
-                                    <i v-if="item.status === 'cancel'" class="ph-fill ph-x-circle text-lg"></i>
-                                    <i v-if="item.status === 'pending'" class="ph-fill ph-clock text-lg"></i>
-                                    <i v-if="item.status === 'success'" class="ph-fill ph-check-circle text-lg"></i>
-                                </div>
-                            </div>
-
-                            <!-- Department -->
-                            <div class="col-span-2">
-                                <div class="font-medium text-slate-800 text- ">{{ item.department }}</div>
-                                <div class="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
-                                    <i class="ph ph-buildings text-xs"></i>
-                                    <span class="truncate">{{ item.subDepartment }}</span>
-                                </div>
-                            </div>
-
-                            <!-- Responsible -->
-                            <div class="col-span-2 flex items-center gap-2">
-                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
-                                    {{ item.responsible.charAt(0) }}
-                                </div>
-                                <span class="text-sm text-slate-700 truncate">{{ item.responsible }}</span>
-                              </div>
-                              <div class="col-span-2 text-center">
-                              <div class="text-xs font-medium text-slate-700 font-mono">
-                                {{ item.time }}
-                              </div>
-                            </div>
-
-                            <!-- Amount -->
-                            <div class="col-span-2 text-right">
-                                <div class="font-bold text-slate-800 font-mono text-sm">{{ formatCurrency(item.amount) }}</div>
-                                <div class="text-[10px] text-slate-400">บาท</div>
-                            </div>
-
-                            <!-- Actions -->
-                            <div class="col-span-2 flex justify-center">
-                                <ActionButtons
-                                :item="item" 
-                                    :show-cleardedtor="true"
-
-                                    @cleardebtor="cleardebtor"
-                                />
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <!-- Footer Pagination -->
-                    <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between flex-shrink-0">
-                        <div class="text-xs text-slate-500">
-                            แสดง 1-4 จากทั้งหมด 12 รายการ
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 disabled:opacity-50 text-xs">Prev</button>
-                            <button class="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs shadow-md shadow-blue-500/30 font-medium">1</button>
-                            <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">2</button>
-                            <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">3</button>
-                            <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 text-xs">Next</button>
-                        </div>
-                    </div>
-
-                </div>
+        <!-- Table -->
+        <div class="flex-1 px-8 pb-8 flex flex-col min-h-0">
+          <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
+            <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold uppercase tracking-wider flex-shrink-0">
+              <div class="col-span-2 text-center">สถานะ</div>
+              <div class="col-span-2 text-center">รายการลูกหนี้</div>
+              <div class="col-span-2 text-center">หน่วยงาน</div>
+              <div class="col-span-2 text-center">ยอดลูกหนี้</div>
+              <div class="col-span-2 text-center">ยอดชำระแล้ว</div>
+              <div class="col-span-2 text-center">จัดการ</div>
             </div>
 
-        </main>
+            <div class="overflow-y-auto overflow-x-hidden flex-1 p-2 min-h-0">
+              <div v-if="items.length === 0" class="text-center py-12 text-slate-500">
+                <i class="ph ph-folder-open text-6xl mb-4 opacity-30"></i>
+                <p>ไม่พบรายการลูกหนี้</p>
+              </div>
+
+              <div v-for="(item, index) in items" :key="index"
+                   class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm">
+
+                <!-- Status -->
+                <div class="col-span-2 flex justify-center">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
+                       :class="{
+                          'bg-red-100 text-red-500': item.status === 'cancel',
+                          'bg-yellow-100 text-yellow-600': item.status === 'pending',
+                          'bg-green-100 text-green-500': item.status === 'success'
+                       }">
+                    <i v-if="item.status === 'cancel'" class="ph-fill ph-x-circle text-lg"></i>
+                    <i v-if="item.status === 'pending'" class="ph-fill ph-clock text-lg"></i>
+                    <i v-if="item.status === 'success'" class="ph-fill ph-check-circle text-lg"></i>
+                  </div>
+                </div>
+
+                <!-- Item Name -->
+                <div class="col-span-2">
+                  <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
+                  <div class="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
+                    <i class="ph ph-note text-xs"></i>
+                    <span class="truncate">{{ item.note || '-' }}</span>
+                  </div>
+                </div>
+
+                <!-- Department -->
+                <div class="col-span-2">
+                  <div class="font-medium text-slate-800 text-sm">{{ item.department }}</div>
+                  <div class="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
+                    <i class="ph ph-buildings text-xs"></i>
+                    <span class="truncate">{{ item.subDepartment }}</span>
+                  </div>
+                </div>
+
+                <!-- Debtor Amount -->
+                <div class="col-span-2 text-center">
+                  <div class="font-bold text-red-600 font-mono text-sm">{{ formatCurrency(item.debtorAmount) }}</div>
+                  <div class="text-[10px] text-slate-400">บาท</div>
+                </div>
+
+                <!-- Paid Amount -->
+                <div class="col-span-2 text-center">
+                  <div class="font-bold text-green-600 font-mono text-sm">{{ formatCurrency(item.depositNetAmount) }}</div>
+                  <div class="text-[10px] text-slate-400">บาท</div>
+                </div>
+
+                <!-- Actions -->
+                <div class="col-span-2 flex justify-center">
+                  <ActionButtons
+                    :item="item"
+                    :show-cleardedtor="true"
+                    @cleardebtor="cleardebtor"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between flex-shrink-0">
+              <div class="text-xs text-slate-500">
+                แสดงทั้งหมด {{ items.length }} รายการ
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   </div>
 </template>
@@ -182,72 +157,49 @@ const selectedMain = ref("")
 const selectedSub1 = ref("")
 const selectedSub2 = ref("")
 
-// ฟังก์ชันจัดกลุ่มตามคณะ
-const groupByFaculty = (receipts: any[]) => {
-  const grouped = new Map<string, any[]>()
+// ✅ ฟังก์ชันแปลงข้อมูลจาก Receipt → รายการลูกหนี้แต่ละตัว
+const mapReceiptToDebtorItems = (receipt: any) => {
+  const items: any[] = []
 
-  receipts.forEach(receipt => {
-    const faculty = receipt.mainAffiliationName || receipt.affiliationName || 'ไม่ระบุหน่วยงาน'
+  if (!Array.isArray(receipt.receiptList)) return items
 
-    if (!grouped.has(faculty)) {
-      grouped.set(faculty, [])
-    }
-    grouped.get(faculty)!.push(receipt)
+  receipt.receiptList.forEach((item: any, idx: number) => {
+    items.push({
+      // ✅ สร้าง unique ID
+      id: `${receipt.projectCode}-item-${idx}`,
+      receiptId: receipt.projectCode,
+
+      // ✅ ข้อมูลรายการลูกหนี้
+      itemName: item.itemName || '-',
+      note: item.note || '',
+
+      // ✅ ยอดเงิน
+      debtorAmount: Number(item.debtorAmount || 0),
+      depositNetAmount: Number(item.depositNetAmount || 0),
+      fee: Number(item.fee || 0),
+
+      // ✅ ข้อมูลหน่วยงาน
+      department: receipt.mainAffiliationName || 'ไม่ระบุ',
+      subDepartment: receipt.subAffiliationName1 || '-',
+      fundName: receipt.fundName || '-',
+
+      // ✅ ข้อมูลผู้บันทึก
+      responsible: receipt.fullName || '-',
+      phone: receipt.phone || '-',
+
+      // ✅ สถานะ
+      status: 'pending',
+
+      // ✅ เก็บข้อมูลต้นทางไว้ใช้
+      _originalReceipt: receipt,
+      _originalItem: item,
+    })
   })
 
-  return grouped
+  return items
 }
 
-// แปลงข้อมูลเป็น row สำหรับแสดงในตาราง
-const mapFacultyToRow = (faculty: string, receipts: any[]) => {
-  const totalDebt = receipts.reduce((sum, r) => {
-    return sum + (Number(r.netTotalAmount) || 0)
-  }, 0)
-
-  const itemCount = receipts.length
-
-  const subOrgs = Array.from(
-    new Set(
-      receipts
-        .map(r => r.subAffiliationName)
-        .filter((name: string) => name && name.trim())
-    )
-  )
-
-  const fundNames = Array.from(
-    new Set(
-      receipts
-        .map(r => r.fundName)
-        .filter((name: string) => name && name.trim())
-    )
-  )
-
-  // ✅ ทำ key ให้ตรงกับ template ตารางของคุณ
-  return {
-    id: encodeURIComponent(faculty),
-
-    // template ใช้ item.status => ตั้งค่าให้เลย
-    status: 'pending', // (ลูกหนี้โดยรวมจะเป็น pending ก็เหมาะ)
-
-    // template ใช้ item.department / item.subDepartment
-    department: faculty,
-    subDepartment: subOrgs.length > 0 ? subOrgs.join(', ') : `${itemCount} รายการ`,
-
-    // template ใช้ item.project / item.year / item.responsible
-    project: fundNames.length > 0 ? fundNames.join(', ') : '-',
-    year: '2568',
-    responsible: receipts[0]?.fullName || '-',
-
-    // template ใช้ item.paymentType / item.time / item.amount
-    paymentType: 'ลูกหนี้',
-    time: '-',              // ถ้าอยากใส่เวลาจริง บอกได้ เดี๋ยวจัดให้
-    amount: totalDebt,      // ✅ ให้เป็น number เพราะ template เรียก formatCurrency()
-
-  }
-}
-
-
-// โหลดข้อมูลจาก API
+// ✅ โหลดข้อมูลจาก localStorage
 const loadData = async () => {
   try {
     const stored = localStorage.getItem('fakeApi.receipts')
@@ -266,10 +218,15 @@ const loadData = async () => {
       return
     }
 
+    // ✅ กรองเฉพาะ Debtor
     const debtorReceipts = allReceipts.filter((r: any) => r.moneyTypeNote === 'Debtor')
-    rawData.value = debtorReceipts
 
-    console.log('✅ Loaded Debtor Receipts:', rawData.value.length)
+    // ✅ แปลงเป็นรายการลูกหนี้
+    const allDebtorItems = debtorReceipts.flatMap(mapReceiptToDebtorItems)
+
+    rawData.value = allDebtorItems
+
+    console.log('✅ Loaded Debtor Items:', rawData.value.length)
 
   } catch (error) {
     console.error('❌ Error loading data:', error)
@@ -278,44 +235,42 @@ const loadData = async () => {
   }
 }
 
-// Computed สำหรับกรองและจัดกลุ่มข้อมูล
+// ✅ Computed สำหรับกรองข้อมูล
 const items = computed(() => {
   let filtered = [...rawData.value]
 
+  // กรองตามคำค้นหา
   if (searchText.value.trim()) {
     const search = searchText.value.toLowerCase()
-    filtered = filtered.filter(r =>
-      r.mainAffiliationName?.toLowerCase().includes(search) ||
-      r.affiliationName?.toLowerCase().includes(search) ||
-      r.fullName?.toLowerCase().includes(search) ||
-      r.fundName?.toLowerCase().includes(search)
+    filtered = filtered.filter(item =>
+      item.itemName?.toLowerCase().includes(search) ||
+      item.note?.toLowerCase().includes(search) ||
+      item.department?.toLowerCase().includes(search) ||
+      item.subDepartment?.toLowerCase().includes(search)
     )
   }
 
+  // กรองตามหน่วยงานหลัก
   if (selectedMain.value) {
-    filtered = filtered.filter(r =>
-      r.mainAffiliationName === selectedMain.value ||
-      r.affiliationName === selectedMain.value
+    filtered = filtered.filter(item => item.department === selectedMain.value)
+  }
+
+  // กรองตามหน่วยงานรอง
+  if (selectedSub1.value) {
+    filtered = filtered.filter(item => item.subDepartment === selectedSub1.value)
+  }
+
+  // กรองตามหน่วยงานย่อย (ถ้ามี)
+  if (selectedSub2.value) {
+    filtered = filtered.filter(item =>
+      item._originalReceipt?.subAffiliationName2 === selectedSub2.value
     )
   }
 
-  if (selectedSub1.value) {
-    filtered = filtered.filter(r => r.subAffiliationName === selectedSub1.value)
-  }
-
-  if (selectedSub2.value) {
-    filtered = filtered.filter(r => r.subAffiliationName2 === selectedSub2.value)
-  }
-
-  const grouped = groupByFaculty(filtered)
-
-  const result: any[] = []
-  grouped.forEach((receipts, faculty) => {
-    result.push(mapFacultyToRow(faculty, receipts)) // ✅ key ตรง template แล้ว
-  })
-
-  return result
+  return filtered
 })
+
+// ✅ Format เงิน
 const formatCurrency = (amount: number | string) => {
   const n = typeof amount === 'string'
     ? Number(amount.toString().replace(/[^0-9.-]/g, ''))
@@ -327,6 +282,11 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
+// ✅ ไปหน้าล้างลูกหนี้
+const cleardebtor = (item: any) => {
+  router.push(`/cleardebtor/${item.receiptId}`)
+}
+
 onMounted(() => {
   loadData()
   window.addEventListener('focus', loadData)
@@ -335,53 +295,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('focus', loadData)
 })
-
-
-
-const cleardebtor = (item: any) => {
-  router.push(`/cleardebtor/${item.id}`)
-}
-
-const toggleLock = (item: any) => {
-  const target = rawData.value.find(r => r.projectCode === item.id)
-  if (!target) return
-
-  target.isLocked = !target.isLocked
-
-  Swal.fire({
-    position: 'top-end',
-    icon: 'success',
-    title: target.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
-    showConfirmButton: false,
-    timer: 1500,
-  })
-}
-
-const removeItem = (item: any) => {
-  Swal.fire({
-    title: 'ยืนยันการลบ?',
-    text: "คุณต้องการลบรายการนี้ใช่หรือไม่",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#DC2626',
-    cancelButtonColor: '#6B7280',
-    confirmButtonText: 'ลบ',
-    cancelButtonText: 'ยกเลิก'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Swal.fire({
-        icon: 'success',
-        title: 'ลบสำเร็จ',
-        showConfirmButton: false,
-        timer: 1500
-      })
-    }
-  })
-}
-
-const goback = () => {
-  router.back()
-}
 </script>
 
 <style scoped>

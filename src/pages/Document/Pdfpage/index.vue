@@ -609,84 +609,76 @@ function createDocDefinition() {
       ]).flat(),
       { text: '\n' },
       { text: '\n' },
-      {
-        columns: [
-          {
-            stack: [
-              {
-                style: 'form',
-                text: 'ลงชื่อ',
-                alignment: 'center',
-                absolutePosition: { x: -520, y: 697 },
-              },
-              {
-                text: `${receipt.fullName || ''}`,
-                alignment: 'left',
-                absolutePosition: { x: 105, y: 718.5 },
-                fontSize: 13,
-              },
-              {
-                style: 'form',
-                text: '(........................................................................)',
-                alignment: 'center',
-                absolutePosition: { x: -300, y: 720 },
-              },
-              {
-                style: 'form',
-                text: 'ผู้นำส่งเงิน',
-                alignment: 'center',
-                absolutePosition: { x: -300, y: 740 },
-              },
-              {
-                text: `${currentDate}`,
-                alignment: 'left',
-                absolutePosition: { x: 105, y: 768 },
-                fontSize: 13,
-              },
-              {
-                style: 'form',
-                text: 'ลงวันที่.......................................................',
-                alignment: 'center',
-                absolutePosition: { x: -300, y: 770 },
-              },
-            ],
-          },
-          {
-            stack: [
-              {
-                style: 'form',
-                text: '\nลงชื่อ',
-                alignment: 'center',
-                absolutePosition: { x: 110, y: 680 },
-              },
-              {
-                style: 'form',
-                text: '(........................................................................)',
-                alignment: 'center',
-                absolutePosition: { x: 340, y: 720 },
-              },
-              {
-                style: 'form',
-                text: 'ผู้รับเงิน',
-                alignment: 'center',
-                absolutePosition: { x: 335, y: 740 },
-              },
-              {
-                style: 'form',
-                text: 'ลงวันที่.......................................................',
-                alignment: 'center',
-                absolutePosition: { x: 340, y: 770 },
-              },
-            ],
-          },
-        ],
-      },
-      {
-        text: '***หมายเหตุ จัดทำแบบฟอร์มนี้ด้วยการพิมพ์เท่านั้น',
-        alignment: 'center',
-        absolutePosition: { x: -380, y: 820 },
-        fontSize: 12,
-      },
+{
+  columns: [
+    {
+      stack: [
+        {
+          style: 'form',
+          text: 'ลงชื่อ',
+          margin: [20, 0, 0, 0],
+          alignment: 'left',
+        },
+        {
+          text: receipt.fullName || '',
+          alignment: 'center',
+          margin: [0, 0, 0, -15],
+          fontSize: 13,
+        },
+        {
+          style: 'form',
+          text: '(........................................................................)',
+          alignment: 'center',
+        },
+        {
+          style: 'form',
+          text: 'ผู้นำส่งเงิน',
+          alignment: 'center',
+          margin: [10, 0, 0, 0]
+        },
+        {
+          text: currentDate,
+          alignment: 'center',
+          margin: [0, 0, 0, -15],
+          fontSize: 13,
+        },
+        {
+          style: 'form',
+          text: 'ลงวันที่.......................................................',
+          alignment: 'center',
+        },
+      ],
+    },
+    {
+      stack: [
+        {
+          style: 'form',
+          text: 'ลงชื่อ',
+          margin: [0, 0, 225, 0],
+          alignment: 'center',
+        },
+        {
+          style: 'form',
+          text: '(........................................................................)',
+          alignment: 'center',
+          margin: [0, 1, 0, 0],
+        },
+        {
+          style: 'form',
+          text: 'ผู้รับเงิน',
+          alignment: 'center',
+        },
+        {
+          style: 'form',
+          text: 'ลงวันที่.......................................................',
+          alignment: 'center',
+          margin: [0, 3, 0, 0],
+        },
+      ],
+    },
+  ],
+  widths: ['50%', '50%']  // ⭐ ตัวนี้แหละ พระเอก
+}
     ],
     styles: {
       form: { bold: true },
@@ -759,18 +751,6 @@ receiptData.value.receiptList.forEach((item) => {
     })
   }
 })
-
-      while (rows.length < 10) {
-        rows.push({
-          id: String(rowNumber),
-          ref: '',
-          item: '',
-          amount: '',
-          other: '',
-          note: ''
-        })
-        rowNumber++
-      }
 
       const total = receiptData.value.netTotalAmount || 0
       summary.text = convertNumberToThaiText(total)

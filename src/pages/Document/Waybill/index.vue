@@ -42,6 +42,23 @@
               <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
                 <span class="w-1 h-6 bg-blue-500 rounded-full"></span>ข้อมูลผู้บันทึก
               </h2>
+              <div class="grid grid-cols-2 gap-6">
+                <div class="flex flex-col gap-2">
+                  <label class="text-sm font-medium text-gray-700">
+                    เลขที่นำส่ง <span class="text-red-500">*</span>
+                  </label>
+                  <InputText
+                    v-model="formData.delNumber"
+                    placeholder="เลขที่นำส่ง"
+                    class="transition-all duration-200"
+                    @keypress="allowOnlyDigits"
+                  />
+                  <span v-if="errors.delNumber" class="text-red-600 text-xs">
+                    {{ errors.delNumber }}
+                  </span>
+                </div>
+                <div></div>
+              </div>
 
               <!-- แถวที่ 1: ชื่อ | เบอร์โทร (แสดงเสมอ) -->
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -155,7 +172,7 @@
                     รหัสโครงงาน <span class="text-red-500">*</span>
                   </label>
                   <InputText
-                  class ="-mt-1"
+                    class="-mt-1"
                     v-model="formData.projectCode"
                     placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
                     :class="{ 'readonly-force': isEditMode }"
@@ -188,7 +205,6 @@
                     ขอนำส่งเงิน <span class="text-red-500">*</span>
                   </label>
                   <SendMoneySelect
-              
                     ref="sendmoneySelectRef"
                     v-model="formData.sendmoney"
                     input-id="sendmoney"
@@ -290,7 +306,7 @@
                     รหัสโครงงาน <span class="text-red-500">*</span>
                   </label>
                   <InputText
-                  class ="-mt-1"
+                    class="-mt-1"
                     v-model="formData.projectCode"
                     placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
                     :class="{ 'readonly-force': isEditMode }"
@@ -312,276 +328,114 @@
               </div>
 
               <div
-                class="hidden sm:grid sm:grid-cols-[0.1fr_2fr_1fr_1fr_1fr_auto] gap-3 px-2 pb-2 border-b border-white/40 items-center text-center"
+                class="hidden sm:grid sm:grid-cols-[0.3fr_0.6fr_1.5fr_0.8fr_0.8fr_0.2fr] gap-3 px-2 pb-2 border-b border-white/40 items-center text-center"
               >
-                <div class="text-xs font-semibold text-slate-600 uppercase"></div>
-                <div class="text-xs font-semibold text-slate-600 uppercase">รายการ</div>
-                <div class="text-xs font-semibold text-slate-600 uppercase">จำนวนเงิน</div>
-                <div class="text-xs font-semibold text-slate-600 uppercase">ค่าธรรมเนียม</div>
-                <div class="text-xs font-semibold text-slate-600 uppercase">หมายเหตุ</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">ลำดับ</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">เลขที่อ้างอิง</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">รายการ</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">จำนวนเงิน</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">หมายเหตุ</div>
               </div>
               <div class="space-y-4">
                 <div
                   v-for="(row, index) in morelist"
                   :key="row.id"
-                  class="bg-white/20 rounded-xl p-4 border border-white/50 transition-all">
-                      <div class="grid grid-cols-1 sm:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_auto] gap-3 items-start">
-                        <div class="flex items-center justify-center -mr-2">
-                          <span class=" -mr-3 bg-purple-500 text-white rounded-full text-lg font-bold mt-3 w-10 h-10 flex items-center justify-center"
-                      >{{ index + 1 }}</span></div>
-                        <div class="flex flex-col gap-2 mt-[13px]">
-                          <ItemNameSelect
-                            v-model="row.itemName"
-                            :input-id="`itemName-${index}`"
-                            @input="() => clearRowError(index, 'itemName')"
-                            class="-mr-2"
-                          />
-                          <span
-                            v-if="errors.rows?.[index]?.itemName"
-                            class="text-red-600 text-xs"
-                            >{{ errors.rows[index].itemName }}</span
-                          >
-                        </div>
-                        <div class="flex flex-col gap-2 mt-3">
-                          <button
-                            class="glass-button-primary px-4 py-2 rounded-xl text-sm transition-all active:scale-95 h-[42px]"
-                            @click="openModalForRow(index)"
-                          >
-                            จำนวนเงินรวม
-                          </button>
-
-                          <span
-                            v-if="errors.rows?.[index]?.selectedItems"
-                            class="text-red-600 text-xs"
-                            >{{ errors.rows[index].selectedItems }}</span
-                          >
-                        </div>
-                        <div class="flex flex-col gap-1.5 mt-2">
-                          <InputText
-                            v-model="row.fee"
-                            placeholder="ค่าธรรมเนียม"
-                            @keypress="allowOnlyDigits"
-                            @input="() => clearRowError(index, 'fee')"
-                          />
-                        </div>
-                        <div class="flex flex-col gap-1.5 mt-2">
-                          <InputText
-                            v-model="row.note"
-                            placeholder="หมายเหตุ"
-                            @input="() => clearRowError(index, 'note')"
-                          />
-                          <span v-if="errors.rows?.[index]?.note" class="text-red-600 text-xs">{{
-                            errors.rows[index].note
-                          }}</span>
-                        </div>
-                        <button
-                          v-if="morelist.length > 1"
-                          @click="removeRow(index)"
-                          class="mt-0 sm:mt-0 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start sm:self-center"
-                          title="ลบรายการ"
-                        >
-                          <svg
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                      <transition name="collapse">
-                        <div
-                          v-show="row.expanded && getRowDetail(index)"
-                          class="mt-4 border-t border-white/40 pt-4"
-                        >
-                          <div class="bg-blue-50/50 border border-blue-200/50 rounded-lg p-4">
-                            <h4
-                              class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2"
-                            >
-                              <i class="ph ph-info text-blue-600"></i>รายละเอียดรายการ
-                            </h4>
-                            <div v-if="getRowDetail(index)?.hasItemName" class="mb-3">
-                              <div class="flex items-center gap-2">
-                                <span class="text-sm font-semibold text-slate-600"
-                                  >ชื่อรายการ:</span
-                                >
-                                <span class="text-sm font-medium text-slate-800">{{
-                                  getRowDetail(index).itemName
-                                }}</span>
-                              </div>
-                            </div>
-                            <div class="space-y-2 mb-3">
-                              <div
-                                v-for="(item, itemIdx) in getRowDetail(index)?.items || []"
-                                :key="itemIdx"
-                                class="bg-white rounded p-3 text-sm shadow-sm"
-                              >
-                                <div class="flex justify-between items-start mb-2">
-                                  <span
-                                    class="font-medium px-2 py-1 rounded text-xs"
-                                    :class="{
-                                      'bg-green-100 text-green-700': item.type === 'เงินสด',
-                                      'bg-blue-100 text-blue-700': item.type === 'เช็คธนาคาร',
-                                      'bg-orange-100 text-orange-700': item.type === 'ฝากเข้าบัญชี',
-                                      'bg-gray-100 text-gray-700': !item.type,
-                                    }"
-                                    >{{ item.type || 'ไม่ระบุประเภท' }}</span
-                                  >
-                                  <span class="font-bold text-green-600"
-                                    >{{ formatNumber(item.amount) }} ฿</span
-                                  >
-                                </div>
-                                <div class="space-y-1 text-xs text-slate-600 ml-2">
-                                  <div
-                                    v-if="item.type === 'เช็คธนาคาร' && item.checkNumber"
-                                    class="flex gap-1"
-                                  >
-                                    <span>เลขที่เช็ค:</span
-                                    ><span class="font-medium">{{ item.checkNumber }}</span>
-                                  </div>
-                                  <template v-if="item.type === 'ฝากเข้าบัญชี'">
-                                    <div v-if="item.accountName" class="flex gap-1">
-                                      <span>ชื่อบัญชี:</span
-                                      ><span class="font-medium">{{ item.accountName }}</span>
-                                    </div>
-                                    <div v-if="item.accountNumber" class="flex gap-1">
-                                      <span>เลขบัญชี:</span
-                                      ><span class="font-medium">{{ item.accountNumber }}</span>
-                                    </div>
-                                    <div v-if="item.bankName" class="flex gap-1">
-                                      <span>ธนาคาร:</span
-                                      ><span class="font-medium">{{ item.bankName }}</span>
-                                    </div>
-                                  </template>
-                                  <div v-if="item.referenceNo" class="flex gap-1">
-                                    <span>เลขที่อ้างอิง:</span>
-                                    <span class="font-medium">{{ item.referenceNo || '–' }}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="border-t border-blue-200 pt-3 space-y-2">
-                              <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-600">ยอดรวม:</span
-                                ><span class="font-semibold text-green-600"
-                                  >{{ formatNumber(getRowDetail(index)?.subtotal) }} ฿</span
-                                >
-                              </div>
-                              <div
-                                v-if="getRowDetail(index)?.fee > 0"
-                                class="flex justify-between items-center text-sm"
-                              >
-                                <span class="text-slate-600">ค่าธรรมเนียม:</span
-                                ><span class="font-semibold text-red-600"
-                                  >- {{ formatNumber(getRowDetail(index).fee) }} ฿</span
-                                >
-                              </div>
-                              <div
-                                v-if="getRowDetail(index)?.note"
-                                class="flex items-center text-sm"
-                              >
-                                <span class="text-slate-600">หมายเหตุ:</span
-                                ><span class="text-slate-700 italic">{{
-                                  getRowDetail(index)?.note
-                                }}</span>
-                              </div>
-                              <div class="border-t border-blue-300 my-2"></div>
-                              <div class="flex justify-between items-center">
-                                <span class="font-bold text-slate-800">ยอดสุทธิ:</span>
-                                <span
-                                  class="font-bold text-lg"
-                                  :class="
-                                    (getRowDetail(index)?.netAmount ?? 0) >= 0
-                                      ? 'text-green-600'
-                                      : 'text-red-600'
-                                  "
-                                  >{{ formatNumber(getRowDetail(index)?.netAmount ?? 0) }} ฿</span
-                                >
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </transition>
-                      <div
-                        v-if="getRowDetail(index)"
-                        @click="row.expanded = !row.expanded"
-                        class="detail-toggle-bar"
-                      >
-                        <i
-                          :class="row.expanded ? 'ph ph-caret-up' : 'ph ph-caret-down'"
-                          class="text-base"
-                        ></i>
-                        <span class="text-xs">
-                          {{ row.expanded ? 'ซ่อนรายละเอียด' : 'ดูรายละเอียด' }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    @click="addRow"
-                    class="py-3 px-4 border-2 border-dashed border-[#7E22CE] rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
-                  >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    เพิ่มรายการ
-                  </button>
-                </div>
-
-            <div
-              v-if="
-                morelist.some(
-                  (row) => row.itemName && row.selectedItems?.some((item) => item.checked),
-                )
-              "
-              class="glass-panel rounded-2xl p-6 shadow-lg"
-            >
-              <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                <i class="ph ph-clipboard-text text-blue-600 text-xl"></i>สรุปรายการทั้งหมด
-              </h3>
-              <div class="space-y-3">
-                <div
-                  v-for="(row, index) in morelist"
-                  :key="row.id"
-                  v-show="row.itemName && row.selectedItems?.some((item) => item.checked)"
-                  class="flex justify-between items-center py-3 border-b border-white/40 last:border-b-0"
+                  class="bg-white/20 rounded-xl p-4 border border-white/50 transition-all"
                 >
-                  <div class="flex items-center gap-3">
-                    <span
-                      class="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 rounded-full text-sm font-semibold"
-                      >{{ index + 1 }}</span
+                  <div
+                    class="grid grid-cols-1 sm:grid-cols-[0.2fr_1fr_2fr_1fr_1fr_auto] gap-3 items-start"
+                  >
+                    <div class="flex items-center justify-center -mr-2">
+                      <span
+                        class="-mr-3 bg-purple-500 text-white rounded-full text-lg font-bold mt-3 w-10 h-10 flex items-center justify-center"
+                        >{{ index + 1 }}</span
+                      >
+                    </div>
+                    <div class="flex flex-col gap-1.5 mt-2 -mr-2 ml-2">
+                      <InputText
+                        v-model="row.referenceNo"
+                        placeholder="(เล่มที่/เลขที่ใบเสร็จ)"
+                        @keypress="allowOnlyDigits"
+                        @input="() => clearRowError(index, 'referenceNo')"
+                      />
+                    </div>
+                    <div class="flex flex-col gap-2 mt-[13px]">
+                      <ItemNameSelect
+                        v-model="row.itemName"
+                        :input-id="`itemName-${index}`"
+                        @input="() => clearRowError(index, 'itemName')"
+                        class="-mr-2"
+                      />
+                      <span v-if="errors.rows?.[index]?.itemName" class="text-red-600 text-xs">{{
+                        errors.rows[index].itemName
+                      }}</span>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5 mt-2">
+                      <div class="flex flex-col gap-1.5">
+                        <InputText
+                          :model-value="formatDisplayAmount(row.amount)"
+                          @input="(e) => handleAmountInput(index, e)"
+                          @blur="() => formatAmountOnBlur(index)"
+                          placeholder="จำนวนเงิน"
+                        />
+                      </div>
+                    </div>
+                    <div class="flex flex-col gap-1.5 mt-2">
+                      <InputText
+                        v-model="row.note"
+                        placeholder="หมายเหตุ"
+                        @input="() => clearRowError(index, 'note')"
+                      />
+                      <span v-if="errors.rows?.[index]?.note" class="text-red-600 text-xs">{{
+                        errors.rows[index].note
+                      }}</span>
+                    </div>
+                    <button
+                      v-if="morelist.length > 1"
+                      @click="removeRow(index)"
+                      class="mt-0 sm:mt-0 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start sm:self-center"
+                      title="ลบรายการ"
                     >
-                    <div>
-                      <div class="font-medium text-slate-800">{{ row.itemName }}</div>
-                    </div>
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
                   </div>
-                  <div class="text-right">
-                    <div class="font-semibold text-slate-800 font-mono">
-                      {{ formatNumber(getRowDetail(index)?.netAmount || 0) }} ฿
-                    </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-[_1fr_4fr] gap-6">
+                <button
+                  @click="addRow"
+                  class="border-2 border-dashed border-[#7E22CE] rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  เพิ่มรายการ
+                </button>
+                <div class="bg-[#7E22CE] border rounded-lg py-6 px-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด</span>
+                    <span class="text-3xl font-bold text-white">
+                      {{ formattedTotalAmount }} บาท
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="bg-[#7E22CE] border rounded-lg p-6">
-              <div class="flex justify-between items-center">
-                <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด</span>
-                <span class="text-3xl font-bold text-white">
-                  {{ formatNumber(netTotalAmount) }} บาท
-                </span>
-              </div>
-            </div>
+            
             <div
               class="bg-yellow-50/80 backdrop-blur-sm border border-yellow-300 rounded-xl p-4 shadow-sm"
             >
@@ -613,18 +467,6 @@
         </div>
       </main>
     </div>
-
-    <Teleport to="body">
-      <div v-if="showModal !== null" class="modal-portal-container">
-        <Modal
-          :show="true"
-          :items="rowItems[showModal]"
-          @close="showModal = null"
-          @input="() => clearRowError(showModal, 'selectedItems')"
-          @update:selected="(selected) => updateSelectedItems(showModal, selected)"
-        />
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -637,7 +479,6 @@ import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
 import Selects from '@/components/input/select/select.vue'
 import InputText from '@/components/input/inputtext.vue'
-import Modal from '@/components/modal/modalwaybill.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import SendMoneySelect from '@/components/TomSelect/SendMoneyTomSelect.vue'
 import sidebar from '@/components/bar/sidebar.vue'
@@ -659,6 +500,7 @@ const isLoading = ref(false)
 
 // Form data
 const formData = ref({
+  delNumber: '',
   fullName: '',
   phone: '',
   MainAffiliationName: '',
@@ -669,19 +511,78 @@ const formData = ref({
   sendmoney: '',
   receiptList: '',
 })
+const handleAmountInput = (index, event) => {
+  // อนุญาตเฉพาะตัวเลขและจุดทศนิยม
+  const value = event.target.value.replace(/[^0-9.]/g, '')
 
+  // ป้องกันจุดทศนิยมมากกว่า 1 จุด
+  const parts = value.split('.')
+  if (parts.length > 2) {
+    return // ไม่อนุญาตให้มี . มากกว่า 1 ตัว
+  }
+
+  morelist.value[index].amount = value
+  clearRowError(index, 'amount')
+}
+
+const formatDisplayAmount = (value) => {
+  if (!value) return ''
+
+  // ลบ comma ทั้งหมด
+  const cleanValue = value.toString().replace(/,/g, '')
+
+  // แยกส่วนจำนวนเต็มกับทศนิยม
+  const parts = cleanValue.split('.')
+  const integerPart = parts[0]
+  const decimalPart = parts[1]
+
+  if (!integerPart) return ''
+
+  // Format ส่วนจำนวนเต็มด้วย comma
+  const formattedInteger = Number(integerPart).toLocaleString('en-US')
+
+  // รวมกับส่วนทศนิยม (ถ้ามี)
+  if (decimalPart !== undefined) {
+    return `${formattedInteger}.${decimalPart}`
+  }
+
+  return formattedInteger
+}
+
+const formatAmountOnBlur = (index) => {
+  const value = morelist.value[index].amount
+  if (!value) return
+
+  // ลบ comma
+  const cleanValue = value.toString().replace(/,/g, '')
+
+  // แปลงเป็นตัวเลข
+  const numValue = parseFloat(cleanValue)
+
+  if (isNaN(numValue)) {
+    morelist.value[index].amount = ''
+    return
+  }
+
+  // Format ทศนิยม 2 ตำแหน่ง พร้อม comma
+  const formatted = numValue.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+
+  morelist.value[index].amount = formatted
+}
 const {
+  formatAmount,
   allowOnlyDigits,
   netTotalAmount,
-  getRowDetail,
   morelist,
   addRow,
   removeRow,
-  openModalForRow,
-  updateSelectedItems,
   showModal,
   rowItems,
   initTomSelect,
+  formattedTotalAmount,
 } = useRowManager()
 
 const itemNameInstances = ref({})
@@ -762,13 +663,6 @@ const gotomainpage = () => {
   router.push('/')
 }
 
-const formatNumber = (num) => {
-  return Number(num).toLocaleString('th-TH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
 const loadReceiptData = async () => {
   if (!receiptId.value) return
 
@@ -785,16 +679,16 @@ const loadReceiptData = async () => {
 
     // ✅ Set mainCategory ก่อน และรอให้ Vue update
     mainCategory.value = data.mainAffiliationName || ''
-    
+
     // ⭐ รอให้ Vue อัพเดท sub1OptionsArray ก่อน
     await nextTick()
-    
+
     // ✅ ตอนนี้ sub1OptionsArray มีค่าแล้ว ถึงจะ set subCategory ได้
     subCategory.value = data.subAffiliationName1 || ''
-    
+
     // ⭐ รอให้ Vue อัพเดท sub2OptionsArray อีกครั้ง
     await nextTick()
-    
+
     // ✅ ตอนนี้ sub2OptionsArray มีค่าแล้ว ถึงจะ set subCategory2 ได้
     subCategory2.value = data.subAffiliationName2 || ''
 
@@ -803,11 +697,14 @@ const loadReceiptData = async () => {
     formData.value.sendmoney = moneyTypeValue
 
     // โหลด receiptList
+    // โหลด receiptList
     if (data.receiptList && data.receiptList.length > 0) {
       morelist.value = data.receiptList.map((item, index) => ({
         id: index + 1,
         itemName: item.itemName || '',
         note: item.note || '',
+        referenceNo: item.referenceNo || '',
+        amount: item.amount || 0, // โหลดค่ามาก่อน
         fee: item.fee || 0,
         selectedItems:
           item.paymentDetails?.map((detail) => ({
@@ -822,6 +719,14 @@ const loadReceiptData = async () => {
           })) || [],
         expanded: false,
       }))
+
+      // ⭐ Format amount สำหรับแต่ละรายการหลังโหลดเสร็จ
+      await nextTick()
+      morelist.value.forEach((row, index) => {
+        if (row.amount) {
+          formatAmount(index)
+        }
+      })
     }
 
     Swal.fire({
@@ -907,6 +812,10 @@ const saveData = async () => {
   // Basic validation
   if (!formData.value.fullName) {
     errors.value.fullName = 'กรุณากรอก "ชื่อ"'
+    hasError = true
+  }
+  if (!formData.value.delNumber) {
+    errors.value.delNumber = 'กรุณากรอก "เลขที่นำส่ง"'
     hasError = true
   }
   if (!formData.value.phone) {
@@ -998,18 +907,16 @@ const saveData = async () => {
     receiptList: morelist.value.map((row) => {
       const rowTotal =
         row.selectedItems?.reduce((sum, item) => {
-          return item.checked ? sum + (Number(item.amount) || 0) : sum
+          if (!item.checked) return sum
+          // ลบ comma ก่อนแปลงเป็นตัวเลข
+          const amount = parseFloat(item.amount.toString().replace(/,/g, '')) || 0
+          return sum + amount
         }, 0) || 0
-
-      const rowFee = Number(row.fee) || 0
-      const rowNetAmount = rowTotal - rowFee
 
       return {
         itemName: row.itemName,
         note: row.note || '',
-        fee: rowFee,
         subtotal: rowTotal,
-        amount: rowNetAmount,
         paymentDetails:
           row.selectedItems
             ?.filter((item) => item.checked)

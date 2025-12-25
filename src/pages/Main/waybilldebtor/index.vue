@@ -294,7 +294,7 @@ const mapReceiptToRow = (r: any) => {
     responsible: r.fullName,
     paymentType: "ลูกหนี้",
 
-    amount: r.netTotalAmount ? Number(String(r.netTotalAmount).replace(/,/g, '')) : 0,
+    amount: r.totalDebtorAmount ? Number(String(r.totalDebtorAmount).replace(/,/g, '')) : 0,
     createdAt: createdDate,
     updatedAt: updatedDate,
     isLocked: r.isLocked ?? false,

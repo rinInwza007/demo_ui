@@ -40,8 +40,25 @@
           <div class="max-w-6xl mx-auto space-y-6">
             <div class="glass-panel rounded-2xl p-6 shadow-lg space-y-4">
               <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                <span class="w-1 h-6 bg-blue-500 rounded-full"></span>ข้อมูลผู้บันทึก
+                <span class="w-1 h-6 bg-blue-500 rounded-full"></span>ส่วนที่ 1: ข้อมูลผู้บันทึก
               </h2>
+              <div class="grid grid-cols-2 gap-6">
+                <div class="flex flex-col gap-2">
+                  <label class="text-sm font-medium text-gray-700">
+                    เลขที่นำส่ง <span class="text-red-500">*</span>
+                  </label>
+                  <InputText
+                    v-model="formData.delNumber"
+                    placeholder="เลขที่นำส่ง"
+                    class="transition-all duration-200"
+                    @keypress="allowOnlyDigits"
+                  />
+                  <span v-if="errors.delNumber" class="text-red-600 text-xs">
+                    {{ errors.delNumber }}
+                  </span>
+                </div>
+                <div></div>
+              </div>
 
               <!-- แถวที่ 1: ชื่อ | เบอร์โทร (แสดงเสมอ) -->
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -155,7 +172,7 @@
                     รหัสโครงงาน <span class="text-red-500">*</span>
                   </label>
                   <InputText
-                  class ="-mt-1"
+                    class="-mt-1"
                     v-model="formData.projectCode"
                     placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
                     :class="{ 'readonly-force': isEditMode }"
@@ -188,7 +205,6 @@
                     ขอนำส่งเงิน <span class="text-red-500">*</span>
                   </label>
                   <SendMoneySelect
-              
                     ref="sendmoneySelectRef"
                     v-model="formData.sendmoney"
                     input-id="sendmoney"
@@ -290,7 +306,7 @@
                     รหัสโครงงาน <span class="text-red-500">*</span>
                   </label>
                   <InputText
-                  class ="-mt-1"
+                    class="-mt-1"
                     v-model="formData.projectCode"
                     placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
                     :class="{ 'readonly-force': isEditMode }"
@@ -304,7 +320,7 @@
             <div class="glass-panel rounded-2xl p-6 shadow-lg space-y-4">
               <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                  <span class="w-1 h-6 bg-green-500 rounded-full"></span>รายการนำส่งเงิน
+                  <span class="w-1 h-6 bg-green-500 rounded-full"></span>ส่วนที่ 2: รายการนำส่งเงิน
                 </h2>
                 <span class="text-xs text-slate-600 bg-white/60 px-3 py-1 rounded-full"
                   >{{ morelist.length }} รายการ</span
@@ -312,276 +328,294 @@
               </div>
 
               <div
-                class="hidden sm:grid sm:grid-cols-[0.1fr_2fr_1fr_1fr_1fr_auto] gap-3 px-2 pb-2 border-b border-white/40 items-center text-center"
+                class="hidden sm:grid sm:grid-cols-[0.3fr_0.6fr_1.5fr_0.8fr_0.8fr_0.2fr] gap-3 px-2 pb-2 border-b border-white/40 items-center text-center"
               >
-                <div class="text-xs font-semibold text-slate-600 uppercase"></div>
-                <div class="text-xs font-semibold text-slate-600 uppercase">รายการ</div>
-                <div class="text-xs font-semibold text-slate-600 uppercase">จำนวนเงิน</div>
-                <div class="text-xs font-semibold text-slate-600 uppercase">ค่าธรรมเนียม</div>
-                <div class="text-xs font-semibold text-slate-600 uppercase">หมายเหตุ</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">ลำดับ</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">เลขที่อ้างอิง</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">รายการ</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">จำนวนเงิน</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">หมายเหตุ</div>
               </div>
               <div class="space-y-4">
                 <div
                   v-for="(row, index) in morelist"
                   :key="row.id"
-                  class="bg-white/20 rounded-xl p-4 border border-white/50 transition-all">
-                      <div class="grid grid-cols-1 sm:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_auto] gap-3 items-start">
-                        <div class="flex items-center justify-center -mr-2">
-                          <span class=" -mr-3 bg-purple-500 text-white rounded-full text-lg font-bold mt-3 w-10 h-10 flex items-center justify-center"
-                      >{{ index + 1 }}</span></div>
-                        <div class="flex flex-col gap-2 mt-[13px]">
-                          <ItemNameSelect
-                            v-model="row.itemName"
-                            :input-id="`itemName-${index}`"
-                            @input="() => clearRowError(index, 'itemName')"
-                            class="-mr-2"
-                          />
-                          <span
-                            v-if="errors.rows?.[index]?.itemName"
-                            class="text-red-600 text-xs"
-                            >{{ errors.rows[index].itemName }}</span
-                          >
-                        </div>
-                        <div class="flex flex-col gap-2 mt-3">
-                          <button
-                            class="glass-button-primary px-4 py-2 rounded-xl text-sm transition-all active:scale-95 h-[42px]"
-                            @click="openModalForRow(index)"
-                          >
-                            จำนวนเงินรวม
-                          </button>
-
-                          <span
-                            v-if="errors.rows?.[index]?.selectedItems"
-                            class="text-red-600 text-xs"
-                            >{{ errors.rows[index].selectedItems }}</span
-                          >
-                        </div>
-                        <div class="flex flex-col gap-1.5 mt-2">
-                          <InputText
-                            v-model="row.fee"
-                            placeholder="ค่าธรรมเนียม"
-                            @keypress="allowOnlyDigits"
-                            @input="() => clearRowError(index, 'fee')"
-                          />
-                        </div>
-                        <div class="flex flex-col gap-1.5 mt-2">
-                          <InputText
-                            v-model="row.note"
-                            placeholder="หมายเหตุ"
-                            @input="() => clearRowError(index, 'note')"
-                          />
-                          <span v-if="errors.rows?.[index]?.note" class="text-red-600 text-xs">{{
-                            errors.rows[index].note
-                          }}</span>
-                        </div>
-                        <button
-                          v-if="morelist.length > 1"
-                          @click="removeRow(index)"
-                          class="mt-0 sm:mt-0 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start sm:self-center"
-                          title="ลบรายการ"
-                        >
-                          <svg
-                            class="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                      <transition name="collapse">
-                        <div
-                          v-show="row.expanded && getRowDetail(index)"
-                          class="mt-4 border-t border-white/40 pt-4"
-                        >
-                          <div class="bg-blue-50/50 border border-blue-200/50 rounded-lg p-4">
-                            <h4
-                              class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2"
-                            >
-                              <i class="ph ph-info text-blue-600"></i>รายละเอียดรายการ
-                            </h4>
-                            <div v-if="getRowDetail(index)?.hasItemName" class="mb-3">
-                              <div class="flex items-center gap-2">
-                                <span class="text-sm font-semibold text-slate-600"
-                                  >ชื่อรายการ:</span
-                                >
-                                <span class="text-sm font-medium text-slate-800">{{
-                                  getRowDetail(index).itemName
-                                }}</span>
-                              </div>
-                            </div>
-                            <div class="space-y-2 mb-3">
-                              <div
-                                v-for="(item, itemIdx) in getRowDetail(index)?.items || []"
-                                :key="itemIdx"
-                                class="bg-white rounded p-3 text-sm shadow-sm"
-                              >
-                                <div class="flex justify-between items-start mb-2">
-                                  <span
-                                    class="font-medium px-2 py-1 rounded text-xs"
-                                    :class="{
-                                      'bg-green-100 text-green-700': item.type === 'เงินสด',
-                                      'bg-blue-100 text-blue-700': item.type === 'เช็คธนาคาร',
-                                      'bg-orange-100 text-orange-700': item.type === 'ฝากเข้าบัญชี',
-                                      'bg-gray-100 text-gray-700': !item.type,
-                                    }"
-                                    >{{ item.type || 'ไม่ระบุประเภท' }}</span
-                                  >
-                                  <span class="font-bold text-green-600"
-                                    >{{ formatNumber(item.amount) }} ฿</span
-                                  >
-                                </div>
-                                <div class="space-y-1 text-xs text-slate-600 ml-2">
-                                  <div
-                                    v-if="item.type === 'เช็คธนาคาร' && item.checkNumber"
-                                    class="flex gap-1"
-                                  >
-                                    <span>เลขที่เช็ค:</span
-                                    ><span class="font-medium">{{ item.checkNumber }}</span>
-                                  </div>
-                                  <template v-if="item.type === 'ฝากเข้าบัญชี'">
-                                    <div v-if="item.accountName" class="flex gap-1">
-                                      <span>ชื่อบัญชี:</span
-                                      ><span class="font-medium">{{ item.accountName }}</span>
-                                    </div>
-                                    <div v-if="item.accountNumber" class="flex gap-1">
-                                      <span>เลขบัญชี:</span
-                                      ><span class="font-medium">{{ item.accountNumber }}</span>
-                                    </div>
-                                    <div v-if="item.bankName" class="flex gap-1">
-                                      <span>ธนาคาร:</span
-                                      ><span class="font-medium">{{ item.bankName }}</span>
-                                    </div>
-                                  </template>
-                                  <div v-if="item.referenceNo" class="flex gap-1">
-                                    <span>เลขที่อ้างอิง:</span>
-                                    <span class="font-medium">{{ item.referenceNo || '–' }}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="border-t border-blue-200 pt-3 space-y-2">
-                              <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-600">ยอดรวม:</span
-                                ><span class="font-semibold text-green-600"
-                                  >{{ formatNumber(getRowDetail(index)?.subtotal) }} ฿</span
-                                >
-                              </div>
-                              <div
-                                v-if="getRowDetail(index)?.fee > 0"
-                                class="flex justify-between items-center text-sm"
-                              >
-                                <span class="text-slate-600">ค่าธรรมเนียม:</span
-                                ><span class="font-semibold text-red-600"
-                                  >- {{ formatNumber(getRowDetail(index).fee) }} ฿</span
-                                >
-                              </div>
-                              <div
-                                v-if="getRowDetail(index)?.note"
-                                class="flex items-center text-sm"
-                              >
-                                <span class="text-slate-600">หมายเหตุ:</span
-                                ><span class="text-slate-700 italic">{{
-                                  getRowDetail(index)?.note
-                                }}</span>
-                              </div>
-                              <div class="border-t border-blue-300 my-2"></div>
-                              <div class="flex justify-between items-center">
-                                <span class="font-bold text-slate-800">ยอดสุทธิ:</span>
-                                <span
-                                  class="font-bold text-lg"
-                                  :class="
-                                    (getRowDetail(index)?.netAmount ?? 0) >= 0
-                                      ? 'text-green-600'
-                                      : 'text-red-600'
-                                  "
-                                  >{{ formatNumber(getRowDetail(index)?.netAmount ?? 0) }} ฿</span
-                                >
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </transition>
-                      <div
-                        v-if="getRowDetail(index)"
-                        @click="row.expanded = !row.expanded"
-                        class="detail-toggle-bar"
-                      >
-                        <i
-                          :class="row.expanded ? 'ph ph-caret-up' : 'ph ph-caret-down'"
-                          class="text-base"
-                        ></i>
-                        <span class="text-xs">
-                          {{ row.expanded ? 'ซ่อนรายละเอียด' : 'ดูรายละเอียด' }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    @click="addRow"
-                    class="py-3 px-4 border-2 border-dashed border-[#7E22CE] rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
-                  >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    เพิ่มรายการ
-                  </button>
-                </div>
-
-            <div
-              v-if="
-                morelist.some(
-                  (row) => row.itemName && row.selectedItems?.some((item) => item.checked),
-                )
-              "
-              class="glass-panel rounded-2xl p-6 shadow-lg"
-            >
-              <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                <i class="ph ph-clipboard-text text-blue-600 text-xl"></i>สรุปรายการทั้งหมด
-              </h3>
-              <div class="space-y-3">
-                <div
-                  v-for="(row, index) in morelist"
-                  :key="row.id"
-                  v-show="row.itemName && row.selectedItems?.some((item) => item.checked)"
-                  class="flex justify-between items-center py-3 border-b border-white/40 last:border-b-0"
+                  class="bg-white/20 rounded-xl p-4 border border-white/50 transition-all"
                 >
-                  <div class="flex items-center gap-3">
-                    <span
-                      class="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 rounded-full text-sm font-semibold"
-                      >{{ index + 1 }}</span
+                  <div
+                    class="grid grid-cols-1 sm:grid-cols-[0.2fr_1fr_2fr_1fr_1fr_auto] gap-3 items-start"
+                  >
+                    <div class="flex items-center justify-center -mr-2">
+                      <span
+                        class="-mr-3 bg-purple-500 text-white rounded-full text-lg font-bold mt-3 w-10 h-10 flex items-center justify-center"
+                        >{{ index + 1 }}</span
+                      >
+                    </div>
+                    <div class="flex flex-col gap-1.5 mt-2 -mr-2 ml-2">
+                      <InputText
+                        v-model="row.referenceNo"
+                        placeholder="(เล่มที่/เลขที่ใบเสร็จ)"
+                        @keypress="allowOnlyDigits"
+                        @input="() => clearRowError(index, 'referenceNo')"
+                      />
+                    </div>
+                    <div class="flex flex-col gap-2 mt-[13px]">
+                      <ItemNameSelect
+                        v-model="row.itemName"
+                        :input-id="`itemName-${index}`"
+                        @input="() => clearRowError(index, 'itemName')"
+                        class="-mr-2"
+                      />
+                      <span v-if="errors.rows?.[index]?.itemName" class="text-red-600 text-xs">{{
+                        errors.rows[index].itemName
+                      }}</span>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5 mt-2">
+                      <div class="flex flex-col gap-1.5">
+                        <InputText
+                          :model-value="formatDisplayAmount(row.amount)"
+                          @input="(e) => handleAmountInput(index, e)"
+                          @blur="() => formatAmountOnBlur(index)"
+                          placeholder="จำนวนเงิน"
+                        />
+                      </div>
+                    </div>
+                    <div class="flex flex-col gap-1.5 mt-2">
+                      <InputText
+                        v-model="row.note"
+                        placeholder="หมายเหตุ"
+                        @input="() => clearRowError(index, 'note')"
+                      />
+                      <span v-if="errors.rows?.[index]?.note" class="text-red-600 text-xs">{{
+                        errors.rows[index].note
+                      }}</span>
+                    </div>
+                    <button
+                      v-if="morelist.length > 1"
+                      @click="removeRow(index)"
+                      class="mt-0 sm:mt-0 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start sm:self-center"
+                      title="ลบรายการ"
                     >
-                    <div>
-                      <div class="font-medium text-slate-800">{{ row.itemName }}</div>
-                    </div>
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
                   </div>
-                  <div class="text-right">
-                    <div class="font-semibold text-slate-800 font-mono">
-                      {{ formatNumber(getRowDetail(index)?.netAmount || 0) }} ฿
-                    </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-[_1fr_4fr] gap-6">
+                <button
+                  @click="addRow"
+                  class="border-2 border-dashed border-[#7E22CE] rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  เพิ่มรายการ
+                </button>
+                <div class="bg-[#7E22CE] border rounded-lg py-6 px-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด</span>
+                    <span class="text-3xl font-bold text-white">
+                      {{ formattedTotalAmount }} บาท
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="bg-[#7E22CE] border rounded-lg p-6">
-              <div class="flex justify-between items-center">
-                <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด</span>
-                <span class="text-3xl font-bold text-white">
-                  {{ formatNumber(netTotalAmount) }} บาท
-                </span>
+            <div class="glass-panel rounded-2xl p-6 shadow-lg space-y-4">
+              <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <span class="w-1 h-6 bg-red-500 rounded-full"></span>ส่วนที่ 3: การนำส่งเงิน
+                (โปรดระบุ)
+              </h2>
+              <div class="space-y-4">
+                <!-- ธ.กรุงไทย สาขาพะเยา -->
+                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
+                  <div class="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      v-model="paymentMethods.krungthai.checked"
+                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div class="flex-1">
+                      <div class="font-medium text-slate-800">
+                        ธ.กรุงไทย สาขาพะเยา (มหาวิทยาลัยพะเยา)
+                      </div>
+                      <div class="text-sm text-slate-600">บช.ที่ 512-1-43488-6</div>
+                      <div class="mt-2 flex items-center gap-2">
+                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
+                        <InputText
+                          :model-value="formatDisplayPaymentAmount(paymentMethods.krungthai.amount)"
+                          @input="(e) => handlePaymentAmountInput('krungthai', e)"
+                          @blur="() => formatPaymentAmountOnBlur('krungthai')"
+                          :readonly="!paymentMethods.krungthai.checked"
+                          :class="{
+                            'opacity-50 cursor-not-allowed pointer-events-none bg-gray-100':
+                              !paymentMethods.krungthai.checked,
+                          }"
+                          placeholder="0.00"
+                          class="w-48 transition-all duration-200"
+                        />
+                        <span class="text-sm text-slate-700">บาท</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ธ.ไทยพาณิชย์ สาขามหาวิทยาลัยพะเยา -->
+                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
+                  <div class="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      v-model="paymentMethods.scb.checked"
+                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div class="flex-1">
+                      <div class="font-medium text-slate-800">
+                        ธ.ไทยพาณิชย์ สาขามหาวิทยาลัยพะเยา
+                      </div>
+                      <div class="text-sm text-slate-600">บช.ที่ 891-2-00225-5</div>
+                      <div class="mt-2 flex items-center gap-2">
+                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
+                        <InputText
+                          :model-value="formatDisplayPaymentAmount(paymentMethods.scb.amount)"
+                          @input="(e) => handlePaymentAmountInput('scb', e)"
+                          @blur="() => formatPaymentAmountOnBlur('scb')"
+                          :readonly="!paymentMethods.scb.checked"
+                          :class="{
+                            'opacity-50 cursor-not-allowed pointer-events-none bg-gray-100':
+                              !paymentMethods.scb.checked,
+                          }"
+                          placeholder="0.00"
+                          class="w-48 transition-all duration-200"
+                        />
+                        <span class="text-sm text-slate-700">บาท</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- เงินสด -->
+                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
+                  <div class="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      v-model="paymentMethods.cash.checked"
+                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div class="flex-1">
+                      <div class="font-medium text-slate-800">เงินสด</div>
+                      <div class="mt-2 flex items-center gap-2">
+                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
+                        <InputText
+                          :model-value="formatDisplayPaymentAmount(paymentMethods.cash.amount)"
+                          @input="(e) => handlePaymentAmountInput('cash', e)"
+                          @blur="() => formatPaymentAmountOnBlur('cash')"
+                          :readonly="!paymentMethods.cash.checked"
+                          :class="{
+                            'opacity-50 cursor-not-allowed pointer-events-none bg-gray-100':
+                              !paymentMethods.cash.checked,
+                          }"
+                          placeholder="0.00"
+                          class="w-48 transition-all duration-200"
+                        />
+                        <span class="text-sm text-slate-700">บาท</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- เช็ค -->
+                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
+                  <div class="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      v-model="paymentMethods.check.checked"
+                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div class="flex-1">
+                      <div class="font-medium text-slate-800">เช็ค</div>
+                      <div class="mt-2 flex items-center gap-2">
+                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
+                        <InputText
+                          :model-value="formatDisplayPaymentAmount(paymentMethods.check.amount)"
+                          @input="(e) => handlePaymentAmountInput('check', e)"
+                          @blur="() => formatPaymentAmountOnBlur('check')"
+                          :readonly="!paymentMethods.check.checked"
+                          :class="{
+                            'opacity-50 cursor-not-allowed pointer-events-none bg-gray-100':
+                              !paymentMethods.check.checked,
+                          }"
+                          placeholder="0.00"
+                          class="w-48 transition-all duration-200"
+                        />
+                        <span class="text-sm text-slate-700">บาท</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- อื่น ๆ -->
+                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
+                  <div class="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      v-model="paymentMethods.other.checked"
+                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2">
+                        <span class="font-medium text-slate-800">อื่น ๆ</span>
+                        <InputText
+                          v-model="paymentMethods.other.name"
+                          :disabled="!paymentMethods.other.checked"
+                          placeholder="ระบุประเภท"
+                          class="w-64"
+                        />
+                      </div>
+                      <div class="mt-2 flex items-center gap-2">
+                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
+                        <InputText
+                          :model-value="formatDisplayPaymentAmount(paymentMethods.other.amount)"
+                          @input="(e) => handlePaymentAmountInput('other', e)"
+                          @blur="() => formatPaymentAmountOnBlur('other')"
+                          :readonly="!paymentMethods.other.checked"
+                          :class="{
+                            'opacity-50 cursor-not-allowed pointer-events-none bg-gray-100':
+                              !paymentMethods.other.checked,
+                          }"
+                          placeholder="0.00"
+                          class="w-48 transition-all duration-200"
+                        />
+                        <span class="text-sm text-slate-700">บาท</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- สรุปยอดเงินส่วนที่ 3 -->
+                <div class="bg-purple-500 rounded-xl p-4 mt-4">
+                  <div class="flex justify-between items-center">
+                    <span class="text-lg font-bold text-white">ยอดเงินนำส่งทั้งสิ้น</span>
+                    <span class="text-2xl font-bold text-white"
+                      >{{ formattedPaymentTotal }} บาท</span
+                    >
+                  </div>
+                </div>
               </div>
             </div>
+
             <div
               class="bg-yellow-50/80 backdrop-blur-sm border border-yellow-300 rounded-xl p-4 shadow-sm"
             >
@@ -613,18 +647,6 @@
         </div>
       </main>
     </div>
-
-    <Teleport to="body">
-      <div v-if="showModal !== null" class="modal-portal-container">
-        <Modal
-          :show="true"
-          :items="rowItems[showModal]"
-          @close="showModal = null"
-          @input="() => clearRowError(showModal, 'selectedItems')"
-          @update:selected="(selected) => updateSelectedItems(showModal, selected)"
-        />
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -637,7 +659,6 @@ import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
 import Selects from '@/components/input/select/select.vue'
 import InputText from '@/components/input/inputtext.vue'
-import Modal from '@/components/modal/modalwaybill.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import SendMoneySelect from '@/components/TomSelect/SendMoneyTomSelect.vue'
 import sidebar from '@/components/bar/sidebar.vue'
@@ -659,9 +680,10 @@ const isLoading = ref(false)
 
 // Form data
 const formData = ref({
+  delNumber: '',
   fullName: '',
   phone: '',
-  MainAffiliationName: '',
+  mainAffiliationName: '',
   subAffiliationName1: '',
   subAffiliationName2: '',
   fundName: '',
@@ -669,24 +691,194 @@ const formData = ref({
   sendmoney: '',
   receiptList: '',
 })
+const paymentMethods = ref({
+  krungthai: { checked: false, amount: '' },
+  scb: { checked: false, amount: '' },
+  cash: { checked: false, amount: '' },
+  check: { checked: false, amount: '' },
+  other: { checked: false, name: '', amount: '' },
+})
 
-const {
-  allowOnlyDigits,
-  netTotalAmount,
-  getRowDetail,
-  morelist,
-  addRow,
-  removeRow,
-  openModalForRow,
-  updateSelectedItems,
-  showModal,
-  rowItems,
-  initTomSelect,
-} = useRowManager()
+Object.keys(paymentMethods.value).forEach((key) => {
+  watch(
+    () => paymentMethods.value[key].checked,
+    (checked) => {
+      if (!checked) {
+        paymentMethods.value[key].amount = ''
+        if ('name' in paymentMethods.value[key]) {
+          paymentMethods.value[key].name = ''
+        }
+      }
+    },
+  )
+})
+onMounted(async () => {
+  if (!isEditMode.value) {
+    addRow()
+    addRow()
+  }
+
+  // รอให้ DOM สร้างแถวเสร็จก่อน init TomSelect
+  await nextTick()
+  // Init TomSelect สำหรับแถวแรก
+  morelist.value.forEach((_, i) => {
+    initItemNameTomSelect(i)
+  })
+
+  await nextTick()
+
+  // ✅ ถ้าเป็น edit mode ให้โหลดข้อมูล
+  if (isEditMode.value) {
+    await loadReceiptData()
+  }
+})
+
+// เพิ่ม computed สำหรับคำนวณยอดรวมส่วนที่ 3
+const paymentTotal = computed(() => {
+  let total = 0
+
+  Object.keys(paymentMethods.value).forEach((key) => {
+    const method = paymentMethods.value[key]
+
+    if (method.checked && method.amount) {
+      const cleanAmount = String(method.amount).replace(/,/g, '')
+      const numAmount = Number(cleanAmount)
+
+      if (!Number.isNaN(numAmount)) {
+        total += numAmount
+      }
+    }
+  })
+
+  return total
+})
+
+const formattedPaymentTotal = computed(() => {
+  return paymentTotal.value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+})
+
+// ฟังก์ชันจัดการ input จำนวนเงินส่วนที่ 3
+const handlePaymentAmountInput = (method, event) => {
+  const value = event.target.value.replace(/[^0-9.]/g, '')
+  const parts = value.split('.')
+  if (parts.length > 2) return
+
+  // ✅ แก้ไขตรงนี้ - เพิ่ม .value
+  paymentMethods.value[method].amount = value
+}
+
+const formatDisplayPaymentAmount = (value) => {
+  if (!value) return ''
+
+  const cleanValue = value.toString().replace(/,/g, '')
+  const parts = cleanValue.split('.')
+  const integerPart = parts[0]
+  const decimalPart = parts[1]
+
+  if (!integerPart) return ''
+
+  const formattedInteger = Number(integerPart).toLocaleString('en-US')
+
+  if (decimalPart !== undefined) {
+    return `${formattedInteger}.${decimalPart}`
+  }
+
+  return formattedInteger
+}
+
+const formatPaymentAmountOnBlur = (method) => {
+  // ✅ แก้ไขตรงนี้ - เพิ่ม .value
+  const value = paymentMethods.value[method].amount
+  if (!value) return
+
+  const cleanValue = value.toString().replace(/,/g, '')
+  const numValue = parseFloat(cleanValue)
+
+  if (isNaN(numValue)) {
+    paymentMethods.value[method].amount = ''
+    return
+  }
+
+  // ✅ แก้ไขตรงนี้ - เพิ่ม .value
+  paymentMethods.value[method].amount = numValue.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+const handleAmountInput = (index, event) => {
+  // อนุญาตเฉพาะตัวเลขและจุดทศนิยม
+  const value = event.target.value.replace(/[^0-9.]/g, '')
+
+  // ป้องกันจุดทศนิยมมากกว่า 1 จุด
+  const parts = value.split('.')
+  if (parts.length > 2) {
+    return // ไม่อนุญาตให้มี . มากกว่า 1 ตัว
+  }
+
+  morelist.value[index].amount = value
+  clearRowError(index, 'amount')
+}
+
+const formatDisplayAmount = (value) => {
+  if (!value) return ''
+
+  // ลบ comma ทั้งหมด
+  const cleanValue = value.toString().replace(/,/g, '')
+
+  // แยกส่วนจำนวนเต็มกับทศนิยม
+  const parts = cleanValue.split('.')
+  const integerPart = parts[0]
+  const decimalPart = parts[1]
+
+  if (!integerPart) return ''
+
+  // Format ส่วนจำนวนเต็มด้วย comma
+  const formattedInteger = Number(integerPart).toLocaleString('en-US')
+
+  // รวมกับส่วนทศนิยม (ถ้ามี)
+  if (decimalPart !== undefined) {
+    return `${formattedInteger}.${decimalPart}`
+  }
+
+  return formattedInteger
+}
+
+const formatAmountOnBlur = (index) => {
+  const value = morelist.value[index].amount
+  if (!value) return
+
+  // ลบ comma
+  const cleanValue = value.toString().replace(/,/g, '')
+
+  // แปลงเป็นตัวเลข
+  const numValue = parseFloat(cleanValue)
+
+  if (isNaN(numValue)) {
+    morelist.value[index].amount = ''
+    return
+  }
+
+  // Format ทศนิยม 2 ตำแหน่ง พร้อม comma
+  const formatted = numValue.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+
+  morelist.value[index].amount = formatted
+}
+const { allowOnlyDigits, morelist, addRow, removeRow, initTomSelect, formattedTotalAmount } =
+  useRowManager()
 
 const itemNameInstances = ref({})
 const errors = ref({})
-
+const clearError = (field) => {
+  if (errors.value[field]) {
+    delete errors.value[field]
+  }
+}
 // ✅ เพิ่ม subCategory2
 const mainCategory = ref('')
 const subCategory = ref('')
@@ -762,67 +954,139 @@ const gotomainpage = () => {
   router.push('/')
 }
 
-const formatNumber = (num) => {
-  return Number(num).toLocaleString('th-TH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
 const loadReceiptData = async () => {
   if (!receiptId.value) return
 
   isLoading.value = true
   try {
     const response = await axios.get(`/getReceipt/${receiptId.value}`)
-    const data = response.data
+    const list = response.data
 
-    // ✅ Set ข้อมูลพื้นฐานก่อน
+    const data = Array.isArray(list) ? list.find((r) => r.id === receiptId.value) : list
+
+    if (!data) throw new Error('Receipt not found')
+
+    // 1. ล้างค่าเก่าทั้งหมด
+    mainCategory.value = ''
+    subCategory.value = ''
+    subCategory2.value = ''
+    formData.value.sendmoney = ''
+
+    // ล้างค่า paymentMethods
+    paymentMethods.value = {
+      krungthai: { checked: false, amount: '' },
+      scb: { checked: false, amount: '' },
+      cash: { checked: false, amount: '' },
+      check: { checked: false, amount: '' },
+      other: { checked: false, name: '', amount: '' },
+    }
+
+    morelist.value = []
+
+    await nextTick()
+
+    // 2. ตั้งค่าพื้นฐาน (ส่วนที่ 1)
+    formData.value.delNumber = data.delNumber || ''
     formData.value.fullName = data.fullName || ''
     formData.value.phone = data.phone || ''
     formData.value.fundName = data.fundName || ''
     formData.value.projectCode = data.projectCode || ''
+    formData.value.sendmoney = data.sendmoney || data.moneyType || ''
 
-    // ✅ Set mainCategory ก่อน และรอให้ Vue update
-    mainCategory.value = data.mainAffiliationName || ''
-    
-    // ⭐ รอให้ Vue อัพเดท sub1OptionsArray ก่อน
-    await nextTick()
-    
-    // ✅ ตอนนี้ sub1OptionsArray มีค่าแล้ว ถึงจะ set subCategory ได้
-    subCategory.value = data.subAffiliationName1 || ''
-    
-    // ⭐ รอให้ Vue อัพเดท sub2OptionsArray อีกครั้ง
-    await nextTick()
-    
-    // ✅ ตอนนี้ sub2OptionsArray มีค่าแล้ว ถึงจะ set subCategory2 ได้
-    subCategory2.value = data.subAffiliationName2 || ''
+    // 3. ✅ ตั้งค่า mainCategory และรอ
+    if (data.mainAffiliationName && data.mainAffiliationName !== 'เลือกทั้งหมด') {
+      mainCategory.value = data.mainAffiliationName
+      await nextTick()
+    }
 
-    // ตั้งค่า sendmoney
-    const moneyTypeValue = data.sendmoney || data.moneyType || ''
-    formData.value.sendmoney = moneyTypeValue
+    // 4. ✅ ตั้งค่า subCategory และรอ
+    if (data.subAffiliationName1 && data.subAffiliationName1 !== 'เลือกทั้งหมด') {
+      subCategory.value = data.subAffiliationName1
+      await nextTick()
+    }
 
-    // โหลด receiptList
-    if (data.receiptList && data.receiptList.length > 0) {
+    // 5. ✅ ตั้งค่า subCategory2
+    if (data.subAffiliationName2 && data.subAffiliationName2 !== 'เลือกทั้งหมด') {
+      subCategory2.value = data.subAffiliationName2
+      await nextTick()
+    }
+
+    // 6. โหลดข้อมูล paymentMethods (ส่วนที่ 3)
+if (data.paymentMethods && typeof data.paymentMethods === 'object') {
+  Object.keys(data.paymentMethods).forEach((key) => {
+    if (paymentMethods.value[key] && data.paymentMethods[key]) {
+      paymentMethods.value[key].checked = true // สำคัญ: ต้องตั้ง checked = true ก่อน!
+
+      const amount = data.paymentMethods[key].amount || 0
+      if (amount > 0) {
+        const numAmount = typeof amount === 'string' 
+          ? parseFloat(amount.replace(/,/g, ''))
+          : Number(amount)
+
+        if (!isNaN(numAmount)) {
+          paymentMethods.value[key].amount = numAmount.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        }
+      }
+
+      if (key === 'other' && data.paymentMethods[key].name) {
+        paymentMethods.value[key].name = data.paymentMethods[key].name
+      }
+    }
+  })
+
+  // เพิ่มบรรทัดนี้เพื่อ force re-render
+  await nextTick()
+}
+
+    // 7. โหลด receiptList (ส่วนที่ 2)
+    if (data.receiptList && Array.isArray(data.receiptList) && data.receiptList.length > 0) {
       morelist.value = data.receiptList.map((item, index) => ({
         id: index + 1,
+        referenceNo: item.referenceNo || '',
         itemName: item.itemName || '',
         note: item.note || '',
-        fee: item.fee || 0,
-        selectedItems:
-          item.paymentDetails?.map((detail) => ({
-            checked: true,
-            moneyType: detail.moneyType || '',
-            amount: detail.amount || 0,
-            referenceNo: detail.referenceNo || '',
-            checkNumber: detail.checkNumber || '',
-            accountName: detail.accountName || '',
-            accountNumber: detail.accountNumber || '',
-            bankName: detail.bankName || '',
-          })) || [],
-        expanded: false,
+        amount: item.amount || 0,
       }))
+
+      await nextTick()
+
+      // Format amount สำหรับแต่ละรายการ
+      morelist.value.forEach((row) => {
+        if (row.amount && row.amount > 0) {
+          // ✅ แปลงเป็นตัวเลขก่อน format
+          const numAmount =
+            typeof row.amount === 'string'
+              ? parseFloat(row.amount.toString().replace(/,/g, ''))
+              : Number(row.amount)
+
+          row.amount = numAmount.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        }
+      })
+
+      // Init TomSelect
+      await nextTick()
+      morelist.value.forEach((_, i) => {
+        initItemNameTomSelect(i)
+      })
+    } else {
+      // ถ้าไม่มี receiptList ให้เพิ่มแถวว่าง
+      addRow()
     }
+
+    console.log('✅ Load complete:', {
+      mainCategory: mainCategory.value,
+      subCategory: subCategory.value,
+      subCategory2: subCategory2.value,
+      sendmoney: formData.value.sendmoney,
+      paymentMethods: paymentMethods.value,
+      receiptList: morelist.value,
+    })
 
     Swal.fire({
       icon: 'success',
@@ -831,7 +1095,7 @@ const loadReceiptData = async () => {
       showConfirmButton: false,
     })
   } catch (err) {
-    console.error('Load error:', err)
+    console.error('❌ Load error:', err)
     Swal.fire({
       icon: 'error',
       title: 'ไม่พบข้อมูล',
@@ -898,15 +1162,29 @@ const clearRowError = (rowIndex, field) => {
     }
   }
 }
+const netTotalAmount = computed(() => {
+  let total = 0
+  morelist.value.forEach((row) => {
+    const cleanAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
+    if (!isNaN(cleanAmount)) {
+      total += cleanAmount
+    }
+  })
+  return total
+})
 
 // ✅ แก้ไข Validation Logic
 const saveData = async () => {
   errors.value = {}
   let hasError = false
 
-  // Basic validation
+  // ========== Basic validation ==========
   if (!formData.value.fullName) {
     errors.value.fullName = 'กรุณากรอก "ชื่อ"'
+    hasError = true
+  }
+  if (!formData.value.delNumber) {
+    errors.value.delNumber = 'กรุณากรอก "เลขที่นำส่ง"'
     hasError = true
   }
   if (!formData.value.phone) {
@@ -922,13 +1200,11 @@ const saveData = async () => {
     hasError = true
   }
 
-  // ✅ ตรวจสอบ sub1 เฉพาะเมื่อมี hasAnySub
   if (hasAnySub.value && (!subCategory.value || subCategory.value === 'เลือกทั้งหมด')) {
     errors.value.subCategory = 'กรุณาเลือก "หน่วยงานรอง"'
     hasError = true
   }
 
-  // ✅ ตรวจสอบ sub2 เฉพาะเมื่อมี hasSub2
   if (hasSub2.value && (!subCategory2.value || subCategory2.value === 'เลือกทั้งหมด')) {
     errors.value.subCategory2 = 'กรุณาเลือก "หน่วยงานย่อย"'
     hasError = true
@@ -943,17 +1219,23 @@ const saveData = async () => {
     hasError = true
   }
 
-  // Row validation
+  // ========== Row validation (ส่วนที่ 2) ==========
   errors.value.rows = {}
   morelist.value.forEach((row, index) => {
     const rowErrors = {}
-    if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
-    if (!row.note) rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
 
-    if (!row.selectedItems || row.selectedItems.filter((i) => i.checked).length === 0) {
-      rowErrors.selectedItems = 'กรุณาเลือก "จำนวนเงิน" อย่างน้อย 1 รายการ'
-    } else if (row.selectedItems.some((i) => i.checked && !i.amount)) {
-      rowErrors.selectedItems = 'กรุณากรอกจำนวนเงินให้ครบถ้วน'
+    if (!row.itemName || row.itemName.trim() === '') {
+      rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
+    }
+
+    if (!row.note || row.note.trim() === '') {
+      rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
+    }
+
+    // ตรวจสอบ amount
+    const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
+    if (!cleanAmount || cleanAmount <= 0) {
+      rowErrors.amount = 'กรุณากรอก "จำนวนเงิน"'
     }
 
     if (Object.keys(rowErrors).length > 0) {
@@ -962,6 +1244,89 @@ const saveData = async () => {
     }
   })
 
+  // ========== Payment Methods validation (ส่วนที่ 3) ==========
+  const totalSection2 = netTotalAmount.value
+  const totalSection3 = paymentTotal.value
+  const hasAnyPaymentMethod = Object.keys(paymentMethods.value).some(
+    (key) => paymentMethods.value[key].checked,
+  )
+  if (!hasAnyPaymentMethod) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'กรุณาเลือกวิธีการนำส่งเงิน',
+      text: 'โปรดเลือกวิธีการนำส่งเงินอย่างน้อย 1 วิธี (ส่วนที่ 3)',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#7E22CE',
+    })
+    return
+  }
+
+  // ตรวจสอบว่ากรอกจำนวนเงินในวิธีที่เลือกแล้วหรือยัง
+  let missingAmount = false
+  // ✅ แก้ไขตรงนี้ - เพิ่ม .value
+  Object.keys(paymentMethods.value).forEach((key) => {
+    if (paymentMethods.value[key].checked) {
+      const amount = paymentMethods.value[key].amount
+      if (!amount || parseFloat(amount.toString().replace(/,/g, '')) <= 0) {
+        missingAmount = true
+      }
+    }
+  })
+
+  if (missingAmount) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'กรุณากรอกจำนวนเงิน',
+      text: 'โปรดกรอกจำนวนเงินในวิธีการนำส่งที่เลือกไว้ให้ครบถ้วน',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#7E22CE',
+    })
+    return
+  }
+
+  // ตรวจสอบความเท่ากันของยอดเงิน
+  const difference = Math.abs(totalSection2 - totalSection3)
+
+  if (difference > 0.01) {
+    Swal.fire({
+      icon: 'error',
+      title: 'จำนวนเงินไม่ตรงกัน',
+      html: `
+        <div style="text-align: left; padding: 10px;">
+          <p style="margin-bottom: 10px;">โปรดกรอกจำนวนเงินให้เท่ากัน</p>
+          <hr style="margin: 15px 0;">
+          <p style="font-weight: 600; color: #059669; margin-bottom: 8px;">
+            ✓ ยอดรวมรายการ (ส่วนที่ 2): 
+            <span style="float: right;">${totalSection2.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} บาท</span>
+          </p>
+          <p style="font-weight: 600; color: #DC2626; margin-bottom: 8px;">
+            ✗ ยอดเงินนำส่ง (ส่วนที่ 3): 
+            <span style="float: right;">${totalSection3.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} บาท</span>
+          </p>
+          <hr style="margin: 15px 0;">
+          <p style="font-weight: 600; color: #7E22CE; margin-bottom: 0;">
+            ส่วนต่าง: 
+            <span style="float: right;">${difference.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} บาท</span>
+          </p>
+        </div>
+      `,
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#DC2626',
+      width: '500px',
+    })
+    return
+  }
+
+  // ========== แสดง Error ถ้ามี ==========
   if (hasError) {
     Swal.fire({
       icon: 'error',
@@ -973,6 +1338,7 @@ const saveData = async () => {
     return
   }
 
+  // ========== เริ่มบันทึก ==========
   Swal.fire({
     title: isEditMode.value ? 'กำลังอัพเดตข้อมูล...' : 'กำลังบันทึกข้อมูล...',
     allowOutsideClick: false,
@@ -983,7 +1349,24 @@ const saveData = async () => {
 
   const currentDateTime = new Date().toISOString()
 
+  const paymentMethodsData = {}
+  // ✅ แก้ไขตรงนี้ - เพิ่ม .value
+  Object.keys(paymentMethods.value).forEach((key) => {
+    if (paymentMethods.value[key].checked) {
+      const cleanAmount = parseFloat(
+        String(paymentMethods.value[key].amount || '0').replace(/,/g, ''),
+      )
+
+      paymentMethodsData[key] = {
+        checked: true,
+        amount: cleanAmount,
+        ...(key === 'other' && { name: paymentMethods.value[key].name || '' }),
+      }
+    }
+  })
+
   const payload = {
+    delNumber: formData.value.delNumber,
     fullName: formData.value.fullName,
     moneyTypeNote: 'Waybill',
     phone: formData.value.phone,
@@ -994,41 +1377,31 @@ const saveData = async () => {
     moneyType: formData.value.sendmoney,
     projectCode: formData.value.projectCode,
     sendmoney: formData.value.sendmoney,
-    netTotalAmount: netTotalAmount.value,
-    receiptList: morelist.value.map((row) => {
-      const rowTotal =
-        row.selectedItems?.reduce((sum, item) => {
-          return item.checked ? sum + (Number(item.amount) || 0) : sum
-        }, 0) || 0
+    netTotalAmount: totalSection2,
 
-      const rowFee = Number(row.fee) || 0
-      const rowNetAmount = rowTotal - rowFee
+    // ข้อมูลส่วนที่ 3
+    paymentMethods: paymentMethodsData,
+    totalPaymentAmount: totalSection3,
+
+    receiptList: morelist.value.map((row) => {
+      const cleanAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
 
       return {
-        itemName: row.itemName,
+        itemName: row.itemName || '',
         note: row.note || '',
-        fee: rowFee,
-        subtotal: rowTotal,
-        amount: rowNetAmount,
-        paymentDetails:
-          row.selectedItems
-            ?.filter((item) => item.checked)
-            .map((item) => ({
-              moneyType: item.moneyType,
-              amount: Number(item.amount) || 0,
-              referenceNo: item.referenceNo || '',
-              checkNumber: item.checkNumber || item.NumCheck || null,
-              accountName: item.accountName || item.AccountName || null,
-              accountNumber: item.accountNumber || item.AccountNum || null,
-              bankName: item.bankName || item.BankName || null,
-            })) || [],
+        referenceNo: row.referenceNo || '',
+        amount: cleanAmount,
+        subtotal: cleanAmount,
       }
     }),
   }
 
   if (isEditMode.value) {
+    payload.id = receiptId.value // สำคัญมาก สำหรับ update
     payload.updatedAt = currentDateTime
   } else {
+    // สำหรับสร้างใหม่ ให้สร้าง id ใหม่ (เช่น uuid หรือ timestamp + random)
+    payload.id = Date.now().toString() + Math.random().toString(36).substr(2, 5)
     payload.createdAt = currentDateTime
     payload.updatedAt = currentDateTime
   }
@@ -1082,31 +1455,6 @@ const saveData = async () => {
     })
   }
 }
-
-onMounted(async () => {
-  morelist.value.forEach((_, i) => {
-    initItemNameTomSelect(i)
-    initTomSelect(i)
-  })
-
-  await nextTick()
-
-  if (isEditMode.value) {
-    await loadReceiptData()
-  }
-})
-
-watch(
-  morelist,
-  (newVal, oldVal) => {
-    if (newVal.length > oldVal.length) {
-      const newIndex = newVal.length - 1
-      initItemNameTomSelect(newIndex)
-      initTomSelect(newIndex)
-    }
-  },
-  { deep: true },
-)
 
 watch(
   () => [formData.value, mainCategory.value, subCategory.value, subCategory2.value],

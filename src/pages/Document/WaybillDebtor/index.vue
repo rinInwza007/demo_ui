@@ -332,6 +332,7 @@
           <ItemNameSelect
             v-model="row.itemName"
             :input-id="`debtorItemName-${index}`"
+            :options="debtorAccounts"
             @input="() => clearRowError(index, 'itemName', 'debtor')"
             class="-ml-2"
           />
@@ -491,6 +492,8 @@
                       <ItemNameSelect
                         v-model="row.itemName"
                         :input-id="`depositItemName-${index}`"
+                        :options="depositAccount"
+                        placeholder="เลือกรายการลูกหนี้"
                         @input="() => clearRowError(index, 'itemName', 'deposit')"
                         class="-mr-2"
                       />
@@ -763,6 +766,7 @@ import sidebar from '@/components/bar/sidebar.vue'
 import Selects from '@/components/input/select/select.vue'
 import InputText from '@/components/input/inputtext.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
+import {  debtorAccounts, depositAccount} from '@/components/data/debtorAccouts'
 import SendMoneySelect from '@/components/TomSelect/SendMoneyTomSelect.vue'
 import Modal from '@/components/modal/modalwaybilldebtor.vue'
 

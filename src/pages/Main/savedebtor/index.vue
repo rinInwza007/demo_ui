@@ -13,9 +13,9 @@
           <div>
             <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
               <i class="ph ph-files"></i>
-              ล้างลูกหนี้
+              ระบบล้างลูกหนี้
             </h1>
-            <p class="text-xs text-slate-800 mt-0.5">จัดการล้างลูกหนี้ทั้งหมด {{ items.length }} รายการ</p>
+            <p class="text-xs text-slate-800 mt-0.5">จัดการล้างลูกหนี้และติดตามประวัติการทำรายการ</p>
           </div>
           <div class="flex items-center gap-3">
             <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
@@ -27,111 +27,194 @@
           </div>
         </header>
 
-        <!-- Filters -->
+        <!-- Tabs Navigation -->
         <div class="px-8 py-4 flex-shrink-0">
-          <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-            <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-              <CascadingSelect
-                v-model:modelValueMain="selectedMain"
-                v-model:modelValueSub1="selectedSub1"
-                v-model:modelValueSub2="selectedSub2"
-                :options="options"
-              />
-            </div>
+          <div class="glass-panel p-2 rounded-2xl flex gap-2 shadow-sm">
+            <button
+              @click="activeTab = 'new'"
+              class="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2"
+              :class="activeTab === 'new'
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
+                : 'text-slate-600 hover:bg-white/50'"
+            >
+              <i class="ph ph-plus-circle text-lg"></i>
+              สร้างรายการใหม่
+            </button>
+            <button
+              @click="activeTab = 'history'"
+              class="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2"
+              :class="activeTab === 'history'
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
+                : 'text-slate-600 hover:bg-white/50'"
+            >
+              <i class="ph ph-clock-clockwise text-lg"></i>
+              ประวัติการทำรายการ
+            </button>
+          </div>
+        </div>
 
-            <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+        <!-- TAB 1: NEW ENTRY (Selection) -->
+        <div v-if="activeTab === 'new'" class="flex-1 px-8 pb-8 flex flex-col min-h-0 overflow-y-auto">
+          <div class="max-w-7xl mx-auto w-full space-y-6">
+
+            <!-- Info Card -->
+
+
+            <!-- Filters -->
+            <!-- <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+              <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                <CascadingSelect
+                  v-model:modelValueMain="selectedMain"
+                  v-model:modelValueSub1="selectedSub1"
+                  v-model:modelValueSub2="selectedSub2"
+                  :options="options"
+                />
+              </div>
+
               <div class="relative flex-1 md:w-64">
                 <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
                 <input v-model="searchText" type="text" placeholder="ค้นหา รายการลูกหนี้..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm">
               </div>
+            </div> -->
+            <!-- Selection Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div
+                v-for="item in filteredItems"
+                :key="item.id"
+                @click="toggleSelectItem(item.id)"
+                class="glass-panel rounded-xl p-5 cursor-pointer transition-all duration-200 hover:shadow-xl border-2"
+                :class="selectedItems.has(item.id)
+                  ? 'border-blue-500 bg-blue-50/50 shadow-lg'
+                  : 'border-transparent hover:border-blue-200'"
+              >
+                <div class="flex items-start gap-4">
+                  <!-- Icon -->
+                  <div class="flex-shrink-0">
+                    <div
+                      class="w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
+                      :class="selectedItems.has(item.id)
+                        ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white'
+                        : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-600'"
+                    >
+                      <i class="ph-fill ph-buildings text-2xl"></i>
+                    </div>
+                  </div>
+
+                  <!-- Content -->
+                  <div class="flex-grow min-w-0">
+                    <div class="flex justify-between items-start mb-2">
+                      <div class="flex-grow min-w-0">
+                        <h3 class="font-bold text-slate-800 text-sm truncate">{{ item.itemName }}</h3>
+                        <p class="text-xs text-slate-500 font-mono mt-1">{{ item.department }}</p>
+                      </div>
+                      <div v-if="selectedItems.has(item.id)" class="flex-shrink-0 ml-2">
+                        <i class="ph-fill ph-check-circle text-blue-600 text-xl"></i>
+                      </div>
+                    </div>
+
+                    <div class="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
+                      <span class="text-xs text-slate-500">ยอดหนี้</span>
+                      <span
+                        class="text-base font-bold"
+                        :class="selectedItems.has(item.id) ? 'text-blue-600' : 'text-red-600'"
+                      >
+                        {{ formatCurrency(item.debtorAmount) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+ <div class="glass-panel rounded-2xl p-6 shadow-lg">
+              <p class="text-slate-600 flex items-center gap-2">
+                <i class="ph ph-info text-blue-600 text-xl"></i>
+                กรุณาเลือกรายการลูกหนี้ที่ต้องการล้างบัญชี (สามารถเลือกได้หลายรายการ)
+              </p>
+            </div>
+            <!-- Summary & Action -->
+            <div class="glass-panel rounded-2xl p-6 shadow-lg sticky bottom-0">
+              <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-6">
+                  <div class="text-center">
+                    <p class="text-xs text-slate-500 mb-1">รายการที่เลือก</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ selectedItems.size }}</p>
+                  </div>
+                  <div class="h-12 w-px bg-slate-300"></div>
+                  <div class="text-center">
+                    <p class="text-xs text-slate-500 mb-1">ยอดรวม</p>
+                    <p class="text-2xl font-bold text-red-600">{{ formatCurrency(selectedTotal) }}</p>
+                  </div>
+                </div>
+
+                <button
+                  @click="clearSelectedDebtors"
+                  :disabled="selectedItems.size === 0"
+                  class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white;"
+                >
+                  <i class="ph ph-broom text-lg"></i>
+                  ดำเนินการล้างหนี้
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        <!-- Table -->
-        <div class="flex-1 px-8 pb-8 flex flex-col min-h-0">
+        <!-- TAB 2: HISTORY LIST -->
+        <div v-if="activeTab === 'history'" class="flex-1 px-8 pb-8 flex flex-col min-h-0">
           <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
-            <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold uppercase tracking-wider flex-shrink-0">
-              <div class="col-span-2 text-center">สถานะ</div>
-              <div class="col-span-2 text-center">รายการลูกหนี้</div>
-              <div class="col-span-2 text-center">หน่วยงาน</div>
-              <div class="col-span-2 text-center">ยอดลูกหนี้</div>
-              <div class="col-span-2 text-center">ยอดชำระแล้ว</div>
-              <div class="col-span-2 text-center">จัดการ</div>
+
+            <!-- Table Header -->
+            <div class="px-6 py-4 border-b border-white/40 bg-white/20 flex-shrink-0">
+              <h2 class="text-xl font-bold text-slate-900">ประวัติการล้างลูกหนี้</h2>
             </div>
 
-            <div class="overflow-y-auto overflow-x-hidden flex-1 p-2 min-h-0">
-              <div v-if="items.length === 0" class="text-center py-12 text-slate-500">
+            <div class="overflow-y-auto flex-1 p-6">
+              <div v-if="historyItems.length === 0" class="text-center py-12 text-slate-500">
                 <i class="ph ph-folder-open text-6xl mb-4 opacity-30"></i>
-                <p>ไม่พบรายการลูกหนี้</p>
+                <p>ยังไม่มีประวัติการทำรายการ</p>
               </div>
 
-              <div v-for="(item, index) in items" :key="index"
-                   class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm">
-
-                <!-- Status -->
-                <div class="col-span-2 flex justify-center">
-                  <div class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
-                       :class="{
-                          'bg-red-100 text-red-500': item.status === 'cancel',
-                          'bg-yellow-100 text-yellow-600': item.status === 'pending',
-                          'bg-green-100 text-green-500': item.status === 'success'
-                       }">
-                    <i v-if="item.status === 'cancel'" class="ph-fill ph-x-circle text-lg"></i>
-                    <i v-if="item.status === 'pending'" class="ph-fill ph-clock text-lg"></i>
-                    <i v-if="item.status === 'success'" class="ph-fill ph-check-circle text-lg"></i>
+              <div v-else class="space-y-4">
+                <div
+                  v-for="item in historyItems"
+                  :key="item.id"
+                  class="glass-input rounded-xl p-5 hover:shadow-md transition-all"
+                >
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-sm">
+                        <i class="ph-fill ph-check text-xl"></i>
+                      </div>
+                      <div>
+                        <p class="font-bold text-slate-800">{{ item.items }}</p>
+                        <p class="text-xs text-slate-500">{{ item.date }}</p>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-xs text-slate-500 mb-1">ยอดเงิน</p>
+                      <p class="text-xl font-bold text-green-600">{{ formatCurrency(item.total) }}</p>
+                    </div>
                   </div>
-                </div>
 
-                <!-- Item Name -->
-                <div class="col-span-2">
-                  <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
-                  <div class="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
-                    <i class="ph ph-note text-xs"></i>
-                    <span class="truncate">{{ item.note || '-' }}</span>
+                  <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
+                    <span class="px-3 py-1 rounded-lg text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                      เสร็จสมบูรณ์
+                    </span>
+                    <span class="text-xs text-slate-400">รหัสอ้างอิง: {{ item.referenceId }}</span>
                   </div>
-                </div>
-
-                <!-- Department -->
-                <div class="col-span-2">
-                  <div class="font-medium text-slate-800 text-sm">{{ item.department }}</div>
-                  <div class="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
-                    <i class="ph ph-buildings text-xs"></i>
-                    <span class="truncate">{{ item.subDepartment }}</span>
-                  </div>
-                </div>
-
-                <!-- Debtor Amount -->
-                <div class="col-span-2 text-center">
-                  <div class="font-bold text-red-600 font-mono text-sm">{{ formatCurrency(item.debtorAmount) }}</div>
-                  <div class="text-[10px] text-slate-400">บาท</div>
-                </div>
-
-                <!-- Paid Amount -->
-                <div class="col-span-2 text-center">
-                  <div class="font-bold text-green-600 font-mono text-sm">{{ formatCurrency(item.depositNetAmount) }}</div>
-                  <div class="text-[10px] text-slate-400">บาท</div>
-                </div>
-
-                <!-- Actions -->
-                <div class="col-span-2 flex justify-center">
-                  <ActionButtons
-                    :item="item"
-                    :show-cleardedtor="true"
-                    @cleardebtor="cleardebtor"
-                  />
                 </div>
               </div>
             </div>
 
             <!-- Footer -->
-            <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between flex-shrink-0">
-              <div class="text-xs text-slate-500">
-                แสดงทั้งหมด {{ items.length }} รายการ
-              </div>
+            <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-center flex-shrink-0">
+              <p class="text-xs text-slate-500">แสดงประวัติทั้งหมด {{ historyItems.length }} รายการ</p>
             </div>
           </div>
         </div>
+
       </main>
     </div>
   </div>
@@ -139,25 +222,28 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
-import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import { options } from "@/components/data/departments"
 import sidebar from '@/components/bar/sidebar.vue'
-import ActionButtons from "@/components/Actionbutton/ActionButtons.vue"
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 
 setupAxiosMock()
 
 const router = useRouter()
 
+const activeTab = ref('new')
 const searchText = ref('')
 const rawData = ref<any[]>([])
 const selectedMain = ref("")
 const selectedSub1 = ref("")
 const selectedSub2 = ref("")
+const selectedItems = ref<Set<string>>(new Set())
 
-// ✅ ฟังก์ชันแปลงข้อมูลจาก Receipt → รายการลูกหนี้แต่ละตัว
+// ✅ ประวัติการทำรายการ
+const historyItems = ref<any[]>([])
+
 const mapReceiptToDebtorItems = (receipt: any) => {
   const items: any[] = []
 
@@ -165,32 +251,19 @@ const mapReceiptToDebtorItems = (receipt: any) => {
 
   receipt.receiptList.forEach((item: any, idx: number) => {
     items.push({
-      // ✅ สร้าง unique ID
       id: `${receipt.projectCode}-item-${idx}`,
       receiptId: receipt.projectCode,
-
-      // ✅ ข้อมูลรายการลูกหนี้
       itemName: item.itemName || '-',
       note: item.note || '',
-
-      // ✅ ยอดเงิน
       debtorAmount: Number(item.debtorAmount || 0),
       depositNetAmount: Number(item.depositNetAmount || 0),
       fee: Number(item.fee || 0),
-
-      // ✅ ข้อมูลหน่วยงาน
       department: receipt.mainAffiliationName || 'ไม่ระบุ',
       subDepartment: receipt.subAffiliationName1 || '-',
       fundName: receipt.fundName || '-',
-
-      // ✅ ข้อมูลผู้บันทึก
       responsible: receipt.fullName || '-',
       phone: receipt.phone || '-',
-
-      // ✅ สถานะ
       status: 'pending',
-
-      // ✅ เก็บข้อมูลต้นทางไว้ใช้
       _originalReceipt: receipt,
       _originalItem: item,
     })
@@ -199,14 +272,12 @@ const mapReceiptToDebtorItems = (receipt: any) => {
   return items
 }
 
-// ✅ โหลดข้อมูลจาก localStorage
 const loadData = async () => {
   try {
     const stored = localStorage.getItem('fakeApi.receipts')
 
     if (!stored) {
       rawData.value = []
-      console.log('⚠️ No data in localStorage')
       return
     }
 
@@ -214,32 +285,35 @@ const loadData = async () => {
 
     if (!Array.isArray(allReceipts)) {
       rawData.value = []
-      console.log('⚠️ Data is not array')
       return
     }
 
-    // ✅ กรองเฉพาะ Debtor
     const debtorReceipts = allReceipts.filter((r: any) => r.moneyTypeNote === 'Debtor')
-
-    // ✅ แปลงเป็นรายการลูกหนี้
     const allDebtorItems = debtorReceipts.flatMap(mapReceiptToDebtorItems)
 
     rawData.value = allDebtorItems
 
-    console.log('✅ Loaded Debtor Items:', rawData.value.length)
-
   } catch (error) {
     console.error('❌ Error loading data:', error)
     rawData.value = []
-    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
   }
 }
 
-// ✅ Computed สำหรับกรองข้อมูล
-const items = computed(() => {
+// ✅ โหลดประวัติ
+const loadHistory = () => {
+  try {
+    const stored = localStorage.getItem('debtorClearHistory')
+    if (stored) {
+      historyItems.value = JSON.parse(stored)
+    }
+  } catch (error) {
+    console.error('❌ Error loading history:', error)
+  }
+}
+
+const filteredItems = computed(() => {
   let filtered = [...rawData.value]
 
-  // กรองตามคำค้นหา
   if (searchText.value.trim()) {
     const search = searchText.value.toLowerCase()
     filtered = filtered.filter(item =>
@@ -250,17 +324,14 @@ const items = computed(() => {
     )
   }
 
-  // กรองตามหน่วยงานหลัก
   if (selectedMain.value) {
     filtered = filtered.filter(item => item.department === selectedMain.value)
   }
 
-  // กรองตามหน่วยงานรอง
   if (selectedSub1.value) {
     filtered = filtered.filter(item => item.subDepartment === selectedSub1.value)
   }
 
-  // กรองตามหน่วยงานย่อย (ถ้ามี)
   if (selectedSub2.value) {
     filtered = filtered.filter(item =>
       item._originalReceipt?.subAffiliationName2 === selectedSub2.value
@@ -270,7 +341,13 @@ const items = computed(() => {
   return filtered
 })
 
-// ✅ Format เงิน
+const selectedTotal = computed(() => {
+  const selectedIds = Array.from(selectedItems.value)
+  return rawData.value
+    .filter(item => selectedIds.includes(item.id))
+    .reduce((sum, item) => sum + item.debtorAmount, 0)
+})
+
 const formatCurrency = (amount: number | string) => {
   const n = typeof amount === 'string'
     ? Number(amount.toString().replace(/[^0-9.-]/g, ''))
@@ -282,13 +359,61 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
-// ✅ ไปหน้าล้างลูกหนี้
-const cleardebtor = (item: any) => {
-  router.push(`/cleardebtor/${item.receiptId}`)
+const clearSelectedDebtors = () => {
+  if (selectedItems.value.size === 0) return
+
+  const selectedIds = Array.from(selectedItems.value)
+  const selectedList = rawData.value.filter(item =>
+    selectedIds.includes(item.id)
+  )
+
+  if (selectedList.length === 0) return
+
+  // จัดกลุ่มตาม receiptId
+  const groupedByReceipt = selectedList.reduce((acc, item) => {
+    if (!acc[item.receiptId]) {
+      acc[item.receiptId] = []
+    }
+    acc[item.receiptId].push(item)
+    return acc
+  }, {} as Record<string, any[]>)
+
+  // สร้าง summary
+  const receipts = Object.keys(groupedByReceipt).map(receiptId => {
+    const itemsInReceipt = groupedByReceipt[receiptId]
+
+    return {
+      receiptId,
+      items: itemsInReceipt,
+      totalDebtorAmount: itemsInReceipt.reduce((sum, item) => sum + Number(item.debtorAmount || 0), 0),
+      totalPaidAmount: itemsInReceipt.reduce((sum, item) => sum + Number(item.depositNetAmount || 0), 0),
+      department: itemsInReceipt[0].department,
+      subDepartment: itemsInReceipt[0].subDepartment,
+    }
+  })
+
+  const summary = {
+    receipts,
+    totalDebtorAmount: receipts.reduce((sum, r) => sum + r.totalDebtorAmount, 0),
+    totalPaidAmount: receipts.reduce((sum, r) => sum + r.totalPaidAmount, 0),
+    totalItems: selectedList.length,
+  }
+
+  localStorage.setItem('clearDebtorSummary', JSON.stringify(summary))
+  router.push(`/cleardebtor/multi`)
+}
+
+const toggleSelectItem = (id: string) => {
+  if (selectedItems.value.has(id)) {
+    selectedItems.value.delete(id)
+  } else {
+    selectedItems.value.add(id)
+  }
 }
 
 onMounted(() => {
   loadData()
+  loadHistory()
   window.addEventListener('focus', loadData)
 })
 
@@ -358,17 +483,6 @@ body {
   border-color: #3b82f6;
   outline: none;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
-.glass-button-primary {
-  background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
-}
-
-.glass-button-primary:hover {
-  box-shadow: 0 6px 20px rgba(126, 34, 206, 0.4);
-  transform: translateY(-1px);
 }
 
 ::-webkit-scrollbar {

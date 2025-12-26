@@ -58,8 +58,6 @@
           <div class="max-w-7xl mx-auto w-full space-y-6">
 
             <!-- Info Card -->
-
-
             <!-- Filters -->
             <!-- <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
               <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">

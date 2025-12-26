@@ -1,156 +1,351 @@
+import axios from 'axios'
+import AxiosMockAdapter from 'axios-mock-adapter'
+import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb'
 
-import axios from 'axios';
-import AxiosMockAdapter from 'axios-mock-adapter';
-import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb';
-import type { Receipt } from '@/types/recipt';
+// ❗ปรับ path type ให้ตรงโปรเจกต์คุณ
+// ถ้าไฟล์จริงคือ '@/types/recipt' ก็ใช้ตามเดิม
+import type { Receipt } from '@/types/recipt'
 
 export function setupAxiosMock() {
-  const mock = new AxiosMockAdapter(axios, { delayResponse: 300 }); // ใส่ดีเลย์นิดหน่อยให้เหมือนจริง
+  const mock = new AxiosMockAdapter(axios, { delayResponse: 300 })
+
+  // =========================
+  // Helper: Ensure fields exist
+  // =========================
+
+  // ✅ map จากชื่อคณะ/หน่วยงาน -> affiliationId สำหรับทดสอบ
+  const guessAffIdFromName = (name: string) => {
+    const n = (name || '').trim()
+    if (!n) return 'UP'
+    if (n.includes('กองคลัง')) return 'FIN'
+    if (n.includes('วิศวกรรม')) return 'ENG'
+    if (n.includes('แพทย์')) return 'MED'
+    if (n.includes('พยาบาล')) return 'NUR'
+    if (n.includes('ทันต')) return 'DEN'
+    return 'UP'
+  }
+
+  const ensureReceiptFields = (r: any): any => {
+    const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
+
+    const affId =
+      r.affiliationId ||
+      r.mainAffiliationId ||
+      r.affId ||
+      guessAffIdFromName(mainName || r.affiliationName || '')
+
+    const createdAt =
+      r.createdAt instanceof Date
+        ? r.createdAt
+        : r.createdAt
+          ? new Date(r.createdAt)
+          : new Date()
+
+    const updatedAt =
+      r.updatedAt instanceof Date
+        ? r.updatedAt
+        : r.updatedAt
+          ? new Date(r.updatedAt)
+          : createdAt
+
+    return {
+      ...r,
+      affiliationId: String(affId),
+
+      // ชื่อสังกัดหลัก/สังกัด
+      mainAffiliationName: r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา',
+      affiliationName: r.affiliationName || r.mainAffiliationName || 'มหาวิทยาลัยพะเยา',
+
+      // ✅ ตาม type ใหม่ของคุณ
+      subAffiliationName1: r.subAffiliationName1 ?? r.subAffiliationName ?? '',
+      subAffiliationName2: r.subAffiliationName2 ?? r.subAffiliationName2 ?? '',
+
+      // default
+      moneyTypeNote: r.moneyTypeNote ?? 'Waybill',
+      isLocked: r.isLocked ?? false,
+
+      // moneyType fallback
+      moneyType: r.moneyType || r.sendmoney || 'transfer',
+
+      // date
+      createdAt,
+      updatedAt,
+    }
+  }
+
+  // =========================
+  // Backward/Forward normalize
+  // =========================
+
+  /**
+   * ✅ แปลงข้อมูลจากแบบเก่า (receiptList) เป็นแบบใหม่ (debtorList + depositList)
+   */
+  const normalizeToNewFormat = (receipt: any): any => {
+    const r = ensureReceiptFields(receipt)
+
+    // ถ้ามี debtorList และ depositList อยู่แล้ว = แบบใหม่
+    if (r.debtorList && r.depositList) {
+      return r
+    }
+
+    // ถ้ามี receiptList = แบบเก่า -> แปลง
+    if (r.receiptList && Array.isArray(r.receiptList)) {
+      const debtorList = r.receiptList.map((item: any) => ({
+        itemName: item.itemName || '',
+        debtornote: item.note || item.debtornote || '',
+        amount: Number(item.debtorAmount ?? item.amount ?? 0),
+      }))
+
+      const depositList = r.receiptList.map((item: any) => {
+        const paymentDetails = Array.isArray(item.paymentDetails) ? item.paymentDetails : []
+        const subtotal = paymentDetails.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0)
+        const fee = Number(item.fee) || 0
+
+        return {
+          itemName: item.itemName || '',
+          depositnote: item.note || item.depositnote || '',
+          subtotal,
+          fee,
+          netAmount: subtotal - fee,
+          paymentDetails,
+        }
+      })
+
+      return {
+        ...r,
+        debtorList,
+        depositList,
+        // เก็บ receiptList ไว้ด้วยเผื่อหน้าอื่นยังใช้
+        receiptList: r.receiptList,
+      }
+    }
+
+    // ถ้าไม่มีทั้ง 2 แบบ
+    return {
+      ...r,
+      debtorList: [],
+      depositList: [],
+      receiptList: [],
+    }
+  }
+
+  /**
+   * ✅ แปลงข้อมูลจากแบบใหม่ (debtorList + depositList) เป็นแบบเก่า (receiptList)
+   */
+  const normalizeToOldFormat = (receipt: any): any => {
+    const r = ensureReceiptFields(receipt)
+
+    // ถ้ามี receiptList อยู่แล้ว = แบบเก่า
+    if (r.receiptList && Array.isArray(r.receiptList)) {
+      return r
+    }
+
+    // ถ้ามี debtorList และ depositList = แบบใหม่ -> แปลงเป็นแบบเก่า
+    if (r.debtorList && r.depositList) {
+      const maxLength = Math.max(r.debtorList.length, r.depositList.length)
+
+      const receiptList: any[] = []
+      for (let i = 0; i < maxLength; i++) {
+        const debtor = r.debtorList[i] || {}
+        const deposit = r.depositList[i] || {}
+
+        receiptList.push({
+          itemName: debtor.itemName || deposit.itemName || '',
+          note: debtor.debtornote || deposit.depositnote || '',
+          debtorAmount: Number(debtor.amount) || 0,
+          depositSubtotal: Number(deposit.subtotal) || 0,
+          fee: Number(deposit.fee) || 0,
+          depositNetAmount: Number(deposit.netAmount) || 0,
+          amount: Number(deposit.netAmount) || 0,
+          paymentDetails: deposit.paymentDetails || [],
+        })
+      }
+
+      return {
+        ...r,
+        receiptList,
+        debtorList: r.debtorList,
+        depositList: r.depositList,
+      }
+    }
+
+    return {
+      ...r,
+      receiptList: [],
+      debtorList: [],
+      depositList: [],
+    }
+  }
+
+  const normalizeBoth = (receipt: any) => normalizeToOldFormat(normalizeToNewFormat(receipt))
+
+  // =========================
+  // API Endpoints
+  // =========================
 
   // GET /findOneReceipt/:id
-  mock.onGet(/\/findOneReceipt\/([^/]+)$/).reply(config => {
-    const id = config.url?.match(/\/findOneReceipt\/([^/]+)$/)?.[1];
-    if (!id) return [400, { message: 'id required' }];
-    const db = loadReceipts();
-    const found = db.find(r => r.projectCode === id || (r as any).id === id);
-    if (!found) return [404, { message: 'Not found' }];
-    console.log('✅ Found receipt:', found);
-    return [200, found];
-  });
+  mock.onGet(/\/findOneReceipt\/([^/]+)$/).reply((config) => {
+    const id = config.url?.match(/\/findOneReceipt\/([^/]+)$/)?.[1]
+    if (!id) return [400, { message: 'id required' }]
 
-    mock.onGet(/\/getReceipt\/([^?]+)$/).reply(config => {
-    const url = config.url || '';
-    console.log('📥 GET single receipt - URL:', url);
+    const db = loadReceipts().map(ensureReceiptFields)
+    const found = db.find((r: any) => r.projectCode === id || r.id === id)
+    if (!found) return [404, { message: 'Not found' }]
 
-    const match = url.match(/\/getReceipt\/([^?]+)$/);
-    const projectCode = match?.[1];
+    return [200, normalizeBoth(found)]
+  })
 
-    if (!projectCode) {
-      console.error('❌ No projectCode in URL');
-      return [400, { message: 'projectCode is required' }];
-    }
+  // GET /getReceipt/:projectCode
+  mock.onGet(/\/getReceipt\/([^?]+)$/).reply((config) => {
+    const url = config.url || ''
+    const match = url.match(/\/getReceipt\/([^?]+)$/)
+    const projectCode = match?.[1]
 
-    const decodedCode = decodeURIComponent(projectCode);
-    console.log('🔍 Looking for projectCode:', decodedCode);
+    if (!projectCode) return [400, { message: 'projectCode is required' }]
 
-    const db = loadReceipts();
-    console.log('📊 Available receipts:', db.map(r => r.projectCode));
+    const decodedCode = decodeURIComponent(projectCode)
 
-    const found = db.find(r => r.projectCode === decodedCode);
-
+    const db = loadReceipts().map(ensureReceiptFields)
+    const found = db.find((r: any) => r.projectCode === decodedCode)
     if (!found) {
-      console.error('❌ Receipt not found:', decodedCode);
-      return [404, {
-        message: 'Receipt not found',
-        requestedCode: decodedCode,
-        availableCodes: db.map(r => r.projectCode)
-      }];
+      return [
+        404,
+        {
+          message: 'Receipt not found',
+          requestedCode: decodedCode,
+          availableCodes: db.map((r: any) => r.projectCode),
+        },
+      ]
     }
 
-    console.log('✅ Found receipt:', {
-      projectCode: found.projectCode,
-      fullName: found.fullName
-    });
+    const normalized = normalizeBoth(found)
 
-    // ✅ Return with all fields
-    const response = {
-      ...found,
-      moneyType: found.moneyType || found.sendmoney || '',
-      isLocked: found.isLocked ?? false,
-      createdAt: found.createdAt instanceof Date
-        ? found.createdAt.toISOString()
-        : found.createdAt,
-      updatedAt: found.updatedAt instanceof Date
-        ? found.updatedAt.toISOString()
-        : found.updatedAt,
-    };
+    // ส่ง date เป็น ISO string เพื่อให้ฝั่งหน้า new Date(...) ได้
+    return [
+      200,
+      {
+        ...normalized,
+        createdAt:
+          normalized.createdAt instanceof Date ? normalized.createdAt.toISOString() : normalized.createdAt,
+        updatedAt:
+          normalized.updatedAt instanceof Date ? normalized.updatedAt.toISOString() : normalized.updatedAt,
+      },
+    ]
+  })
 
-    return [200, response];
-  });
+  // GET /getReceipt (with query params)
+  mock.onGet(/\/getReceipt(?:\?.*)?$/).reply((config) => {
+    const db = loadReceipts().map(ensureReceiptFields)
 
-  // GET /getReceipt?...
-  mock.onGet(/\/getReceipt(?:\?.*)?$/).reply(config => {
-    const db = loadReceipts();
-    const url = new URL(config.url!, window.location.origin);
-    const fullName = url.searchParams.get('fullName');
-    const projectCode = url.searchParams.get('projectCode');
-    const affiliationId = url.searchParams.get('affiliationId');
-    const q = url.searchParams.get('q');
+    const url = new URL(config.url!, window.location.origin)
+    const fullName = url.searchParams.get('fullName')
+    const projectCode = url.searchParams.get('projectCode')
+    const affiliationId = url.searchParams.get('affiliationId')
+    const q = url.searchParams.get('q')
 
-    let list = db;
-    if (fullName) list = list.filter(r => r.fullName.toLowerCase().includes(fullName.toLowerCase()));
-    if (projectCode) list = list.filter(r => r.projectCode === projectCode);
-    if (affiliationId) list = list.filter(r => r.affiliationId === affiliationId);
+    let list: any[] = db
+
+    if (fullName) list = list.filter((r) => (r.fullName || '').toLowerCase().includes(fullName.toLowerCase()))
+    if (projectCode) list = list.filter((r) => r.projectCode === projectCode)
+    if (affiliationId) list = list.filter((r) => String(r.affiliationId) === String(affiliationId))
+
     if (q) {
-      const s = q.toLowerCase();
-      list = list.filter(r =>
-        r.fullName.toLowerCase().includes(s) ||
-        r.projectCode.toLowerCase().includes(s) ||
-        r.affiliationName.toLowerCase().includes(s)
-      );
+      const s = q.toLowerCase()
+      list = list.filter((r) =>
+        (r.fullName || '').toLowerCase().includes(s) ||
+        (r.projectCode || '').toLowerCase().includes(s) ||
+        (r.affiliationName || '').toLowerCase().includes(s) ||
+        (r.mainAffiliationName || '').toLowerCase().includes(s)
+      )
     }
-    return [200, list];
-  });
+
+    const normalized = list.map((r) => {
+      const x = normalizeBoth(r)
+      return {
+        ...x,
+        createdAt: x.createdAt instanceof Date ? x.createdAt.toISOString() : x.createdAt,
+        updatedAt: x.updatedAt instanceof Date ? x.updatedAt.toISOString() : x.updatedAt,
+      }
+    })
+
+    return [200, normalized]
+  })
 
   // POST /saveReceipt
-  mock.onPost('/saveReceipt').reply(config => {
-    const incoming = sanitizeReceipt(JSON.parse(config.data));
-    if (!incoming.projectCode) return [400, { message: 'projectCode is required' }];
+  mock.onPost('/saveReceipt').reply((config) => {
+    const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-    const db = loadReceipts();
-    if (db.some(r => r.projectCode === incoming.projectCode)) {
-      return [409, { message: 'Duplicate projectCode' }];
+    if (!incoming.projectCode) {
+      return [400, { message: 'projectCode is required' }]
     }
-    const next = [incoming, ...db];
-    saveReceipts(next);
-    return [201, incoming];
-  });
 
-  // PUT /updateReceipt
- mock.onPut(/\/updateReceipt\/(.+)$/).reply(config => {
-    const matches = config.url?.match(/\/updateReceipt\/(.+)$/);
-    const projectCode = matches ? decodeURIComponent(matches[1]) : '';
-    const incoming = JSON.parse(config.data);
+    const db = loadReceipts().map(ensureReceiptFields)
 
-    console.log('🔄 Update Request:', { projectCode, incoming });
+    // duplicate
+    if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
+      return [409, { message: 'Duplicate projectCode' }]
+    }
 
-    if (!projectCode) return [400, { message: 'projectCode is required' }];
+    // normalize both
+    const normalized = normalizeBoth(incoming)
 
-    const db = loadReceipts();
-    const idx = db.findIndex(r => r.projectCode === projectCode);
+    // default timestamps
+    const now = new Date()
+    normalized.createdAt = normalized.createdAt ?? now
+    normalized.updatedAt = now
+
+    const sanitized = sanitizeReceipt(normalized)
+
+    const next = [sanitized, ...db]
+    saveReceipts(next)
+
+    return [201, sanitized]
+  })
+
+  // PUT /updateReceipt/:projectCode
+  mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
+    const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
+    const projectCode = matches ? decodeURIComponent(matches[1]) : ''
+    if (!projectCode) return [400, { message: 'projectCode is required' }]
+
+    const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
+
+    const db = loadReceipts().map(ensureReceiptFields)
+    const idx = db.findIndex((r: any) => r.projectCode === projectCode)
 
     if (idx === -1) {
-      console.error('❌ Not found:', projectCode);
-      console.log('Available projectCodes:', db.map(r => r.projectCode));
-      return [404, { message: 'Receipt not found' }];
+      return [404, { message: 'Receipt not found' }]
     }
 
-    // Merge ข้อมูลเดิมกับข้อมูลใหม่
+    const normalized = normalizeBoth(incoming)
+
     const updated = sanitizeReceipt({
       ...db[idx],
-      ...incoming,
-      projectCode // ใช้ projectCode เดิม
-    });
+      ...normalized,
+      projectCode, // keep
+      createdAt: db[idx].createdAt, // keep
+      updatedAt: new Date(),
+    })
 
-    db[idx] = updated;
-    saveReceipts(db);
+    db[idx] = updated
+    saveReceipts(db)
 
-    console.log('✅ Updated successfully:', updated);
-    return [200, updated];
-  });
+    return [200, updated]
+  })
 
   // DELETE /deleteReceipt/:id
-  mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply(config => {
-    const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1];
-    if (!id) return [400, { success: false, message: 'id required' }];
-    const db = loadReceipts();
-    const before = db.length;
-    const next = db.filter(r => r.projectCode !== id && (r as any).id !== id);
-    saveReceipts(next);
-    return [200, { success: next.length !== before }];
-  });
+  mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
+    const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1]
+    if (!id) return [400, { success: false, message: 'id required' }]
 
-  return mock;
+    const db = loadReceipts().map(ensureReceiptFields)
+    const before = db.length
+    const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
+    saveReceipts(next)
 
-  
+    return [200, { success: next.length !== before }]
+  })
+
+  console.log('✅ Axios Mock Setup Complete (affiliationId-ready + backward compatible)')
+  return mock
 }

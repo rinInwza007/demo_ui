@@ -358,12 +358,12 @@
 
         <div class="flex flex-col gap-1.5">
           <InputText
-            v-model="row.note"
+            v-model="row.debtornote"
             placeholder="หมายเหตุ"
-            @input="() => clearRowError(index, 'note', 'debtor')"
+            @input="() => clearRowError(index, 'debtornote', 'debtor')"
           />
-          <span v-if="errors.debtorRows?.[index]?.note" class="text-red-600 text-xs">
-            {{ errors.debtorRows[index].note }}
+          <span v-if="errors.debtorRows?.[index]?.debtornote" class="text-red-600 text-xs">
+            {{ errors.debtorRows[index].debtornote }}
           </span>
         </div>
 
@@ -430,7 +430,7 @@
         </span>
         <div>
           <div class="font-medium text-slate-800">{{ row.itemName }}</div>
-          <div v-if="row.note" class="text-xs text-slate-600 mt-0.5">{{ row.note }}</div>
+          <div v-if="row.debtornote" class="text-xs text-slate-600 mt-0.5">{{ row.debtornote }}</div>
         </div>
       </div>
       <div class="text-right">
@@ -531,15 +531,15 @@
 
                     <div class="flex flex-col gap-1.5 mt-2">
                       <InputText
-                        v-model="row.note"
+                        v-model="row.depositnote"
                         placeholder="หมายเหตุ"
-                        @input="() => clearRowError(index, 'note', 'deposit')"
+                        @input="() => clearRowError(index, 'depositnote', 'deposit')"
                       />
                       <span
-                        v-if="errors.depositRows?.[index]?.note"
+                        v-if="errors.depositRows?.[index]?.depositnote"
                         class="text-red-600 text-xs"
                       >
-                        {{ errors.depositRows[index].note }}
+                        {{ errors.depositRows[index].depositnote }}
                       </span>
                     </div>
 
@@ -619,9 +619,9 @@
                             <span class="text-slate-600">ค่าธรรมเนียม:</span>
                             <span class="font-semibold text-red-600">- {{ formatNumber(getRowDetail(index).fee) }} ฿</span>
                           </div>
-                          <div v-if="getRowDetail(index)?.note" class="flex items-center text-sm">
+                          <div v-if="getRowDetail(index)?.depositnote" class="flex items-center text-sm">
                             <span class="text-slate-600">หมายเหตุ:</span>
-                            <span class="text-slate-700 italic">{{ getRowDetail(index)?.note }}</span>
+                            <span class="text-slate-700 italic">{{ getRowDetail(index)?.depositnote }}</span>
                           </div>
                           <div class="border-t border-blue-300 my-2"></div>
                           <div class="flex justify-between items-center">
@@ -825,8 +825,6 @@ const {
   totalDepositAmount,
   totalFee,
   netTotalAmount,
-  summaryByType,
-  detailsByRow,
   getRowDetail,
 } = useRowManagerDebtor()
 
@@ -987,13 +985,10 @@ const loadReceiptData = async () => {
   try {
     const response = await axios.get(`/getReceipt/${receiptId.value}`)
 
-    // 🔥 กัน API ส่งมาแปลก
     let data = response.data
     if (Array.isArray(data)) {
       data = data.find(
-        (r) =>
-          r.id === receiptId.value ||
-          r.projectCode === receiptId.value
+        (r) => r.id === receiptId.value || r.projectCode === receiptId.value
       )
     }
 
@@ -1001,9 +996,7 @@ const loadReceiptData = async () => {
 
     console.log('📥 Loaded receipt:', data)
 
-    // ===============================
-    // โหลดข้อมูลหลัก
-    // ===============================
+    // ========== โหลดข้อมูลหลัก ==========
     formData.value.fullName = data.fullName ?? ''
     formData.value.phone = data.phone ?? ''
     formData.value.fundName = data.fundName ?? ''
@@ -1018,74 +1011,131 @@ const loadReceiptData = async () => {
 
     subCategory2.value = data.subAffiliationName2 ?? ''
 
-    // ===============================
-    // โหลดรายการ
-    // ===============================
+    // ========== Clear Lists ==========
     debtorList.value = []
     depositList.value = []
 
-    const receiptList = Array.isArray(data.receiptList)
-      ? data.receiptList
-      : []
+    // ========== กรณีที่ 1: ข้อมูลแบบใหม่ (แยก debtorList และ depositList) ==========
+    if (data.debtorList && data.depositList) {
+      console.log('✅ โหลดข้อมูลแบบใหม่ (แยกแล้ว)')
 
-    receiptList.forEach((item, index) => {
-      console.log(`📦 Item ${index}:`, item)
-
-      // ---------- ลูกหนี้ ----------
-      debtorList.value.push({
-        id: index + 1,
-        itemName: item.itemName ?? '',
-        note: item.note ?? '',
-        money: Number(
-          item.debtorAmount ??
-          item.depositNetAmount ??
-          item.amount ??
-          0
-        ),
+      // โหลดรายการลูกหนี้
+      data.debtorList.forEach((item, index) => {
+        debtorList.value.push({
+          id: index + 1,
+          itemName: item.itemName ?? '',
+          debtornote: item.debtornote ?? '',
+          money: String(Number(item.amount ?? 0)),
+        })
       })
 
-      // ---------- เงินฝาก ----------
-      const paymentDetails = Array.isArray(item.paymentDetails)
-        ? item.paymentDetails
-        : []
+      // โหลดรายการเงินฝาก
+      data.depositList.forEach((item, index) => {
+        const paymentDetails = Array.isArray(item.paymentDetails)
+          ? item.paymentDetails
+          : []
 
-      const selectedItems = paymentDetails.map((p) => ({
-        checked: true,
-        name: p.moneyType ?? 'transfer',
-        amount: Number(p.amount ?? 0),
-        referenceNo: p.referenceNo ?? '',
-        moneyType: p.moneyType ?? 'transfer',
+        const selectedItems =
+          paymentDetails.length > 0
+            ? paymentDetails.map((p) => ({
+                checked: true,
+                name: p.moneyType ?? 'transfer',
+                amount: String(Number(p.amount ?? 0)),
+                referenceNo: p.referenceNo ?? '',
+                moneyType: p.moneyType ?? 'transfer',
+                AccountNum: p.accountNumber ?? '',
+                AccountName: p.accountName ?? '',
+                BankName: p.bankName ?? '',
+                accountNumber: p.accountNumber ?? '',
+                accountName: p.accountName ?? '',
+                bankName: p.bankName ?? '',
+                type: 'ฝากเข้าบัญชี',
+                paymentType: 'ฝากเข้าบัญชี',
+              }))
+            : JSON.parse(JSON.stringify(defaultItems))
 
-        AccountNum: p.accountNumber ?? '',
-        AccountName: p.accountName ?? '',
-        BankName: p.bankName ?? '',
+        depositList.value.push({
+          id: index + 1,
+          itemName: item.itemName ?? '',
+          depositnote: item.depositnote ?? '',
+          fee: String(Number(item.fee ?? 0)),
+          selectedItems: selectedItems,
+          expanded: false,
+        })
+      })
+    }
+    // ========== กรณีที่ 2: ข้อมูลแบบเก่า (มี receiptList รวมกัน) ==========
+    else if (data.receiptList) {
+      console.log('⚠️ โหลดข้อมูลแบบเก่า (ยังรวมกัน) - แปลงให้แยก')
 
-        accountNumber: p.accountNumber ?? '',
-        accountName: p.accountName ?? '',
-        bankName: p.bankName ?? '',
+      const receiptList = Array.isArray(data.receiptList) ? data.receiptList : []
 
-        type: 'ฝากเข้าบัญชี',
-        paymentType: 'ฝากเข้าบัญชี',
-      }))
+      receiptList.forEach((item, index) => {
+        // โหลดลูกหนี้
+        debtorList.value.push({
+          id: index + 1,
+          itemName: item.itemName ?? '',
+          debtornote: item.debtornote ?? '',
+          money: String(
+            Number(item.debtorAmount ?? item.amount ?? 0)
+          ),
+        })
+
+        // โหลดเงินฝาก
+        const paymentDetails = Array.isArray(item.paymentDetails)
+          ? item.paymentDetails
+          : []
+
+        const selectedItems =
+          paymentDetails.length > 0
+            ? paymentDetails.map((p) => ({
+                checked: true,
+                name: p.moneyType ?? 'transfer',
+                amount: String(Number(p.amount ?? 0)),
+                referenceNo: p.referenceNo ?? '',
+                moneyType: p.moneyType ?? 'transfer',
+                AccountNum: p.accountNumber ?? '',
+                AccountName: p.accountName ?? '',
+                BankName: p.bankName ?? '',
+                accountNumber: p.accountNumber ?? '',
+                accountName: p.accountName ?? '',
+                bankName: p.bankName ?? '',
+                type: 'ฝากเข้าบัญชี',
+                paymentType: 'ฝากเข้าบัญชี',
+              }))
+            : JSON.parse(JSON.stringify(defaultItems))
+
+        depositList.value.push({
+          id: index + 1,
+          itemName: item.itemName ?? '',
+          depositnote: item.depositnote ?? '',
+          fee: String(Number(item.fee ?? 0)),
+          selectedItems: selectedItems,
+          expanded: false,
+        })
+      })
+    }
+    // ========== กรณีที่ 3: ไม่มีรายการเลย ==========
+    else {
+      console.log('⚠️ ไม่พบรายการ - สร้างรายการเปล่า')
+      debtorList.value.push({
+        id: 1,
+        itemName: '',
+        note: '',
+        money: '',
+      })
 
       depositList.value.push({
-        id: index + 1,
-        itemName: item.itemName ?? '',
-        note: item.note ?? '',
-        fee: Number(item.fee ?? 0),
-        selectedItems:
-          selectedItems.length > 0
-            ? selectedItems
-            : Array.isArray(defaultItems)
-              ? JSON.parse(JSON.stringify(defaultItems))
-              : [],
+        id: 1,
+        itemName: '',
+        note: '',
+        fee: '',
+        selectedItems: JSON.parse(JSON.stringify(defaultItems)),
         expanded: false,
       })
-    })
+    }
 
-    // ===============================
-    // Re-init TomSelect
-    // ===============================
+    // ========== Re-init TomSelect ==========
     await nextTick()
     await nextTick()
 
@@ -1125,7 +1175,7 @@ const saveData = async () => {
   errors.value = {}
   let hasError = false
 
-  // Validation ฟอร์มหลัก
+  // ========== Validation ฟอร์มหลัก ==========
   if (!formData.value.fullName) {
     errors.value.fullName = 'กรุณากรอก "ชื่อ"'
     hasError = true
@@ -1159,12 +1209,12 @@ const saveData = async () => {
     hasError = true
   }
 
-  // Validation รายการลูกหนี้
+  // ========== Validation รายการลูกหนี้ ==========
   errors.value.debtorRows = {}
   debtorList.value.forEach((row, index) => {
     const rowErrors = {}
     if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
-    if (!row.note) rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
+    if (!row.debtornote) rowErrors.debtornote = 'กรุณากรอก "หมายเหตุ"'
     if (!row.money || Number(row.money) <= 0) rowErrors.money = 'กรุณากรอก "จำนวนเงิน"'
 
     if (Object.keys(rowErrors).length > 0) {
@@ -1173,12 +1223,12 @@ const saveData = async () => {
     }
   })
 
-  // Validation รายการเงินฝาก
+  // ========== Validation รายการเงินฝาก ==========
   errors.value.depositRows = {}
   depositList.value.forEach((row, index) => {
     const rowErrors = {}
     if (!row.itemName) rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
-    if (!row.note) rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
+    if (!row.depositnote) rowErrors.depositnote = 'กรุณากรอก "หมายเหตุ"'
 
     if (!row.selectedItems || row.selectedItems.filter((i) => i.checked).length === 0) {
       rowErrors.selectedItems = 'กรุณาเลือก "จำนวนเงิน" อย่างน้อย 1 รายการ'
@@ -1203,7 +1253,7 @@ const saveData = async () => {
     return
   }
 
-  // แสดง loading
+  // ========== แสดง Loading ==========
   Swal.fire({
     title: isEditMode.value ? 'กำลังอัพเดตข้อมูล...' : 'กำลังบันทึกข้อมูล...',
     allowOutsideClick: false,
@@ -1214,7 +1264,7 @@ const saveData = async () => {
 
   const currentDateTime = new Date().toISOString()
 
-  // ✅ สร้าง payload ใหม่ - รวมลูกหนี้กับเงินฝาก
+  // ========== สร้าง Payload แบบใหม่ - แยกลูกหนี้และเงินฝาก ==========
   const payload = {
     fullName: formData.value.fullName,
     phone: formData.value.phone,
@@ -1233,51 +1283,44 @@ const saveData = async () => {
     createdAt: isEditMode.value ? undefined : currentDateTime,
     updatedAt: currentDateTime,
 
-    // ✅ รวมข้อมูลลูกหนี้ + เงินฝาก ในรายการเดียวกัน
-    receiptList: debtorList.value.map((debtorRow, index) => {
-      const depositRow = depositList.value[index]
+    // ========== รายการลูกหนี้ (แยกออกมาเป็นของตัวเอง) ==========
+    debtorList: debtorList.value.map((row) => ({
+      itemName: row.itemName || '',
+      debtornote: row.debtornote || '',
+      amount: Number(row.money) || 0,
+    })),
 
-      // คำนวณยอดเงินฝาก
-      const paymentDetails =
-        depositRow?.selectedItems
-          ?.filter((item) => item.checked)
-          .map((item) => ({
-            moneyType: 'transfer',
-            amount: Number(item.amount) || 0,
-            referenceNo: item.referenceNo || '',
-            accountNumber: item.accountNumber || item.AccountNum || null,
-            accountName: item.accountName || item.AccountName || null,
-            bankName: item.bankName || item.BankName || null,
-          })) || []
+    // ========== รายการเงินฝาก (แยกออกมาเป็นของตัวเอง) ==========
+    depositList: depositList.value.map((row) => {
+      const paymentDetails = row.selectedItems
+        ?.filter((item) => item.checked)
+        .map((item) => ({
+          moneyType: item.moneyType || 'transfer',
+          amount: Number(item.amount) || 0,
+          referenceNo: item.referenceNo || '',
+          accountNumber: item.accountNumber || item.AccountNum || null,
+          accountName: item.accountName || item.AccountName || null,
+          bankName: item.bankName || item.BankName || null,
+        })) || []
 
       const depositTotal = paymentDetails.reduce((sum, item) => sum + item.amount, 0)
-      const depositFee = Number(depositRow?.fee) || 0
+      const depositFee = Number(row.fee) || 0
       const depositNetAmount = depositTotal - depositFee
 
       return {
-        // ข้อมูลหลัก (ใช้จากรายการลูกหนี้)
-        itemName: debtorRow.itemName || '',
-        note: debtorRow.note || '',
-
-        // ยอดลูกหนี้
-        debtorAmount: Number(debtorRow.money) || 0,
-
-        // ยอดเงินฝาก
-        depositSubtotal: depositTotal,
+        itemName: row.itemName || '',
+        depositnote: row.depositnote || '',
+        subtotal: depositTotal,
         fee: depositFee,
-        depositNetAmount: depositNetAmount,
-
-        // รวมยอดสุทธิ (ถ้าต้องการ)
-        amount: depositNetAmount,
-
-        // รายละเอียดการชำระเงิน
+        netAmount: depositNetAmount,
         paymentDetails: paymentDetails,
       }
     }),
   }
 
-  console.log('📤 Payload:', JSON.stringify(payload, null, 2))
+  console.log('📤 Payload (แยกลูกหนี้และเงินฝาก):', JSON.stringify(payload, null, 2))
 
+  // ========== ส่งข้อมูลไป API ==========
   try {
     let response
     if (isEditMode.value) {

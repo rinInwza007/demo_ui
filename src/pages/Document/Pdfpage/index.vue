@@ -1,7 +1,7 @@
 <template>
   <div>
-    <Navbar  />
-    <SecondNavbar class="bg-gray-100 "/>
+    <Navbar />
+    <SecondNavbar class="bg-gray-100" />
 
     <div v-if="loading" class="flex justify-center items-center h-96">
       <div class="text-lg text-gray-600">กำลังโหลดข้อมูล...</div>
@@ -21,10 +21,7 @@
     </div>
 
     <div class="mt-6 flex justify-end gap-3 mb-4">
-      <button
-        @click="gotomainpage"
-        class="px-6 py-2 rounded-md bg-gray-600 text-white btn-back"
-      >
+      <button @click="gotomainpage" class="px-6 py-2 rounded-md bg-gray-600 text-white btn-back">
         กลับ
       </button>
     </div>
@@ -64,7 +61,7 @@ const summary = reactive({
 const currentDate = new Date().toLocaleDateString('th-TH', {
   year: 'numeric',
   month: 'long',
-  day: 'numeric'
+  day: 'numeric',
 })
 
 // ✅ ฟังก์ชันแปลงตัวเลขเป็นตัวอักษรไทย
@@ -109,52 +106,27 @@ function deleteRowEmpty() {
   rows.splice(0, rows.length, ...filtered)
 }
 
-
 function createDocDefinition() {
   deleteRowEmpty()
 
   const receipt = receiptData.value || {}
 
-  const isCash = receipt.receiptList?.some(item =>
-    item.paymentDetails.some(p => p.moneyType === 'cash')
-  ) || false
+  // ดึง paymentMethods
+  const pm = receipt.paymentMethods || {}
 
-  const hasCheck = receipt.receiptList?.some(item =>
-    item.paymentDetails.some(p => p.moneyType === 'bank')
-  ) || false
+  // ฟังก์ชันดึงยอดจริง (ลบ comma)
+  const getAmount = (key) => {
+    const amt = pm[key]?.amount || 0
+    return typeof amt === 'string' ? parseFloat(amt.replace(/,/g, '')) : Number(amt)
+  }
 
-  const hasTransfer = receipt.receiptList?.some(item =>
-    item.paymentDetails.some(p => p.moneyType === 'transfer')
-  ) || false
-
-  const checkDetails = receipt.receiptList?.flatMap(item => {
-    const checks = item.paymentDetails.filter(p => p.moneyType === 'bank')
-    const fee = item.fee || 0
-    const feePerCheck = checks.length > 0 ? fee / checks.length : 0
-    return checks.map(check => ({
-      ...check,
-      amount: (check.amount || 0) - feePerCheck
-    }))
-  }) || []
-
-  const transferDetails = receipt.receiptList?.flatMap(item => {
-    const transfers = item.paymentDetails.filter(p => p.moneyType === 'transfer')
-    const fee = item.fee || 0
-    const feePer = transfers.length ? fee / transfers.length : 0
-
-    return transfers.map(t => ({
-      ...t,
-      amount: (t.amount || 0) - feePer
-    }))
-  }) || []
-
-  const cashAmount = receipt.receiptList?.reduce((sum, item) => {
-    const cashPayments = item.paymentDetails.filter(p => p.moneyType === 'cash')
-    const cashTotal = cashPayments.reduce((s, p) => s + (p.amount || 0), 0)
-    const fee = item.fee || 0
-    return sum + cashTotal - (cashPayments.length > 0 ? fee : 0)
-  }, 0) || 0
-
+  // ยอดแต่ละวิธี
+  const krungthaiAmt = pm.krungthai?.checked ? getAmount('krungthai') : 0
+  const scbAmt = pm.scb?.checked ? getAmount('scb') : 0
+  const cashAmt = pm.cash?.checked ? getAmount('cash') : 0
+  const checkAmt = pm.check?.checked ? getAmount('check') : 0
+  const otherAmt = pm.other?.checked ? getAmount('other') : 0
+  const otherName = pm.other?.name?.trim() || 'อื่น ๆ'
   return {
     pageSize: 'A4',
     pageMargins: [20, 30, 20, 0],
@@ -163,12 +135,12 @@ function createDocDefinition() {
       {
         stack: [
           {
-            text: `${ ''}`,
-            absolutePosition: { x: 420, y: 15 },
+            text: `${receipt.delNumber || ''}`, // ← ใส่เลขที่นำส่ง
+            absolutePosition: { x: 530, y: 15 },
             fontSize: 13,
           },
           {
-            text: 'เลขที่นำส่ง ..................../..................',
+            text: 'เลขที่นำส่ง ...........................',
             absolutePosition: { x: 0, y: 15 },
             margin: [0, 0, 0, 0],
             lineHeight: 1,
@@ -212,7 +184,9 @@ function createDocDefinition() {
             fontSize: 13,
           },
           {
-            text: `${receipt.mainAffiliationName || ''}`,
+            text: `${receipt.mainAffiliationName || ''}${
+              receipt.subAffiliationName1 ? ' ' + receipt.subAffiliationName1 : ''
+            }${receipt.subAffiliationName2 ? ' ' + receipt.subAffiliationName2 : ''}`,
             absolutePosition: { x: 370, y: 81.5 },
             fontSize: 13,
           },
@@ -231,11 +205,11 @@ function createDocDefinition() {
           },
           {
             text: `${receipt.fundName || ''}`,
-            absolutePosition: { x: 460, y: 98.5 },
+            absolutePosition: { x: 350, y: 98.5 },
             fontSize: 13,
           },
           {
-            text: 'ใบนำส่งรายได้/เงินโครงการ.........................................................................................................................................................กองทุน..........................................................\n',
+            text: 'ใบนำส่งรายได้/เงินโครงการ................................................................................................กองทุน....................................................................................................................\n',
             margin: [-10, 0, 0, 0],
           },
         ],
@@ -258,35 +232,15 @@ function createDocDefinition() {
           widths: ['8%', '15%', '*', '12%', '20%'],
           body: [
             [
-              {
-                text: '\n  ลำดับที่',
-                alignment: 'center',
-                bold: true,
-                margin: [0, 10, 0, 0],
-              },
+              { text: '\n  ลำดับที่', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
               {
                 text: 'เลขที่\nเอกสารอ้างอิง\n(เล่มที่/เลขที่\nใบเสร็จรับเงิน)',
                 alignment: 'center',
                 bold: true,
               },
-              {
-                text: '\nรายการ',
-                alignment: 'center',
-                bold: true,
-                margin: [0, 10, 0, 0],
-              },
-              {
-                text: '\nจำนวน/บาท',
-                alignment: 'center',
-                bold: true,
-                margin: [0, 10, 0, 0],
-              },
-              {
-                text: '\nหมายเหตุ',
-                alignment: 'center',
-                bold: true,
-                margin: [0, 10, 0, 0],
-              },
+              { text: '\nรายการ', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
+              { text: '\nจำนวน/บาท', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
+              { text: '\nหมายเหตุ', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
             ],
             ...rows.map((r) => [
               { text: r.id ?? '', alignment: 'center' },
@@ -296,401 +250,337 @@ function createDocDefinition() {
               { text: r.note ?? '', alignment: 'center' },
             ]),
             [
-              {
-                text: summary.text,
-                colSpan: 3,
-                alignment: 'center',
-                bold: true,
-              },
+              { text: summary.text, colSpan: 3, alignment: 'center', bold: true },
               '',
               '',
               { text: summary.total || '', alignment: 'right', bold: true },
-              {
-                text: summary.Empty || '',
-                alignment: 'center',
-                bold: true,
-                border: [true, true, false, false],
-              },
+              { text: '', alignment: 'center', bold: true, border: [true, true, false, false] },
             ],
           ],
         },
-        layer: 'nobold',
         margin: [-10, 0, -10, 0],
       },
       { text: '\n' },
 
-...(isCash ? [{
-  columns: [
-    { text: 'นำส่งเป็น', style: 'form', margin: [20, 0, 0, 0] },
-
-    {
-      columns: [
-        {
-          text: 'เงินสด',
-          style: 'form',
-          margin: [-194.5, 0, 0, 0],
-          width: 'auto'
-        },              {
-                text: 'จำนวนเงิน',
-                style: 'form',
-                width: 'auto',
-                margin: [240, 0, 0, 0],
-                noWrap: true
-              },
-        {
-          stack: [
+      // ========== ส่วนที่ 3: การนำส่งเงิน (แสดงเฉพาะที่ checked) ==========
+      // เงินสด
+      ...(pm.cash?.checked && cashAmt > 0
+        ? [
             {
-              text: isCash ? cashAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 }) : '',
-              alignment: 'center',
-              lineHeight: 1.2
-            },
-            {
-              text: '.............................',
-              alignment: 'center',
-              margin: [0, -19, 0, 0],
-              lineHeight: 1
-            },
-          ],
-          width: 80,margin: [-18, 0, 0, 0]
-        },          {
-                text: 'บาท',
-                style: 'form',
-                width: 'auto',
-                noWrap: true,
-                margin: [-20, 0, 0, 0]
-              }
-      ]
-    }
-  ],
-}] : []),  // ✅ เพิ่ม ']'
-
-      ...checkDetails.map((check) => ({
-        columns: [
-
-          {
-            columns: [
-              {
-                text: 'เช็คธนาคาร',
-                style: 'form',
-                margin: [58, 3, -25, 0],
-                width: 'auto'
-              },
-              {
-                stack: [
-                  {
-                    text: `${check.bankName || 'ธนาคารกรุงไทย'}`,
-                    alignment: 'center',
-                    lineHeight: 1.2
-                  },
-                  {
-                    text: '.............................',
-                    alignment: 'center',
-                    margin: [-50, -19, -50, 0],
-                    lineHeight: 1
-                  }
-                ],
-                width: 120,
-                margin: [-10, 3, 0, 0]
-              },
-              {
-                text: 'เลขที่เช็ค',
-                style: 'form',
-                width: 'auto',
-                margin: [-30, 3, 0, 0]
-              },
-              {
-                stack: [
-                  {
-                    text: `${check.checkNumber || ''}`,
-                    alignment: 'center',
-                    lineHeight: 1.2
-                  },
-                  {
-                    text: '.............................',
-                    alignment: 'center',
-                    margin: [0, -19, 0, 0],
-                    lineHeight: 1
-                  }
-                ],
-                width: 100,
-                margin: [-35, 3, 0, 0]
-              },
-              {
-                text: 'จำนวนเงิน',
-                style: 'form',
-                width: 'auto',
-                margin: [25, 3, 0, 0]
-              },
-              {
-                stack: [
-                  {
-                    text: `${check.amount ? check.amount.toLocaleString('th-TH', {minimumFractionDigits: 2}) : ''}`,
-                    alignment: 'center',
-                    lineHeight: 1.2
-                  },
-                  {
-                    text: '.............................',
-                    alignment: 'center',
-                    margin: [0, -19, 0, 0],
-                    lineHeight: 1
-                  }
-                ],
-                width: 80,
-                margin: [-18, 3, 0, 0]
-              },
-              {
-                text: 'บาท',
-                style: 'form',
-                width: 'auto',
-                margin: [-20, 3, 0, 0]
-              }
-            ]
-          }
-        ],
-        margin: [25, 3, 0, 0]
-      })),
-
-      ...(hasCheck ? [{
-        columns: [
-          {
-            columns: [
-              {
-                text: 'รวมยอดเงินตามเช็ค',
-                style: 'form',
-                width: 'auto',
-                margin: [170, 3, 0, 0]
-              },
-              {
-                text: 'จำนวนเงิน',
-                style: 'form',
-                width: 'auto',
-                margin: [56, 3, 0, 0]
-              },
-              {
-                stack: [
-                  {
-                    text: `${checkDetails.reduce((sum, c) => sum + (c.amount || 0), 0).toLocaleString('th-TH', {minimumFractionDigits: 2})}`,
-                    alignment: 'center',
-                    lineHeight: 1.2
-                  },
-                  {
-                    text: '.............................',
-                    alignment: 'center',
-                    margin: [0, -19, 0, 0],
-                    lineHeight: 1
-                  }
-                ],
-                width: 80,
-                margin: [-18, 3, 0, 0]
-              },
-              {
-                text: 'บาท',
-                style: 'form',
-                width: 'auto',
-                margin: [-20, 3, 0, 0]
-              }
-            ]
-          }
-        ],
-        margin: [50, 5, 0, 0]
-      }] : []),
-
-      ...transferDetails.map((transfer) => [
-        {
-          columns: [
-            {
-              text: 'นำฝากเข้าบัญชีธนาคาร',
-              style: 'form',
-              width: 'auto',
-              margin: [33, 3, 0, 0],
-              noWrap: true
-            },
-            {
-              stack: [
+              columns: [
                 {
-                  text: `${transfer.bankName || ''}`,
-                  alignment: 'center',
-                  lineHeight: 1.2
+                  columns: [
+                    {
+                      text: 'เงินสด',
+                      style: 'form',
+                      margin: [83, 0, 0, 0],
+                      noWrap: true,
+                      width: 'auto',
+                    },
+                    {
+                      text: 'จำนวนเงิน',
+                      style: 'form',
+                      width: 'auto',
+                      margin: [240, 0, 0, 0],
+                      noWrap: true,
+                    },
+                    {
+                      stack: [
+                        {
+                          text: cashAmt.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+                          alignment: 'center',
+                          lineHeight: 1.2,
+                        },
+                        {
+                          text: '.............................',
+                          alignment: 'center',
+                          margin: [0, -19, 0, 0],
+                          lineHeight: 1,
+                        },
+                      ],
+                      width: 80,
+                      margin: [-18, 0, 0, 0],
+                    },
+                    {
+                      text: 'บาท',
+                      style: 'form',
+                      width: 'auto',
+                      noWrap: true,
+                      margin: [-20, 0, 0, 0],
+                    },
+                  ],
                 },
-                {
-                  text: '.............................',
-                  alignment: 'center',
-                  margin: [0, -19, 0, 0],
-                  lineHeight: 1
-                }
               ],
-              width: 120,
-              margin: [-60, 3, 0, 0]
             },
+          ]
+        : []),
+
+      // เช็ค (ถ้ามี checkAmt > 0)
+      ...(pm.check?.checked && checkAmt > 0
+        ? [
             {
-              text: 'เลขที่บัญชี',
-              style: 'form',
-              width: 'auto',
-              margin: [-60, 3, 0, 0]
-            },
-            {
-              stack: [
+              columns: [
                 {
-                  text: `${transfer.accountNumber || ''}`,
-                  alignment: 'center',
-                  lineHeight: 1.2
+                  columns: [
+                    {
+                      text: 'เช็ค',
+                      style: 'form',
+                      margin: [83, 0, 0, 0],
+                      noWrap: true,
+                      width: 'auto',
+                    },
+                    {
+                      text: 'จำนวนเงิน',
+                      style: 'form',
+                      width: 'auto',
+                      margin: [240, 0, 0, 0],
+                      noWrap: true,
+                    },
+                    {
+                      stack: [
+                        {
+                          text: checkAmt.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+                          alignment: 'center',
+                          lineHeight: 1.2,
+                        },
+                        {
+                          text: '.............................',
+                          alignment: 'center',
+                          margin: [0, -19, 0, 0],
+                          lineHeight: 1,
+                        },
+                      ],
+                      width: 80,
+                      margin: [-18, 0, 0, 0],
+                    },
+                    {
+                      text: 'บาท',
+                      style: 'form',
+                      width: 'auto',
+                      noWrap: true,
+                      margin: [-20, 0, 0, 0],
+                    },
+                  ],
                 },
-                {
-                  text: '.............................',
-                  alignment: 'center',
-                  margin: [0, -19, 0, 0],
-                  lineHeight: 1
-                }
               ],
-              width: 100,
-              margin: [-40, 3, 0, 0]
-            }
-          ],
-          columnGap: 3,
-          margin: [50, 3, 0, 0]
-        },
-        {
-          columns: [
-            {
-              text: '',
-              width: 20,
-              margin: [52.5, 0, 0, 0]
             },
+          ]
+        : []),
+
+      // ธ.กรุงไทย
+      ...(pm.krungthai?.checked && krungthaiAmt > 0
+        ? [
             {
-              text: 'ชื่อบัญชี',
-              style: 'form',
-              width: 'auto',
-              margin: [13, 3, 0, 0]
-            },
-            {
-              stack: [
+              columns: [
                 {
-                  text: `${transfer.accountName || ''}`,
-                  alignment: 'center',
-                  lineHeight: 1.2
+                  columns: [
+                    {
+                      text: 'ธ.กรุงไทย สาขาพะเยา (มหาวิทยาลัยพะเยา)',
+                      style: 'form',
+                      margin: [40, 10, 0, 0],
+                      width: 'auto',
+                    },
+                    {
+                      text: 'บช.ที่ 512-1-43488-6',
+                      style: 'form',
+                      margin: [20, 10, 0, 0],
+                      width: 'auto',
+                    },
+                    {
+                      text: 'จำนวนเงิน',
+                      style: 'form',
+                      width: 'auto',
+                      margin: [50, 10, 0, 0],
+                      noWrap: true,
+                    },
+                    {
+                      stack: [
+                        {
+                          text: krungthaiAmt.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+                          alignment: 'center',
+                          lineHeight: 1.2,
+                        },
+                        {
+                          text: '.............................',
+                          alignment: 'center',
+                          margin: [0, -19, 0, 0],
+                          lineHeight: 1,
+                        },
+                      ],
+                      width: 80,
+                      margin: [-18, 10, 0, 0],
+                    },
+                    {
+                      text: 'บาท',
+                      style: 'form',
+                      width: 'auto',
+                      noWrap: true,
+                      margin: [-20, 10, 0, 0],
+                    },
+                  ],
                 },
-                {
-                  text: '.........................................................',
-                  alignment: 'center',
-                  margin: [0, -19, 0, 0],
-                  lineHeight: 1
-                }
               ],
-              width: 200,
-              margin: [-75, 3, 0, 0]
             },
+          ]
+        : []),
+
+      // ธ.ไทยพาณิชย์
+      ...(pm.scb?.checked && scbAmt > 0
+        ? [
             {
-              text: 'จำนวนเงิน',
-              style: 'form',
-              width: 'auto',
-              margin: [34.5, 3, 0, 0]
-            },
-            {
-              stack: [
+              columns: [
                 {
-                  text: `${transfer.amount ? transfer.amount.toLocaleString('th-TH', {minimumFractionDigits: 2}) : ''}`,
-                  alignment: 'center',
-                  lineHeight: 1.2
+                  columns: [
+                    {
+                      text: 'ธ.ไทยพาณิชย์ สาขามหาวิทยาลัยพะเยา',
+                      style: 'form',
+                      margin: [40, 10, 0, 0],
+                      width: 'auto',
+                    },
+                    {
+                      text: 'บช.ที่ 891-2-00225-5',
+                      style: 'form',
+                      margin: [20, 10, 0, 0],
+                      width: 'auto',
+                    },
+                    {
+                      text: 'จำนวนเงิน',
+                      style: 'form',
+                      width: 'auto',
+                      margin: [50, 10, 0, 0],
+                      noWrap: true,
+                    },
+                    {
+                      stack: [
+                        {
+                          text: scbAmt.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+                          alignment: 'center',
+                          lineHeight: 1.2,
+                        },
+                        {
+                          text: '.............................',
+                          alignment: 'center',
+                          margin: [0, -19, 0, 0],
+                          lineHeight: 1,
+                        },
+                      ],
+                      width: 80,
+                      margin: [-18, 10, 0, 0],
+                    },
+                    {
+                      text: 'บาท',
+                      style: 'form',
+                      width: 'auto',
+                      noWrap: true,
+                      margin: [-20, 10, 0, 0],
+                    },
+                  ],
                 },
-                {
-                  text: '.............................',
-                  alignment: 'center',
-                  margin: [0, -19, 0, 0],
-                  lineHeight: 1
-                }
               ],
-              width: 80,
-              margin: [-18, 3, 0, 0]
             },
+          ]
+        : []),
+
+      // อื่น ๆ
+      ...(pm.other?.checked && otherAmt > 0
+        ? [
             {
-              text: 'บาท',
-              style: 'form',
-              width: 'auto',
-              margin: [-20, 3, 0, 0]
-            }
-          ],
-          margin: [50, 3, 0, 0]
-        }
-      ]).flat(),
+              columns: [
+                {
+                  columns: [
+                    {
+                      text: otherName,
+                      style: 'form',
+                      margin: [83, 0, 0, 0],
+                      noWrap: true,
+                      width: 'auto',
+                    },
+                    {
+                      text: 'จำนวนเงิน',
+                      style: 'form',
+                      width: 'auto',
+                      margin: [240, 0, 0, 0],
+                      noWrap: true,
+                    },
+                    {
+                      stack: [
+                        {
+                          text: otherAmt.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+                          alignment: 'center',
+                          lineHeight: 1.2,
+                        },
+                        {
+                          text: '.............................',
+                          alignment: 'center',
+                          margin: [0, -19, 0, 0],
+                          lineHeight: 1,
+                        },
+                      ],
+                      width: 80,
+                      margin: [-18, 0, 0, 0],
+                    },
+                    {
+                      text: 'บาท',
+                      style: 'form',
+                      width: 'auto',
+                      noWrap: true,
+                      margin: [-20, 0, 0, 0],
+                    },
+                  ],
+                },
+              ],
+            },
+          ]
+        : []),
+
+      // ลายเซ็น (เดิมไม่เปลี่ยน)
       { text: '\n' },
       { text: '\n' },
       {
         columns: [
           {
             stack: [
+              { style: 'form', text: 'ลงชื่อ', margin: [20, 0, 0, 0], alignment: 'left' },
               {
-                style: 'form',
-                text: 'ลงชื่อ',
+                text: receipt.fullName || '',
                 alignment: 'center',
-                absolutePosition: { x: -520, y: 697 },
-              },
-              {
-                text: `${receipt.fullName || ''}`,
-                alignment: 'left',
-                absolutePosition: { x: 105, y: 718.5 },
+                margin: [0, 0, 0, -15],
                 fontSize: 13,
               },
               {
                 style: 'form',
                 text: '(........................................................................)',
                 alignment: 'center',
-                absolutePosition: { x: -300, y: 720 },
               },
-              {
-                style: 'form',
-                text: 'ผู้นำส่งเงิน',
-                alignment: 'center',
-                absolutePosition: { x: -300, y: 740 },
-              },
-              {
-                text: `${currentDate}`,
-                alignment: 'left',
-                absolutePosition: { x: 105, y: 768 },
-                fontSize: 13,
-              },
+              { style: 'form', text: 'ผู้นำส่งเงิน', alignment: 'center', margin: [10, 0, 0, 0] },
+              { text: currentDate, alignment: 'center', margin: [0, 0, 0, -15], fontSize: 13 },
               {
                 style: 'form',
                 text: 'ลงวันที่.......................................................',
                 alignment: 'center',
-                absolutePosition: { x: -300, y: 770 },
               },
             ],
           },
           {
             stack: [
-              {
-                style: 'form',
-                text: '\nลงชื่อ',
-                alignment: 'center',
-                absolutePosition: { x: 110, y: 680 },
-              },
+              { style: 'form', text: 'ลงชื่อ', margin: [0, 0, 225, 0], alignment: 'center' },
               {
                 style: 'form',
                 text: '(........................................................................)',
                 alignment: 'center',
-                absolutePosition: { x: 340, y: 720 },
+                margin: [0, 1, 0, 0],
               },
-              {
-                style: 'form',
-                text: 'ผู้รับเงิน',
-                alignment: 'center',
-                absolutePosition: { x: 335, y: 740 },
-              },
+              { style: 'form', text: 'ผู้รับเงิน', alignment: 'center' },
               {
                 style: 'form',
                 text: 'ลงวันที่.......................................................',
                 alignment: 'center',
-                absolutePosition: { x: 340, y: 770 },
+                margin: [0, 3, 0, 0],
               },
             ],
           },
         ],
-      },
-      {
-        text: '***หมายเหตุ จัดทำแบบฟอร์มนี้ด้วยการพิมพ์เท่านั้น',
-        alignment: 'center',
-        absolutePosition: { x: -380, y: 820 },
-        fontSize: 12,
+        widths: ['50%', '50%'],
       },
     ],
     styles: {
@@ -720,7 +610,7 @@ onMounted(() => {
     console.log('📦 Total receipts:', receipts.length)
 
     // ✅ ค้นหา receipt ที่ตรงกับ projectCode
-    const foundReceipt = receipts.find(r => r.projectCode === projectCode)
+    const foundReceipt = receipts.find((r) => r.projectCode === projectCode)
 
     if (!foundReceipt) {
       console.error('❌ Receipt not found for projectCode:', projectCode)
@@ -732,59 +622,44 @@ onMounted(() => {
     receiptData.value = foundReceipt
 
     // ✅ สร้าง rows จากข้อมูล receiptList
-    if (receiptData.value && receiptData.value.receiptList) {
-      rows.splice(0, rows.length)
+if (receiptData.value?.receiptList?.length > 0) {
+  rows.splice(0, rows.length)
+  let rowNumber = 1
 
-      let rowNumber = 1
+  receiptData.value.receiptList.forEach((item) => {
+    const cleanAmount = item.amount 
+      ? parseFloat(item.amount.toString().replace(/,/g, '')) 
+      : 0
 
-receiptData.value.receiptList.forEach((item) => {
-  // ✅ เพิ่ม payment ทั้งหมดก่อน
-  item.paymentDetails.forEach((payment) => {
     rows.push({
-      id: String(rowNumber),
-      ref: payment.referenceNo || '',
+      id: String(rowNumber++),
+      ref: item.referenceNo || '',
       item: item.itemName || '',
-      amount: payment.amount ? payment.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }) : '',
-      other: '',
+      amount: cleanAmount > 0 
+        ? cleanAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 }) 
+        : '',
       note: item.note || ''
     })
-
-    rowNumber++
   })
 
-  // ✅ เพิ่มค่าธรรมเนียมเพียงครั้งเดียวหลังจากเพิ่ม payment ทั้งหมดแล้ว
-  if (item.fee && item.fee > 0) {
-    rows.push({
-      id: '',
-      ref: '',
-      item: 'หัก ค่าธรรมเนียม',
-      amount: `${item.fee.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
-      other: '',
-      note: ''
-    })
-  }
-})
-
-      while (rows.length < 10) {
-        rows.push({
-          id: String(rowNumber),
-          ref: '',
-          item: '',
-          amount: '',
-          other: '',
-          note: ''
-        })
-        rowNumber++
-      }
-
-      const total = receiptData.value.netTotalAmount || 0
-      summary.text = convertNumberToThaiText(total)
-      summary.total = total.toLocaleString('th-TH', { minimumFractionDigits: 2 })
-    }
+  const total = receiptData.value.netTotalAmount || 0
+  summary.text = convertNumberToThaiText(total)
+  summary.total = total.toLocaleString('th-TH', { minimumFractionDigits: 2 })
+} else {
+  // ถ้าไม่มีรายการ
+  rows.push({
+    id: '1',
+    ref: '',
+    item: 'ไม่มีรายการ',
+    amount: '',
+    note: ''
+  })
+  summary.text = 'ศูนย์บาทถ้วน'
+  summary.total = '0.00'
+}
 
     previewPdf()
     loading.value = false
-
   } catch (error) {
     console.error('❌ Error loading receipt:', error)
     loading.value = false
@@ -794,7 +669,9 @@ receiptData.value.receiptList.forEach((item) => {
 
 <style lang="scss" scoped>
 .btn-back {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .btn-back:hover {

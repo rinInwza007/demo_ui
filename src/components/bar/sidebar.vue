@@ -65,12 +65,6 @@ const menuItems = [
     routeName: 'main',
   },
   {
-    id: 'indexwaybilldebtor',
-    label: 'ใบนำส่งลูกหนี้',
-    icon: 'ph ph-files',
-    routeName: 'indexwaybilldebtor',
-  },
-  {
     id: 'indexsavedebtor',
     label: 'ล้างลูกหนี้',
     icon: 'ph ph-files',

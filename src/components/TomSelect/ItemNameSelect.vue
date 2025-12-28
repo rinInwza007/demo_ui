@@ -1,25 +1,33 @@
 <template>
-  <div class="tomselect-container">
+  <div class="tomselect-container relative">
     <select
       :id="inputId"
       v-model="localValue"
       class="w-full px-2 text-sm"
     >
       <option value=""></option>
-      <option value="ค่าบริการทางการแพทย์ (สปสช)">ค่าบริการทางการแพทย์ (สปสช)</option>
-      <option value="ค่าบริการทางการแพทย์ (กรมบัญชีกลาง)">ค่าบริการทางการแพทย์ (กรมบัญชีกลาง)</option>
-      <option value="ค่าบริการทางการแพทย์ (ประกันสังคม)">ค่าบริการทางการแพทย์ (ประกันสังคม)</option>
-      <option value="ค่าบริการทางการแพทย์ (อื่นๆ)">ค่าบริการทางการแพทย์ (อื่นๆ)</option>
-      <option value="ค่าบริการทางการแพทย์ (อื่นๆสิทธิ - ค้างชำระ)">ค่าบริการทางการแพทย์ (อื่นๆสิทธิ - ค้างชำระ)</option>
-      <option value="ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย">ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย</option>
-      <option value="ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย">ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย</option>
+      <option 
+        v-for="option in itemOptions" 
+        :key="option.value" 
+        :value="option.value"
+      >
+        {{ option.value }}
+      </option>
     </select>
+
+    <!-- 🔥 slot สำหรับไอคอนในช่อง -->
+    <div
+      class="absolute right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
+    >
+      <slot name="suffix" />
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import TomSelect from 'tom-select'
+import { itemOptions } from '@/components/data/ItemNameOption'
 
 const props = defineProps({
   modelValue: String,
@@ -59,17 +67,20 @@ onMounted(() => {
       }
     })
 
-    // Apply glass-input CSS styles
     const control = tomSelectInstance.control
+
+    /* 🔑 สำคัญมาก */
+    control.style.position = 'relative'
+
     control.style.width = '100%'
-    control.style.height = '2.70rem'
-    control.style.padding = '0.625rem 0.5rem' // py-2.5 px-2
-    control.style.paddingRight = '2.5rem' // pr-10
+    control.style.height = '2.7rem'
+    control.style.padding = '0.625rem 0.5rem'
+    control.style.paddingRight = '2.5rem' // เผื่อที่ให้ไอคอน
     control.style.display = 'flex'
     control.style.alignItems = 'center'
-    control.style.fontSize = '0.875rem' // text-sm
-    control.style.color = '#334155' // text-slate-700
-    control.style.borderRadius = '0.75rem' // rounded-xl
+    control.style.fontSize = '0.875rem'
+    control.style.color = '#334155'
+    control.style.borderRadius = '0.75rem'
     control.style.border = '1px solid rgba(203, 213, 225, 0.5)'
     control.style.background = 'rgba(255, 255, 255, 0.9)'
     control.style.backdropFilter = 'blur(10px)'
@@ -84,29 +95,6 @@ onMounted(() => {
       input.style.padding = '0.25rem'
       input.style.color = '#334155'
     }
-
-    // Add focus styles
-    control.addEventListener('focus', () => {
-      control.style.outline = 'none'
-      control.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.3)'
-      control.style.borderColor = 'rgba(59, 130, 246, 0.3)'
-    })
-
-    control.addEventListener('blur', () => {
-      control.style.boxShadow = ''
-      control.style.borderColor = 'rgba(203, 213, 225, 0.5)'
-    })
-
-    // Add hover effect
-    control.addEventListener('mouseenter', () => {
-      control.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-    })
-
-    control.addEventListener('mouseleave', () => {
-      if (document.activeElement !== control) {
-        control.style.boxShadow = ''
-      }
-    })
   }
 })
 
@@ -119,7 +107,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
-/* Global styles for TomSelect dropdown */
 .ts-dropdown {
   @apply rounded-xl shadow-lg border border-gray-200;
 }

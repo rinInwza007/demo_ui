@@ -203,16 +203,13 @@
                 <!-- Actions -->
                 <div class="col-span-2 flex justify-center">
                   <ActionButtons
-                    :item="item"
-                    :showEdit="true"
-                    :show-view="true"
-                    :showLock="true"
-                    :showDelete="true"
-                    @edit="edit"
-                    @lock="toggleLock"
-                    @delete="removeItem"
-                    @view="view"
-                  />
+  :item="item"
+  :permissions="['view','edit','delete','lock']"
+  @view="view"
+  @edit="edit"
+  @delete="removeItem"
+  @lock="toggleLock"
+/>
                 </div>
               </div>
 

@@ -1076,7 +1076,7 @@ watch(subCategory, () => {
 })
 
 const gotomainpage = () => {
-  router.push('/')
+  router.push('/indexwaybill')
 }
 
 const loadReceiptData = async () => {
@@ -1136,13 +1136,11 @@ const loadReceiptData = async () => {
     // ✅ 6. โหลด paymentMethods พร้อม debug
     console.log('📦 Payment Methods from API:', data.paymentMethods)
 
-    if (data.paymentMethods && typeof data.paymentMethods === 'object') {
-      Object.keys(data.paymentMethods).forEach((key) => {
-        // ✅ ตรวจสอบว่า key มีใน paymentMethods.value หรือไม่
-        if (!paymentMethods.value[key]) {
-          console.warn(`⚠️ Unknown payment method: ${key}`)
-          return
-        }
+      const amount = data.paymentMethods[key].amount || 0
+      if (amount > 0) {
+        const numAmount = typeof amount === 'string'
+          ? parseFloat(amount.replace(/,/g, ''))
+          : Number(amount)
 
         const methodData = data.paymentMethods[key]
         
@@ -1431,14 +1429,14 @@ const saveData = async () => {
           <p style="margin-bottom: 10px;">โปรดกรอกจำนวนเงินให้เท่ากัน</p>
           <hr style="margin: 15px 0;">
           <p style="font-weight: 600; color: #059669; margin-bottom: 8px;">
-            ✓ ยอดรวมรายการ (ส่วนที่ 2): 
+            ✓ ยอดรวมรายการ (ส่วนที่ 2):
             <span style="float: right;">${totalSection2.toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })} บาท</span>
           </p>
           <p style="font-weight: 600; color: #DC2626; margin-bottom: 8px;">
-            ✗ ยอดเงินนำส่ง (ส่วนที่ 3): 
+            ✗ ยอดเงินนำส่ง (ส่วนที่ 3):
             <span style="float: right;">${totalSection3.toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -1446,7 +1444,7 @@ const saveData = async () => {
           </p>
           <hr style="margin: 15px 0;">
           <p style="font-weight: 600; color: #7E22CE; margin-bottom: 0;">
-            ส่วนต่าง: 
+            ส่วนต่าง:
             <span style="float: right;">${difference.toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -1560,7 +1558,7 @@ const saveData = async () => {
       timerProgressBar: true,
     })
 
-    router.push('/')
+    router.push('/indexwaybill')
   } catch (err) {
     console.error('Error:', err)
 

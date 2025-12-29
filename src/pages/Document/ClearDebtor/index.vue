@@ -17,9 +17,9 @@
           <div>
             <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
               <i class="ph ph-receipt"></i>
-              รายละเอียดหนี้
+              รายละเอียดหนี้รวม
             </h1>
-            <p class="text-xs text-slate-800 mt-0.5">จัดการและติดตามรายละเอียดหนี้ของหน่วยงาน</p>
+            <p class="text-xs text-slate-800 mt-0.5">จัดการและติดตามรายละเอียดหนี้จากหลายหน่วยงาน</p>
           </div>
           <div class="flex items-center gap-3">
             <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
@@ -35,114 +35,91 @@
         <div class="flex-1 px-8 pb-8 overflow-y-auto">
           <div class="max-w-7xl mx-auto space-y-6">
 
-            <!-- Debtor Info Card -->
+            <!-- Summary Card -->
             <div class="glass-panel rounded-2xl p-6 shadow-lg">
               <div class="space-y-4">
                 <div class="flex items-center justify-between border-b border-white/40 pb-4">
-                  <span class="text-sm font-medium text-slate-600">หน่วยงาน</span>
-                  <span class="text-lg font-semibold text-slate-900">{{ debtor.fullName }}</span>
+                  <span class="text-sm font-medium text-slate-600">จำนวนหน่วยงาน</span>
+                  <span class="text-lg font-semibold text-slate-900">{{ receipts.length }} หน่วยงาน</span>
                 </div>
 
                 <div class="flex items-center justify-between border-b border-white/40 pb-4">
-                  <span class="text-sm font-medium text-slate-600">ยอดหนี้รวม</span>
+                  <span class="text-sm font-medium text-slate-600">ยอดหนี้รวมทั้งหมด</span>
                   <span class="text-2xl font-bold text-red-600">
-                    {{ formatMoney(debtor.totalDebt) }} <span class="text-base">บาท</span>
+                    {{ formatMoney(totalDebt) }} <span class="text-base">บาท</span>
                   </span>
                 </div>
 
                 <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium text-slate-600">จำนวนรายการ</span>
+                  <span class="text-sm font-medium text-slate-600">จำนวนรายการทั้งหมด</span>
                   <span class="text-lg font-semibold text-slate-900">
-                    {{ debtor.items.length }} <span class="text-sm text-slate-500">รายการ</span>
+                    {{ allItems.length }} <span class="text-sm text-slate-500">รายการ</span>
                   </span>
                 </div>
               </div>
             </div>
 
-            <!-- Debt Items Table -->
-            <div class="glass-panel rounded-2xl shadow-lg overflow-hidden">
+            <!-- Grouped by Receipt -->
+            <div v-for="receipt in receipts" :key="receipt.receiptId" class="glass-panel rounded-2xl shadow-lg overflow-hidden">
               <div class="px-6 py-4 border-b border-white/40 bg-white/20">
-                <h2 class="text-xl font-bold text-slate-900">รายการหนี้ที่ยังไม่ชำระ</h2>
+                <div class="flex items-center justify-between">
+                  <h2 class="text-xl font-bold text-slate-900">{{ receipt.department }}</h2>
+                  <span class="text-lg font-bold text-red-600">{{ formatMoney(receipt.totalDebtorAmount) }} บาท</span>
+                </div>
+                <p class="text-xs text-slate-600 mt-1">{{ receipt.subDepartment }} • {{ receipt.items.length }} รายการ</p>
               </div>
 
               <!-- Table Header -->
-  <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div class="col-span-3">รายการ</div>
+                <div class="col-span-3">ผู้ทำรายการ</div>
+                <div class="col-span-2 text-right pr-8">จำนวนเงิน</div>
+                <div class="col-span-2 text-center">วันที่</div>
+                <div class="col-span-2">หมายเหตุ</div>
+              </div>
 
-  <div class="col-span-2">รายการ</div>
-  <div class="col-span-2">หน่วยงานย่อย</div>
-  <div class="col-span-2">ผู้ทำรายการ</div>
-  <div class="col-span-2 text-right pr-8">จำนวนเงิน</div>
-  <div class="col-span-2 text-center px-4">วันที่</div>
-  <div class="col-span-1 pl-6">หมายเหตุ</div>
-  <div class="col-span-1 text-center">เลือก</div>
+              <div
+                v-for="item in receipt.items"
+                :key="item.id"
+                class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl
+                       transition-all duration-200 border border-white/50 hover:bg-white/50"
+              >
+                <!-- Item Name -->
+                <div class="col-span-3">
+                  <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
+                </div>
+
+                <!-- Full Name -->
+              <!-- Full Name -->
+<div class="col-span-3 flex items-center gap-2">
+  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
+    {{ (item.responsible || '-').charAt(0) }}
+  </div>
+  <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
 </div>
 
+                <!-- Amount -->
+                <div class="col-span-2 text-right pr-8">
+                  <div class="font-bold text-red-600 font-mono text-sm">
+                    {{ formatMoney(item.debtorAmount) }}
+                  </div>
+                  <div class="text-[10px] text-slate-400">บาท</div>
+                </div>
 
-<div
-  v-for="item in debtor.items"
-  :key="item.id"
-  class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl
-         transition-all duration-200 border"
-  :class="item.selected
-    ? 'bg-green-50 border-green-300'
-    : 'border-transparent hover:border-white/50 hover:bg-white/50'"
->
-  <!-- Checkbox -->
- <!-- Select Button (แทน checkbox) -->
+                <!-- Date -->
+                <div class="col-span-2 text-center">
+                  <div class="text-xs text-slate-600">
+                    {{ formatDate(item._originalReceipt.createdAt) }}
+                  </div>
+                </div>
 
-
-
-  <!-- Item Name -->
-  <div class="col-span-2">
-    <div class="font-medium text-slate-800 text-sm">{{ item.title }}</div>
-  </div>
-
-  <!-- Sub Org -->
-  <div class="col-span-2">
-    <div class="text-sm text-slate-600">{{ item.subOrg }}</div>
-  </div>
-
-  <!-- Full Name -->
-  <div class="col-span-2 flex items-center gap-2">
-    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
-      {{ item.fullName.charAt(0) }}
-    </div>
-    <span class="text-sm text-slate-700 truncate">{{ item.fullName }}</span>
-  </div>
-
-  <!-- Amount -->
-  <div class="col-span-2 text-right pr-8">
-    <div class="font-bold text-red-600 font-mono text-sm">
-      {{ formatMoney(item.amount) }}
-    </div>
-    <div class="text-[10px] text-slate-400">บาท</div>
-  </div>
-
-  <!-- Date -->
-  <div class="col-span-2 text-center px-4">
-    <div class="text-xs text-slate-600">
-      {{ item.createdAt }}
-    </div>
-  </div>
-
-  <!-- Note -->
-  <div class="col-span-1 pl-6">
-    <div class="text-sm text-slate-600 truncate">
-      {{ item.note }}
-    </div>
-  </div>
-  <div class="col-span-1 flex justify-center">
-  <button @click="toggleSelect(item)">
-    <i
-      class="material-symbols-outlined text-2xl transition-colors"
-      :class="item.selected ? 'text-green-600' : 'text-red-600'"
-    >
-      {{ item.selected ? 'check_circle' : 'cancel' }}
-    </i>
-  </button>
-</div>
-</div>
-
+                <!-- Note -->
+                <div class="col-span-2">
+                  <div class="text-sm text-slate-600 truncate">
+                    {{ item.note }}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Payment Section -->
@@ -230,20 +207,19 @@
 
               <!-- Remaining Debt -->
               <div
-  class="rounded-xl p-6 shadow-lg mb-4"
-  style="background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);"
->
-  <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
-    <div class="flex items-center gap-3">
-      <i class="ph-fill ph-wallet text-3xl"></i>
-      <span class="text-xl font-bold">ยอดหนี้ที่เลือก</span>
-    </div>
-    <span class="text-3xl font-bold">
-      {{ formatNumber(remainingAmount) }} บาท
-    </span>
-  </div>
-</div>
-
+                class="rounded-xl p-6 shadow-lg mb-4"
+                style="background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);"
+              >
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
+                  <div class="flex items-center gap-3">
+                    <i class="ph-fill ph-wallet text-3xl"></i>
+                    <span class="text-xl font-bold">ยอดหนี้คงเหลือ</span>
+                  </div>
+                  <span class="text-3xl font-bold">
+                    {{ formatNumber(remainingAmount) }} บาท
+                  </span>
+                </div>
+              </div>
 
               <!-- Action Button -->
               <div class="flex justify-end">
@@ -254,7 +230,7 @@
                 >
                   <span class="flex items-center gap-2 text-white">
                     <i class="ph ph-eraser text-lg"></i>
-                    ยืนยันการล้างหนี้
+                    ยืนยันการล้างหนี้ทั้งหมด
                   </span>
                 </button>
               </div>
@@ -264,16 +240,16 @@
         </div>
       </main>
     </div>
-            <Teleport to="body">
+    <Teleport to="body">
       <div v-if="showModal !== null" class="modal-portal-container">
-                      <Modal
-                :show="showModal === 0"
-                :items="rowItems[0]"
-                :usedAccounts="usedAccounts"
-                @close="showModal = null"
-                @update:selected="applyPayment"
-              />
-              </div>
+        <Modal
+          :show="showModal === 0"
+          :items="rowItems[0]"
+          :usedAccounts="usedAccounts"
+          @close="showModal = null"
+          @update:selected="applyPayment"
+        />
+      </div>
     </Teleport>
   </div>
 </template>
@@ -316,80 +292,21 @@ const formatDate = (date) => {
   })
 }
 
-const debtor = reactive({
-  fullName: "",
-  totalDebt: 0,
-  items: []
-})
-// ยอดหนี้ที่เลือก (จากติ๊ก)
-const selectedTotalAmount = computed(() =>
-  debtor.items
-    .filter(i => i.selected)
-    .reduce((sum, i) => sum + i.amount, 0)
-)
-
-//  ยอดเงินที่ถูกจ่ายไปแล้ว (จาก Modal)
-const paidAmount = ref(0)
-
-// ยอดคงเหลือ (แสดงในกล่องม่วง)
-const remainingAmount = computed(() =>
-  Math.max(0, selectedTotalAmount.value - paidAmount.value)
-)
-function toggleSelect(item) {
-  item.selected = !item.selected
-}
-
-
-
-const netTotalAmount = ref(0)
+const receipts = ref([])
+const allItems = ref([])
 const paymentHistory = ref([])
 const usedAccounts = ref([])
+const paidAmount = ref(0)
 
-onMounted(() => {
-  // ดึง affiliationName จาก URL params
-  const affiliationName = route.params.id ? decodeURIComponent(route.params.id) : null
+// ✅ คำนวณยอดหนี้รวมทั้งหมด
+const totalDebt = computed(() =>
+  allItems.value.reduce((sum, item) => sum + item.debtorAmount, 0)
+)
 
-  // โหลดข้อมูลจาก localStorage
-  const receipts = loadReceipts()
-
-  // กรองเฉพาะ Debtor
-  const debtorReceipts = receipts.filter(r => r.moneyTypeNote === 'Debtor')
-
-  // หาหน่วยงานที่ต้องการ
-  let targetAffiliation = affiliationName
-
-  // ถ้าไม่มีใน URL ให้ใช้หน่วยงานแรกที่เจอ
-  if (!targetAffiliation && debtorReceipts.length > 0) {
-    targetAffiliation = debtorReceipts[0].mainAffiliationName
-  }
-
-  if (targetAffiliation) {
-    // กรองข้อมูลตามหน่วยงาน
-    const filteredData = debtorReceipts.filter(
-      r => r.mainAffiliationName === targetAffiliation
-    )
-
-    // คำนวณยอดหนี้รวม
-    const totalDebt = filteredData.reduce((sum, r) => sum + Number(r.netTotalAmount || 0), 0)
-
-    // แปลงข้อมูลเป็น items
-    const items = filteredData.map(r => ({
-      id: r.projectCode || Math.random().toString(),
-      title: r.receiptList?.[0]?.itemName || 'รายการ',
-      amount: Number(r.netTotalAmount || 0),
-      createdAt: formatDate(r.createdAt),
-      note: r.receiptList?.[0]?.note || '-',
-      subOrg: r.subAffiliationName || '-',
-      fullName: r.fullName || '-',
-      selected: false
-    }))
-
-    debtor.fullName = targetAffiliation
-    debtor.totalDebt = totalDebt
-    debtor.items = items
-    netTotalAmount.value = totalDebt
-  }
-})
+// ✅ ยอดคงเหลือ
+const remainingAmount = computed(() =>
+  Math.max(0, totalDebt.value - paidAmount.value)
+)
 
 const totalPaid = computed(() => {
   return paymentHistory.value.reduce((sum, payment) => {
@@ -397,10 +314,103 @@ const totalPaid = computed(() => {
   }, 0)
 })
 
+// ✅ แก้ไขส่วน onMounted ในไฟล์ cleardebtor (document 2)
+onMounted(() => {
+  const summaryStr = localStorage.getItem('clearDebtorSummary')
+
+  if (!summaryStr) {
+    Swal.fire({
+      title: 'ข้อผิดพลาด',
+      text: 'ไม่พบข้อมูลที่เลือก',
+      icon: 'error',
+      confirmButtonColor: '#7E22CE'
+    }).then(() => {
+      window.location.href = '/indexsavedebtor'
+    })
+    return
+  }
+
+  try {
+    const summary = JSON.parse(summaryStr)
+    console.log('📦 Parsed summary:', summary)
+
+    receipts.value = summary.receipts || []
+    console.log('📋 Receipts:', receipts.value)
+
+    // ✅ แก้ไขการสร้าง allItems ให้รองรับทั้งสองโครงสร้าง
+    allItems.value = receipts.value.flatMap(r => {
+      console.log('🔄 Processing receipt:', r)
+
+      return (r.items || []).map(item => {
+        // ✅ ตรวจสอบและแปลงค่า debtorAmount ให้ถูกต้อง
+        let debtorAmount = 0
+
+        if (item.debtorAmount) {
+          debtorAmount = Number(item.debtorAmount)
+        } else if (item.amount) {
+          // ถ้าไม่มี debtorAmount ให้ใช้ amount แทน (กรณีมาจาก waybilldebtor)
+          debtorAmount = Number(item.amount)
+        }
+
+        console.log('💰 Item amount:', {
+          itemName: item.itemName,
+          debtorAmount: debtorAmount,
+          originalAmount: item.amount
+        })
+
+        const fullItem = {
+          ...item,
+          id: item.id || `${r.receiptId}-${Math.random()}`,
+          itemName: item.itemName || '-',
+          note: item.note || '',
+          debtorAmount: debtorAmount, // ✅ ใช้ค่าที่แปลงแล้ว
+          depositNetAmount: Number(item.depositNetAmount || 0),
+          fee: Number(item.fee || 0),
+          responsible: item.responsible || r.fullName || 'ไม่ระบุ',
+          _originalReceipt: {
+            projectCode: r.projectCode || r.receiptId,
+            fullName: r.fullName || 'ไม่ระบุ',
+            phone: r.phone || '-',
+            department: r.department || r.mainAffiliationName || 'ไม่ระบุ',
+            mainAffiliationName: r.mainAffiliationName || r.department || 'ไม่ระบุ',
+            subAffiliationName1: r.subAffiliationName1 || r.subDepartment || '-',
+            subAffiliationName2: r.subAffiliationName2 || '',
+            fundName: r.fundName || '-',
+            sendmoney: r.sendmoney || '-',
+            createdAt: r.createdAt || new Date().toISOString(),
+            updatedAt: r.updatedAt || new Date().toISOString(),
+            totalDebtorAmount: r.totalDebtorAmount || debtorAmount,
+            totalPaidAmount: r.totalPaidAmount || 0
+          }
+        }
+
+        console.log('  ✅ Created item with debtorAmount:', fullItem.debtorAmount)
+        return fullItem
+      })
+    })
+
+    console.log('✅ Final allItems:', allItems.value)
+    console.log('💰 Total Debt:', totalDebt.value)
+    console.log('📊 Items breakdown:', allItems.value.map(i => ({
+      name: i.itemName,
+      amount: i.debtorAmount
+    })))
+
+  } catch (error) {
+    console.error('❌ Error parsing summary:', error)
+    Swal.fire({
+      title: 'เกิดข้อผิดพลาด',
+      text: 'ไม่สามารถอ่านข้อมูลได้',
+      icon: 'error',
+      confirmButtonColor: '#7E22CE'
+    }).then(() => {
+      window.location.href = '/indexsavedebtor'
+    })
+  }
+})
 function applyPayment({ selected, totalFee }) {
   if (!totalFee || isNaN(totalFee)) return
 
-  // ✅ ตรงนี้คือหัวใจ
   paidAmount.value += totalFee
 
   selected.forEach(item => {
@@ -422,12 +432,10 @@ function applyPayment({ selected, totalFee }) {
   })
 }
 
-
 const formatNumber = (num) => Number(num).toLocaleString("th-TH", { minimumFractionDigits: 2 })
 const formatMoney = (num) => formatNumber(num)
 
 function clearAllDebts() {
-  // ตรวจสอบว่ามีการชำระเงินหรือไม่
   if (paymentHistory.value.length === 0) {
     Swal.fire({
       title: 'ไม่สามารถล้างหนี้ได้',
@@ -438,20 +446,9 @@ function clearAllDebts() {
     return
   }
 
-  // ตรวจสอบว่ามีรายการที่เลือกหรือไม่
-  const selectedItems = debtor.items.filter(i => i.selected)
-  if (selectedItems.length === 0) {
-    Swal.fire({
-      title: 'ไม่สามารถล้างหนี้ได้',
-      text: 'กรุณาเลือกรายการหนี้ที่ต้องการล้างก่อน',
-      icon: 'warning',
-      confirmButtonColor: '#7E22CE'
-    })
-    return
-  }
-
   Swal.fire({
     title: 'ต้องการล้างหนี้ทั้งหมดหรือไม่?',
+    text: `จำนวน ${allItems.value.length} รายการ จาก ${receipts.value.length} หน่วยงาน`,
     icon: 'warning',
     showCancelButton: true,
     cancelButtonText: 'ยกเลิก',
@@ -462,50 +459,167 @@ function clearAllDebts() {
   }).then((result) => {
     if (result.isConfirmed) {
       try {
-        const receipts = loadReceipts()
-        let remainingPayment = totalPaid.value // ยอดเงินที่จ่ายมา
-        const updatedReceipts = []
+        const allReceiptsData = loadReceipts()
+        let remainingPayment = totalPaid.value
 
-        receipts.forEach(r => {
-          const receiptId = r.projectCode || Math.random().toString()
-          const isSelected = selectedItems.some(item => item.id === receiptId)
+        // ✅ อัพเดทแต่ละ receipt
+        const updatedReceipts = allReceiptsData.map(r => {
+          const receiptToUpdate = receipts.value.find(rec => rec.receiptId === r.projectCode)
 
-          // ถ้าไม่ใช่รายการที่เลือก หรือไม่ใช่ Debtor ของหน่วยงานนี้ -> เก็บไว้
-          if (!isSelected || r.moneyTypeNote !== 'Debtor' || r.mainAffiliationName !== debtor.fullName) {
-            updatedReceipts.push(r)
-            return
+          if (!receiptToUpdate || r.moneyTypeNote !== 'Debtor') {
+            return r
           }
 
-          // รายการที่เลือก -> ลดยอดหนี้ตามที่จ่าย
-          const currentDebt = Number(r.netTotalAmount || 0)
+          // ✅ รองรับทั้งโครงสร้างเก่าและใหม่
+          let itemsList = []
+          if (r.debtorList && r.depositList) {
+            // โครงสร้างใหม่
+            itemsList = r.debtorList.map((debtor, idx) => ({
+              itemName: debtor.itemName,
+              note: debtor.debtornote || debtor.note || '',
+              debtorAmount: Number(debtor.amount || 0),
+              depositNetAmount: Number(r.depositList[idx]?.netAmount || 0),
+              fee: Number(r.depositList[idx]?.fee || 0),
+              paymentDetails: r.depositList[idx]?.paymentDetails || [],
+              _index: idx
+            }))
+          } else if (r.receiptList) {
+            // โครงสร้างเก่า
+            itemsList = r.receiptList.map((item, idx) => ({
+              ...item,
+              _index: idx
+            }))
+          }
 
-          if (remainingPayment >= currentDebt) {
-            // จ่ายครบ -> ลบรายการนี้ทิ้ง
-            remainingPayment -= currentDebt
-          } else if (remainingPayment > 0) {
-            // จ่ายไม่ครบ -> ลดยอดหนี้
-            r.netTotalAmount = currentDebt - remainingPayment
-            remainingPayment = 0
-            updatedReceipts.push(r)
+          // อัพเดทรายการ
+          const updatedItems = itemsList.map((item, idx) => {
+            const itemId = `${r.projectCode}-item-${idx}`
+            const isSelected = allItems.value.some(si => si.id === itemId)
+
+            if (!isSelected) return item
+
+            const currentDebt = Number(item.debtorAmount || 0)
+            const alreadyPaid = Number(item.depositNetAmount || 0)
+
+            if (remainingPayment >= currentDebt) {
+              // ชำระหมดแล้ว - ลบรายการ
+              remainingPayment -= currentDebt
+              return null
+            } else if (remainingPayment > 0) {
+              // ชำระบางส่วน
+              const paymentForThisItem = remainingPayment
+              const newDebt = currentDebt - paymentForThisItem
+              const newPaid = alreadyPaid + paymentForThisItem
+              remainingPayment = 0
+
+              return {
+                ...item,
+                debtorAmount: newDebt,
+                depositNetAmount: newPaid,
+                fee: newDebt
+              }
+            }
+
+            return item
+          }).filter(item => item !== null)
+
+          const newTotalDebt = updatedItems.reduce((sum, item) =>
+            sum + Number(item.debtorAmount || 0), 0
+          )
+
+          if (updatedItems.length === 0 || newTotalDebt <= 0) {
+            return null // ลบ receipt ทั้งหมด
+          }
+
+          // ✅ สร้างโครงสร้างใหม่ที่ถูกต้อง
+          if (r.debtorList && r.depositList) {
+            return {
+              ...r,
+              debtorList: updatedItems.map(item => ({
+                itemName: item.itemName,
+                debtornote: item.note,
+                amount: item.debtorAmount
+              })),
+              depositList: updatedItems.map(item => ({
+                itemName: item.itemName,
+                depositnote: item.note,
+                netAmount: item.depositNetAmount,
+                fee: item.fee,
+                subtotal: item.depositNetAmount + item.fee,
+                paymentDetails: item.paymentDetails || []
+              })),
+              netTotalAmount: newTotalDebt,
+              totalDebtorAmount: newTotalDebt,
+              totalDepositAmount: updatedItems.reduce((sum, item) =>
+                sum + Number(item.depositNetAmount || 0), 0
+              ),
+              totalFee: updatedItems.reduce((sum, item) =>
+                sum + Number(item.fee || 0), 0
+              ),
+              updatedAt: new Date().toISOString()
+            }
           } else {
-            // ไม่มีเงินเหลือจ่ายแล้ว -> เก็บรายการไว้เหมือนเดิม
-            updatedReceipts.push(r)
+            return {
+              ...r,
+              receiptList: updatedItems,
+              netTotalAmount: newTotalDebt,
+              updatedAt: new Date().toISOString()
+            }
           }
-        })
+        }).filter(r => r !== null)
 
-        // บันทึกกลับเข้า localStorage
         localStorage.setItem('fakeApi.receipts', JSON.stringify(updatedReceipts))
+
+        // ✅ บันทึกประวัติการล้างหนี้
+        const historyEntry = {
+          id: `CLEAR-${Date.now()}`,
+          referenceId: `CLR${Date.now().toString().slice(-8)}`,
+          date: new Date().toLocaleDateString('th-TH', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          }),
+          items: receipts.value.map(r => r.department).join(', '),
+          itemCount: allItems.value.length,
+          total: totalPaid.value,
+          departments: receipts.value.map(r => r.department).join(', '),
+          status: 'เสร็จสมบูรณ์',
+          paymentDetails: paymentHistory.value.map(p => ({
+            type: p.type,
+            amount: p.amount,
+            referenceNo: p.referenceNo,
+            timestamp: p.timestamp,
+            AccountName: p.AccountName || null,
+            AccountNum: p.AccountNum || null,
+            BankName: p.BankName || null,
+            NumCheck: p.NumCheck || null
+          }))
+        }
+
+        const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
+        existingHistory.unshift(historyEntry)
+        localStorage.setItem('debtorClearHistory', JSON.stringify(existingHistory))
+
+        localStorage.removeItem('clearDebtorSummary')
 
         Swal.fire({
           title: 'ล้างหนี้สำเร็จ',
+          html: `
+            <div class="text-center">
+              <p class="text-lg mb-2">บันทึกรายการเรียบร้อยแล้ว</p>
+              <p class="text-sm text-gray-600">รหัสอ้างอิง: <strong>${historyEntry.referenceId}</strong></p>
+              <p class="text-sm text-gray-600 mt-2">จำนวน: <strong>${allItems.value.length}</strong> รายการ</p>
+              <p class="text-sm text-gray-600">ยอดชำระ: <strong>${formatNumber(totalPaid.value)}</strong> บาท</p>
+            </div>
+          `,
           icon: 'success',
-          timer: 2000,
+          timer: 3000,
           showConfirmButton: false
         }).then(() => {
           window.location.href = '/indexsavedebtor'
         })
       } catch (error) {
-        console.error('Error clearing debts:', error)
+        console.error('❌ Error clearing debts:', error)
         Swal.fire({
           title: 'เกิดข้อผิดพลาด',
           text: 'ไม่สามารถล้างหนี้ได้ กรุณาลองใหม่อีกครั้ง',

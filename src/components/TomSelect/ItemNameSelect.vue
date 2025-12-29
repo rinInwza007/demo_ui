@@ -7,7 +7,7 @@
     >
       <option value=""></option>
       <option
-        v-for="option in computedOptions"
+        v-for="option in itemOptions"
         :key="option.value"
         :value="option.value"
       >
@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import TomSelect from 'tom-select'
 import {
   getReceivableOptionsByDepartment,
@@ -39,13 +39,9 @@ const props = defineProps({
     type: String,
     required: true
   },
-  department: {
-    type: String,
-    default: 'general'
-  },
-  waybillType: {
-    type: String,
-    default: 'all' // 'income', 'receivable', 'all'
+  options: {
+    type: Array,
+    default: () => []
   },
   placeholder: {
     type: String,
@@ -62,26 +58,18 @@ const emit = defineEmits(['update:modelValue', 'input'])
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
 
-// ✅ แก้ไข: ใช้ชื่อ computed ที่ไม่ซ้ำ และดึง options จากฟังก์ชันที่ import มา
-const computedOptions = computed(() => {
-  let rawOptions = []
-  
-  if (props.waybillType === 'income') {
-    rawOptions = incomeOptions
-  } else if (props.waybillType === 'receivable') {
-    rawOptions = getReceivableOptionsByDepartment(props.department)
-  } else {
-    rawOptions = getAllOptions(props.department)
-  }
+// ใช้ options ที่ส่งมา ถ้าไม่มีจะใช้ array ว่าง
+const itemOptions = computed(() => {
+  if (!props.options || props.options.length === 0) return []
 
-  // แปลงเป็น format { value, label }
-  return rawOptions.map(opt => {
+  // รองรับหลายรูปแบบ: string, {value, label}, {id, name}
+  return props.options.map(opt => {
     if (typeof opt === 'string') {
       return { value: opt, label: opt }
     }
     return {
-      value: opt.value || opt.label,
-      label: opt.label || opt.value
+      value: opt.value || opt.name || opt.label,
+      label: opt.label || opt.name || opt.value
     }
   })
 })

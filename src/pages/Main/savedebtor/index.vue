@@ -1,3 +1,4 @@
+
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full h-screen flex overflow-hidden">
@@ -54,83 +55,80 @@
         </div>
 
         <!-- TAB 1: NEW ENTRY (Selection) -->
-        <div v-if="activeTab === 'new'" class="flex-1 px-8 pb-8 flex flex-col min-h-0 overflow-y-auto">
-          <div class="max-w-7xl mx-auto w-full space-y-6">
+        <div v-if="activeTab === 'new'" class="flex-1 px-8 pb-8 flex flex-col min-h-0">
+          <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
 
-            <!-- Info Card -->
-            <!-- Filters -->
-            <!-- <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-              <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                <CascadingSelect
-                  v-model:modelValueMain="selectedMain"
-                  v-model:modelValueSub1="selectedSub1"
-                  v-model:modelValueSub2="selectedSub2"
-                  :options="options"
-                />
+            <!-- Table Header -->
+            <div class="px-6 py-4 border-b border-white/40 bg-white/20 flex-shrink-0">
+              <h2 class="text-xl font-bold text-slate-900">เลือกรายการลูกหนี้</h2>
+              <p class="text-sm text-slate-600 mt-1">กรุณาเลือกรายการลูกหนี้ที่ต้องการล้างบัญชี (สามารถเลือกได้หลายรายการ)</p>
+            </div>
+
+            <!-- Content Area -->
+            <div class="overflow-y-auto flex-1 p-6">
+              <div v-if="filteredItems.length === 0" class="text-center py-12 text-slate-500">
+                <i class="ph ph-folder-open text-6xl mb-4 opacity-30"></i>
+                <p>ไม่พบรายการลูกหนี้</p>
               </div>
 
-              <div class="relative flex-1 md:w-64">
-                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                <input v-model="searchText" type="text" placeholder="ค้นหา รายการลูกหนี้..." class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm">
-              </div>
-            </div> -->
-            <!-- Selection Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div
-                v-for="item in filteredItems"
-                :key="item.id"
-                @click="toggleSelectItem(item.id)"
-                class="glass-panel rounded-xl p-5 cursor-pointer transition-all duration-200 hover:shadow-xl border-2"
-                :class="selectedItems.has(item.id)
-                  ? 'border-blue-500 bg-blue-50/50 shadow-lg'
-                  : 'border-transparent hover:border-blue-200'"
-              >
-                <div class="flex items-start gap-4">
-                  <!-- Icon -->
-                  <div class="flex-shrink-0">
-                    <div
-                      class="w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
-                      :class="selectedItems.has(item.id)
-                        ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white'
-                        : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-600'"
-                    >
-                      <i class="ph-fill ph-buildings text-2xl"></i>
-                    </div>
-                  </div>
-
-                  <!-- Content -->
-                  <div class="flex-grow min-w-0">
-                    <div class="flex justify-between items-start mb-2">
-                      <div class="flex-grow min-w-0">
-                        <h3 class="font-bold text-slate-800 text-sm truncate">{{ item.itemName }}</h3>
-                        <p class="text-xs text-slate-500 font-mono mt-1">{{ item.department }}</p>
-                      </div>
-                      <div v-if="selectedItems.has(item.id)" class="flex-shrink-0 ml-2">
-                        <i class="ph-fill ph-check-circle text-blue-600 text-xl"></i>
-                      </div>
-                    </div>
-
-                    <div class="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
-                      <span class="text-xs text-slate-500">ยอดหนี้</span>
-                      <span
-                        class="text-base font-bold"
-                        :class="selectedItems.has(item.id) ? 'text-blue-600' : 'text-red-600'"
+              <!-- Selection Grid -->
+              <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div
+                  v-for="item in filteredItems"
+                  :key="item.id"
+                  @click="toggleSelectItem(item.id)"
+                  class="glass-input rounded-xl p-5 cursor-pointer transition-all duration-200 hover:shadow-xl border-2"
+                  :class="selectedItems.has(item.id)
+                    ? 'border-blue-500 bg-blue-50/50 shadow-lg'
+                    : 'border-transparent hover:border-blue-200'"
+                >
+                  <div class="flex items-start gap-4">
+                    <!-- Icon -->
+                    <div class="flex-shrink-0">
+                      <div
+                        class="w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
+                        :class="selectedItems.has(item.id)
+                          ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white'
+                          : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-600'"
                       >
-                        {{ formatCurrency(item.debtorAmount) }}
-                      </span>
+                        <i class="ph-fill ph-buildings text-2xl"></i>
+                      </div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-grow min-w-0">
+                      <div class="flex justify-between items-start mb-2">
+                        <div class="flex-grow min-w-0">
+                          <h3 class="font-bold text-slate-800 text-sm truncate">{{ item.itemName }}</h3>
+                          <p class="text-xs text-slate-500 font-mono mt-1">{{ item.department }}</p>
+                        </div>
+                        <div class="flex-shrink-0 ml-2">
+                          <i
+                            class="ph-fill ph-check-circle text-xl transition-all"
+                            :class="selectedItems.has(item.id)
+                              ? 'text-blue-600 opacity-100 scale-100'
+                              : 'text-slate-500 opacity-40 scale-95'"
+                          ></i>
+                        </div>
+                      </div>
+
+                      <div class="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
+                        <span class="text-xs text-slate-500">ยอดหนี้</span>
+                        <span
+                          class="text-base font-bold"
+                          :class="selectedItems.has(item.id) ? 'text-blue-600' : 'text-red-600'"
+                        >
+                          {{ formatCurrency(item.debtorAmount) }}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
- <div class="glass-panel rounded-2xl p-6 shadow-lg">
-              <p class="text-slate-600 flex items-center gap-2">
-                <i class="ph ph-info text-blue-600 text-xl"></i>
-                กรุณาเลือกรายการลูกหนี้ที่ต้องการล้างบัญชี (สามารถเลือกได้หลายรายการ)
-              </p>
-            </div>
-            <!-- Summary & Action -->
-            <div class="glass-panel rounded-2xl p-6 shadow-lg sticky bottom-0">
+
+            <!-- Footer with Summary & Action -->
+            <div class="px-6 py-4 border-t border-white/40 bg-white/10 flex-shrink-0">
               <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-6">
                   <div class="text-center">
@@ -198,7 +196,7 @@
 
                   <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
                     <span class="px-3 py-1 rounded-lg text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                      เสร็จสมบูรณ์
+                      ชำระสำเร็จ
                     </span>
                     <span class="text-xs text-slate-400">รหัสอ้างอิง: {{ item.referenceId }}</span>
                   </div>
@@ -242,35 +240,69 @@ const selectedItems = ref<Set<string>>(new Set())
 // ✅ ประวัติการทำรายการ
 const historyItems = ref<any[]>([])
 
+// ✅ แก้ไขฟังก์ชัน mapReceiptToDebtorItems
 const mapReceiptToDebtorItems = (receipt: any) => {
   const items: any[] = []
 
-  if (!Array.isArray(receipt.receiptList)) return items
+  // ✅ รองรับทั้งโครงสร้างเก่า (receiptList) และใหม่ (debtorList + depositList)
+  let itemList: any[] = []
 
-  receipt.receiptList.forEach((item: any, idx: number) => {
-    items.push({
-      id: `${receipt.projectCode}-item-${idx}`,
-      receiptId: receipt.projectCode,
+  if (receipt.debtorList && receipt.depositList) {
+    // โครงสร้างใหม่
+    itemList = receipt.debtorList.map((debtor: any, idx: number) => {
+      const deposit = receipt.depositList[idx] || {}
+      return {
+        itemName: debtor.itemName,
+        note: debtor.debtornote || debtor.note || '',
+        debtorAmount: Number(debtor.amount || 0),
+        depositNetAmount: Number(deposit.netAmount || 0),
+        fee: Number(deposit.fee || 0),
+      }
+    })
+  } else if (receipt.receiptList) {
+    // ✅ โครงสร้างเก่า (waybilldebtor) - แปลง receiptList
+    itemList = receipt.receiptList.map((item: any) => ({
       itemName: item.itemName || '-',
       note: item.note || '',
-      debtorAmount: Number(item.debtorAmount || 0),
+      // ✅ สำคัญ: ใช้ amount เป็น debtorAmount
+      debtorAmount: Number(item.amount || item.debtorAmount || 0),
       depositNetAmount: Number(item.depositNetAmount || 0),
       fee: Number(item.fee || 0),
-      department: receipt.mainAffiliationName || 'ไม่ระบุ',
-      subDepartment: receipt.subAffiliationName1 || '-',
-      fundName: receipt.fundName || '-',
-      responsible: receipt.fullName || '-',
-      phone: receipt.phone || '-',
-      status: 'pending',
-      _originalReceipt: receipt,
-      _originalItem: item,
-    })
+    }))
+  }
+
+  if (!Array.isArray(itemList)) return items
+
+  itemList.forEach((item: any, idx: number) => {
+    // ✅ ตรวจสอบว่ามี debtorAmount จริงๆ
+    const debtAmount = Number(item.debtorAmount || 0)
+
+    if (debtAmount > 0) {
+      items.push({
+        id: `${receipt.projectCode}-item-${idx}`,
+        receiptId: receipt.projectCode,
+        itemName: item.itemName || '-',
+        note: item.note || '',
+        debtorAmount: debtAmount,
+        depositNetAmount: Number(item.depositNetAmount || 0),
+        fee: Number(item.fee || 0),
+        department: receipt.mainAffiliationName || 'ไม่ระบุ',
+        subDepartment: receipt.subAffiliationName1 || '-',
+        fundName: receipt.fundName || '-',
+        responsible: receipt.fullName || '-',
+        phone: receipt.phone || '-',
+        status: 'pending',
+        _originalReceipt: receipt,
+        _originalItem: item,
+      })
+    }
   })
 
   return items
 }
 
-const loadData = async () => {
+// ✅ แก้ไขฟังก์ชัน loadData
+const loadReceiptData = async () => {
   try {
     const stored = localStorage.getItem('fakeApi.receipts')
 
@@ -286,8 +318,18 @@ const loadData = async () => {
       return
     }
 
-    const debtorReceipts = allReceipts.filter((r: any) => r.moneyTypeNote === 'Debtor')
+    // ✅ กรองเฉพาะ receipts ที่เป็น Debtor หรือ Waybill ที่มี receiptList
+    const debtorReceipts = allReceipts.filter((r: any) =>
+      r.moneyTypeNote === 'Debtor' ||
+      (r.moneyTypeNote === 'Waybill' && r.receiptList && r.receiptList.length > 0)
+    )
+
+    console.log('📊 Debtor Receipts:', debtorReceipts)
+
     const allDebtorItems = debtorReceipts.flatMap(mapReceiptToDebtorItems)
+
+    console.log('📋 All Debtor Items:', allDebtorItems)
+    console.log('💰 Total Debtor Amount:', allDebtorItems.reduce((sum, item) => sum + item.debtorAmount, 0))
 
     rawData.value = allDebtorItems
 
@@ -357,6 +399,7 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
+// ✅ แก้ไขฟังก์ชัน clearSelectedDebtors
 const clearSelectedDebtors = () => {
   if (selectedItems.value.size === 0) return
 
@@ -367,7 +410,6 @@ const clearSelectedDebtors = () => {
 
   if (selectedList.length === 0) return
 
-  // จัดกลุ่มตาม receiptId
   const groupedByReceipt = selectedList.reduce((acc, item) => {
     if (!acc[item.receiptId]) {
       acc[item.receiptId] = []
@@ -376,17 +418,63 @@ const clearSelectedDebtors = () => {
     return acc
   }, {} as Record<string, any[]>)
 
-  // สร้าง summary
   const receipts = Object.keys(groupedByReceipt).map(receiptId => {
     const itemsInReceipt = groupedByReceipt[receiptId]
+    const firstItem = itemsInReceipt[0]
+    const originalReceipt = firstItem._originalReceipt
+
+    // ✅ สร้าง items โดยใช้ debtorAmount
+    const items = itemsInReceipt.map(item => {
+      const debtAmount = Number(item.debtorAmount || 0)
+
+      console.log('📝 Creating item:', {
+        itemName: item.itemName,
+        debtorAmount: debtAmount
+      })
+
+      return {
+        id: item.id,
+        itemName: item.itemName,
+        note: item.note,
+        amount: debtAmount, // ✅ ส่งเป็น amount
+        debtorAmount: debtAmount, // ✅ เก็บทั้งสองค่า
+        depositNetAmount: Number(item.depositNetAmount || 0),
+        fee: Number(item.fee || 0),
+        responsible: item.responsible || originalReceipt?.fullName || 'ไม่ระบุ',
+      }
+    })
+
+    const totalDebtorAmount = items.reduce((sum, item) =>
+      sum + Number(item.debtorAmount || 0), 0
+    )
+
+    const totalPaidAmount = items.reduce((sum, item) =>
+      sum + Number(item.depositNetAmount || 0), 0
+    )
+
+    console.log('📊 Receipt summary:', {
+      receiptId,
+      itemsCount: items.length,
+      totalDebtorAmount,
+    })
 
     return {
       receiptId,
-      items: itemsInReceipt,
-      totalDebtorAmount: itemsInReceipt.reduce((sum, item) => sum + Number(item.debtorAmount || 0), 0),
-      totalPaidAmount: itemsInReceipt.reduce((sum, item) => sum + Number(item.depositNetAmount || 0), 0),
-      department: itemsInReceipt[0].department,
-      subDepartment: itemsInReceipt[0].subDepartment,
+      items: items,
+      totalDebtorAmount: totalDebtorAmount,
+      totalPaidAmount: totalPaidAmount,
+      fullName: originalReceipt?.fullName || 'ไม่ระบุ',
+      phone: originalReceipt?.phone || '-',
+      department: firstItem.department || originalReceipt?.mainAffiliationName || 'ไม่ระบุ',
+      subDepartment: firstItem.subDepartment || originalReceipt?.subAffiliationName1 || '-',
+      fundName: originalReceipt?.fundName || '-',
+      projectCode: receiptId,
+      sendmoney: originalReceipt?.sendmoney || '-',
+      mainAffiliationName: originalReceipt?.mainAffiliationName || firstItem.department || 'ไม่ระบุ',
+      subAffiliationName1: originalReceipt?.subAffiliationName1 || firstItem.subDepartment || '-',
+      subAffiliationName2: originalReceipt?.subAffiliationName2 || '',
+      createdAt: originalReceipt?.createdAt || new Date().toISOString(),
+      updatedAt: originalReceipt?.updatedAt || new Date().toISOString(),
     }
   })
 
@@ -396,6 +484,9 @@ const clearSelectedDebtors = () => {
     totalPaidAmount: receipts.reduce((sum, r) => sum + r.totalPaidAmount, 0),
     totalItems: selectedList.length,
   }
+
+  console.log('📤 Final Summary:', summary)
+  console.log('💰 Total Debtor Amount:', summary.totalDebtorAmount)
 
   localStorage.setItem('clearDebtorSummary', JSON.stringify(summary))
   router.push(`/cleardebtor/multi`)
@@ -410,13 +501,13 @@ const toggleSelectItem = (id: string) => {
 }
 
 onMounted(() => {
-  loadData()
+  loadReceiptData()
   loadHistory()
-  window.addEventListener('focus', loadData)
+  window.addEventListener('focus', loadReceiptData)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('focus', loadData)
+  window.removeEventListener('focus', loadReceiptData)
 })
 </script>
 

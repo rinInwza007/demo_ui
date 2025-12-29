@@ -90,12 +90,13 @@
                 </div>
 
                 <!-- Full Name -->
-                <div class="col-span-3 flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
-                    {{ item.responsible.charAt(0) }}
-                  </div>
-                  <span class="text-sm text-slate-700 truncate">{{ item.responsible }}</span>
-                </div>
+              <!-- Full Name -->
+<div class="col-span-3 flex items-center gap-2">
+  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
+    {{ (item.responsible || '-').charAt(0) }}
+  </div>
+  <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
+</div>
 
                 <!-- Amount -->
                 <div class="col-span-2 text-right pr-8">
@@ -313,8 +314,8 @@ const totalPaid = computed(() => {
   }, 0)
 })
 
+// ✅ แก้ไขส่วน onMounted ในไฟล์ cleardebtor (document 2)
 onMounted(() => {
-  // ✅ อ่านข้อมูลจาก localStorage
   const summaryStr = localStorage.getItem('clearDebtorSummary')
 
   if (!summaryStr) {
@@ -331,14 +332,69 @@ onMounted(() => {
 
   try {
     const summary = JSON.parse(summaryStr)
-    receipts.value = summary.receipts || []
-    allItems.value = receipts.value.flatMap(r => r.items)
+    console.log('📦 Parsed summary:', summary)
 
-    console.log('✅ Loaded Multi Debtor Data:', {
-      receipts: receipts.value.length,
-      items: allItems.value.length,
-      totalDebt: summary.totalDebtorAmount
+    receipts.value = summary.receipts || []
+    console.log('📋 Receipts:', receipts.value)
+
+    // ✅ แก้ไขการสร้าง allItems ให้รองรับทั้งสองโครงสร้าง
+    allItems.value = receipts.value.flatMap(r => {
+      console.log('🔄 Processing receipt:', r)
+
+      return (r.items || []).map(item => {
+        // ✅ ตรวจสอบและแปลงค่า debtorAmount ให้ถูกต้อง
+        let debtorAmount = 0
+
+        if (item.debtorAmount) {
+          debtorAmount = Number(item.debtorAmount)
+        } else if (item.amount) {
+          // ถ้าไม่มี debtorAmount ให้ใช้ amount แทน (กรณีมาจาก waybilldebtor)
+          debtorAmount = Number(item.amount)
+        }
+
+        console.log('💰 Item amount:', {
+          itemName: item.itemName,
+          debtorAmount: debtorAmount,
+          originalAmount: item.amount
+        })
+
+        const fullItem = {
+          ...item,
+          id: item.id || `${r.receiptId}-${Math.random()}`,
+          itemName: item.itemName || '-',
+          note: item.note || '',
+          debtorAmount: debtorAmount, // ✅ ใช้ค่าที่แปลงแล้ว
+          depositNetAmount: Number(item.depositNetAmount || 0),
+          fee: Number(item.fee || 0),
+          responsible: item.responsible || r.fullName || 'ไม่ระบุ',
+          _originalReceipt: {
+            projectCode: r.projectCode || r.receiptId,
+            fullName: r.fullName || 'ไม่ระบุ',
+            phone: r.phone || '-',
+            department: r.department || r.mainAffiliationName || 'ไม่ระบุ',
+            mainAffiliationName: r.mainAffiliationName || r.department || 'ไม่ระบุ',
+            subAffiliationName1: r.subAffiliationName1 || r.subDepartment || '-',
+            subAffiliationName2: r.subAffiliationName2 || '',
+            fundName: r.fundName || '-',
+            sendmoney: r.sendmoney || '-',
+            createdAt: r.createdAt || new Date().toISOString(),
+            updatedAt: r.updatedAt || new Date().toISOString(),
+            totalDebtorAmount: r.totalDebtorAmount || debtorAmount,
+            totalPaidAmount: r.totalPaidAmount || 0
+          }
+        }
+
+        console.log('  ✅ Created item with debtorAmount:', fullItem.debtorAmount)
+        return fullItem
+      })
     })
+
+    console.log('✅ Final allItems:', allItems.value)
+    console.log('💰 Total Debt:', totalDebt.value)
+    console.log('📊 Items breakdown:', allItems.value.map(i => ({
+      name: i.itemName,
+      amount: i.debtorAmount
+    })))
 
   } catch (error) {
     console.error('❌ Error parsing summary:', error)
@@ -352,7 +408,6 @@ onMounted(() => {
     })
   }
 })
-
 function applyPayment({ selected, totalFee }) {
   if (!totalFee || isNaN(totalFee)) return
 
@@ -409,15 +464,35 @@ function clearAllDebts() {
 
         // ✅ อัพเดทแต่ละ receipt
         const updatedReceipts = allReceiptsData.map(r => {
-          // หา receipt ที่ต้องอัพเดท
           const receiptToUpdate = receipts.value.find(rec => rec.receiptId === r.projectCode)
 
           if (!receiptToUpdate || r.moneyTypeNote !== 'Debtor') {
-            return r // ไม่เกี่ยวข้อง
+            return r
+          }
+
+          // ✅ รองรับทั้งโครงสร้างเก่าและใหม่
+          let itemsList = []
+          if (r.debtorList && r.depositList) {
+            // โครงสร้างใหม่
+            itemsList = r.debtorList.map((debtor, idx) => ({
+              itemName: debtor.itemName,
+              note: debtor.debtornote || debtor.note || '',
+              debtorAmount: Number(debtor.amount || 0),
+              depositNetAmount: Number(r.depositList[idx]?.netAmount || 0),
+              fee: Number(r.depositList[idx]?.fee || 0),
+              paymentDetails: r.depositList[idx]?.paymentDetails || [],
+              _index: idx
+            }))
+          } else if (r.receiptList) {
+            // โครงสร้างเก่า
+            itemsList = r.receiptList.map((item, idx) => ({
+              ...item,
+              _index: idx
+            }))
           }
 
           // อัพเดทรายการ
-          const updatedReceiptList = (r.receiptList || []).map((item, idx) => {
+          const updatedItems = itemsList.map((item, idx) => {
             const itemId = `${r.projectCode}-item-${idx}`
             const isSelected = allItems.value.some(si => si.id === itemId)
 
@@ -427,9 +502,11 @@ function clearAllDebts() {
             const alreadyPaid = Number(item.depositNetAmount || 0)
 
             if (remainingPayment >= currentDebt) {
+              // ชำระหมดแล้ว - ลบรายการ
               remainingPayment -= currentDebt
-              return null // ลบรายการ
+              return null
             } else if (remainingPayment > 0) {
+              // ชำระบางส่วน
               const paymentForThisItem = remainingPayment
               const newDebt = currentDebt - paymentForThisItem
               const newPaid = alreadyPaid + paymentForThisItem
@@ -446,18 +523,48 @@ function clearAllDebts() {
             return item
           }).filter(item => item !== null)
 
-          const newTotalDebt = updatedReceiptList.reduce((sum, item) =>
+          const newTotalDebt = updatedItems.reduce((sum, item) =>
             sum + Number(item.debtorAmount || 0), 0
           )
 
-          if (updatedReceiptList.length === 0 || newTotalDebt <= 0) {
-            return null // ลบ receipt
+          if (updatedItems.length === 0 || newTotalDebt <= 0) {
+            return null // ลบ receipt ทั้งหมด
           }
 
-          return {
-            ...r,
-            receiptList: updatedReceiptList,
-            netTotalAmount: newTotalDebt
+          // ✅ สร้างโครงสร้างใหม่ที่ถูกต้อง
+          if (r.debtorList && r.depositList) {
+            return {
+              ...r,
+              debtorList: updatedItems.map(item => ({
+                itemName: item.itemName,
+                debtornote: item.note,
+                amount: item.debtorAmount
+              })),
+              depositList: updatedItems.map(item => ({
+                itemName: item.itemName,
+                depositnote: item.note,
+                netAmount: item.depositNetAmount,
+                fee: item.fee,
+                subtotal: item.depositNetAmount + item.fee,
+                paymentDetails: item.paymentDetails || []
+              })),
+              netTotalAmount: newTotalDebt,
+              totalDebtorAmount: newTotalDebt,
+              totalDepositAmount: updatedItems.reduce((sum, item) =>
+                sum + Number(item.depositNetAmount || 0), 0
+              ),
+              totalFee: updatedItems.reduce((sum, item) =>
+                sum + Number(item.fee || 0), 0
+              ),
+              updatedAt: new Date().toISOString()
+            }
+          } else {
+            return {
+              ...r,
+              receiptList: updatedItems,
+              netTotalAmount: newTotalDebt,
+              updatedAt: new Date().toISOString()
+            }
           }
         }).filter(r => r !== null)
 
@@ -481,11 +588,14 @@ function clearAllDebts() {
             type: p.type,
             amount: p.amount,
             referenceNo: p.referenceNo,
-            timestamp: p.timestamp
+            timestamp: p.timestamp,
+            AccountName: p.AccountName || null,
+            AccountNum: p.AccountNum || null,
+            BankName: p.BankName || null,
+            NumCheck: p.NumCheck || null
           }))
         }
 
-        // บันทึกลง localStorage
         const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
         existingHistory.unshift(historyEntry)
         localStorage.setItem('debtorClearHistory', JSON.stringify(existingHistory))
@@ -498,6 +608,8 @@ function clearAllDebts() {
             <div class="text-center">
               <p class="text-lg mb-2">บันทึกรายการเรียบร้อยแล้ว</p>
               <p class="text-sm text-gray-600">รหัสอ้างอิง: <strong>${historyEntry.referenceId}</strong></p>
+              <p class="text-sm text-gray-600 mt-2">จำนวน: <strong>${allItems.value.length}</strong> รายการ</p>
+              <p class="text-sm text-gray-600">ยอดชำระ: <strong>${formatNumber(totalPaid.value)}</strong> บาท</p>
             </div>
           `,
           icon: 'success',
@@ -507,7 +619,7 @@ function clearAllDebts() {
           window.location.href = '/indexsavedebtor'
         })
       } catch (error) {
-        console.error('Error clearing debts:', error)
+        console.error('❌ Error clearing debts:', error)
         Swal.fire({
           title: 'เกิดข้อผิดพลาด',
           text: 'ไม่สามารถล้างหนี้ได้ กรุณาลองใหม่อีกครั้ง',

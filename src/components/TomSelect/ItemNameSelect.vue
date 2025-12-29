@@ -7,7 +7,7 @@
     >
       <option value=""></option>
       <option
-        v-for="option in itemOptions"
+        v-for="option in computedOptions"
         :key="option.value"
         :value="option.value"
       >
@@ -25,10 +25,7 @@
 </template>
 
 <script setup>
-
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
-
-
 import TomSelect from 'tom-select'
 import {
   getReceivableOptionsByDepartment,
@@ -49,14 +46,6 @@ const props = defineProps({
   waybillType: {
     type: String,
     default: 'all' // 'income', 'receivable', 'all'
-=======
-=======
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
-=======
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
-  options: {
-    type: Array,
-    default: () => []
   },
   placeholder: {
     type: String,
@@ -65,13 +54,6 @@ const props = defineProps({
   allowCreate: {
     type: Boolean,
     default: true
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
-=======
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
-=======
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
   }
 })
 
@@ -80,41 +62,28 @@ const emit = defineEmits(['update:modelValue', 'input'])
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
 
-// ✅ เพิ่ม computed สำหรับดึง options ตามประเภท
-const itemOptions = computed(() => {
+// ✅ แก้ไข: ใช้ชื่อ computed ที่ไม่ซ้ำ และดึง options จากฟังก์ชันที่ import มา
+const computedOptions = computed(() => {
+  let rawOptions = []
+  
   if (props.waybillType === 'income') {
-    return incomeOptions
+    rawOptions = incomeOptions
   } else if (props.waybillType === 'receivable') {
-    return getReceivableOptionsByDepartment(props.department)
+    rawOptions = getReceivableOptionsByDepartment(props.department)
   } else {
-    return getAllOptions(props.department)
+    rawOptions = getAllOptions(props.department)
   }
-=======
-=======
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
-=======
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
-// ใช้ options ที่ส่งมา ถ้าไม่มีจะใช้ array ว่าง
-const itemOptions = computed(() => {
-  if (!props.options || props.options.length === 0) return []
 
-  // รองรับหลายรูปแบบ: string, {value, label}, {id, name}
-  return props.options.map(opt => {
+  // แปลงเป็น format { value, label }
+  return rawOptions.map(opt => {
     if (typeof opt === 'string') {
       return { value: opt, label: opt }
     }
     return {
-      value: opt.value || opt.name || opt.label,
-      label: opt.label || opt.name || opt.value
+      value: opt.value || opt.label,
+      label: opt.label || opt.value
     }
   })
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
-=======
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
-=======
->>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
 })
 
 watch(() => props.modelValue, (newVal) => {
@@ -146,7 +115,6 @@ onMounted(() => {
 
     /* 🔑 สำคัญมาก */
     control.style.position = 'relative'
-
     control.style.width = '100%'
     control.style.height = '2.70rem'
     control.style.padding = '0.625rem 0.5rem'

@@ -1,5 +1,5 @@
 <template>
-  <div class="tomselect-container">
+  <div class="tomselect-container relative">
     <select
       :id="inputId"
       v-model="localValue"
@@ -14,12 +14,20 @@
         {{ option.label }}
       </option>
     </select>
+
+    <!-- 🔥 slot สำหรับไอคอนในช่อง -->
+    <div
+      class="absolute right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
+    >
+      <slot name="suffix" />
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import TomSelect from 'tom-select'
+import { itemOptions } from '@/components/data/ItemNameOption'
 
 const props = defineProps({
   modelValue: String,
@@ -87,8 +95,11 @@ onMounted(() => {
       }
     })
 
-    // Apply glass-input CSS styles
     const control = tomSelectInstance.control
+
+    /* 🔑 สำคัญมาก */
+    control.style.position = 'relative'
+
     control.style.width = '100%'
     control.style.height = '2.70rem'
     control.style.padding = '0.625rem 0.5rem'
@@ -112,29 +123,6 @@ onMounted(() => {
       input.style.padding = '0.25rem'
       input.style.color = '#334155'
     }
-
-    // Add focus styles
-    control.addEventListener('focus', () => {
-      control.style.outline = 'none'
-      control.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.3)'
-      control.style.borderColor = 'rgba(59, 130, 246, 0.3)'
-    })
-
-    control.addEventListener('blur', () => {
-      control.style.boxShadow = ''
-      control.style.borderColor = 'rgba(203, 213, 225, 0.5)'
-    })
-
-    // Add hover effect
-    control.addEventListener('mouseenter', () => {
-      control.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-    })
-
-    control.addEventListener('mouseleave', () => {
-      if (document.activeElement !== control) {
-        control.style.boxShadow = ''
-      }
-    })
   }
 })
 
@@ -147,7 +135,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
-/* Global styles for TomSelect dropdown */
 .ts-dropdown {
   @apply rounded-xl shadow-lg border border-gray-200;
 }

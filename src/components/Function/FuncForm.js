@@ -1,15 +1,16 @@
 import { ref, computed } from 'vue'
 
 export function useRowManager() {
-  const morelist = ref([
-    {
-      id: 1,
-      itemName: null,
-      referenceNo: '',
-      note: '',
-      amount: '',
-    },
-  ])
+const morelist = ref([
+  {
+    id: 1,
+    type: 'income', // ✅
+    itemName: null,
+    referenceNo: '',
+    note: '',
+    amount: '',
+  },
+])
 
   const allowOnlyDigits = (e) => {
     if (!/[0-9 ,-,.,/]/.test(e.key)) {
@@ -17,15 +18,16 @@ export function useRowManager() {
     }
   }
 
-  const addRow = () => {
-    morelist.value.push({
-      id: morelist.value.length + 1,
-      itemName: null,
-      referenceNo: '',
-      note: '',
-      amount: '',
-    })
-  }
+const addRow = () => {
+  morelist.value.push({
+    id: morelist.value.length + 1,
+    type: 'income', // ✅
+    itemName: null,
+    referenceNo: '',
+    note: '',
+    amount: '',
+  })
+}
 
   const removeRow = (index) => {
     if (morelist.value.length > 1) {
@@ -45,17 +47,21 @@ export function useRowManager() {
       }
     }
   }
-
+const handleTypeChange = (index) => {
+  // Optional: แสดง confirmation หรือ feedback
+  const type = morelist.value[index].type
+  console.log(`รายการที่ ${index + 1} เปลี่ยนเป็น: ${type === 'income' ? 'รายรับ' : 'รายจ่าย'}`)
+}
   const showModal = ref(null)
   const rowItems = ref([])
 
-  const totalAmount = computed(() => {
-    return morelist.value.reduce((sum, row) => {
-      const cleanAmount = String(row.amount || '0').replace(/,/g, '')
-      const amount = Number(cleanAmount) || 0
-      return sum + amount
-    }, 0)
-  })
+const totalAmount = computed(() => {
+  return morelist.value.reduce((sum, row) => {
+    const cleanAmount = String(row.amount || '0').replace(/,/g, '')
+    const amount = Number(cleanAmount) || 0
+    return row.type === 'expense' ? sum - amount : sum + amount // ✅
+  }, 0)
+})
 
   const formattedTotalAmount = computed(() => {
     return totalAmount.value.toLocaleString('th-TH', {
@@ -74,5 +80,6 @@ export function useRowManager() {
     rowItems,
     addRow,
     removeRow,
+    handleTypeChange
   }
 }

@@ -16,14 +16,19 @@ import testlogin from '@/pages/Main/testlogin.vue'
 
 
 const routes = [
-  { path: '/', name: 'main', component: indexwaybill },
+  {
+    path: '/',
+    redirect: '/testlogin'
+  },
+
+  { path: '/indexwaybill', name: 'main', component: indexwaybill },
   { path: '/testlogin', name: 'testlogin', component: testlogin },
 
   { path: '/waybill', name: 'waybill', component: Waybill },
   {
     path: '/waybill/edit/:id',
-    name: 'waybill-edit',  // ✅ เปลี่ยนชื่อให้ชัดเจน
-    component: Waybill     // ✅ ใช้ component เดียวกัน
+    name: 'waybill-edit',
+    component: Waybill
   },
 
 
@@ -33,8 +38,8 @@ const routes = [
 
   { path: '/waybillresearch', name: 'waybillresearch', component: WaybillResearch },
   { path: '/Report_submit', name: 'Report_submit', component: Report_submit },
-  { path: '/pdfpage/:id?', name: 'pdfpage', component: pdfpage }, // ✅ เพิ่ม :id parameter
-  { path: '/pdfDebtor/:id?', name: 'pdfDebtor', component: pdfDebtor }, // ✅ เพิ่ม :id parameter
+  { path: '/pdfpage/:id?', name: 'pdfpage', component: pdfpage },
+  { path: '/pdfDebtor/:id?', name: 'pdfDebtor', component: pdfDebtor },
   { path: '/indexsavedebtor', name: 'indexsavedebtor', component: indexsavedebtor },
   { path: '/cleardebtor/:id', name: 'cleardebtor', component: ClearDebtor },
   { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor', component: indexwaybilldebtor },

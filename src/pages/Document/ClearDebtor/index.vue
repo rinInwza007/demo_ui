@@ -423,13 +423,20 @@ function clearAllDebts() {
 
             if (!isSelected) return item
 
-            const currentDebt = Number(item.debtorAmount || 0)
+            const currentDebt = Number(
+  item.debtorAmount ??
+  item.amount ??        // 🔥 fallback สำคัญ
+  item.fee ??
+  0
+)
+
             const alreadyPaid = Number(item.depositNetAmount || 0)
 
-            if (remainingPayment >= currentDebt) {
-              remainingPayment -= currentDebt
-              return null // ลบรายการ
-            } else if (remainingPayment > 0) {
+           if (remainingPayment >= currentDebt && currentDebt > 0) {
+  remainingPayment -= currentDebt
+  return null
+}
+ else if (remainingPayment > 0) {
               const paymentForThisItem = remainingPayment
               const newDebt = currentDebt - paymentForThisItem
               const newPaid = alreadyPaid + paymentForThisItem

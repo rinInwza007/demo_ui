@@ -21,7 +21,7 @@ function defaultSeed(): Receipt[] {
       "moneyType": "รายได้",
       "netTotalAmount": 4500,
       "totalPaymentAmount": 4500,
-      
+
       "paymentMethods": {
         "krungthai": {
           "checked": true,
@@ -54,6 +54,7 @@ export function sanitizeItem(it: any): ReceiptItem {
     referenceNo: (it.referenceNo ?? '').trim(),
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
     amount: Number.isFinite(it.amount) ? it.amount : 0,
+    type: it.type || 'income', // ✅ เพิ่มบรรทัดนี้
   }
 }
 
@@ -103,7 +104,7 @@ export function loadReceipts(): Receipt[] {
       return seed;
     }
     const data = JSON.parse(raw) as Receipt[];
-    const receipts = Array.isArray(data) 
+    const receipts = Array.isArray(data)
       ? data.map(r => ({
           ...r,
           createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),

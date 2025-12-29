@@ -1,5 +1,5 @@
 <template>
-  <div class="tomselect-container">
+  <div class="tomselect-container relative">
     <select
       :id="inputId"
       v-model="localValue"
@@ -7,19 +7,31 @@
     >
       <option value=""></option>
       <option
-        v-for="option in itemOptions"
+        v-for="option in computedOptions"
         :key="option.value"
         :value="option.value"
       >
         {{ option.label }}
       </option>
     </select>
+
+    <!-- 🔥 slot สำหรับไอคอนในช่อง -->
+    <div
+      class="absolute right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
+    >
+      <slot name="suffix" />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import TomSelect from 'tom-select'
+import {
+  getReceivableOptionsByDepartment,
+  getAllOptions,
+  incomeOptions
+} from '@/components/data/ItemNameOption'
 
 const props = defineProps({
   modelValue: String,
@@ -27,9 +39,13 @@ const props = defineProps({
     type: String,
     required: true
   },
-  options: {
-    type: Array,
-    default: () => []
+  department: {
+    type: String,
+    default: 'general'
+  },
+  waybillType: {
+    type: String,
+    default: 'all' // 'income', 'receivable', 'all'
   },
   placeholder: {
     type: String,
@@ -46,18 +62,26 @@ const emit = defineEmits(['update:modelValue', 'input'])
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
 
-// ใช้ options ที่ส่งมา ถ้าไม่มีจะใช้ array ว่าง
-const itemOptions = computed(() => {
-  if (!props.options || props.options.length === 0) return []
+// ✅ แก้ไข: ใช้ชื่อ computed ที่ไม่ซ้ำ และดึง options จากฟังก์ชันที่ import มา
+const computedOptions = computed(() => {
+  let rawOptions = []
 
-  // รองรับหลายรูปแบบ: string, {value, label}, {id, name}
-  return props.options.map(opt => {
+  if (props.waybillType === 'income') {
+    rawOptions = incomeOptions
+  } else if (props.waybillType === 'receivable') {
+    rawOptions = getReceivableOptionsByDepartment(props.department)
+  } else {
+    rawOptions = getAllOptions(props.department)
+  }
+
+  // แปลงเป็น format { value, label }
+  return rawOptions.map(opt => {
     if (typeof opt === 'string') {
       return { value: opt, label: opt }
     }
     return {
-      value: opt.value || opt.name || opt.label,
-      label: opt.label || opt.name || opt.value
+      value: opt.value || opt.label,
+      label: opt.label || opt.value
     }
   })
 })
@@ -87,8 +111,10 @@ onMounted(() => {
       }
     })
 
-    // Apply glass-input CSS styles
     const control = tomSelectInstance.control
+
+    /* 🔑 สำคัญมาก */
+    control.style.position = 'relative'
     control.style.width = '100%'
     control.style.height = '2.70rem'
     control.style.padding = '0.625rem 0.5rem'
@@ -112,29 +138,6 @@ onMounted(() => {
       input.style.padding = '0.25rem'
       input.style.color = '#334155'
     }
-
-    // Add focus styles
-    control.addEventListener('focus', () => {
-      control.style.outline = 'none'
-      control.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.3)'
-      control.style.borderColor = 'rgba(59, 130, 246, 0.3)'
-    })
-
-    control.addEventListener('blur', () => {
-      control.style.boxShadow = ''
-      control.style.borderColor = 'rgba(203, 213, 225, 0.5)'
-    })
-
-    // Add hover effect
-    control.addEventListener('mouseenter', () => {
-      control.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-    })
-
-    control.addEventListener('mouseleave', () => {
-      if (document.activeElement !== control) {
-        control.style.boxShadow = ''
-      }
-    })
   }
 })
 
@@ -147,7 +150,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
-/* Global styles for TomSelect dropdown */
 .ts-dropdown {
   @apply rounded-xl shadow-lg border border-gray-200;
 }

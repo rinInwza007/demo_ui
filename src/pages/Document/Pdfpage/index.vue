@@ -36,7 +36,7 @@ import { vfs, fonts } from '../../../assets/fonts.js'
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import { loadReceipts } from '@/fake/mockDb.js'
-
+import { isReceivableItem } from '@/components/data/ItemNameOption'
 const route = useRoute()
 const router = useRouter()
 
@@ -57,7 +57,39 @@ const summary = reactive({
   total: '-',
   note: '0',
 })
+function separateDebtorItems() {
+  const debtors = []
+  const normalItems = []
+  let totalDebtor = 0
 
+  rows.forEach((row) => {
+    // ตรวจสอบว่าเป็นลูกหนี้หรือไม่
+    const isDebtor = isReceivableItem(row.item)
+
+    if (isDebtor && row.amount) {
+      const amount = typeof row.amount === 'string'
+        ? parseFloat(row.amount.replace(/,/g, ''))
+        : Number(row.amount)
+
+      debtors.push({
+        itemName: row.item,
+        amount: amount,
+        formattedAmount: amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })
+      })
+
+      totalDebtor += amount
+    } else {
+      normalItems.push(row)
+    }
+  })
+
+  return {
+    debtors,
+    normalItems,
+    totalDebtor,
+    hasDebtor: debtors.length > 0
+  }
+}
 const currentDate = new Date().toLocaleDateString('th-TH', {
   year: 'numeric',
   month: 'long',
@@ -111,6 +143,9 @@ function createDocDefinition() {
 
   const receipt = receiptData.value || {}
 
+  // ✅ แยกรายการลูกหนี้
+  const { debtors, normalItems, totalDebtor, hasDebtor } = separateDebtorItems()
+
   // ดึง paymentMethods
   const pm = receipt.paymentMethods || {}
 
@@ -125,17 +160,20 @@ function createDocDefinition() {
   const scbAmt = pm.scb?.checked ? getAmount('scb') : 0
   const cashAmt = pm.cash?.checked ? getAmount('cash') : 0
   const checkAmt = pm.check?.checked ? getAmount('check') : 0
+  const debtorAmt = pm.debtor?.checked ? getAmount('debtor') : 0
   const otherAmt = pm.other?.checked ? getAmount('other') : 0
   const otherName = pm.other?.name?.trim() || 'อื่น ๆ'
+
   return {
     pageSize: 'A4',
     pageMargins: [20, 30, 20, 0],
     defaultStyle: { font: 'THSarabun', fontSize: 13 },
     content: [
+      // ========== ส่วนหัวเอกสาร (เดิม) ==========
       {
         stack: [
           {
-            text: `${receipt.delNumber || ''}`, // ← ใส่เลขที่นำส่ง
+            text: `${receipt.delNumber || ''}`,
             absolutePosition: { x: 530, y: 15 },
             fontSize: 13,
           },
@@ -184,9 +222,7 @@ function createDocDefinition() {
             fontSize: 13,
           },
           {
-            text: `${receipt.mainAffiliationName || ''}${
-              receipt.subAffiliationName1 ? ' ' + receipt.subAffiliationName1 : ''
-            }${receipt.subAffiliationName2 ? ' ' + receipt.subAffiliationName2 : ''}`,
+            text: `${receipt.mainAffiliationName || ''}`,
             absolutePosition: { x: 370, y: 81.5 },
             fontSize: 13,
           },
@@ -227,6 +263,8 @@ function createDocDefinition() {
           },
         ],
       },
+
+      // ========== ตารางหลัก ==========
       {
         table: {
           widths: ['8%', '15%', '*', '12%', '20%'],
@@ -262,8 +300,7 @@ function createDocDefinition() {
       },
       { text: '\n' },
 
-      // ========== ส่วนที่ 3: การนำส่งเงิน (แสดงเฉพาะที่ checked) ==========
-      // เงินสด
+      // ========== ส่วนที่ 3: การนำส่งเงิน ==========
       ...(pm.cash?.checked && cashAmt > 0
         ? [
             {
@@ -273,12 +310,12 @@ function createDocDefinition() {
                     {
                       text: 'เงินสด',
                       style: 'form',
-                      margin: [83, 0, 0, 0],
+                      margin: [100, 0, 0, 0],
                       noWrap: true,
                       width: 'auto',
                     },
                     {
-                      text: 'จำนวนเงิน',
+                      text: 'จำนวน',
                       style: 'form',
                       width: 'auto',
                       margin: [240, 0, 0, 0],
@@ -291,12 +328,6 @@ function createDocDefinition() {
                           alignment: 'center',
                           lineHeight: 1.2,
                         },
-                        {
-                          text: '.............................',
-                          alignment: 'center',
-                          margin: [0, -19, 0, 0],
-                          lineHeight: 1,
-                        },
                       ],
                       width: 80,
                       margin: [-18, 0, 0, 0],
@@ -315,7 +346,6 @@ function createDocDefinition() {
           ]
         : []),
 
-      // เช็ค (ถ้ามี checkAmt > 0)
       ...(pm.check?.checked && checkAmt > 0
         ? [
             {
@@ -325,15 +355,15 @@ function createDocDefinition() {
                     {
                       text: 'เช็ค',
                       style: 'form',
-                      margin: [83, 0, 0, 0],
+                      margin: [100, 0, 0, 0],
                       noWrap: true,
                       width: 'auto',
                     },
                     {
-                      text: 'จำนวนเงิน',
+                      text: 'จำนวน',
                       style: 'form',
                       width: 'auto',
-                      margin: [240, 0, 0, 0],
+                      margin: [250, 0, 0, 0],
                       noWrap: true,
                     },
                     {
@@ -343,12 +373,7 @@ function createDocDefinition() {
                           alignment: 'center',
                           lineHeight: 1.2,
                         },
-                        {
-                          text: '.............................',
-                          alignment: 'center',
-                          margin: [0, -19, 0, 0],
-                          lineHeight: 1,
-                        },
+
                       ],
                       width: 80,
                       margin: [-18, 0, 0, 0],
@@ -367,7 +392,6 @@ function createDocDefinition() {
           ]
         : []),
 
-      // ธ.กรุงไทย
       ...(pm.krungthai?.checked && krungthaiAmt > 0
         ? [
             {
@@ -377,20 +401,20 @@ function createDocDefinition() {
                     {
                       text: 'ธ.กรุงไทย สาขาพะเยา (มหาวิทยาลัยพะเยา)',
                       style: 'form',
-                      margin: [40, 10, 0, 0],
+                      margin: [100, 10, 0, 0],
                       width: 'auto',
                     },
                     {
                       text: 'บช.ที่ 512-1-43488-6',
                       style: 'form',
-                      margin: [20, 10, 0, 0],
+                      margin: [10, 10, 0, 0],
                       width: 'auto',
                     },
                     {
-                      text: 'จำนวนเงิน',
+                      text: 'จำนวน',
                       style: 'form',
                       width: 'auto',
-                      margin: [50, 10, 0, 0],
+                      margin: [16, 10, 0, 0],
                       noWrap: true,
                     },
                     {
@@ -400,12 +424,6 @@ function createDocDefinition() {
                           alignment: 'center',
                           lineHeight: 1.2,
                         },
-                        {
-                          text: '.............................',
-                          alignment: 'center',
-                          margin: [0, -19, 0, 0],
-                          lineHeight: 1,
-                        },
                       ],
                       width: 80,
                       margin: [-18, 10, 0, 0],
@@ -424,7 +442,6 @@ function createDocDefinition() {
           ]
         : []),
 
-      // ธ.ไทยพาณิชย์
       ...(pm.scb?.checked && scbAmt > 0
         ? [
             {
@@ -434,20 +451,20 @@ function createDocDefinition() {
                     {
                       text: 'ธ.ไทยพาณิชย์ สาขามหาวิทยาลัยพะเยา',
                       style: 'form',
-                      margin: [40, 10, 0, 0],
+                      margin: [100, 10, 0, 0],
                       width: 'auto',
                     },
                     {
                       text: 'บช.ที่ 891-2-00225-5',
                       style: 'form',
-                      margin: [20, 10, 0, 0],
+                      margin: [10, 10, 0, 0],
                       width: 'auto',
                     },
                     {
-                      text: 'จำนวนเงิน',
+                      text: 'จำนวน',
                       style: 'form',
                       width: 'auto',
-                      margin: [50, 10, 0, 0],
+                      margin: [33, 10, 0, 0],
                       noWrap: true,
                     },
                     {
@@ -457,12 +474,7 @@ function createDocDefinition() {
                           alignment: 'center',
                           lineHeight: 1.2,
                         },
-                        {
-                          text: '.............................',
-                          alignment: 'center',
-                          margin: [0, -19, 0, 0],
-                          lineHeight: 1,
-                        },
+
                       ],
                       width: 80,
                       margin: [-18, 10, 0, 0],
@@ -472,7 +484,7 @@ function createDocDefinition() {
                       style: 'form',
                       width: 'auto',
                       noWrap: true,
-                      margin: [-20, 10, 0, 0],
+                      margin: [-20.5, 10, 0, 0],
                     },
                   ],
                 },
@@ -481,7 +493,6 @@ function createDocDefinition() {
           ]
         : []),
 
-      // อื่น ๆ
       ...(pm.other?.checked && otherAmt > 0
         ? [
             {
@@ -491,12 +502,12 @@ function createDocDefinition() {
                     {
                       text: otherName,
                       style: 'form',
-                      margin: [83, 0, 0, 0],
+                      margin: [100, 0, 0, 0],
                       noWrap: true,
                       width: 'auto',
                     },
                     {
-                      text: 'จำนวนเงิน',
+                      text: 'จำนวน',
                       style: 'form',
                       width: 'auto',
                       margin: [240, 0, 0, 0],
@@ -509,12 +520,6 @@ function createDocDefinition() {
                           alignment: 'center',
                           lineHeight: 1.2,
                         },
-                        {
-                          text: '.............................',
-                          alignment: 'center',
-                          margin: [0, -19, 0, 0],
-                          lineHeight: 1,
-                        },
                       ],
                       width: 80,
                       margin: [-18, 0, 0, 0],
@@ -531,7 +536,76 @@ function createDocDefinition() {
               ],
             },
           ]
-        : []),
+        : []),      ...(hasDebtor ? [
+        { text: '\n' },
+        {
+          text: 'ลูกหนี้',
+          bold: true,
+          fontSize: 13,
+          margin: [100, 0, 0, 5]
+        },
+        ...debtors.map(d => ({
+          columns: [
+            {
+              text: `- ${d.itemName}`,
+              margin: [120, 2, 0, 0],
+              fontSize: 13,
+              width: '*'
+            },
+                                {
+                      text: 'จำนวน',
+                      style: 'form',
+                      width: 'auto',
+                      margin: [0, 2,-119.5, 0],
+                      noWrap: true,
+                      alignment: 'right'
+                    },
+            {
+              text: `${d.formattedAmount}`,
+              margin: [0, 2, 0, 0],
+              fontSize: 13,
+              alignment: 'right',
+              width: '30%'
+            }
+                                            ,{
+                      text: 'บาท',
+                      style: 'form',
+                      width: 'auto',
+                      noWrap: true,
+                      margin: [12.5 , 5, 91, 0],
+                      alignment: 'left'
+                    },
+          ]
+        })),
+        {
+          columns: [
+            {
+              text: 'รวมยอดลูกหนี้ทั้งหมด',
+              bold: true,
+              margin: [120, 5, 0, 0],
+              fontSize: 13,
+              width: '*'
+            },
+            {
+              text: `${totalDebtor.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
+              bold: true,
+              margin: [15, 5, 0, 0],
+              fontSize: 13,
+              alignment: 'right',
+              width: '30%'
+            }
+                                ,{
+                      text: 'บาท',
+                      style: 'form',
+                      width: 'auto',
+                      noWrap: true,
+                      margin: [12.5, 5, 91, 0],
+                      alignment: 'left'
+                    },
+          ]
+        },
+        { text: '\n' },
+      ] : []),
 
       // ลายเซ็น (เดิมไม่เปลี่ยน)
       { text: '\n' },
@@ -627,16 +701,16 @@ if (receiptData.value?.receiptList?.length > 0) {
   let rowNumber = 1
 
   receiptData.value.receiptList.forEach((item) => {
-    const cleanAmount = item.amount 
-      ? parseFloat(item.amount.toString().replace(/,/g, '')) 
+    const cleanAmount = item.amount
+      ? parseFloat(item.amount.toString().replace(/,/g, ''))
       : 0
 
     rows.push({
       id: String(rowNumber++),
       ref: item.referenceNo || '',
       item: item.itemName || '',
-      amount: cleanAmount > 0 
-        ? cleanAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 }) 
+      amount: cleanAmount > 0
+        ? cleanAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })
         : '',
       note: item.note || ''
     })

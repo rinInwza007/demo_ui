@@ -6,12 +6,12 @@
       class="w-full px-2 text-sm"
     >
       <option value=""></option>
-      <option 
-        v-for="option in itemOptions" 
-        :key="option.value" 
+      <option
+        v-for="option in itemOptions"
+        :key="option.value"
         :value="option.value"
       >
-        {{ option.value }}
+        {{ option.label }}
       </option>
     </select>
 
@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import TomSelect from 'tom-select'
 import { itemOptions } from '@/components/data/ItemNameOption'
 
@@ -34,6 +34,18 @@ const props = defineProps({
   inputId: {
     type: String,
     required: true
+  },
+  options: {
+    type: Array,
+    default: () => []
+  },
+  placeholder: {
+    type: String,
+    default: 'ระบุรายการ'
+  },
+  allowCreate: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -41,6 +53,22 @@ const emit = defineEmits(['update:modelValue', 'input'])
 
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
+
+// ใช้ options ที่ส่งมา ถ้าไม่มีจะใช้ array ว่าง
+const itemOptions = computed(() => {
+  if (!props.options || props.options.length === 0) return []
+
+  // รองรับหลายรูปแบบ: string, {value, label}, {id, name}
+  return props.options.map(opt => {
+    if (typeof opt === 'string') {
+      return { value: opt, label: opt }
+    }
+    return {
+      value: opt.value || opt.name || opt.label,
+      label: opt.label || opt.name || opt.value
+    }
+  })
+})
 
 watch(() => props.modelValue, (newVal) => {
   localValue.value = newVal
@@ -59,8 +87,8 @@ onMounted(() => {
 
   if (el && !el.tomselect) {
     tomSelectInstance = new TomSelect(el, {
-      create: true,
-      placeholder: 'ระบุรายการ',
+      create: props.allowCreate,
+      placeholder: props.placeholder,
       allowEmptyOption: true,
       onChange(value) {
         localValue.value = value
@@ -73,9 +101,9 @@ onMounted(() => {
     control.style.position = 'relative'
 
     control.style.width = '100%'
-    control.style.height = '2.7rem'
+    control.style.height = '2.70rem'
     control.style.padding = '0.625rem 0.5rem'
-    control.style.paddingRight = '2.5rem' // เผื่อที่ให้ไอคอน
+    control.style.paddingRight = '2.5rem'
     control.style.display = 'flex'
     control.style.alignItems = 'center'
     control.style.fontSize = '0.875rem'

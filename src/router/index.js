@@ -1,7 +1,7 @@
 // router/index.ts
 import { createRouter, createWebHistory } from 'vue-router'
 
-import Main from '@/pages/Main/waybill/index.vue'
+import indexwaybill from '@/pages/Main/waybill/index.vue'
 import Waybill from '@/pages/Document/Waybill/index.vue'
 import WaybillDebtor from '@/pages/Document/WaybillDebtor/index.vue'
 import WaybillResearch from '@/pages/Document/WaybillResearch/index.vue'
@@ -12,9 +12,12 @@ import indexsavedebtor from "@/pages/Main/savedebtor/index.vue"
 import indexwaybilldebtor from "@/pages/Main/waybilldebtor/index.vue"
 import ClearDebtor from '@/pages/Document/ClearDebtor/index.vue'
 import daily_closing from '@/pages/Main/daily_closing/index.vue'
+import testlogin from '@/pages/Main/testlogin.vue'
+
 
 const routes = [
-  { path: '/', name: 'main', component: Main },
+  { path: '/', name: 'main', component: indexwaybill },
+  { path: '/testlogin', name: 'testlogin', component: testlogin },
 
   { path: '/waybill', name: 'waybill', component: Waybill },
   {

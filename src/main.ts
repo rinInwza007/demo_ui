@@ -10,7 +10,7 @@ import "hover.css";
 import VueApexCharts from "vue3-apexcharts";
 
 const app = createApp(App)
-
+const pinia = createPinia()
 
 
 // if (import.meta.env.DEV && import.meta.env.VITE_USE_FAKE_API === 'true') {
@@ -18,7 +18,7 @@ const app = createApp(App)
 //   setupAxiosMock();
 // }
 
-
+app.use(pinia)
 app.use(VueApexCharts);
 app.component('VueDatePicker', VueDatePicker)
 app.use(createPinia())

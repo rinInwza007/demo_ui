@@ -395,6 +395,8 @@
                         v-model="row.itemName"
                         :input-id="`itemName-${index}`"
                         @input="() => clearRowError(index, 'itemName')"
+                        waybill-type="all" 
+                        department="general"  
                       >
                         <!-- 🔥 ไอคอนต้องอยู่ใน slot เท่านั้น -->
                         <template #suffix>
@@ -653,6 +655,35 @@
                   </div>
                 </div>
 
+                                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
+                  <div class="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      v-model="paymentMethods.debtor.checked"
+                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div class="flex-1">
+                      <div class="font-medium text-slate-800">ลูกหนี้</div>
+                      <div class="mt-2 flex items-center gap-2">
+                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
+                        <InputText
+                          :model-value="formatDisplayPaymentAmount(paymentMethods.debtor.amount)"
+                          @input="(e) => handlePaymentAmountInput('debtor', e)"
+                          @blur="() => formatPaymentAmountOnBlur('debtor')"
+                          :readonly="!paymentMethods.debtor.checked"
+                          :class="{
+                            'opacity-50 cursor-not-allowed pointer-events-none bg-gray-100':
+                              !paymentMethods.debtor.checked,
+                          }"
+                          placeholder="0.00"
+                          class="w-48 transition-all duration-200"
+                        />
+                        <span class="text-sm text-slate-700">บาท</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- อื่น ๆ -->
                 <div class="bg-white/40 rounded-xl p-4 border border-white/50">
                   <div class="flex items-start gap-3">
@@ -692,6 +723,8 @@
                     </div>
                   </div>
                 </div>
+
+                
 
                 <!-- สรุปยอดเงินส่วนที่ 3 -->
                 <div class="bg-purple-500 rounded-xl p-4 mt-4">
@@ -752,10 +785,12 @@ import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import SendMoneySelect from '@/components/TomSelect/SendMoneyTomSelect.vue'
 import sidebar from '@/components/bar/sidebar.vue'
 import { options } from '@/components/data/departments'
+import {getAllOptions} from '@/components/data/ItemNameOption'
 import { useReceiptStore } from '@/stores/recipt'
 import { useRowManager } from '@/components/Function/FuncForm'
 import { setupAxiosMock } from '@/fake/mockAxios'
 
+const itemOptions = computed(() => getAllOptions('general'))
 // Initialize
 const route = useRoute()
 const router = useRouter()
@@ -785,6 +820,8 @@ const paymentMethods = ref({
   scb: { checked: false, amount: '' },
   cash: { checked: false, amount: '' },
   check: { checked: false, amount: '' },
+  debtor: { checked: false, amount: '' },
+
   other: { checked: false, name: '', amount: '' },
 })
 
@@ -1049,31 +1086,30 @@ const loadReceiptData = async () => {
   try {
     const response = await axios.get(`/getReceipt/${receiptId.value}`)
     const list = response.data
-
     const data = Array.isArray(list) ? list.find((r) => r.id === receiptId.value) : list
 
     if (!data) throw new Error('Receipt not found')
 
-    // 1. ล้างค่าเก่าทั้งหมด
+    // 1. ล้างค่าเก่า
     mainCategory.value = ''
     subCategory.value = ''
     subCategory2.value = ''
     formData.value.sendmoney = ''
 
-    // ล้างค่า paymentMethods
+    // ✅ ล้างค่า paymentMethods อย่างถูกต้อง
     paymentMethods.value = {
       krungthai: { checked: false, amount: '' },
       scb: { checked: false, amount: '' },
       cash: { checked: false, amount: '' },
       check: { checked: false, amount: '' },
+      debtor: { checked: false, amount: '' }, // ✅ เพิ่มตรงนี้
       other: { checked: false, name: '', amount: '' },
     }
 
     morelist.value = []
-
     await nextTick()
 
-    // 2. ตั้งค่าพื้นฐาน (ส่วนที่ 1)
+    // 2-5. โหลดข้อมูลพื้นฐาน (เหมือนเดิม)
     formData.value.delNumber = data.delNumber || ''
     formData.value.fullName = data.fullName || ''
     formData.value.phone = data.phone || ''
@@ -1081,54 +1117,68 @@ const loadReceiptData = async () => {
     formData.value.projectCode = data.projectCode || ''
     formData.value.sendmoney = data.sendmoney || data.moneyType || ''
 
-    // 3. ✅ ตั้งค่า mainCategory และรอ
+    // 3-5. โหลด categories (เหมือนเดิม)
     if (data.mainAffiliationName && data.mainAffiliationName !== 'เลือกทั้งหมด') {
       mainCategory.value = data.mainAffiliationName
       await nextTick()
     }
 
-    // 4. ✅ ตั้งค่า subCategory และรอ
     if (data.subAffiliationName1 && data.subAffiliationName1 !== 'เลือกทั้งหมด') {
       subCategory.value = data.subAffiliationName1
       await nextTick()
     }
 
-    // 5. ✅ ตั้งค่า subCategory2
     if (data.subAffiliationName2 && data.subAffiliationName2 !== 'เลือกทั้งหมด') {
       subCategory2.value = data.subAffiliationName2
       await nextTick()
     }
 
-    // 6. โหลดข้อมูล paymentMethods (ส่วนที่ 3)
+    // ✅ 6. โหลด paymentMethods พร้อม debug
+    console.log('📦 Payment Methods from API:', data.paymentMethods)
+
     if (data.paymentMethods && typeof data.paymentMethods === 'object') {
       Object.keys(data.paymentMethods).forEach((key) => {
-        if (paymentMethods.value[key] && data.paymentMethods[key]) {
-          paymentMethods.value[key].checked = true // สำคัญ: ต้องตั้ง checked = true ก่อน!
+        // ✅ ตรวจสอบว่า key มีใน paymentMethods.value หรือไม่
+        if (!paymentMethods.value[key]) {
+          console.warn(`⚠️ Unknown payment method: ${key}`)
+          return
+        }
 
-          const amount = data.paymentMethods[key].amount || 0
-          if (amount > 0) {
-            const numAmount =
-              typeof amount === 'string' ? parseFloat(amount.replace(/,/g, '')) : Number(amount)
+        const methodData = data.paymentMethods[key]
+        
+        // ตรวจสอบว่า methodData มีค่า
+        if (!methodData) return
 
-            if (!isNaN(numAmount)) {
-              paymentMethods.value[key].amount = numAmount.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })
-            }
-          }
+        // ตั้งค่า checked
+        paymentMethods.value[key].checked = true
 
-          if (key === 'other' && data.paymentMethods[key].name) {
-            paymentMethods.value[key].name = data.paymentMethods[key].name
+        // โหลด amount
+        const amount = methodData.amount || 0
+        if (amount > 0) {
+          const numAmount = typeof amount === 'string' 
+            ? parseFloat(amount.replace(/,/g, '')) 
+            : Number(amount)
+
+          if (!isNaN(numAmount)) {
+            paymentMethods.value[key].amount = numAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
           }
         }
+
+        // โหลด name สำหรับ 'other'
+        if (key === 'other' && methodData.name) {
+          paymentMethods.value[key].name = methodData.name
+        }
+
+        console.log(`✅ Loaded ${key}:`, paymentMethods.value[key])
       })
 
-      // เพิ่มบรรทัดนี้เพื่อ force re-render
       await nextTick()
     }
 
-    // 7. โหลด receiptList (ส่วนที่ 2)
+    // 7. โหลด receiptList (เหมือนเดิม)
     if (data.receiptList && Array.isArray(data.receiptList) && data.receiptList.length > 0) {
       morelist.value = data.receiptList.map((item, index) => ({
         id: index + 1,
@@ -1136,18 +1186,16 @@ const loadReceiptData = async () => {
         itemName: item.itemName || '',
         note: item.note || '',
         amount: item.amount || 0,
+        type: item.type || 'income',
       }))
 
       await nextTick()
 
-      // Format amount สำหรับแต่ละรายการ
       morelist.value.forEach((row) => {
         if (row.amount && row.amount > 0) {
-          // ✅ แปลงเป็นตัวเลขก่อน format
-          const numAmount =
-            typeof row.amount === 'string'
-              ? parseFloat(row.amount.toString().replace(/,/g, ''))
-              : Number(row.amount)
+          const numAmount = typeof row.amount === 'string'
+            ? parseFloat(row.amount.toString().replace(/,/g, ''))
+            : Number(row.amount)
 
           row.amount = numAmount.toLocaleString('en-US', {
             minimumFractionDigits: 2,
@@ -1156,13 +1204,11 @@ const loadReceiptData = async () => {
         }
       })
 
-      // Init TomSelect
       await nextTick()
       morelist.value.forEach((_, i) => {
         initItemNameTomSelect(i)
       })
     } else {
-      // ถ้าไม่มี receiptList ให้เพิ่มแถวว่าง
       addRow()
     }
 
@@ -1181,6 +1227,7 @@ const loadReceiptData = async () => {
       timer: 1500,
       showConfirmButton: false,
     })
+
   } catch (err) {
     console.error('❌ Load error:', err)
     Swal.fire({
@@ -1253,8 +1300,14 @@ const netTotalAmount = computed(() => {
   let total = 0
   morelist.value.forEach((row) => {
     const cleanAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
+    
     if (!isNaN(cleanAmount)) {
-      total += cleanAmount
+      // ✅ ถ้าเป็นรายจ่าย ให้ลบ, ถ้าเป็นรายรับให้บวก
+      if (row.type === 'expense') {
+        total -= cleanAmount
+      } else {
+        total += cleanAmount
+      }
     }
   })
   return total
@@ -1314,11 +1367,6 @@ const saveData = async () => {
     if (!row.itemName || row.itemName.trim() === '') {
       rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
     }
-
-    if (!row.note || row.note.trim() === '') {
-      rowErrors.note = 'กรุณากรอก "หมายเหตุ"'
-    }
-
     // ตรวจสอบ amount
     const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
     if (!cleanAmount || cleanAmount <= 0) {
@@ -1478,6 +1526,7 @@ const saveData = async () => {
         note: row.note || '',
         referenceNo: row.referenceNo || '',
         amount: cleanAmount,
+        type: row.type || 'income', // ✅ เพิ่ม type
         subtotal: cleanAmount,
       }
     }),

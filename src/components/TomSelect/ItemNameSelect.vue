@@ -6,12 +6,12 @@
       class="w-full px-2 text-sm"
     >
       <option value=""></option>
-      <option 
-        v-for="option in itemOptions" 
-        :key="option.value" 
+      <option
+        v-for="option in itemOptions"
+        :key="option.value"
         :value="option.value"
       >
-        {{ option.value }}
+        {{ option.label }}
       </option>
     </select>
 
@@ -25,15 +25,53 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+
+import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
+
+
 import TomSelect from 'tom-select'
-import { itemOptions } from '@/components/data/ItemNameOption'
+import {
+  getReceivableOptionsByDepartment,
+  getAllOptions,
+  incomeOptions
+} from '@/components/data/ItemNameOption'
 
 const props = defineProps({
   modelValue: String,
   inputId: {
     type: String,
     required: true
+  },
+  department: {
+    type: String,
+    default: 'general'
+  },
+  waybillType: {
+    type: String,
+    default: 'all' // 'income', 'receivable', 'all'
+=======
+=======
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
+=======
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
+  options: {
+    type: Array,
+    default: () => []
+  },
+  placeholder: {
+    type: String,
+    default: 'ระบุรายการ'
+  },
+  allowCreate: {
+    type: Boolean,
+    default: true
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
+=======
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
+=======
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
   }
 })
 
@@ -41,6 +79,43 @@ const emit = defineEmits(['update:modelValue', 'input'])
 
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
+
+// ✅ เพิ่ม computed สำหรับดึง options ตามประเภท
+const itemOptions = computed(() => {
+  if (props.waybillType === 'income') {
+    return incomeOptions
+  } else if (props.waybillType === 'receivable') {
+    return getReceivableOptionsByDepartment(props.department)
+  } else {
+    return getAllOptions(props.department)
+  }
+=======
+=======
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
+=======
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
+// ใช้ options ที่ส่งมา ถ้าไม่มีจะใช้ array ว่าง
+const itemOptions = computed(() => {
+  if (!props.options || props.options.length === 0) return []
+
+  // รองรับหลายรูปแบบ: string, {value, label}, {id, name}
+  return props.options.map(opt => {
+    if (typeof opt === 'string') {
+      return { value: opt, label: opt }
+    }
+    return {
+      value: opt.value || opt.name || opt.label,
+      label: opt.label || opt.name || opt.value
+    }
+  })
+<<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
+=======
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
+=======
+>>>>>>> 67698c03cfb220dfa751d31e5600b5e8a9194677
+})
 
 watch(() => props.modelValue, (newVal) => {
   localValue.value = newVal
@@ -59,8 +134,8 @@ onMounted(() => {
 
   if (el && !el.tomselect) {
     tomSelectInstance = new TomSelect(el, {
-      create: true,
-      placeholder: 'ระบุรายการ',
+      create: props.allowCreate,
+      placeholder: props.placeholder,
       allowEmptyOption: true,
       onChange(value) {
         localValue.value = value
@@ -73,9 +148,9 @@ onMounted(() => {
     control.style.position = 'relative'
 
     control.style.width = '100%'
-    control.style.height = '2.7rem'
+    control.style.height = '2.70rem'
     control.style.padding = '0.625rem 0.5rem'
-    control.style.paddingRight = '2.5rem' // เผื่อที่ให้ไอคอน
+    control.style.paddingRight = '2.5rem'
     control.style.display = 'flex'
     control.style.alignItems = 'center'
     control.style.fontSize = '0.875rem'

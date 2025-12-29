@@ -182,7 +182,7 @@
                   </span>
                 </div>
               </div>
-
+              
               <!-- แถวที่ 3: กรณีมี sub1 แต่ไม่มี sub2 → กองทุน | ขอนำส่งเงิน -->
               <div v-if="hasAnySub && !hasSub2" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="flex flex-col gap-2">

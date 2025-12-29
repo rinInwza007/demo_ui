@@ -25,6 +25,7 @@ export function setupAxiosMock() {
     return 'UP'
   }
 
+
   const ensureReceiptFields = (r: any): any => {
     const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
 

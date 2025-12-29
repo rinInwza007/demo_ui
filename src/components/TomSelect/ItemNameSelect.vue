@@ -7,7 +7,7 @@
     >
       <option value=""></option>
       <option
-        v-for="option in itemOptions"
+        v-for="option in computedOptions"
         :key="option.value"
         :value="option.value"
       >
@@ -25,13 +25,16 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import TomSelect from 'tom-select'
 import {
   getReceivableOptionsByDepartment,
   getAllOptions,
   incomeOptions
 } from '@/components/data/ItemNameOption'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 const props = defineProps({
   modelValue: String,
@@ -39,9 +42,13 @@ const props = defineProps({
     type: String,
     required: true
   },
-  options: {
-    type: Array,
-    default: () => []
+  department: {
+    type: String,
+    default: 'general'
+  },
+  waybillType: {
+    type: String,
+    default: 'all' // 'income', 'receivable', 'all'
   },
   placeholder: {
     type: String,
@@ -58,20 +65,51 @@ const emit = defineEmits(['update:modelValue', 'input'])
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
 
-// ใช้ options ที่ส่งมา ถ้าไม่มีจะใช้ array ว่าง
-const itemOptions = computed(() => {
-  if (!props.options || props.options.length === 0) return []
+// ✅ แมป affiliationId กับ department
+const getDepartmentFromAffiliationId = (affiliationId) => {
+  const mapping = {
+    'ENG': 'engineering',    // คณะวิศวกรรมศาสตร์
+    'NUR': 'nursing',        // คณะพยาบาลศาสตร์
+    'DEN': 'dentistry',      // คณะทันตแพทยศาสตร์
+    'HOS': 'hospital',       // โรงพยาบาล
+    'MED': 'medicine',       // คณะแพทยศาสตร์
+    'PHA': 'pharmacy',       // คณะเภสัชศาสตร์
+    // เพิ่มคณะอื่นๆ ตามต้องการ
+  }
+  
+  return mapping[affiliationId] || 'general'
+}
 
-  // รองรับหลายรูปแบบ: string, {value, label}, {id, name}
-  return props.options.map(opt => {
-    if (typeof opt === 'string') {
-      return { value: opt, label: opt }
+// ✅ ดึง options ตามสิทธิ์ของผู้ใช้
+const computedOptions = computed(() => {
+  let rawOptions = []
+
+  let effectiveDepartment = 'general'
+
+  if (auth.user) {
+    if (auth.isRole('superadmin', 'admin', 'treasury')) {
+      // พวกอำนาจนิยม เห็นหมด
+      effectiveDepartment = props.department
+    } else {
+      // ไพร่ฟ้าประชาชน เห็นแค่คณะตัวเอง
+      effectiveDepartment = getDepartmentFromAffiliationId(
+        auth.user.affiliationId
+      )
     }
-    return {
-      value: opt.value || opt.name || opt.label,
-      label: opt.label || opt.name || opt.value
-    }
-  })
+  }
+
+  if (props.waybillType === 'income') {
+    rawOptions = incomeOptions
+  } else if (props.waybillType === 'receivable') {
+    rawOptions = getReceivableOptionsByDepartment(effectiveDepartment)
+  } else {
+    rawOptions = getAllOptions(effectiveDepartment)
+  }
+
+  return rawOptions.map(opt => ({
+    value: opt.value,
+    label: opt.value
+  }))
 })
 
 watch(() => props.modelValue, (newVal) => {

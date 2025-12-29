@@ -393,8 +393,8 @@
                     <div class="flex flex-col gap-2 mt-[13px]">
                       <ItemNameSelect
                         v-model="row.itemName"
-                        :input-id="`itemName-${index}`"
                         @input="() => clearRowError(index, 'itemName')"
+                        :input-id="`itemName-${index}`"
                         waybill-type="all" 
                         department="general"  
                       >
@@ -790,7 +790,6 @@ import { useReceiptStore } from '@/stores/recipt'
 import { useRowManager } from '@/components/Function/FuncForm'
 import { setupAxiosMock } from '@/fake/mockAxios'
 
-const itemOptions = computed(() => getAllOptions('general'))
 // Initialize
 const route = useRoute()
 const router = useRouter()
@@ -1136,12 +1135,8 @@ const loadReceiptData = async () => {
     // ✅ 6. โหลด paymentMethods พร้อม debug
     console.log('📦 Payment Methods from API:', data.paymentMethods)
 
-      const amount = data.paymentMethods[key].amount || 0
-      if (amount > 0) {
-        const numAmount = typeof amount === 'string'
-          ? parseFloat(amount.replace(/,/g, ''))
-          : Number(amount)
-
+    if (data.paymentMethods) {
+      Object.keys(data.paymentMethods).forEach((key) => {
         const methodData = data.paymentMethods[key]
         
         // ตรวจสอบว่า methodData มีค่า

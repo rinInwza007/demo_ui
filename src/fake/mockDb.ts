@@ -54,6 +54,7 @@ export function sanitizeItem(it: any): ReceiptItem {
     referenceNo: (it.referenceNo ?? '').trim(),
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
     amount: Number.isFinite(it.amount) ? it.amount : 0,
+    type: it.type || 'income', // ✅ เพิ่มบรรทัดนี้
   }
 }
 

@@ -258,6 +258,7 @@ import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 
 import type { Receipt } from '@/types/receipt'
+
 import { useAuthStore } from '@/stores/auth'
 
 import { setupAxiosMock } from '@/fake/mockAxios'

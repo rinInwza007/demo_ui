@@ -41,7 +41,7 @@ const route = useRoute()
 const router = useRouter()
 
 const gotomainpage = () => {
-  router.push('/')
+  router.push('/indexwaybill')
 }
 
 pdfMake.vfs = vfs
@@ -65,18 +65,18 @@ function separateDebtorItems() {
   rows.forEach((row) => {
     // ตรวจสอบว่าเป็นลูกหนี้หรือไม่
     const isDebtor = isReceivableItem(row.item)
-    
+
     if (isDebtor && row.amount) {
-      const amount = typeof row.amount === 'string' 
-        ? parseFloat(row.amount.replace(/,/g, '')) 
+      const amount = typeof row.amount === 'string'
+        ? parseFloat(row.amount.replace(/,/g, ''))
         : Number(row.amount)
-      
+
       debtors.push({
         itemName: row.item,
         amount: amount,
         formattedAmount: amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })
       })
-      
+
       totalDebtor += amount
     } else {
       normalItems.push(row)
@@ -142,7 +142,7 @@ function createDocDefinition() {
   deleteRowEmpty()
 
   const receipt = receiptData.value || {}
-  
+
   // ✅ แยกรายการลูกหนี้
   const { debtors, normalItems, totalDebtor, hasDebtor } = separateDebtorItems()
 
@@ -701,16 +701,16 @@ if (receiptData.value?.receiptList?.length > 0) {
   let rowNumber = 1
 
   receiptData.value.receiptList.forEach((item) => {
-    const cleanAmount = item.amount 
-      ? parseFloat(item.amount.toString().replace(/,/g, '')) 
+    const cleanAmount = item.amount
+      ? parseFloat(item.amount.toString().replace(/,/g, ''))
       : 0
 
     rows.push({
       id: String(rowNumber++),
       ref: item.referenceNo || '',
       item: item.itemName || '',
-      amount: cleanAmount > 0 
-        ? cleanAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 }) 
+      amount: cleanAmount > 0
+        ? cleanAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })
         : '',
       note: item.note || ''
     })

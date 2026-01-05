@@ -41,7 +41,7 @@ const route = useRoute()
 const router = useRouter()
 
 const gotomainpage = () => {
-  router.push('/')
+  router.push('/indexwaybill')
 }
 
 pdfMake.vfs = vfs
@@ -65,9 +65,9 @@ const currentDate = new Date().toLocaleDateString('th-TH', {
 })
 
 function convertNumberToThaiText(number) {
-  if (!number || number === 0) return 'ศูนย์บาทถ้วน' 
-  const bahtText = ['', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'] 
-  const unitText = ['', 'สิบ', 'รอย', 'พัน', 'หมื่น', 'แสน', 'ล้าน'] 
+  if (!number || number === 0) return 'ศูนย์บาทถ้วน'
+  const bahtText = ['', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า']
+  const unitText = ['', 'สิบ', 'รอย', 'พัน', 'หมื่น', 'แสน', 'ล้าน']
   let result = ''
   const numberStr = Math.floor(number).toString()
   const len = numberStr.length
@@ -82,11 +82,11 @@ function convertNumberToThaiText(number) {
     }
   }
   result += 'บาทถ้วน'
-  return result 
+  return result
 }
 
 function createDocDefinition() {
-  const receipt = receiptData.value || {} 
+  const receipt = receiptData.value || {}
 
   return {
     pageSize: 'A4',
@@ -113,8 +113,8 @@ function createDocDefinition() {
       { text: '\n\n' },
       {
         stack: [
-          { text: `${currentDate}`, absolutePosition: { x: 440, y: 65 }, fontSize: 13 },  
-          
+          { text: `${currentDate}`, absolutePosition: { x: 440, y: 65 }, fontSize: 13 },
+
           {
             text: 'วันที่............................................................................\n',
             absolutePosition: { x: 400, y: 66.5 },
@@ -124,15 +124,15 @@ function createDocDefinition() {
       {
         stack: [
           { text: `${receipt.fullName || ''}`, absolutePosition: { x: 95, y: 81.5 }, fontSize: 13 },
-          { text: `${receipt.phone || ''}`, absolutePosition: { x: 270, y: 81.5 }, fontSize: 13 }, 
-          { text: `${receipt.mainAffiliationName || ''}`, absolutePosition: { x: 370, y: 81.5 }, fontSize: 13 }, 
+          { text: `${receipt.phone || ''}`, absolutePosition: { x: 270, y: 81.5 }, fontSize: 13 },
+          { text: `${receipt.mainAffiliationName || ''}`, absolutePosition: { x: 370, y: 81.5 }, fontSize: 13 },
           { text: 'ข้าพเจ้า........................................................เบอร์โทรติดต่อ.............................................สังกัด....................................................................................................\n', margin: [35, 0, 0, 0] }
         ],
       },
       {
         stack: [
           { text: `${receipt.sendmoney || ''}`, absolutePosition: { x: 110, y: 98.5 }, fontSize: 13 },
-          { text: `${receipt.fundName || ''}`, absolutePosition: { x: 460, y: 98.5 }, fontSize: 13 }, 
+          { text: `${receipt.fundName || ''}`, absolutePosition: { x: 460, y: 98.5 }, fontSize: 13 },
           { text: 'ใบนำส่งรายได้/เงินโครงการ.........................................................................................................................................................กองทุน..........................................................\n', margin: [-10, 0, 0, 0] },
         ],
       },
@@ -149,11 +149,11 @@ function createDocDefinition() {
           widths: ['8%', '15%', '*', '12%', '20%'],
           body: [
             [
-              { text: '\n ลำดับที่', alignment: 'center', bold: true, margin: [0, 10, 0, 0] }, 
-              { text: 'เลขที่\nเอกสารอ้างอิง\n(เล่มที่/เลขที่\nใบเสร็จรับเงิน)', alignment: 'center', bold: true }, 
+              { text: '\n ลำดับที่', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
+              { text: 'เลขที่\nเอกสารอ้างอิง\n(เล่มที่/เลขที่\nใบเสร็จรับเงิน)', alignment: 'center', bold: true },
               { text: '\nรายการ', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
               { text: '\nจำนวน/บาท', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
-              { text: '\nหมายเหตุ', alignment: 'center', bold: true, margin: [0, 10, 0, 0] }, 
+              { text: '\nหมายเหตุ', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
             ],
             ...rows.map((r, index) => [
               { text: r.isFee ? '' : (index + 1), alignment: 'center' },
@@ -163,14 +163,14 @@ function createDocDefinition() {
               { text: r.note || ' ', alignment: 'center' },
             ]),
             [
-              { text: summary.text, colSpan: 3, alignment: 'center', bold: true }, 
+              { text: summary.text, colSpan: 3, alignment: 'center', bold: true },
               '', '',
-              { text: summary.total || '', alignment: 'right', bold: true }, 
+              { text: summary.total || '', alignment: 'right', bold: true },
               { text: '', alignment: 'center', bold: true },
             ],
           ],
         },
-        margin: [-10, 0, -10, 0], 
+        margin: [-10, 0, -10, 0],
       },
 
       { text: '\n' },
@@ -210,8 +210,8 @@ function createDocDefinition() {
       ] : []),
 
       // รายการเงินฝาก
-      ...(receipt.depositList && receipt.depositList.length > 0 ? 
-        receipt.depositList.flatMap((deposit) => 
+      ...(receipt.depositList && receipt.depositList.length > 0 ?
+        receipt.depositList.flatMap((deposit) =>
           deposit.paymentDetails.map((payment) => [
             {
               columns: [
@@ -369,8 +369,8 @@ onMounted(() => {
   try {
     loading.value = true
     const projectCode = route.params.id
-    const receipts = loadReceipts() 
-    const foundReceipt = receipts.find((r) => r.projectCode === projectCode) 
+    const receipts = loadReceipts()
+    const foundReceipt = receipts.find((r) => r.projectCode === projectCode)
 
     if (!foundReceipt) {
       loading.value = false
@@ -418,7 +418,7 @@ onMounted(() => {
       rows.push({ item: ' ', amount: ' ', ref: ' ', note: ' ' })
     }
 
-    const total = receiptData.value.netTotalAmount || 0 
+    const total = receiptData.value.netTotalAmount || 0
     summary.text = convertNumberToThaiText(total)
     summary.total = total.toLocaleString('th-TH', { minimumFractionDigits: 2 })
 

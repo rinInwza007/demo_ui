@@ -27,11 +27,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import TomSelect from 'tom-select'
-import {
-  getReceivableOptionsByDepartment,
-  getAllOptions,
-  incomeOptions
-} from '@/components/data/ItemNameOption'
+import { getOptionsForUser } from '@/components/data/ItemNameOption'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -65,46 +61,10 @@ const emit = defineEmits(['update:modelValue', 'input'])
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
 
-// ✅ แมป affiliationId กับ department
-const getDepartmentFromAffiliationId = (affiliationId) => {
-  const mapping = {
-    'ENG': 'engineering',    // คณะวิศวกรรมศาสตร์
-    'NUR': 'nursing',        // คณะพยาบาลศาสตร์
-    'DEN': 'dentistry',      // คณะทันตแพทยศาสตร์
-    'HOS': 'hospital',       // โรงพยาบาล
-    'MED': 'medicine',       // คณะแพทยศาสตร์
-    'PHA': 'pharmacy',       // คณะเภสัชศาสตร์
-    // เพิ่มคณะอื่นๆ ตามต้องการ
-  }
-  
-  return mapping[affiliationId] || 'general'
-}
-
 // ✅ ดึง options ตามสิทธิ์ของผู้ใช้
 const computedOptions = computed(() => {
-  let rawOptions = []
-
-  let effectiveDepartment = 'general'
-
-  if (auth.user) {
-    if (auth.isRole('superadmin', 'admin', 'treasury')) {
-      // พวกอำนาจนิยม เห็นหมด
-      effectiveDepartment = props.department
-    } else {
-      // ไพร่ฟ้าประชาชน เห็นแค่คณะตัวเอง
-      effectiveDepartment = getDepartmentFromAffiliationId(
-        auth.user.affiliationId
-      )
-    }
-  }
-
-  if (props.waybillType === 'income') {
-    rawOptions = incomeOptions
-  } else if (props.waybillType === 'receivable') {
-    rawOptions = getReceivableOptionsByDepartment(effectiveDepartment)
-  } else {
-    rawOptions = getAllOptions(effectiveDepartment)
-  }
+  // ✅ ใช้ getOptionsForUser แทน
+  const rawOptions = getOptionsForUser(auth, props.waybillType)
 
   return rawOptions.map(opt => ({
     value: opt.value,
@@ -176,6 +136,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
+  
 .ts-dropdown {
   @apply rounded-xl shadow-lg border border-gray-200;
 }

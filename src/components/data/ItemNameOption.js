@@ -1,6 +1,3 @@
-// itemOptions.js
-// ไฟล์สำหรับเก็บข้อมูล options ของรายการนำส่งเงินและลูกหนี้
-
 /**
  * ========================================
  * 1. รายการนำส่งเงิน (รายได้ - บวก)
@@ -88,6 +85,23 @@ export const pharmacyReceivableOptions = [
  */
 
 /**
+ * ✅ แมป affiliationId กับ department
+ * @param {string} affiliationId - รหัสหน่วยงานจาก auth (เช่น 'ENG', 'NUR')
+ * @returns {string} - department name
+ */
+export const getDepartmentFromAffiliationId = (affiliationId) => {
+  const mapping = {
+    'ENG': 'engineering',
+    'NUR': 'nursing',
+    'DEN': 'dentistry',
+    'HOS': 'hospital',
+    'MED': 'medicine',
+    'PHA': 'pharmacy',
+  }
+  return mapping[affiliationId] || 'general'
+}
+
+/**
  * ดึง option ตามประเภทใบนำส่ง
  * @param {string} waybillType - 'income' (ใบนำส่งเงิน) หรือ 'receivable' (ใบนำส่งลูกหนี้)
  * @returns {Array}
@@ -129,6 +143,57 @@ export const getReceivableOptionsByDepartment = (department) => {
   }
   
   return departmentMap[department] || generalReceivableOptions
+}
+
+/**
+ * ✅ ดึง option สำหรับผู้ใช้ตามสิทธิ์และคณะ
+ * @param {Object} auth - store auth (ต้องมี user.role และ user.affiliationId)
+ * @param {string} waybillType - 'income', 'receivable', 'all'
+ * @returns {Array}
+ */
+export const getOptionsForUser = (auth, waybillType = 'all') => {
+  let result = []
+
+  // ✅ รายรับ - ทุกคนเห็นเหมือนกัน (แสดงเสมอ)
+  if (waybillType === 'income' || waybillType === 'all') {
+    result = [...result, ...incomeOptions]
+  }
+
+  // ✅ ลูกหนี้ - แสดงตามสิทธิ์ (ไม่เอา general)
+  if (waybillType === 'receivable' || waybillType === 'all') {
+    if (!auth?.user) {
+      // ไม่มี user ไม่แสดงลูกหนี้เลย
+      return result
+    } else if (auth.isRole('superadmin', 'admin', 'treasury')) {
+      // สิทธิ์สูง เห็นลูกหนี้ทั้งหมดของทุกคณะ (ไม่รวม general)
+      result = [
+        ...result,
+        ...nursingReceivableOptions,
+        ...dentistryReceivableOptions,
+        ...hospitalReceivableOptions,
+        ...engineeringReceivableOptions,
+        ...medicineReceivableOptions,
+        ...pharmacyReceivableOptions,
+      ]
+    } else {
+      // user ทั่วไป เห็นแค่ลูกหนี้ของคณะตัวเอง (ไม่รวม general)
+      const userDepartment = getDepartmentFromAffiliationId(auth.user.affiliationId)
+      
+      const departmentOnlyMap = {
+        nursing: nursingReceivableOptions,
+        dentistry: dentistryReceivableOptions,
+        hospital: hospitalReceivableOptions,
+        engineering: engineeringReceivableOptions,
+        medicine: medicineReceivableOptions,
+        pharmacy: pharmacyReceivableOptions,
+      }
+      
+      const departmentOptions = departmentOnlyMap[userDepartment] || []
+      result = [...result, ...departmentOptions]
+    }
+  }
+
+  return result
 }
 
 /**

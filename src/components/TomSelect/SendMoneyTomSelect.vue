@@ -3,15 +3,28 @@
     <label v-if="label" class="text-sm font-medium text-gray-700">
       {{ label }} <span v-if="required" class="text-red-500">*</span>
     </label>
+
     <select
       ref="selectElement"
       :id="inputId"
       class="transition-all duration-200"
     >
-      <option v-for="option in options" :key="option.value" :value="option.value">
+      <option value="" disabled hidden>
+        {{ placeholder }}
+      </option>
+
+      <option
+        v-for="option in options"
+        :key="option.value"
+        :value="option.value"
+      >
         {{ option.text }}
       </option>
     </select>
+
+    <p v-if="errorMessage" class="text-sm text-red-500">
+      {{ errorMessage }}
+    </p>
   </div>
 </template>
 
@@ -51,10 +64,6 @@ const props = defineProps({
       { value: 'รายได้', text: 'รายได้' },
       { value: 'เงินโครงการ', text: 'เงินโครงการ' }
     ]
-  },
-  createNewOption: {
-    type: Boolean,
-    default: true
   }
 })
 
@@ -64,168 +73,116 @@ const selectElement = ref(null)
 let tomSelectInstance = null
 
 const applyCSSToTomSelect = (element) => {
-  if (!element || !element.tomselect) return
-  
-  const control = element.tomselect.control
-  
-  // Apply inline styles to match glass-input class
-  control.style.width = '100%'
-  control.style.height = '2.70rem'
-  control.style.padding = '0.625rem 0.5rem' // py-2.5 px-2
-  control.style.paddingRight = '2.5rem' // pr-10
-  control.style.display = 'flex'
-  control.style.alignItems = 'center'
-  control.style.fontSize = '0.875rem' // text-sm
-  control.style.color = '#334155' // text-slate-700
-  control.style.borderRadius = '0.75rem' // rounded-xl
-  control.style.border = '1px solid rgba(203, 213, 225, 0.5)'
-  control.style.background = '#F3F3F5'
-  control.style.backdropFilter = 'blur(10px)'
-  control.style.cursor = 'pointer'
-  control.style.transition = 'all 0.2s'
-  control.style.appearance = 'none'
+  if (!element?.tomselect) return
 
-  // Style the input inside
-  const input = control.querySelector('input')
-  if (input) {
-    input.style.fontSize = '0.875rem'
-    input.style.height = 'auto'
-    input.style.padding = '0.25rem'
-    input.style.color = '#334155'
-  }
-  
-  // Add focus styles
+  const control = element.tomselect.control
+
+  control.style.width = '100%'
+  control.style.height = '2.75rem'
+  control.style.padding = '0.625rem 0.75rem'
+  control.style.fontSize = '0.875rem'
+  control.style.color = '#334155'
+  control.style.borderRadius = '0.75rem'
+  control.style.border = '1px solid rgba(203,213,225,.6)'
+  control.style.background = '#F3F3F5'
+  control.style.cursor = 'pointer'
+  control.style.transition = 'all .2s'
+
   control.addEventListener('focus', () => {
-    control.style.outline = 'none'
-    control.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.3)'
-    control.style.borderColor = 'rgba(59, 130, 246, 0.3)'
+    control.style.boxShadow = '0 0 0 2px rgba(59,130,246,.35)'
+    control.style.borderColor = 'rgba(59,130,246,.5)'
   })
-  
+
   control.addEventListener('blur', () => {
     control.style.boxShadow = ''
-    control.style.borderColor = 'rgba(203, 213, 225, 0.5)'
-  })
-  
-  // Add hover effect
-  control.addEventListener('mouseenter', () => {
-    control.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-  })
-  
-  control.addEventListener('mouseleave', () => {
-    if (document.activeElement !== control) {
-      control.style.boxShadow = ''
-    }
+    control.style.borderColor = 'rgba(203,213,225,.6)'
   })
 }
 
 const initTomSelect = async () => {
   await nextTick()
-  
-  if (!selectElement.value) {
-    console.error('Select element not found')
-    return
-  }
 
-  if (selectElement.value.tomselect) {
-    console.log('TomSelect already initialized')
-    return
-  }
+  if (!selectElement.value || selectElement.value.tomselect) return
 
-  try {
-    tomSelectInstance = new TomSelect(selectElement.value, {
-      create: false,
-      sortField: { field: 'text', direction: 'asc' },
-      allowEmptyOption: false,
-      placeholder: 'เลือกประเภท',
-      maxItems: 1,
-      onChange(value) {
-        emit('update:modelValue', value)
-        emit('change', value)
-      }
-    })
+  tomSelectInstance = new TomSelect(selectElement.value, {
+    maxItems: 1,
+    create: false,
+    allowEmptyOption: true,
+    placeholder: props.placeholder,
 
-    // ตั้งค่าเริ่มต้นเป็นค่าว่าง (เพื่อให้ placeholder โชว์)
-    tomSelectInstance.clear(true)
+    // ⭐ สำคัญมาก แก้ dropdown โดนบัง
+    dropdownParent: 'body',
 
-    applyCSSToTomSelect(selectElement.value)
-
-    // Set initial value ถ้ามี
-    if (props.modelValue) {
-      await nextTick()
-      setTomSelectValue(props.modelValue)
+    onChange(value) {
+      emit('update:modelValue', value)
+      emit('change', value)
     }
+  })
 
-    console.log('TomSelect initialized successfully')
-  } catch (error) {
-    console.error('Error initializing TomSelect:', error)
-  }
-}
-
-const setTomSelectValue = (value) => {
-  if (!tomSelectInstance) {
-    console.error('TomSelect instance not found')
-    return
-  }
-
-  if (!value) {
-    tomSelectInstance.clear(true)
-    return
-  }
-
-  // Clear และ set ค่าใหม่
   tomSelectInstance.clear(true)
-  tomSelectInstance.setValue(value, false)
-  tomSelectInstance.refreshOptions(false)
+  applyCSSToTomSelect(selectElement.value)
 
-  console.log('TomSelect value set to:', tomSelectInstance.getValue())
-}
-
-// Watch for prop changes
-watch(() => props.modelValue, async (newValue) => {
-  console.log('modelValue changed to:', newValue)
-  
-  await nextTick()
-  
-  if (tomSelectInstance) {
-    const currentValue = tomSelectInstance.getValue()
-    if (currentValue !== newValue) {
-      console.log('Syncing TomSelect value from', currentValue, 'to', newValue)
-      setTomSelectValue(newValue)
-    }
+  if (props.modelValue) {
+    tomSelectInstance.setValue(props.modelValue, false)
   }
-})
+}
+const handleScroll = () => {
+  if (tomSelectInstance && tomSelectInstance.isOpen) {
+    tomSelectInstance.positionDropdown()
+  }
+}
 
 onMounted(() => {
   initTomSelect()
+  window.addEventListener('scroll', handleScroll, true)
 })
 
 onBeforeUnmount(() => {
-  if (tomSelectInstance) {
-    tomSelectInstance.destroy()
-    tomSelectInstance = null
-  }
+  window.removeEventListener('scroll', handleScroll, true)
 })
 
-// Expose methods ถ้าต้องการเรียกจากภายนอก
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    if (!tomSelectInstance) return
+    const current = tomSelectInstance.getValue()
+    if (current !== newValue) {
+      tomSelectInstance.setValue(newValue || '', false)
+    }
+  }
+)
+
+onMounted(initTomSelect)
+
+onBeforeUnmount(() => {
+  tomSelectInstance?.destroy()
+  tomSelectInstance = null
+})
+
 defineExpose({
-  setValue: setTomSelectValue,
-  getInstance: () => tomSelectInstance,
-  reinit: initTomSelect
+  setValue: (v) => tomSelectInstance?.setValue(v, false),
+  getInstance: () => tomSelectInstance
 })
 </script>
 
-<style>
-/* Global styles for TomSelect dropdown */
-.ts-dropdown {
-  @apply rounded-xl shadow-lg border border-gray-200;
+<style scoped>
+
+
+/* dropdown style */
+:deep(.ts-dropdown) {
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
 }
 
-.ts-dropdown .option {
-  @apply text-sm text-slate-700 py-2 px-3 cursor-pointer transition-colors;
+:deep(.ts-dropdown .option) {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #334155;
 }
 
-.ts-dropdown .option:hover,
-.ts-dropdown .option.active {
-  @apply bg-blue-50;
+:deep(.ts-dropdown .option.active),
+:deep(.ts-dropdown .option:hover) {
+  background-color: #eff6ff;
 }
 </style>

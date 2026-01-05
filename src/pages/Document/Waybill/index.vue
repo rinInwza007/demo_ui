@@ -98,8 +98,8 @@
                   </label>
                   <Selects
                     v-model="mainCategory"
-                    :options="['เลือกทั้งหมด', ...Object.keys(options)]"
-                    placeholder="-- เลือกหน่วยงาน --"
+                    :options="[...Object.keys(options)]"
+                    placeholder="เลือกหน่วยงาน"
                     value-type="string"
                   />
                   <span v-if="errors.mainCategory" class="text-red-600 text-xs">
@@ -186,7 +186,7 @@
                     <Selects
                       v-model="subCategory"
                       :options="sub1OptionsArray"
-                      placeholder="-- เลือกหน่วยงานรอง --"
+                      placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
                     <span v-if="errors.subCategory" class="text-red-600 text-xs">
@@ -229,6 +229,7 @@
                       ]"
                       :create-new-option="true"
                       @change="clearError('sendmoney')"
+                      class="mt-[2.5px]"
                     />
                     <span v-if="errors.sendmoney" class="text-red-600 text-xs">
                       {{ errors.sendmoney }}
@@ -264,7 +265,7 @@
                     <Selects
                       v-model="subCategory"
                       :options="sub1OptionsArray"
-                      placeholder="-- เลือกหน่วยงานรอง --"
+                      placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
                     <span v-if="errors.subCategory" class="text-red-600 text-xs">
@@ -279,7 +280,7 @@
                     <Selects
                       v-model="subCategory2"
                       :options="sub2OptionsArray"
-                      placeholder="-- เลือกหน่วยงานย่อย --"
+                      placeholder="เลือกหน่วยงานย่อย"
                       value-type="string"
                     />
                     <span v-if="errors.subCategory2" class="text-red-600 text-xs">
@@ -994,8 +995,7 @@ const formatAmountOnBlur = (index) => {
 
   morelist.value[index].amount = formatted
 }
-const { allowOnlyDigits, morelist, addRow, removeRow, handleTypeChange, formattedTotalAmount } =
-  useRowManager()
+const { allowOnlyDigits, morelist, addRow, removeRow, handleTypeChange, formattedTotalAmount } =useRowManager()
 const itemNameInstances = ref({})
 const errors = ref({})
 const clearError = (field) => {
@@ -1010,7 +1010,7 @@ const subCategory2 = ref('')
 
 // ✅ Computed Properties
 const sub1OptionsArray = computed(() => {
-  if (!mainCategory.value || mainCategory.value === 'เลือกทั้งหมด') return []
+  if (!mainCategory.value) return []
 
   const data = options[mainCategory.value]
   if (!data) return []
@@ -1018,18 +1018,18 @@ const sub1OptionsArray = computed(() => {
   const main = data.main
 
   if (typeof main === 'string') {
-    return ['เลือกทั้งหมด', main]
+    return [ main]
   }
 
   if (Array.isArray(main)) {
-    return ['เลือกทั้งหมด', ...main]
+    return [...main]
   }
 
   return []
 })
 
 const sub2OptionsArray = computed(() => {
-  if (!mainCategory.value || !subCategory.value || subCategory.value === 'เลือกทั้งหมด') {
+  if (!mainCategory.value || !subCategory.value ) {
     return []
   }
 
@@ -1039,14 +1039,14 @@ const sub2OptionsArray = computed(() => {
   const subs = data.subs
 
   if (Array.isArray(subs)) {
-    return ['เลือกทั้งหมด', ...subs]
+    return [...subs]
   }
 
   return []
 })
 
 const hasAnySub = computed(() => {
-  if (!mainCategory.value || mainCategory.value === 'เลือกทั้งหมด') return false
+  if (!mainCategory.value ) return false
   const data = options[mainCategory.value]
   if (!data) return false
 
@@ -1055,7 +1055,7 @@ const hasAnySub = computed(() => {
 })
 
 const hasSub2 = computed(() => {
-  if (!mainCategory.value || !subCategory.value || subCategory.value === 'เลือกทั้งหมด')
+  if (!mainCategory.value || !subCategory.value )
     return false
   const data = options[mainCategory.value]
   if (!data) return false
@@ -1117,17 +1117,17 @@ const loadReceiptData = async () => {
     formData.value.sendmoney = data.sendmoney || data.moneyType || ''
 
     // 3-5. โหลด categories (เหมือนเดิม)
-    if (data.mainAffiliationName && data.mainAffiliationName !== 'เลือกทั้งหมด') {
+    if (data.mainAffiliationName ) {
       mainCategory.value = data.mainAffiliationName
       await nextTick()
     }
 
-    if (data.subAffiliationName1 && data.subAffiliationName1 !== 'เลือกทั้งหมด') {
+    if (data.subAffiliationName1) {
       subCategory.value = data.subAffiliationName1
       await nextTick()
     }
 
-    if (data.subAffiliationName2 && data.subAffiliationName2 !== 'เลือกทั้งหมด') {
+    if (data.subAffiliationName2 ) {
       subCategory2.value = data.subAffiliationName2
       await nextTick()
     }
@@ -1333,12 +1333,12 @@ const saveData = async () => {
     hasError = true
   }
 
-  if (hasAnySub.value && (!subCategory.value || subCategory.value === 'เลือกทั้งหมด')) {
+  if (hasAnySub.value && !subCategory.value) {
     errors.value.subCategory = 'กรุณาเลือก "หน่วยงานรอง"'
     hasError = true
   }
 
-  if (hasSub2.value && (!subCategory2.value || subCategory2.value === 'เลือกทั้งหมด')) {
+  if (hasSub2.value && !subCategory2.value) {
     errors.value.subCategory2 = 'กรุณาเลือก "หน่วยงานย่อย"'
     hasError = true
   }
@@ -1499,8 +1499,8 @@ const saveData = async () => {
     moneyTypeNote: 'Waybill',
     phone: formData.value.phone,
     mainAffiliationName: mainCategory.value,
-    subAffiliationName1: subCategory.value !== 'เลือกทั้งหมด' ? subCategory.value : '',
-    subAffiliationName2: subCategory2.value !== 'เลือกทั้งหมด' ? subCategory2.value : '',
+    subAffiliationName1: subCategory.value || '',
+    subAffiliationName2: subCategory2.value || '',
     fundName: formData.value.fundName,
     moneyType: formData.value.sendmoney,
     projectCode: formData.value.projectCode,
@@ -1612,6 +1612,7 @@ watch(
 
 <style lang="scss" scoped>
 /* Animated Background Mesh */
+
 .mesh-bg {
   position: fixed;
   top: 0;

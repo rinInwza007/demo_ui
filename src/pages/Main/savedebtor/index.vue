@@ -232,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import sidebar from '@/components/bar/sidebar.vue'
 
@@ -254,9 +254,12 @@ const selectedMain = ref('')
 const selectedSub1 = ref('')
 const selectedSub2 = ref('')
 const selectedItems = ref<Set<string>>(new Set())
-
-// ✅ ประวัติการทำรายการ
 const historyItems = ref<any[]>([])
+const isLoading = ref(false)
+
+// ========== Storage Watcher ==========
+let storageWatcher: any = null
+const currentUpdateTime = ref('')
 
 /**
  * ✅ แปลง receipt -> debtor items
@@ -269,6 +272,7 @@ const mapReceiptToDebtorItems = (receipt: any) => {
 
   let itemList: any[] = []
 
+  // โครงสร้างใหม่ (Debtor)
   if (receipt.debtorList && receipt.depositList) {
     itemList = receipt.debtorList.map((debtor: any, idx: number) => {
       const deposit = receipt.depositList[idx] || {}
@@ -330,6 +334,9 @@ const mapReceiptToDebtorItems = (receipt: any) => {
  * - treasury/admin/superadmin เห็นทุกหน่วยงาน
  */
 const loadReceiptData = async () => {
+  console.log('📥 Loading receipt data...')
+  isLoading.value = true
+
   try {
     if (!auth.isLoggedIn) {
       rawData.value = []
@@ -338,12 +345,14 @@ const loadReceiptData = async () => {
 
     const stored = localStorage.getItem('fakeApi.receipts')
     if (!stored) {
+      console.log('📭 No receipts in localStorage')
       rawData.value = []
       return
     }
 
     const allReceipts = JSON.parse(stored)
     if (!Array.isArray(allReceipts)) {
+      console.log('⚠️ Invalid data format')
       rawData.value = []
       return
     }
@@ -376,24 +385,30 @@ const loadReceiptData = async () => {
     const allDebtorItems = debtorReceipts.flatMap(mapReceiptToDebtorItems)
     rawData.value = allDebtorItems
   } catch (error) {
-    console.error('❌ Error loading data:', error)
+    console.error('❌ Load error:', error)
     rawData.value = []
+  } finally {
+    isLoading.value = false
   }
 }
 
-// ✅ โหลดประวัติ
+// ========== History Loading ==========
 const loadHistory = () => {
+  console.log('📜 Loading history...')
   try {
     const stored = localStorage.getItem('debtorClearHistory')
     if (stored) historyItems.value = JSON.parse(stored)
   } catch (error) {
-    console.error('❌ Error loading history:', error)
+    console.error('❌ History load error:', error)
+    historyItems.value = []
   }
 }
 
+// ========== Computed Properties ==========
 const filteredItems = computed(() => {
   let filtered = [...rawData.value]
 
+  // Search filter
   if (searchText.value.trim()) {
     const search = searchText.value.toLowerCase()
     filtered = filtered.filter((item) => {
@@ -440,12 +455,21 @@ const formatCurrency = (amount: number | string) => {
  * (เก็บ summary ไว้ที่ localStorage)
  */
 const clearSelectedDebtors = () => {
-  if (selectedItems.value.size === 0) return
+  if (selectedItems.value.size === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'กรุณาเลือกรายการ',
+      text: 'โปรดเลือกรายการลูกหนี้ที่ต้องการล้างอย่างน้อย 1 รายการ',
+      confirmButtonColor: '#7E22CE'
+    })
+    return
+  }
 
   const selectedIds = Array.from(selectedItems.value)
   const selectedList = rawData.value.filter((item) => selectedIds.includes(item.id))
   if (selectedList.length === 0) return
 
+  // จัดกลุ่มตาม receipt
   const groupedByReceipt = selectedList.reduce((acc, item) => {
     if (!acc[item.receiptId]) acc[item.receiptId] = []
     acc[item.receiptId].push(item)
@@ -512,15 +536,88 @@ const toggleSelectItem = (id: string) => {
   else selectedItems.value.add(id)
 }
 
-onMounted(() => {
-  loadReceiptData()
+const handleCustomUpdate = async () => {
+  console.log('📢 Custom update event received')
+  await nextTick()
+  await loadReceiptData()
   loadHistory()
-  window.addEventListener('focus', loadReceiptData)
+}
+
+// ========== Watchers ==========
+watch(activeTab, async (newTab) => {
+  console.log('📑 Tab changed:', newTab)
+
+  await nextTick()
+
+  if (newTab === 'new') {
+    await loadReceiptData()
+  } else if (newTab === 'history') {
+    loadHistory()
+  }
+})
+
+// ========== Lifecycle Hooks ==========
+onMounted(async () => {
+  console.log('🚀 Component mounted')
+
+  // โหลดข้อมูล
+  await loadReceiptData()
+  loadHistory()
+
+  // ตั้งค่า initial timestamp
+  currentUpdateTime.value = localStorage.getItem('receipts_last_update') || Date.now().toString()
+
+  // Listen events
+  window.addEventListener('focus', handleFocus)
+  window.addEventListener('storage', handleStorageChange)
+  window.addEventListener('receipts-updated', handleCustomUpdate)
+
+  // Watch localStorage ทุก 500ms
+  storageWatcher = setInterval(async () => {
+    const lastUpdate = localStorage.getItem('receipts_last_update')
+
+    if (lastUpdate && lastUpdate !== currentUpdateTime.value) {
+      console.log('🔄 Timestamp changed')
+      console.log('   Old:', currentUpdateTime.value)
+      console.log('   New:', lastUpdate)
+
+      currentUpdateTime.value = lastUpdate
+      await loadReceiptData()
+      loadHistory()
+    }
+  }, 500)
+
+  console.log('✅ All listeners attached')
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('focus', loadReceiptData)
+  console.log('👋 Component unmounting')
+
+  // Remove listeners
+  window.removeEventListener('focus', handleFocus)
+  window.removeEventListener('storage', handleStorageChange)
+  window.removeEventListener('receipts-updated', handleCustomUpdate)
+
+  if (storageWatcher) {
+    clearInterval(storageWatcher)
+  }
+
+  console.log('✅ Cleanup complete')
 })
+
+// ========== Expose for debugging ==========
+if (typeof window !== 'undefined') {
+  (window as any).debugSaveDebtor = {
+    forceReload,
+    loadReceiptData,
+    loadHistory,
+    rawData,
+    currentUpdateTime,
+    selectedItems
+  }
+
+  console.log('🔧 Debug tools available: window.debugSaveDebtor')
+}
 </script>
 
 <style scoped>

@@ -56,6 +56,31 @@ export const hospitalReceivableOptions = [
   { value: 'ลูกหนี้ค่าเครื่องมือแพทย์', type: 'receivable', department: 'hospital' },
 ]
 
+// 2.5 ลูกหนี้ของคณะวิศวกรรมศาสตร์
+export const engineeringReceivableOptions = [
+  { value: 'ลูกหนี้ค่าบริการทดสอบวัสดุ', type: 'receivable', department: 'engineering' },
+  { value: 'ลูกหนี้ค่าบริการวิเคราะห์ดิน', type: 'receivable', department: 'engineering' },
+  { value: 'ลูกหนี้ค่าบริการออกแบบ', type: 'receivable', department: 'engineering' },
+  { value: 'ลูกหนี้ค่าบริการที่ปรึกษา', type: 'receivable', department: 'engineering' },
+  { value: 'ลูกหนี้ค่าเช่าอุปกรณ์', type: 'receivable', department: 'engineering' },
+]
+
+// 2.6 ลูกหนี้ของคณะแพทยศาสตร์
+export const medicineReceivableOptions = [
+  { value: 'ลูกหนี้ค่าตรวจวินิจฉัย', type: 'receivable', department: 'medicine' },
+  { value: 'ลูกหนี้ค่าตรวจทางห้องปฏิบัติการ', type: 'receivable', department: 'medicine' },
+  { value: 'ลูกหนี้ค่าบริการเวชกรรม', type: 'receivable', department: 'medicine' },
+  { value: 'ลูกหนี้ค่าใช้ห้องผ่าตัด', type: 'receivable', department: 'medicine' },
+]
+
+// 2.7 ลูกหนี้ของคณะเภสัชศาสตร์
+export const pharmacyReceivableOptions = [
+  { value: 'ลูกหนี้ค่ายา', type: 'receivable', department: 'pharmacy' },
+  { value: 'ลูกหนี้ค่าบริการจัดยา', type: 'receivable', department: 'pharmacy' },
+  { value: 'ลูกหนี้ค่าตรวจวิเคราะห์ยา', type: 'receivable', department: 'pharmacy' },
+  { value: 'ลูกหนี้ค่าบริการเภสัชกรรม', type: 'receivable', department: 'pharmacy' },
+]
+
 /**
  * ========================================
  * 3. ฟังก์ชันช่วยเหลือ (Helper Functions)
@@ -78,6 +103,9 @@ export const getOptionsByWaybillType = (waybillType) => {
       ...nursingReceivableOptions,
       ...dentistryReceivableOptions,
       ...hospitalReceivableOptions,
+      ...engineeringReceivableOptions,
+      ...medicineReceivableOptions,
+      ...pharmacyReceivableOptions,
     ]
   }
   
@@ -86,7 +114,7 @@ export const getOptionsByWaybillType = (waybillType) => {
 
 /**
  * ดึง option ลูกหนี้ตามหน่วยงาน
- * @param {string} department - 'general', 'nursing', 'dentistry', 'hospital'
+ * @param {string} department - 'general', 'nursing', 'dentistry', 'hospital', 'engineering', 'medicine', 'pharmacy'
  * @returns {Array}
  */
 export const getReceivableOptionsByDepartment = (department) => {
@@ -95,6 +123,9 @@ export const getReceivableOptionsByDepartment = (department) => {
     nursing: [...generalReceivableOptions, ...nursingReceivableOptions],
     dentistry: [...generalReceivableOptions, ...dentistryReceivableOptions],
     hospital: [...generalReceivableOptions, ...hospitalReceivableOptions],
+    engineering: [...generalReceivableOptions, ...engineeringReceivableOptions],
+    medicine: [...generalReceivableOptions, ...medicineReceivableOptions],
+    pharmacy: [...generalReceivableOptions, ...pharmacyReceivableOptions],
   }
   
   return departmentMap[department] || generalReceivableOptions
@@ -143,6 +174,9 @@ export const isReceivableItem = (itemName) => {
     ...nursingReceivableOptions,
     ...dentistryReceivableOptions,
     ...hospitalReceivableOptions,
+    ...engineeringReceivableOptions,
+    ...medicineReceivableOptions,
+    ...pharmacyReceivableOptions,
   ]
   
   return allReceivables.some(opt => opt.value === itemName)
@@ -160,6 +194,9 @@ export const getItemType = (itemName) => {
     ...nursingReceivableOptions,
     ...dentistryReceivableOptions,
     ...hospitalReceivableOptions,
+    ...engineeringReceivableOptions,
+    ...medicineReceivableOptions,
+    ...pharmacyReceivableOptions,
   ]
   
   const foundOption = allOptions.find(opt => opt.value === itemName)
@@ -169,7 +206,7 @@ export const getItemType = (itemName) => {
 /**
  * ดึงหน่วยงานของรายการลูกหนี้
  * @param {string} itemName - ชื่อรายการ
- * @returns {string} - 'general', 'nursing', 'dentistry', 'hospital' หรือ 'unknown'
+ * @returns {string} - 'general', 'nursing', 'dentistry', 'hospital', 'engineering', 'medicine', 'pharmacy' หรือ 'unknown'
  */
 export const getItemDepartment = (itemName) => {
   const allReceivables = [
@@ -177,6 +214,9 @@ export const getItemDepartment = (itemName) => {
     ...nursingReceivableOptions,
     ...dentistryReceivableOptions,
     ...hospitalReceivableOptions,
+    ...engineeringReceivableOptions,
+    ...medicineReceivableOptions,
+    ...pharmacyReceivableOptions,
   ]
   
   const foundOption = allReceivables.find(opt => opt.value === itemName)
@@ -191,30 +231,3 @@ export const getItemDepartment = (itemName) => {
 
 // Export ชื่อเดิมเพื่อให้โค้ดเก่าใช้งานได้
 export const itemOptions = getAllOptions('general')
-
-/**
- * ========================================
- * 5. ตัวอย่างการใช้งาน
- * ========================================
- */
-
-// ตัวอย่าง: ดึง option สำหรับใบนำส่งเงิน (รายได้)
-// const incomeOpts = getOptionsByWaybillType('income')
-
-// ตัวอย่าง: ดึง option ลูกหนี้สำหรับคณะพยาบาล
-// const nursingOpts = getReceivableOptionsByDepartment('nursing')
-
-// ตัวอย่าง: ดึง option ทั้งหมดสำหรับคณะทันตแพทย์
-// const dentistryAllOpts = getAllOptions('dentistry')
-
-// ตัวอย่าง: ดึง option สำหรับ dropdown (เฉพาะ value)
-// const dropdownValues = getDropdownOptions('receivable', 'hospital')
-
-// ตัวอย่าง: เช็คว่าเป็นลูกหนี้หรือไม่
-// const isReceivable = isReceivableItem('ลูกหนี้ค่ารักษาพยาบาล') // true
-
-// ตัวอย่าง: ดึงประเภทของรายการ
-// const type = getItemType('ค่าบริการทางการแพทย์ (สปสช)') // 'income'
-
-// ตัวอย่าง: ดึงหน่วยงานของรายการลูกหนี้
-// const dept = getItemDepartment('ลูกหนี้ค่าจัดฟัน') // 'dentistry'

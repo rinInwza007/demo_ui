@@ -86,7 +86,7 @@
                 />
               </div>
 
-              <!-- ✅ ให้เพิ่มได้เฉพาะ treasury/admin/superadmin -->
+              <!-- ✅ user เท่านั้นที่เพิ่มได้ -->
               <button
                 v-if="canCreateWaybill"
                 @click="gotowaybil"
@@ -123,19 +123,17 @@
                 :key="item.id ?? index"
                 class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm"
               >
-                <!-- Status -->
+                <!-- Status (✅ 2 สถานะ: pending | success) -->
                 <div class="col-span-1 flex justify-center">
                   <div
                     class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
                     :class="{
-                      'bg-red-100 text-red-500': item.status === 'cancel',
                       'bg-yellow-100 text-yellow-600': item.status === 'pending',
                       'bg-green-100 text-green-500': item.status === 'success'
                     }"
                   >
-                    <i v-if="item.status === 'cancel'" class="ph-fill ph-x-circle text-lg"></i>
                     <i v-if="item.status === 'pending'" class="ph-fill ph-clock text-lg"></i>
-                    <i v-if="item.status === 'success'" class="ph-fill ph-check-circle text-lg"></i>
+                    <i v-else class="ph-fill ph-check-circle text-lg"></i>
                   </div>
                 </div>
 
@@ -150,7 +148,9 @@
 
                 <!-- Project -->
                 <div class="col-span-1">
-                  <span class="bg-blue-50/50 text-blue-700 text-xs px-2.5 py-1 rounded-lg border border-blue-100 font-medium">
+                  <span
+                    class="bg-blue-50/50 text-blue-700 text-xs px-2.5 py-1 rounded-lg border border-blue-100 font-medium"
+                  >
                     {{ item.project }}
                   </span>
                 </div>
@@ -203,13 +203,13 @@
                 <!-- Actions -->
                 <div class="col-span-2 flex justify-center">
                   <ActionButtons
-  :item="item"
-  :permissions="['view','edit','delete','lock']"
-  @view="view"
-  @edit="edit"
-  @delete="removeItem"
-  @lock="toggleLock"
-/>
+                    :item="item"
+                    :permissions="rowPermissions(item)"
+                    @view="view"
+                    @edit="edit"
+                    @delete="removeItem"
+                    @approve="approveItem"
+                  />
                 </div>
               </div>
 
@@ -230,7 +230,9 @@
                 <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 disabled:opacity-50 text-xs">
                   Prev
                 </button>
-                <button class="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs shadow-md shadow-blue-500/30 font-medium">
+                <button
+                  class="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs shadow-md shadow-blue-500/30 font-medium"
+                >
                   1
                 </button>
                 <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">
@@ -258,7 +260,6 @@ import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 
 import type { Receipt } from '@/types/receipt'
-
 import { useAuthStore } from '@/stores/auth'
 
 import { setupAxiosMock } from '@/fake/mockAxios'
@@ -280,7 +281,13 @@ const selectedMain = ref('')
 const selectedSub1 = ref('')
 const selectedSub2 = ref('')
 
+/** ✅ user เท่านั้นที่สร้างใบนำส่ง */
 const canCreateWaybill = computed(() => auth.isRole('user'))
+
+/** ✅ treasury เท่านั้นที่อนุมัติ */
+const canApprove = computed(() => auth.isRole('treasury'))
+
+type ActionKey = 'view' | 'edit' | 'delete' | 'approve' | 'lock' | 'cleardebtor'
 
 const moneyTypeLabel: Record<string, string> = {
   cash: 'เงินสด',
@@ -324,9 +331,11 @@ const hasBeenEdited = (createdAt: Date | null, updatedAt: Date | null) => {
   return Math.abs(updatedAt.getTime() - createdAt.getTime()) > 1000
 }
 
+type TableStatus = 'pending' | 'success'
+
 type TableRow = {
   id: string
-  status: 'cancel' | 'pending' | 'success'
+  status: TableStatus
   department: string
   subDepartment: string
   time: string
@@ -363,12 +372,15 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
   const isEdited = hasBeenEdited(createdDate, updatedDate)
   const displayDate = isEdited ? updatedDate : createdDate
 
+  const locked = r.isLocked ?? false
+
   return {
     id: r.projectCode,
-    status: r.isLocked ? 'success' : 'pending',
+    /** ✅ สถานะ 2 ค่า: pending | success */
+    status: locked ? 'success' : 'pending',
 
     department: r.mainAffiliationName || r.affiliationName || '-',
-    subDepartment: r.subAffiliationName1 || '-', // ✅ ใช้ field ตาม type ที่คุณส่งมา
+    subDepartment: r.subAffiliationName1 || '-',
     time: formatThaiDateTime(displayDate),
 
     project: r.fundName || '-',
@@ -380,7 +392,7 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
 
     createdAt: createdDate,
     updatedAt: updatedDate,
-    isLocked: r.isLocked ?? false,
+    isLocked: locked,
     _raw: r,
   }
 }
@@ -409,12 +421,12 @@ const items = computed<TableRow[]>(() => {
   // ✅ 0) ต้อง login ก่อน
   if (!auth.user) return []
 
-  // ✅ 1) Filter by affiliationId
-  if (auth.user.role !== 'superadmin') {
+  // ✅ 1) user เห็นเฉพาะ affiliation ตัวเอง / treasury เห็นทั้งหมด
+  if (auth.user.role === 'user') {
     filtered = filtered.filter((r) => r.affiliationId === auth.user!.affiliationId)
   }
 
-  // ✅ 2) MAIN filter (ชื่อสังกัดหลัก)
+  // ✅ 2) MAIN filter
   if (selectedMain.value) {
     filtered = filtered.filter((r) => {
       const main = (r.mainAffiliationName || r.affiliationName || '').trim()
@@ -446,6 +458,23 @@ const items = computed<TableRow[]>(() => {
   return filtered.map(mapReceiptToRow)
 })
 
+/** ✅ สิทธิ action ต่อแถว: user แก้/ลบได้เฉพาะ pending, treasury approve ได้เฉพาะ pending */
+const rowPermissions = (row: TableRow): ActionKey[] => {
+  const perms: ActionKey[] = ['view']
+
+  // user แก้/ลบได้เฉพาะ pending
+  if (auth.isRole('user') && row.status === 'pending') {
+    perms.push('edit', 'delete')
+  }
+
+  // treasury อนุมัติได้เฉพาะ pending
+  if (canApprove.value && row.status === 'pending') {
+    perms.push('approve')
+  }
+
+  return perms
+}
+
 onMounted(async () => {
   // ✅ กันหลุด: ถ้าไม่ login ให้กลับไปหน้า login
   if (!auth.isLoggedIn) {
@@ -457,26 +486,49 @@ onMounted(async () => {
 
 const view = (item: TableRow) => router.push(`/pdfpage/${item.id}`)
 const edit = (item: TableRow) => router.push(`/waybill/edit/${item.id}`)
+
 const gotowaybil = () => {
-  if (!auth.isRole('user')) {
+  if (!canCreateWaybill.value) {
     Swal.fire('ไม่มีสิทธิ์', 'เฉพาะผู้ใช้ (user) เท่านั้นที่สามารถเพิ่มใบนำส่งเงินได้', 'warning')
     return
   }
   router.push('/waybill')
 }
 
-const toggleLock = (row: TableRow) => {
+/** ✅ Approve (pending -> success)
+ * - ตอนนี้ใช้ isLocked เป็นตัวแทน success
+ * - ถ้าต่อ API จริง: เปลี่ยนเป็น axios.patch('/approveReceipt/:id')
+ */
+const approveItem = async (row: TableRow) => {
+  if (!canApprove.value) {
+    Swal.fire('ไม่มีสิทธิ์', 'เฉพาะกองคลัง (treasury) เท่านั้นที่อนุมัติได้', 'warning')
+    return
+  }
+  if (row.status !== 'pending') return
+
+  const result = await Swal.fire({
+    title: 'อนุมัติรายการนี้?',
+    text: `โครงการ: ${row.project}`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'อนุมัติ',
+    cancelButtonText: 'ยกเลิก',
+  })
+
+  if (!result.isConfirmed) return
+
   const target = rawData.value.find((r) => r.projectCode === row.id)
   if (!target) return
 
-  target.isLocked = !target.isLocked
+  // ✅ อนุมัติแล้ว = success
+  target.isLocked = true
 
   Swal.fire({
     position: 'top-end',
     icon: 'success',
-    title: target.isLocked ? 'ล็อกรายการสำเร็จ' : 'ปลดล็อกรายการสำเร็จ',
+    title: 'อนุมัติแล้ว (Success)',
     showConfirmButton: false,
-    timer: 1500,
+    timer: 1200,
   })
 }
 
@@ -498,38 +550,36 @@ const removeItem = async (item: TableRow) => {
 }
 </script>
 
-
 <style>
 body {
-    font-family: 'Prompt', 'Inter', sans-serif;
-    margin: 0;
-    padding: 0;
-    /* ⭐ ลบ overflow: hidden; ออก */
+  font-family: 'Prompt', 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
 /* Animated Background Mesh */
 .mesh-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: #f0f2f5;
-    background-image:
-        radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
-        radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-    background-size: cover;
-    z-index: -2;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f0f2f5;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+  background-size: cover;
+  z-index: -2;
 }
 
 .orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    z-index: -1;
-    opacity: 0.8;
-    animation: float 10s infinite ease-in-out;
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  opacity: 0.8;
+  animation: float 10s infinite ease-in-out;
 }
 
 .orb-1 { width: 600px; height: 600px; background: #56CCF2; top: -100px; left: -100px; animation-delay: 0s; }
@@ -537,62 +587,61 @@ body {
 .orb-3 { width: 400px; height: 400px; background: #7918F2; top: 40%; left: 40%; animation-delay: 4s; }
 
 @keyframes float {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    50% { transform: translate(20px, 40px) rotate(10deg); }
-    100% { transform: translate(0, 0) rotate(0deg); }
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(20px, 40px) rotate(10deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
 }
 
 /* Glassmorphism Utilities */
 .glass-panel {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
 }
 
 .glass-input {
-    background: rgba(255, 255, 255, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(4px);
-    transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
 }
 
 .glass-input:focus {
-    background: rgba(255, 255, 255, 0.8);
-    border-color: #3b82f6;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background: rgba(255, 255, 255, 0.8);
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .glass-button-primary {
-    background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+  background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
 }
 
 .glass-button-primary:hover {
-    box-shadow: 0 6px 20px rgba(126, 34, 206, 0.4);
-    transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(126, 34, 206, 0.4);
+  transform: translateY(-1px);
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.1);
-    border-radius: 4px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.2);
 }
-
 </style>

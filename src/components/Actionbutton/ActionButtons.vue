@@ -71,16 +71,7 @@
       <i class="material-symbols-outlined text-emerald-600">check_circle</i>
     </button>
 
-    <!-- ไม่อนุมัติ -->
-    <button
-      v-if="canShow('notapprove')"
-      :disabled="isDisabled('notapprove')"
-      @click="emitSafe('notapprove')"
-      v-tippy="'ไม่อนุมัติ'"
-      class="hvr-bob"
-    >
-      <i class="material-symbols-outlined text-rose-600">cancel</i>
-    </button>
+
   </div>
 </template>
 
@@ -99,7 +90,7 @@ export type ActionKey =
   | 'delete'
   | 'cleardebtor'
   | 'approve'
-  | 'notapprove'
+
 
 /**
  * ✅ โครง item ขั้นต่ำที่ component ต้องใช้
@@ -156,7 +147,7 @@ const actionToPermission: Record<ActionKey, string> = {
   delete: 'delete',
   cleardebtor: 'cleardebtor',
   approve: 'approve',
-  notapprove: 'notapprove',
+
 }
 
 /**

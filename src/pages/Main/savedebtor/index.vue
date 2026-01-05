@@ -217,18 +217,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import { options } from "@/components/data/departments"
 import sidebar from '@/components/bar/sidebar.vue'
-import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 
 setupAxiosMock()
 
 const router = useRouter()
 
+// ========== State Management ==========
 const activeTab = ref('new')
 const searchText = ref('')
 const rawData = ref<any[]>([])
@@ -236,19 +236,33 @@ const selectedMain = ref("")
 const selectedSub1 = ref("")
 const selectedSub2 = ref("")
 const selectedItems = ref<Set<string>>(new Set())
-
-// ✅ ประวัติการทำรายการ
 const historyItems = ref<any[]>([])
+const isLoading = ref(false)
 
-// ✅ แก้ไขฟังก์ชัน mapReceiptToDebtorItems
+// ========== Storage Watcher ==========
+let storageWatcher: any = null
+const currentUpdateTime = ref('')
+
+// ========== Utility Functions ==========
+const formatCurrency = (amount: number | string) => {
+  const n = typeof amount === 'string'
+    ? Number(amount.toString().replace(/[^0-9.-]/g, ''))
+    : amount || 0
+
+  return n.toLocaleString('th-TH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+// ========== Data Mapping ==========
 const mapReceiptToDebtorItems = (receipt: any) => {
   const items: any[] = []
 
-  // ✅ รองรับทั้งโครงสร้างเก่า (receiptList) และใหม่ (debtorList + depositList)
   let itemList: any[] = []
 
+  // โครงสร้างใหม่ (Debtor)
   if (receipt.debtorList && receipt.depositList) {
-    // โครงสร้างใหม่
     itemList = receipt.debtorList.map((debtor: any, idx: number) => {
       const deposit = receipt.depositList[idx] || {}
       return {
@@ -259,12 +273,12 @@ const mapReceiptToDebtorItems = (receipt: any) => {
         fee: Number(deposit.fee || 0),
       }
     })
-  } else if (receipt.receiptList) {
-    // ✅ โครงสร้างเก่า (waybilldebtor) - แปลง receiptList
+  }
+  // โครงสร้างเก่า (Waybill)
+  else if (receipt.receiptList) {
     itemList = receipt.receiptList.map((item: any) => ({
       itemName: item.itemName || '-',
       note: item.note || '',
-      // ✅ สำคัญ: ใช้ amount เป็น debtorAmount
       debtorAmount: Number(item.amount || item.debtorAmount || 0),
       depositNetAmount: Number(item.depositNetAmount || 0),
       fee: Number(item.fee || 0),
@@ -274,7 +288,6 @@ const mapReceiptToDebtorItems = (receipt: any) => {
   if (!Array.isArray(itemList)) return items
 
   itemList.forEach((item: any, idx: number) => {
-    // ✅ ตรวจสอบว่ามี debtorAmount จริงๆ
     const debtAmount = Number(item.debtorAmount || 0)
 
     if (debtAmount > 0) {
@@ -301,12 +314,16 @@ const mapReceiptToDebtorItems = (receipt: any) => {
   return items
 }
 
-// ✅ แก้ไขฟังก์ชัน loadData
+// ========== Data Loading ==========
 const loadReceiptData = async () => {
+  console.log('📥 Loading receipt data...')
+  isLoading.value = true
+
   try {
     const stored = localStorage.getItem('fakeApi.receipts')
 
     if (!stored) {
+      console.log('📭 No receipts in localStorage')
       rawData.value = []
       return
     }
@@ -314,46 +331,64 @@ const loadReceiptData = async () => {
     const allReceipts = JSON.parse(stored)
 
     if (!Array.isArray(allReceipts)) {
+      console.log('⚠️ Invalid data format')
       rawData.value = []
       return
     }
 
-    // ✅ กรองเฉพาะ receipts ที่เป็น Debtor หรือ Waybill ที่มี receiptList
+    console.log(`📦 Total receipts: ${allReceipts.length}`)
+
+    // กรองเฉพาะ Debtor และ Waybill ที่มี items
     const debtorReceipts = allReceipts.filter((r: any) =>
       r.moneyTypeNote === 'Debtor' ||
       (r.moneyTypeNote === 'Waybill' && r.receiptList && r.receiptList.length > 0)
     )
 
-    console.log('📊 Debtor Receipts:', debtorReceipts)
+    console.log(`📊 Debtor receipts: ${debtorReceipts.length}`)
 
     const allDebtorItems = debtorReceipts.flatMap(mapReceiptToDebtorItems)
 
-    console.log('📋 All Debtor Items:', allDebtorItems)
-    console.log('💰 Total Debtor Amount:', allDebtorItems.reduce((sum, item) => sum + item.debtorAmount, 0))
+    console.log(`📋 Total items: ${allDebtorItems.length}`)
+    console.log(`💰 Total amount: ${allDebtorItems.reduce((sum, item) => sum + item.debtorAmount, 0)}`)
 
     rawData.value = allDebtorItems
 
+    // อัพเดท timestamp
+    currentUpdateTime.value = localStorage.getItem('receipts_last_update') || Date.now().toString()
+
+    console.log('✅ Data loaded successfully')
+
   } catch (error) {
-    console.error('❌ Error loading data:', error)
+    console.error('❌ Load error:', error)
     rawData.value = []
+  } finally {
+    isLoading.value = false
   }
 }
 
-// ✅ โหลดประวัติ
+// ========== History Loading ==========
 const loadHistory = () => {
+  console.log('📜 Loading history...')
   try {
     const stored = localStorage.getItem('debtorClearHistory')
     if (stored) {
       historyItems.value = JSON.parse(stored)
+      console.log(`📜 History loaded: ${historyItems.value.length} items`)
+    } else {
+      historyItems.value = []
+      console.log('📜 No history found')
     }
   } catch (error) {
-    console.error('❌ Error loading history:', error)
+    console.error('❌ History load error:', error)
+    historyItems.value = []
   }
 }
 
+// ========== Computed Properties ==========
 const filteredItems = computed(() => {
   let filtered = [...rawData.value]
 
+  // Search filter
   if (searchText.value.trim()) {
     const search = searchText.value.toLowerCase()
     filtered = filtered.filter(item =>
@@ -364,14 +399,17 @@ const filteredItems = computed(() => {
     )
   }
 
+  // Main category filter
   if (selectedMain.value) {
     filtered = filtered.filter(item => item.department === selectedMain.value)
   }
 
+  // Sub category 1 filter
   if (selectedSub1.value) {
     filtered = filtered.filter(item => item.subDepartment === selectedSub1.value)
   }
 
+  // Sub category 2 filter
   if (selectedSub2.value) {
     filtered = filtered.filter(item =>
       item._originalReceipt?.subAffiliationName2 === selectedSub2.value
@@ -388,28 +426,42 @@ const selectedTotal = computed(() => {
     .reduce((sum, item) => sum + item.debtorAmount, 0)
 })
 
-const formatCurrency = (amount: number | string) => {
-  const n = typeof amount === 'string'
-    ? Number(amount.toString().replace(/[^0-9.-]/g, ''))
-    : amount || 0
-
-  return n.toLocaleString('th-TH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+// ========== UI Actions ==========
+const toggleSelectItem = (id: string) => {
+  if (selectedItems.value.has(id)) {
+    selectedItems.value.delete(id)
+  } else {
+    selectedItems.value.add(id)
+  }
 }
 
-// ✅ แก้ไขฟังก์ชัน clearSelectedDebtors
 const clearSelectedDebtors = () => {
-  if (selectedItems.value.size === 0) return
+  if (selectedItems.value.size === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'กรุณาเลือกรายการ',
+      text: 'โปรดเลือกรายการลูกหนี้ที่ต้องการล้างอย่างน้อย 1 รายการ',
+      confirmButtonColor: '#7E22CE'
+    })
+    return
+  }
 
   const selectedIds = Array.from(selectedItems.value)
   const selectedList = rawData.value.filter(item =>
     selectedIds.includes(item.id)
   )
 
-  if (selectedList.length === 0) return
+  if (selectedList.length === 0) {
+    Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: 'ไม่พบรายการที่เลือก',
+      confirmButtonColor: '#DC2626'
+    })
+    return
+  }
 
+  // จัดกลุ่มตาม receipt
   const groupedByReceipt = selectedList.reduce((acc, item) => {
     if (!acc[item.receiptId]) {
       acc[item.receiptId] = []
@@ -418,26 +470,21 @@ const clearSelectedDebtors = () => {
     return acc
   }, {} as Record<string, any[]>)
 
+  // สร้าง receipts data
   const receipts = Object.keys(groupedByReceipt).map(receiptId => {
     const itemsInReceipt = groupedByReceipt[receiptId]
     const firstItem = itemsInReceipt[0]
     const originalReceipt = firstItem._originalReceipt
 
-    // ✅ สร้าง items โดยใช้ debtorAmount
     const items = itemsInReceipt.map(item => {
       const debtAmount = Number(item.debtorAmount || 0)
-
-      console.log('📝 Creating item:', {
-        itemName: item.itemName,
-        debtorAmount: debtAmount
-      })
 
       return {
         id: item.id,
         itemName: item.itemName,
         note: item.note,
-        amount: debtAmount, // ✅ ส่งเป็น amount
-        debtorAmount: debtAmount, // ✅ เก็บทั้งสองค่า
+        amount: debtAmount,
+        debtorAmount: debtAmount,
         depositNetAmount: Number(item.depositNetAmount || 0),
         fee: Number(item.fee || 0),
         responsible: item.responsible || originalReceipt?.fullName || 'ไม่ระบุ',
@@ -451,12 +498,6 @@ const clearSelectedDebtors = () => {
     const totalPaidAmount = items.reduce((sum, item) =>
       sum + Number(item.depositNetAmount || 0), 0
     )
-
-    console.log('📊 Receipt summary:', {
-      receiptId,
-      itemsCount: items.length,
-      totalDebtorAmount,
-    })
 
     return {
       receiptId,
@@ -485,30 +526,127 @@ const clearSelectedDebtors = () => {
     totalItems: selectedList.length,
   }
 
-  console.log('📤 Final Summary:', summary)
-  console.log('💰 Total Debtor Amount:', summary.totalDebtorAmount)
+  console.log('📤 Saving summary:', summary)
 
   localStorage.setItem('clearDebtorSummary', JSON.stringify(summary))
   router.push(`/cleardebtor/multi`)
 }
 
-const toggleSelectItem = (id: string) => {
-  if (selectedItems.value.has(id)) {
-    selectedItems.value.delete(id)
-  } else {
-    selectedItems.value.add(id)
+// ========== Force Reload Function ==========
+const forceReload = async () => {
+  console.log('🔄 Force reload triggered')
+  isLoading.value = true
+  await loadReceiptData()
+  loadHistory()
+
+  Swal.fire({
+    icon: 'success',
+    title: 'โหลดข้อมูลสำเร็จ',
+    timer: 1000,
+    showConfirmButton: false
+  })
+}
+
+// ========== Event Handlers ==========
+const handleFocus = async () => {
+  console.log('👀 Window focused')
+  await loadReceiptData()
+  loadHistory()
+}
+
+const handleStorageChange = async (e: StorageEvent) => {
+  console.log('📢 Storage event:', e.key, e.newValue)
+
+  if (e.key === 'receipts_last_update' || e.key === 'fakeApi.receipts' || e.key === 'debtorClearHistory') {
+    console.log('🔄 Reloading due to storage change...')
+    await nextTick()
+    await loadReceiptData()
+    loadHistory()
   }
 }
 
-onMounted(() => {
-  loadReceiptData()
+const handleCustomUpdate = async () => {
+  console.log('📢 Custom update event received')
+  await nextTick()
+  await loadReceiptData()
   loadHistory()
-  window.addEventListener('focus', loadReceiptData)
+}
+
+// ========== Watchers ==========
+watch(activeTab, async (newTab) => {
+  console.log('📑 Tab changed:', newTab)
+
+  await nextTick()
+
+  if (newTab === 'new') {
+    await loadReceiptData()
+  } else if (newTab === 'history') {
+    loadHistory()
+  }
+})
+
+// ========== Lifecycle Hooks ==========
+onMounted(async () => {
+  console.log('🚀 Component mounted')
+
+  // โหลดข้อมูล
+  await loadReceiptData()
+  loadHistory()
+
+  // ตั้งค่า initial timestamp
+  currentUpdateTime.value = localStorage.getItem('receipts_last_update') || Date.now().toString()
+
+  // Listen events
+  window.addEventListener('focus', handleFocus)
+  window.addEventListener('storage', handleStorageChange)
+  window.addEventListener('receipts-updated', handleCustomUpdate)
+
+  // Watch localStorage ทุก 500ms
+  storageWatcher = setInterval(async () => {
+    const lastUpdate = localStorage.getItem('receipts_last_update')
+
+    if (lastUpdate && lastUpdate !== currentUpdateTime.value) {
+      console.log('🔄 Timestamp changed')
+      console.log('   Old:', currentUpdateTime.value)
+      console.log('   New:', lastUpdate)
+
+      currentUpdateTime.value = lastUpdate
+      await loadReceiptData()
+      loadHistory()
+    }
+  }, 500)
+
+  console.log('✅ All listeners attached')
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('focus', loadReceiptData)
+  console.log('👋 Component unmounting')
+
+  // Remove listeners
+  window.removeEventListener('focus', handleFocus)
+  window.removeEventListener('storage', handleStorageChange)
+  window.removeEventListener('receipts-updated', handleCustomUpdate)
+
+  if (storageWatcher) {
+    clearInterval(storageWatcher)
+  }
+
+  console.log('✅ Cleanup complete')
 })
+
+// ========== Expose for debugging ==========
+if (typeof window !== 'undefined') {
+  (window as any).debugSaveDebtor = {
+    forceReload,
+    loadReceiptData,
+    loadHistory,
+    rawData,
+    currentUpdateTime,
+    selectedItems
+  }
+
+  console.log('🔧 Debug tools available: window.debugSaveDebtor')
+}
 </script>
 
 <style scoped>

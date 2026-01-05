@@ -280,7 +280,7 @@ const selectedMain = ref('')
 const selectedSub1 = ref('')
 const selectedSub2 = ref('')
 
-const canCreateWaybill = computed(() => auth.isRole('treasury', 'admin', 'superadmin'))
+const canCreateWaybill = computed(() => auth.isRole('user'))
 
 const moneyTypeLabel: Record<string, string> = {
   cash: 'เงินสด',
@@ -457,7 +457,13 @@ onMounted(async () => {
 
 const view = (item: TableRow) => router.push(`/pdfpage/${item.id}`)
 const edit = (item: TableRow) => router.push(`/waybill/edit/${item.id}`)
-const gotowaybil = () => router.push('/waybill')
+const gotowaybil = () => {
+  if (!auth.isRole('user')) {
+    Swal.fire('ไม่มีสิทธิ์', 'เฉพาะผู้ใช้ (user) เท่านั้นที่สามารถเพิ่มใบนำส่งเงินได้', 'warning')
+    return
+  }
+  router.push('/waybill')
+}
 
 const toggleLock = (row: TableRow) => {
   const target = rawData.value.find((r) => r.projectCode === row.id)

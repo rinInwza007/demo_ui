@@ -32,14 +32,17 @@
       </RouterLink>
     </nav>
 
-    <!-- User Profile -->
-    <div class="p-4 border-t border-white/30">
-      <div class="flex items-center gap-3 bg-white/30 p-2 rounded-xl backdrop-blur-sm">
-        <img
-          :src="avatarUrl"
-          class="w-9 h-9 rounded-full shadow-sm"
-        />
-        <div class="hidden lg:block">
+    <!-- User Profile + Dropdown -->
+    <div class="p-4 border-t border-white/30 relative" ref="profileAreaRef">
+      <!-- Profile Row (click to toggle) -->
+      <button
+        type="button"
+        @click="toggleMenu"
+        class="w-full flex items-center gap-3 bg-white/30 p-2 rounded-xl backdrop-blur-sm hover:bg-white/40 transition relative"
+      >
+        <img :src="avatarUrl" class="w-9 h-9 rounded-full shadow-sm" />
+
+        <div class="hidden lg:block text-left flex-1">
           <p class="text-sm font-semibold text-slate-800">
             {{ auth.user?.fullName ?? 'ผู้ใช้งาน' }}
           </p>
@@ -47,75 +50,82 @@
             {{ auth.user?.affiliation ?? '-' }} • {{ auth.user?.role ?? '-' }}
           </p>
         </div>
-      </div>
+
+        <!-- caret -->
+        <i
+          class="ph ph-caret-up-down hidden lg:block text-slate-500 transition-transform"
+          :class="isOpen ? 'rotate-180' : ''"
+        ></i>
+      </button>
+
+      <!-- Dropdown -->
+      <transition name="fade-slide">
+        <div
+          v-if="isOpen"
+          class="absolute left-4 right-4 bottom-[84px] hidden lg:block"
+        >
+          <div class="glass-panel rounded-xl overflow-hidden shadow-lg border border-white/40">
+            <button
+              type="button"
+              @click="handleLogout"
+              class="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-white/50 transition"
+            >
+              <i class="ph ph-sign-out text-lg text-rose-500"></i>
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Mobile (sidebar collapsed): show only icon dropdown -->
+      <transition name="fade-slide">
+        <div
+          v-if="isOpen"
+          class="absolute left-3 bottom-[84px] lg:hidden"
+        >
+          <div class="glass-panel rounded-xl overflow-hidden shadow-lg border border-white/40 w-44">
+            <button
+              type="button"
+              @click="handleLogout"
+              class="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-white/50 transition"
+            >
+              <i class="ph ph-sign-out text-lg text-rose-500"></i>
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </transition>
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onBeforeUnmount, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore, type roleType } from '@/stores/auth'
 
 const auth = useAuthStore()
+const router = useRouter()
 
 type MenuItem = {
   id: string
   label: string
   icon: string
   routeName: string
-
-  /**
-   * ✅ ถ้าไม่ใส่ roles = ทุก role เห็นได้
-   * ✅ ถ้าใส่ roles = เห็นเฉพาะ role ที่กำหนด
-   */
   roles?: roleType[]
-
-  /**
-   * ✅ (optional) ถ้าคุณทำ auth.can() แล้วค่อยเปิดใช้ได้
-   * permissions?: Array<'view'|'edit'|'delete'|...>
-   */
-  // permissions?: string[]
 }
 
 const menuItems: MenuItem[] = [
-  {
-    id: 'main',
-    label: 'ใบนำส่งเงิน',
-    icon: 'ph ph-files',
-    routeName: 'main',
-    roles: ['user', 'treasury', 'admin', 'superadmin'], // ทุกคนเห็น
-  },
-  {
-    id: 'indexsavedebtor',
-    label: 'ล้างลูกหนี้',
-    icon: 'ph ph-files',
-    routeName: 'indexsavedebtor',
-    roles: ['user', 'treasury', 'admin', 'superadmin'], // ทุกคนเห็น
-  },
-  {
-    id: 'Report_submit',
-    label: 'รายงานสรุป',
-    icon: 'ph ph-chart-bar',
-    routeName: 'Report_submit',
-    roles: ['user', 'treasury', 'admin', 'superadmin'], // ทุกคนเห็น
-  },
-  {
-    id: 'daily_closing',
-    label: 'สรุปยอดรายวัน',
-    icon: 'ph ph-files',
-    routeName: 'daily_closing',
-    roles: ['user', 'treasury', 'admin', 'superadmin'], // ทุกคนเห็น
-  },
+  { id: 'main', label: 'ใบนำส่งเงิน', icon: 'ph ph-files', routeName: 'main', roles: ['user','treasury','admin','superadmin'] },
+  { id: 'indexsavedebtor', label: 'ล้างลูกหนี้', icon: 'ph ph-files', routeName: 'indexsavedebtor', roles: ['user','admin','superadmin'] },
+  { id: 'Report_submit', label: 'รายงานสรุป', icon: 'ph ph-chart-bar', routeName: 'Report_submit', roles: ['treasury','admin','superadmin'] },
+  { id: 'daily_closing', label: 'สรุปยอดรายวัน', icon: 'ph ph-files', routeName: 'daily_closing', roles: ['treasury','admin','superadmin'] },
 ]
 
 const filteredMenuItems = computed(() => {
-  // ยังไม่ login → จะให้แสดงอะไรบ้างแล้วแต่คุณ
   if (!auth.user) return []
-
   const role = auth.user.role
-
   return menuItems.filter((item) => {
-    // ถ้าไม่กำหนด roles = แสดงได้ทุกคน
     if (!item.roles || item.roles.length === 0) return true
     return item.roles.includes(role)
   })
@@ -123,7 +133,60 @@ const filteredMenuItems = computed(() => {
 
 const avatarUrl = computed(() => {
   const name = encodeURIComponent(auth.user?.fullName || 'User')
-  // UI Avatars (ปลอดภัยสำหรับ demo)
   return `https://ui-avatars.com/api/?name=${name}&background=0D8ABC&color=fff`
 })
+
+/** Dropdown state */
+const isOpen = ref(false)
+const profileAreaRef = ref<HTMLElement | null>(null)
+
+const toggleMenu = () => {
+  isOpen.value = !isOpen.value
+}
+
+const closeMenu = () => {
+  isOpen.value = false
+}
+
+const onClickOutside = (e: MouseEvent) => {
+  const el = profileAreaRef.value
+  if (!el) return
+  const target = e.target as Node
+  if (!el.contains(target)) closeMenu()
+}
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onClickOutside)
+})
+
+const handleLogout = async () => {
+  closeMenu()
+
+  // ถ้ามี auth.logout() ใช้ได้เลย
+  if (typeof (auth as any).logout === 'function') {
+    await (auth as any).logout()
+  } else {
+    // fallback เผื่อยังไม่ทำ logout ใน store
+    ;(auth as any).token = ''
+    ;(auth as any).user = null
+  }
+
+  router.push({ name: 'testlogin' })
+}
 </script>
+
+<style scoped>
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.18s ease;
+}
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
+</style>

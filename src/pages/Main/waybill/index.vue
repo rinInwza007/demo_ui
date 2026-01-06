@@ -12,45 +12,115 @@
 
       <!-- Main Content -->
       <main class="flex-1 flex flex-col relative z-10 min-h-0">
-        <!-- Header Bar -->
-        <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2 flex-shrink-0">
-          <div>
-            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <i class="ph ph-files"></i>
-              ใบนำส่งเงิน
-            </h1>
-            <p class="text-xs text-slate-800 mt-0.5">จัดการใบนำส่งเงิน</p>
-          </div>
+        <!-- ✅ Header Bar (summary + active filters) -->
+        <header class="px-8 pt-4 pb-3 flex-shrink-0 header-divider">
+          <div class="flex items-start justify-between gap-6">
+            <!-- Left -->
+            <div class="min-w-0">
+              <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                <i class="ph ph-files"></i>
+                ใบนำส่งเงิน
+              </h1>
 
-          <div class="flex items-center gap-3">
-            <!-- ✅ แสดงสถานะผู้ใช้ (ช่วยตอนเทส) -->
-            <div
-              v-if="auth.user"
-              class="hidden md:flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-white/50 border border-white/60"
-            >
-              <span class="font-medium text-slate-800">{{ auth.user.fullName }}</span>
-              <span class="text-slate-500">•</span>
-              <span class="text-slate-700">{{ auth.user.role }}</span>
-              <span class="text-slate-500">•</span>
-              <span class="text-slate-700 font-mono">{{ auth.user.affiliationId }}</span>
+              <div class="flex flex-wrap items-center gap-2 mt-1">
+                <p class="text-xs text-slate-800">จัดการใบนำส่งเงิน</p>
+
+                <!-- ✅ Active Filter indicator -->
+                <div
+                  v-if="activeFiltersText"
+                  class="text-[11px] text-slate-600 px-2 py-1 rounded-full bg-white/45 border border-white/60 backdrop-blur"
+                >
+                  <i class="ph ph-funnel-simple text-xs mr-1"></i>
+                  {{ activeFiltersText }}
+                </div>
+              </div>
+
+              <!-- ✅ Summary pills -->
+              <div class="mt-2 flex flex-wrap items-center gap-2">
+                <div
+                  class="flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-full bg-white/45 border border-white/60 backdrop-blur"
+                >
+                  <i class="ph ph-files text-xs text-slate-500"></i>
+                  <span class="text-slate-700">ทั้งหมด</span>
+                  <span class="font-semibold text-slate-900">{{ headerStats.total }}</span>
+                </div>
+
+                <div
+                  class="flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-full bg-white/45 border border-white/60 backdrop-blur"
+                >
+                  <i class="ph ph-clock text-xs text-amber-600"></i>
+                  <span class="text-slate-700">รอดำเนินการ</span>
+                  <span class="font-semibold text-slate-900">{{ headerStats.pending }}</span>
+                </div>
+
+                <div
+                  class="flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-full bg-white/45 border border-white/60 backdrop-blur"
+                >
+                  <i class="ph ph-check-circle text-xs text-green-600"></i>
+                  <span class="text-slate-700">สำเร็จ</span>
+                  <span class="font-semibold text-slate-900">{{ headerStats.success }}</span>
+                </div>
+
+                <div
+                  class="flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-full bg-white/45 border border-white/60 backdrop-blur"
+                >
+                  <i class="ph ph-currency-circle-dollar text-xs text-blue-600"></i>
+                  <span class="text-slate-700">ยอดรวม</span>
+                  <span class="font-semibold text-slate-900 font-mono">
+                    {{ formatCurrency(headerStats.totalAmount) }}
+                  </span>
+                  <span class="text-slate-500">บาท</span>
+                </div>
+              </div>
             </div>
 
-            <button
-              class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
-            >
-              <i class="ph ph-bell text-xl"></i>
-            </button>
-            <button
-              class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
-            >
-              <i class="ph ph-gear text-xl"></i>
-            </button>
+            <!-- Right -->
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <!-- ✅ แสดงสถานะผู้ใช้ (ช่วยตอนเทส) -->
+              <div
+                v-if="auth.user"
+                class="hidden md:flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-white/50 border border-white/60"
+              >
+                <span class="font-medium text-slate-800">{{ auth.user.fullName }}</span>
+                <span class="text-slate-500">•</span>
+                <span class="text-slate-700">{{ auth.user.role }}</span>
+                <span class="text-slate-500">•</span>
+                <span class="text-slate-700 font-mono">{{ auth.user.affiliationId }}</span>
+              </div>
+
+              <button
+                class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
+              >
+                <i class="ph ph-bell text-xl"></i>
+              </button>
+              <button
+                class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
+              >
+                <i class="ph ph-gear text-xl"></i>
+              </button>
+            </div>
           </div>
         </header>
 
         <!-- Filters Area -->
         <div class="px-8 py-4 flex-shrink-0">
+          <!-- ✅ USER: เห็นแค่ปุ่มเพิ่ม -->
           <div
+            v-if="auth.isRole('user')"
+            class="glass-panel p-4 rounded-2xl flex items-center justify-end shadow-sm"
+          >
+            <button
+              @click="gotowaybil"
+              class="glass-button-primary px-5 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <i class="ph ph-file-plus text-lg"></i>
+              <span>เพิ่มใบนำส่งเงิน</span>
+            </button>
+          </div>
+
+          <!-- ✅ TREASURY: เห็น filter เท่านั้น (ไม่มีปุ่มเพิ่ม) -->
+          <div
+            v-else-if="auth.isRole('treasury')"
             class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm"
           >
             <!-- Left Filters -->
@@ -72,10 +142,7 @@
                 v-model:modelValueSub2="selectedSub2"
                 :options="options"
               />
-            </div>
 
-            <!-- Right Search & Action -->
-            <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
               <div class="relative flex-1 md:w-64">
                 <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
                 <input
@@ -85,18 +152,11 @@
                   class="glass-input pl-10 pr-4 py-2.5 rounded-xl w-full text-sm"
                 />
               </div>
-
-              <!-- ✅ user เท่านั้นที่เพิ่มได้ -->
-              <button
-                v-if="canCreateWaybill"
-                @click="gotowaybil"
-                class="glass-button-primary px-5 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-95"
-              >
-                <i class="ph ph-file-plus text-lg"></i>
-                <span>เพิ่มใบนำส่งเงิน</span>
-              </button>
             </div>
           </div>
+
+          <!-- ✅ role อื่นๆ: ซ่อนไปเลย -->
+          <div v-else class="hidden"></div>
         </div>
 
         <!-- Data Table Area -->
@@ -123,7 +183,7 @@
                 :key="item.id ?? index"
                 class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm"
               >
-                <!-- Status (✅ 2 สถานะ: pending | success) -->
+                <!-- Status -->
                 <div class="col-span-1 flex justify-center">
                   <div
                     class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
@@ -213,7 +273,7 @@
                 </div>
               </div>
 
-              <!-- ✅ Empty state -->
+              <!-- Empty state -->
               <div v-if="items.length === 0" class="p-8 text-center text-sm text-slate-500">
                 ไม่พบรายการตามเงื่อนไขที่เลือก
               </div>
@@ -225,25 +285,6 @@
             >
               <div class="text-xs text-slate-500">
                 แสดง {{ items.length }} รายการ
-              </div>
-              <div class="flex items-center gap-1">
-                <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 disabled:opacity-50 text-xs">
-                  Prev
-                </button>
-                <button
-                  class="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs shadow-md shadow-blue-500/30 font-medium"
-                >
-                  1
-                </button>
-                <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">
-                  2
-                </button>
-                <button class="w-7 h-7 rounded-lg hover:bg-white/40 text-slate-600 text-xs transition-colors">
-                  3
-                </button>
-                <button class="px-2 py-1 rounded-md text-slate-500 hover:bg-white/40 text-xs">
-                  Next
-                </button>
               </div>
             </div>
           </div>
@@ -376,20 +417,15 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
 
   return {
     id: r.projectCode,
-    /** ✅ สถานะ 2 ค่า: pending | success */
     status: locked ? 'success' : 'pending',
-
     department: r.mainAffiliationName || r.affiliationName || '-',
     subDepartment: r.subAffiliationName1 || '-',
     time: formatThaiDateTime(displayDate),
-
     project: r.fundName || '-',
     year: '2568',
     responsible: r.fullName || '-',
     paymentType: fileType,
-
     amount: r.netTotalAmount ? Number(String(r.netTotalAmount).replace(/,/g, '')) : 0,
-
     createdAt: createdDate,
     updatedAt: updatedDate,
     isLocked: locked,
@@ -400,7 +436,6 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
 const loadData = async () => {
   try {
     const res = await axios.get<Receipt[]>('/getReceipt')
-
     rawData.value = (res.data || [])
       .filter((r) => r.moneyTypeNote === 'Waybill')
       .map((r) => ({
@@ -415,18 +450,20 @@ const loadData = async () => {
   }
 }
 
+/**
+ * ✅ ITEMS (สำคัญ)
+ * - user: เห็นเฉพาะ affiliation ตัวเอง
+ * - treasury: เห็นทั้งหมด + เรียง pending ขึ้นบน / success ลงล่าง
+ */
 const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
 
-  // ✅ 0) ต้อง login ก่อน
   if (!auth.user) return []
 
-  // ✅ 1) user เห็นเฉพาะ affiliation ตัวเอง / treasury เห็นทั้งหมด
   if (auth.user.role === 'user') {
     filtered = filtered.filter((r) => r.affiliationId === auth.user!.affiliationId)
   }
 
-  // ✅ 2) MAIN filter
   if (selectedMain.value) {
     filtered = filtered.filter((r) => {
       const main = (r.mainAffiliationName || r.affiliationName || '').trim()
@@ -434,17 +471,14 @@ const items = computed<TableRow[]>(() => {
     })
   }
 
-  // ✅ 3) SUB1 filter
   if (selectedSub1.value) {
     filtered = filtered.filter((r) => (r.subAffiliationName1 || '').trim() === selectedSub1.value.trim())
   }
 
-  // ✅ 4) SUB2 filter
   if (selectedSub2.value) {
     filtered = filtered.filter((r) => (r.subAffiliationName2 || '').trim() === selectedSub2.value.trim())
   }
 
-  // ✅ 5) Search
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
     filtered = filtered.filter((r) => {
@@ -455,19 +489,54 @@ const items = computed<TableRow[]>(() => {
     })
   }
 
-  return filtered.map(mapReceiptToRow)
+  const rows = filtered.map(mapReceiptToRow)
+
+  // ✅ SORT เฉพาะ treasury: pending ก่อน, success ทีหลัง
+  if (auth.isRole('treasury')) {
+    const statusRank = (s: TableStatus) => (s === 'pending' ? 0 : 1)
+
+    rows.sort((a, b) => {
+      const byStatus = statusRank(a.status) - statusRank(b.status)
+      if (byStatus !== 0) return byStatus
+
+      // ภายในกลุ่มเดียวกัน: เอารายการล่าสุดขึ้นก่อน
+      const aTime = (a.updatedAt?.getTime() ?? a.createdAt?.getTime() ?? 0)
+      const bTime = (b.updatedAt?.getTime() ?? b.createdAt?.getTime() ?? 0)
+      return bTime - aTime
+    })
+  }
+
+  return rows
 })
 
-/** ✅ สิทธิ action ต่อแถว: user แก้/ลบได้เฉพาะ pending, treasury approve ได้เฉพาะ pending */
+/** ✅ Header stats: คำนวณจาก items ที่ถูกกรอง+sort แล้ว */
+const headerStats = computed(() => {
+  const rows = items.value
+  const total = rows.length
+  const pending = rows.filter((r) => r.status === 'pending').length
+  const success = rows.filter((r) => r.status === 'success').length
+  const totalAmount = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+  return { total, pending, success, totalAmount }
+})
+
+/** ✅ Active filter text */
+const activeFiltersText = computed(() => {
+  const parts: string[] = []
+  if (selectedMain.value) parts.push(selectedMain.value)
+  if (selectedSub1.value) parts.push(selectedSub1.value)
+  if (selectedSub2.value) parts.push(selectedSub2.value)
+  if (searchText.value.trim()) parts.push(`ค้นหา: "${searchText.value.trim()}"`)
+  return parts.length ? `กำลังกรอง: ${parts.join(' · ')}` : ''
+})
+
+/** ✅ สิทธิ action ต่อแถว */
 const rowPermissions = (row: TableRow): ActionKey[] => {
   const perms: ActionKey[] = ['view']
 
-  // user แก้/ลบได้เฉพาะ pending
   if (auth.isRole('user') && row.status === 'pending') {
     perms.push('edit', 'delete')
   }
 
-  // treasury อนุมัติได้เฉพาะ pending
   if (canApprove.value && row.status === 'pending') {
     perms.push('approve')
   }
@@ -476,7 +545,6 @@ const rowPermissions = (row: TableRow): ActionKey[] => {
 }
 
 onMounted(async () => {
-  // ✅ กันหลุด: ถ้าไม่ login ให้กลับไปหน้า login
   if (!auth.isLoggedIn) {
     router.push({ name: 'login' })
     return
@@ -495,10 +563,7 @@ const gotowaybil = () => {
   router.push('/waybill')
 }
 
-/** ✅ Approve (pending -> success)
- * - ตอนนี้ใช้ isLocked เป็นตัวแทน success
- * - ถ้าต่อ API จริง: เปลี่ยนเป็น axios.patch('/approveReceipt/:id')
- */
+/** ✅ Approve: กดแล้วแถวนั้นจะไหลลงล่าง (เพราะ sort) */
 const approveItem = async (row: TableRow) => {
   if (!canApprove.value) {
     Swal.fire('ไม่มีสิทธิ์', 'เฉพาะกองคลัง (treasury) เท่านั้นที่อนุมัติได้', 'warning')
@@ -520,7 +585,6 @@ const approveItem = async (row: TableRow) => {
   const target = rawData.value.find((r) => r.projectCode === row.id)
   if (!target) return
 
-  // ✅ อนุมัติแล้ว = success
   target.isLocked = true
 
   Swal.fire({
@@ -557,6 +621,11 @@ body {
   padding: 0;
 }
 
+/* ✅ header divider */
+.header-divider {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+}
+
 /* Animated Background Mesh */
 .mesh-bg {
   position: fixed;
@@ -566,9 +635,9 @@ body {
   height: 100vh;
   background-color: #f0f2f5;
   background-image:
-    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
-    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+    radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
   background-size: cover;
   z-index: -2;
 }
@@ -582,14 +651,43 @@ body {
   animation: float 10s infinite ease-in-out;
 }
 
-.orb-1 { width: 600px; height: 600px; background: #56CCF2; top: -100px; left: -100px; animation-delay: 0s; }
-.orb-2 { width: 500px; height: 500px; background: #AC32E4; bottom: -50px; right: -100px; animation-delay: 2s; }
-.orb-3 { width: 400px; height: 400px; background: #7918F2; top: 40%; left: 40%; animation-delay: 4s; }
+.orb-1 {
+  width: 600px;
+  height: 600px;
+  background: #56ccf2;
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: #ac32e4;
+  bottom: -50px;
+  right: -100px;
+  animation-delay: 2s;
+}
+
+.orb-3 {
+  width: 400px;
+  height: 400px;
+  background: #7918f2;
+  top: 40%;
+  left: 40%;
+  animation-delay: 4s;
+}
 
 @keyframes float {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(20px, 40px) rotate(10deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(20px, 40px) rotate(10deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
 }
 
 /* Glassmorphism Utilities */
@@ -616,7 +714,7 @@ body {
 }
 
 .glass-button-primary {
-  background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
   color: white;
   box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
 }
@@ -637,11 +735,11 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0,0,0,0.2);
+  background: rgba(0, 0, 0, 0.2);
 }
 </style>

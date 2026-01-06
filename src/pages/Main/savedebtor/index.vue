@@ -449,6 +449,9 @@ const formatCurrency = (amount: number | string) => {
     maximumFractionDigits: 2,
   })
 }
+const handleFocus = () => {
+  console.log('window focused')
+}
 
 /**
  * ✅ ส่งรายการที่เลือกไปหน้า /cleardebtor/multi
@@ -569,7 +572,6 @@ onMounted(async () => {
 
   // Listen events
   window.addEventListener('focus', handleFocus)
-  window.addEventListener('storage', handleStorageChange)
   window.addEventListener('receipts-updated', handleCustomUpdate)
 
   // Watch localStorage ทุก 500ms
@@ -595,7 +597,6 @@ onBeforeUnmount(() => {
 
   // Remove listeners
   window.removeEventListener('focus', handleFocus)
-  window.removeEventListener('storage', handleStorageChange)
   window.removeEventListener('receipts-updated', handleCustomUpdate)
 
   if (storageWatcher) {
@@ -608,7 +609,7 @@ onBeforeUnmount(() => {
 // ========== Expose for debugging ==========
 if (typeof window !== 'undefined') {
   (window as any).debugSaveDebtor = {
-    forceReload,
+
     loadReceiptData,
     loadHistory,
     rawData,

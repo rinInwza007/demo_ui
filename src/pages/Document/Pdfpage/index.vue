@@ -67,14 +67,15 @@ function separateDebtorItems() {
     const isDebtor = isReceivableItem(row.item)
 
     if (isDebtor && row.amount) {
-      const amount = typeof row.amount === 'string'
-        ? parseFloat(row.amount.replace(/,/g, ''))
-        : Number(row.amount)
+      const amount =
+        typeof row.amount === 'string'
+          ? parseFloat(row.amount.replace(/,/g, ''))
+          : Number(row.amount)
 
       debtors.push({
         itemName: row.item,
         amount: amount,
-        formattedAmount: amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })
+        formattedAmount: amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
       })
 
       totalDebtor += amount
@@ -87,7 +88,7 @@ function separateDebtorItems() {
     debtors,
     normalItems,
     totalDebtor,
-    hasDebtor: debtors.length > 0
+    hasDebtor: debtors.length > 0,
   }
 }
 const currentDate = new Date().toLocaleDateString('th-TH', {
@@ -137,27 +138,36 @@ function deleteRowEmpty() {
   })
   rows.splice(0, rows.length, ...filtered)
 }
-
+const createCheckbox = () => ({
+  canvas: [
+    {
+      type: 'rect',
+      x: 0,
+      y: 2,
+      w: 8,
+      h: 8,
+      color: 'black',
+    },
+  ],
+  width: 10,
+})
 function createDocDefinition() {
   deleteRowEmpty()
 
   const receipt = receiptData.value || {}
 
-  // ✅ แยกรายการลูกหนี้
   const { debtors, normalItems, totalDebtor, hasDebtor } = separateDebtorItems()
 
-  // ดึง paymentMethods
   const pm = receipt.paymentMethods || {}
 
-  // ฟังก์ชันดึงยอดจริง (ลบ comma)
   const getAmount = (key) => {
     const amt = pm[key]?.amount || 0
     return typeof amt === 'string' ? parseFloat(amt.replace(/,/g, '')) : Number(amt)
   }
 
-  // ยอดแต่ละวิธี
-  const krungthaiAmt = pm.krungthai?.checked ? getAmount('krungthai') : 0
-  const scbAmt = pm.scb?.checked ? getAmount('scb') : 0
+  const krungthai1Amt = pm.krungthai1?.checked ? getAmount('krungthai1') : 0
+  const krungthai2Amt = pm.krungthai2?.checked ? getAmount('krungthai2') : 0
+  const krungthai3Amt = pm.krungthai3?.checked ? getAmount('krungthai3') : 0
   const cashAmt = pm.cash?.checked ? getAmount('cash') : 0
   const checkAmt = pm.check?.checked ? getAmount('check') : 0
   const debtorAmt = pm.debtor?.checked ? getAmount('debtor') : 0
@@ -301,24 +311,25 @@ function createDocDefinition() {
       { text: '\n' },
 
       // ========== ส่วนที่ 3: การนำส่งเงิน ==========
+
       ...(pm.cash?.checked && cashAmt > 0
         ? [
             {
               columns: [
                 {
                   columns: [
+                    { ...createCheckbox(), margin: [100, 2, 0, 0] },
                     {
                       text: 'เงินสด',
                       style: 'form',
-                      margin: [100, 0, 0, 0],
+                      margin: [110, 0, 0, 0],
                       noWrap: true,
                       width: 'auto',
                     },
                     {
                       text: 'จำนวน',
-                      style: 'form',
                       width: 'auto',
-                      margin: [240, 0, 0, 0],
+                      margin: [220, 0, 0, 0],
                       noWrap: true,
                     },
                     {
@@ -334,7 +345,6 @@ function createDocDefinition() {
                     },
                     {
                       text: 'บาท',
-                      style: 'form',
                       width: 'auto',
                       noWrap: true,
                       margin: [-20, 0, 0, 0],
@@ -346,266 +356,305 @@ function createDocDefinition() {
           ]
         : []),
 
+      // เช็ค
       ...(pm.check?.checked && checkAmt > 0
         ? [
             {
               columns: [
+                { ...createCheckbox(), margin: [100, 2, 0, 0] },
                 {
-                  columns: [
-                    {
-                      text: 'เช็ค',
-                      style: 'form',
-                      margin: [100, 0, 0, 0],
-                      noWrap: true,
-                      width: 'auto',
-                    },
-                    {
-                      text: 'จำนวน',
-                      style: 'form',
-                      width: 'auto',
-                      margin: [250, 0, 0, 0],
-                      noWrap: true,
-                    },
-                    {
-                      stack: [
-                        {
-                          text: checkAmt.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
-                          alignment: 'center',
-                          lineHeight: 1.2,
-                        },
-
-                      ],
-                      width: 80,
-                      margin: [-18, 0, 0, 0],
-                    },
-                    {
-                      text: 'บาท',
-                      style: 'form',
-                      width: 'auto',
-                      noWrap: true,
-                      margin: [-20, 0, 0, 0],
-                    },
-                  ],
+                  text: 'เช็ค',
+                  style: 'form',
+                  width: 'auto',
+                  noWrap: true,
+                  margin: [110, 0, 0, 0],
+                },
+                {
+                  text: `ธนาคาร${pm.check.bankName ?? ''}`,
+                  style: 'form',
+                  margin: [10, 0, 0, 0],
                 },
               ],
             },
-          ]
-        : []),
-
-      ...(pm.krungthai?.checked && krungthaiAmt > 0
-        ? [
             {
               columns: [
                 {
-                  columns: [
-                    {
-                      text: 'ธ.กรุงไทย สาขาพะเยา (มหาวิทยาลัยพะเยา)',
-                      style: 'form',
-                      margin: [100, 10, 0, 0],
-                      width: 'auto',
-                    },
-                    {
-                      text: 'บช.ที่ 512-1-43488-6',
-                      style: 'form',
-                      margin: [10, 10, 0, 0],
-                      width: 'auto',
-                    },
-                    {
-                      text: 'จำนวน',
-                      style: 'form',
-                      width: 'auto',
-                      margin: [16, 10, 0, 0],
-                      noWrap: true,
-                    },
-                    {
-                      stack: [
-                        {
-                          text: krungthaiAmt.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
-                          alignment: 'center',
-                          lineHeight: 1.2,
-                        },
-                      ],
-                      width: 80,
-                      margin: [-18, 10, 0, 0],
-                    },
-                    {
-                      text: 'บาท',
-                      style: 'form',
-                      width: 'auto',
-                      noWrap: true,
-                      margin: [-20, 10, 0, 0],
-                    },
-                  ],
+                  text: [
+                    pm.check.checkNumber ? `เลขที่เช็ค ${pm.check.checkNumber}   ` : '',
+                    pm.check.NumIncheck ? `เลขที่ในเช็ค ${pm.check.NumIncheck}` : '',
+                  ].join(''),
+                  style: 'form',
+                  alignment: 'left',
+                  noWrap: true,
                 },
-              ],
-            },
-          ]
-        : []),
-
-      ...(pm.scb?.checked && scbAmt > 0
-        ? [
-            {
-              columns: [
                 {
                   columns: [
                     {
-                      text: 'ธ.ไทยพาณิชย์ สาขามหาวิทยาลัยพะเยา',
-                      style: 'form',
-                      margin: [100, 10, 0, 0],
-                      width: 'auto',
-                    },
-                    {
-                      text: 'บช.ที่ 891-2-00225-5',
-                      style: 'form',
-                      margin: [10, 10, 0, 0],
-                      width: 'auto',
-                    },
-                    {
                       text: 'จำนวน',
-                      style: 'form',
-                      width: 'auto',
-                      margin: [33, 10, 0, 0],
                       noWrap: true,
+                      width: 'auto',
                     },
                     {
-                      stack: [
-                        {
-                          text: scbAmt.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
-                          alignment: 'center',
-                          lineHeight: 1.2,
-                        },
-
-                      ],
-                      width: 80,
-                      margin: [-18, 10, 0, 0],
+                      text: checkAmt.toLocaleString('th-TH', {
+                        minimumFractionDigits: 2,
+                      }),
+                      alignment: 'right',
+                      width: 'auto',
+                      noWrap: true,
+                      margin: [18.5, 0, 0, 0],
                     },
                     {
                       text: 'บาท',
-                      style: 'form',
-                      width: 'auto',
                       noWrap: true,
-                      margin: [-20.5, 10, 0, 0],
+                      width: 'auto',
+                      margin: [16.5, 0, 0, 0],
                     },
                   ],
+                  alignment: 'right',
+                  width: 'auto',
                 },
               ],
+              margin: [130, 2, 92.5, 0],
             },
           ]
         : []),
 
+      // กรุงไทย 1
+      ...(pm.krungthai1?.checked && krungthai1Amt > 0
+        ? [
+            {
+              columns: [
+                { ...createCheckbox(), margin: [100, 12, 0, 0] },
+                {
+                  text: 'นำฝากบัญชีกรุงไทย เลขที่บัญชี 671-2-90667-9',
+                  style: 'form',
+                  margin: [110, 10, 0, 0],
+                },
+              ],
+            },
+            {
+              columns: [
+                {
+                  text: 'ชื่อบัญชี โรงพยาบาลมหาวิทยาลัยพะเยา',
+                  style: 'form',
+                  alignment: 'left',
+                  noWrap: true,
+                },
+                {
+                  text: 'จำนวน',
+                  margin: [90, 0, 0, 0],
+                },
+                {
+                  text: krungthai1Amt.toLocaleString('th-TH', {
+                    minimumFractionDigits: 2,
+                  }),
+                  margin: [-9, 0, 0, 0],
+                  noWrap: true,
+                },
+                {
+                  text: 'บาท',
+                  noWrap: true,
+                  margin: [-110, 0, 0, 0],
+                },
+              ],
+              margin: [130, 2, 100, 0],
+            },
+          ]
+        : []),
+
+      // กรุงไทย 2
+      ...(pm.krungthai2?.checked && krungthai2Amt > 0
+        ? [
+            {
+              columns: [
+                { ...createCheckbox(), margin: [100, 12, 0, 0] },
+                {
+                  text: 'นำฝากบัญชีกรุงไทย เลขที่บัญชี 980-9-61729-1',
+                  style: 'form',
+                  margin: [110, 10, 0, 0],
+                },
+              ],
+            },
+            {
+              columns: [
+                {
+                  text: 'ชื่อบัญชี มหาวิทยาลัยพะเยา (กองทุนทั่วไป)',
+                  style: 'form',
+                  alignment: 'left',
+                  noWrap: true,
+                },
+                {
+                  text: 'จำนวน',
+                  margin: [77.5, 0, 0, 0],
+                },
+                {
+                  text: krungthai2Amt.toLocaleString('th-TH', {
+                    minimumFractionDigits: 2,
+                  }),
+                  margin: [-33.5, 0, 0, 0],
+                  noWrap: true,
+                },
+                {
+                  text: 'บาท',
+                  noWrap: true,
+                  margin: [-147, 0, 0, 0],
+                },
+              ],
+              margin: [130, 2, 100, 0],
+            },
+          ]
+        : []),
+
+      // กรุงไทย 3
+      ...(pm.krungthai3?.checked && krungthai3Amt > 0
+        ? [
+            {
+              columns: [
+                { ...createCheckbox(), margin: [100, 12, 0, 0] },
+                {
+                  text: 'นำฝากบัญชีกรุงไทย เลขที่บัญชี 662-0-96023-5',
+                  style: 'form',
+                  margin: [110, 10, 0, 0],
+                },
+              ],
+            },
+            {
+              columns: [
+                {
+                  text: 'ชื่อบัญชี กองทุนเพื่อการจัดตั้งธนาคารเลือด',
+                  style: 'form',
+                  alignment: 'left',
+                  noWrap: true,
+                },
+                {
+                  text: 'จำนวน',
+                  margin: [80.25, 0, 0, 0],
+                },
+                {
+                  text: krungthai3Amt.toLocaleString('th-TH', {
+                    minimumFractionDigits: 2,
+                  }),
+                  margin: [-27.5, 0, 0, 0],
+                  noWrap: true,
+                },
+                {
+                  text: 'บาท',
+                  noWrap: true,
+                  margin: [-137.5, 0, 0, 0],
+                },
+              ],
+              margin: [130, 2, 100, 0],
+            },
+          ]
+        : []),
+
+      // อื่น ๆ
       ...(pm.other?.checked && otherAmt > 0
         ? [
             {
               columns: [
+                { ...createCheckbox(), margin: [100, 11.5, 0, 0] },
                 {
-                  columns: [
-                    {
-                      text: otherName,
-                      style: 'form',
-                      margin: [100, 0, 0, 0],
-                      noWrap: true,
-                      width: 'auto',
-                    },
-                    {
-                      text: 'จำนวน',
-                      style: 'form',
-                      width: 'auto',
-                      margin: [240, 0, 0, 0],
-                      noWrap: true,
-                    },
-                    {
-                      stack: [
-                        {
-                          text: otherAmt.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
-                          alignment: 'center',
-                          lineHeight: 1.2,
-                        },
-                      ],
-                      width: 80,
-                      margin: [-18, 0, 0, 0],
-                    },
-                    {
-                      text: 'บาท',
-                      style: 'form',
-                      width: 'auto',
-                      noWrap: true,
-                      margin: [-20, 0, 0, 0],
-                    },
-                  ],
+                  text: `อื่นๆ ${otherName}`,
+                  style: 'form',
+                  alignment: 'left',
+                  noWrap: false,
+                  margin: [110, 10, 0, 0],
+                },
+                {
+                  text:
+                    'จำนวน       ' +
+                    otherAmt.toLocaleString('th-TH', {
+                      minimumFractionDigits: 2,
+                    }) +
+                    '      บาท',
+                  alignment: 'right',
+                  noWrap: true,
+                  margin: [0, 10, 90, 0],
                 },
               ],
             },
           ]
-        : []),      ...(hasDebtor ? [
-        { text: '\n' },
-        {
-          text: 'ลูกหนี้',
-          bold: true,
-          fontSize: 13,
-          margin: [100, 0, 0, 5]
-        },
-        ...debtors.map(d => ({
-          columns: [
+        : []),
+
+      // ลูกหนี้
+      ...(hasDebtor
+        ? [
+            { text: '\n' },
             {
-              text: `- ${d.itemName}`,
-              margin: [120, 2, 0, 0],
-              fontSize: 13,
-              width: '*'
+              columns: [
+                { ...createCheckbox(), margin: [100, 2, 0, 0] },
+                {
+                  text: 'ลูกหนี้',
+                  bold: true,
+                  fontSize: 13,
+                  margin: [110, 0, 0, 0],
+                },
+              ],
+              margin: [0, 0, 0, 5],
             },
-                                {
-                      text: 'จำนวน',
-                      style: 'form',
-                      width: 'auto',
-                      margin: [0, 2,-119.5, 0],
-                      noWrap: true,
-                      alignment: 'right'
-                    },
+            ...debtors.map((d) => ({
+              columns: [
+                {
+                  text: d.itemName,
+                  margin: [120, 2, 0, 0],
+                  fontSize: 13,
+                  width: '*',
+                },
+                {
+                  text: 'จำนวน',
+                  width: 'auto',
+                  margin: [0, 2, -119.5, 0],
+                  noWrap: true,
+                  alignment: 'right',
+                },
+                {
+                  text: `${d.formattedAmount}`,
+                  margin: [0, 2, 0, 0],
+                  fontSize: 13,
+                  alignment: 'right',
+                  width: '30%',
+                },
+                {
+                  text: 'บาท',
+                  width: 'auto',
+                  noWrap: true,
+                  margin: [12.5, 5, 91, 0],
+                  alignment: 'left',
+                },
+              ],
+            })),
             {
-              text: `${d.formattedAmount}`,
-              margin: [0, 2, 0, 0],
-              fontSize: 13,
-              alignment: 'right',
-              width: '30%'
-            }
-                                            ,{
-                      text: 'บาท',
-                      style: 'form',
-                      width: 'auto',
-                      noWrap: true,
-                      margin: [12.5 , 5, 91, 0],
-                      alignment: 'left'
-                    },
-          ]
-        })),
-        {
-          columns: [
-            {
-              text: 'รวมยอดลูกหนี้ทั้งหมด',
-              bold: true,
-              margin: [120, 5, 0, 0],
-              fontSize: 13,
-              width: '*'
+              columns: [
+                {
+                  text: 'รวมยอดลูกหนี้ทั้งหมด',
+                  bold: true,
+                  margin: [120, 5, 0, 0],
+                  fontSize: 13,
+                  width: '*',
+                },
+                {
+                  text: `${totalDebtor.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
+                  bold: true,
+                  margin: [15, 5, 0, 0],
+                  fontSize: 13,
+                  alignment: 'right',
+                  width: '30%',
+                },
+                {
+                  text: 'บาท',
+                  style: 'form',
+                  width: 'auto',
+                  noWrap: true,
+                  margin: [12.5, 5, 91, 0],
+                  alignment: 'left',
+                },
+              ],
             },
-            {
-              text: `${totalDebtor.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
-              bold: true,
-              margin: [15, 5, 0, 0],
-              fontSize: 13,
-              alignment: 'right',
-              width: '30%'
-            }
-                                ,{
-                      text: 'บาท',
-                      style: 'form',
-                      width: 'auto',
-                      noWrap: true,
-                      margin: [12.5, 5, 91, 0],
-                      alignment: 'left'
-                    },
+            { text: '\n' },
           ]
-        },
-        { text: '\n' },
-      ] : []),
+        : []),
+
 
       // ลายเซ็น (เดิมไม่เปลี่ยน)
       { text: '\n' },
@@ -696,41 +745,40 @@ onMounted(() => {
     receiptData.value = foundReceipt
 
     // ✅ สร้าง rows จากข้อมูล receiptList
-if (receiptData.value?.receiptList?.length > 0) {
-  rows.splice(0, rows.length)
-  let rowNumber = 1
+    if (receiptData.value?.receiptList?.length > 0) {
+      rows.splice(0, rows.length)
+      let rowNumber = 1
 
-  receiptData.value.receiptList.forEach((item) => {
-    const cleanAmount = item.amount
-      ? parseFloat(item.amount.toString().replace(/,/g, ''))
-      : 0
+      receiptData.value.receiptList.forEach((item) => {
+        const cleanAmount = item.amount ? parseFloat(item.amount.toString().replace(/,/g, '')) : 0
 
-    rows.push({
-      id: String(rowNumber++),
-      ref: item.referenceNo || '',
-      item: item.itemName || '',
-      amount: cleanAmount > 0
-        ? cleanAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })
-        : '',
-      note: item.note || ''
-    })
-  })
+        rows.push({
+          id: String(rowNumber++),
+          ref: item.referenceNo || '',
+          item: item.itemName || '',
+          amount:
+            cleanAmount > 0
+              ? cleanAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })
+              : '',
+          note: item.note || '',
+        })
+      })
 
-  const total = receiptData.value.netTotalAmount || 0
-  summary.text = convertNumberToThaiText(total)
-  summary.total = total.toLocaleString('th-TH', { minimumFractionDigits: 2 })
-} else {
-  // ถ้าไม่มีรายการ
-  rows.push({
-    id: '1',
-    ref: '',
-    item: 'ไม่มีรายการ',
-    amount: '',
-    note: ''
-  })
-  summary.text = 'ศูนย์บาทถ้วน'
-  summary.total = '0.00'
-}
+      const total = receiptData.value.netTotalAmount || 0
+      summary.text = convertNumberToThaiText(total)
+      summary.total = total.toLocaleString('th-TH', { minimumFractionDigits: 2 })
+    } else {
+      // ถ้าไม่มีรายการ
+      rows.push({
+        id: '1',
+        ref: '',
+        item: 'ไม่มีรายการ',
+        amount: '',
+        note: '',
+      })
+      summary.text = 'ศูนย์บาทถ้วน'
+      summary.total = '0.00'
+    }
 
     previewPdf()
     loading.value = false

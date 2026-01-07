@@ -1,8 +1,5 @@
 <template>
   <div>
-    <Navbar />
-    <SecondNavbar class="bg-gray-100" />
-
     <div v-if="loading" class="flex justify-center items-center h-96">
       <div class="text-lg text-gray-600">กำลังโหลดข้อมูล...</div>
     </div>
@@ -33,8 +30,6 @@ import { reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import pdfMake from 'pdfmake/build/pdfmake'
 import { vfs, fonts } from '../../../assets/fonts.js'
-import Navbar from '@/components/bar/navbar.vue'
-import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import { loadReceipts } from '@/fake/mockDb.js'
 import { isReceivableItem } from '@/components/data/ItemNameOption'
 const route = useRoute()

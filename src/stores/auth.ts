@@ -42,6 +42,16 @@ const MOCK_USERS: Array<User & { password: string }> = [
     phone: '0999999999',
     password: '1234',
   },
+    {
+    id: 'u-002',
+    fullName: 'User Demo',
+    affiliation: 'คณะพยาบาลศาสตร์',
+    affiliationId: 'NUR',
+    role: 'user',
+    email: 'user01@up.ac.th',
+    phone: '0999999999',
+    password: '1234',
+  },
   {
     id: 't-001',
     fullName: 'Treasury Demo',

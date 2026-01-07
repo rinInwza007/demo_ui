@@ -140,17 +140,41 @@ function deleteRowEmpty() {
 }
 const createCheckbox = () => ({
   canvas: [
+    // กล่องสี่เหลี่ยม
     {
       type: 'rect',
       x: 0,
       y: 2,
       w: 8,
       h: 8,
-      color: 'black',
+      stroke: 'black',
+      fill: null,
+    },
+
+    // ขีดซ้ายของเครื่องหมายถูก
+    {
+      type: 'line',
+      x1: 2,
+      y1: 6,
+      x2: 4,
+      y2: 8,
+      stroke: 'black',
+      strokeWidth: 1,
+    },
+
+    // ขีดขวาของเครื่องหมายถูก
+    {
+      type: 'line',
+      x1: 4,
+      y1: 8,
+      x2: 7,
+      y2: 3,
+      stroke: 'black',
+      strokeWidth: 1,
     },
   ],
   width: 10,
-})
+});
 function createDocDefinition() {
   deleteRowEmpty()
 

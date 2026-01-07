@@ -1047,13 +1047,13 @@ import { getAllOptions } from '@/components/data/ItemNameOption'
 import { useReceiptStore } from '@/stores/recipt'
 import { useRowManager } from '@/components/Function/FuncForm'
 import { setupAxiosMock } from '@/fake/mockAxios'
-
+import { useAuthStore } from '@/stores/auth'
 // Initialize
 const route = useRoute()
 const router = useRouter()
 const reciptStore = useReceiptStore()
 setupAxiosMock()
-
+const authStore = useAuthStore()
 // Check if edit mode
 const isEditMode = computed(() => !!route.params.id)
 const receiptId = computed(() => route.params.id)
@@ -1111,7 +1111,30 @@ Object.keys(paymentMethods.value).forEach((key) => {
     },
   )
 })
+//เกี่ยวกับคณะที่เลือกเองตามสิทธิ
+const mapAffiliationToMainCategory = (affiliationId) => {
+  const mapping = {
+    'ENG': 'คณะวิศวกรรมศาสตร์',
+    'NUR': 'คณะพยาบาลศาสตร์',
+    'DEN': 'คณะทันตแพทยศาสตร์',
+    'HOS': 'โรงพยาบาลมหาวิทยาลัยพะเยา',
+    'MED': 'คณะแพทยศาสตร์',
+    'PHA': 'คณะเภสัชศาสตร์',
+    'FIN': '', // กองคลัง ไม่ต้องเลือกให้
+    'UP': '',  // มหาวิทยาลัย ไม่ต้องเลือกให้
+  }
+  
+  return mapping[affiliationId] || ''
+}
+
 onMounted(async () => {
+    if (!isEditMode.value && authStore.user?.affiliationId) {
+    const defaultCategory = mapAffiliationToMainCategory(authStore.user.affiliationId)
+    if (defaultCategory) {
+      mainCategory.value = defaultCategory
+      await nextTick()
+    }
+  }
   if (!isEditMode.value) {
     addRow()
     addRow()

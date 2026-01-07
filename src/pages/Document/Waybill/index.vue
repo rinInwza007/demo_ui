@@ -1094,8 +1094,7 @@ const paymentMethods = ref({
     NumIncheck: '', // ✅ เพิ่ม
   },
   debtor: { checked: false, amount: '' },
-
-  other: { checked: false, name: '', amount: '' },
+  other: { checked: false, name: '', amount: '' }
 })
 
 Object.keys(paymentMethods.value).forEach((key) => {
@@ -1977,7 +1976,7 @@ if (validRows.length === 0) {
     payload.updatedAt = currentDateTime
   }
 
-  try {
+   try {
     let response
     if (isEditMode.value) {
       response = await axios.put(`/updateReceipt/${receiptId.value}`, payload)
@@ -1985,6 +1984,12 @@ if (validRows.length === 0) {
       response = await axios.post('/saveReceipt', payload)
     }
 
+    // 🔥 บังคับให้มั่นใจว่า event ถูกส่ง (double check)
+    await nextTick()
+    localStorage.setItem('receipts_last_update', Date.now().toString())
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: { action: isEditMode.value ? 'update' : 'create' }
+    }))
     await Swal.fire({
       icon: 'success',
       title: isEditMode.value ? 'อัพเดตสำเร็จ!' : 'บันทึกสำเร็จ!',

@@ -1,9 +1,9 @@
+// src/fake/mockaxios.ts
 import axios from 'axios'
 import AxiosMockAdapter from 'axios-mock-adapter'
 import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb'
 
 // ❗ปรับ path type ให้ตรงโปรเจกต์คุณ
-// ถ้าไฟล์จริงคือ '@/types/recipt' ก็ใช้ตามเดิม
 import type { Receipt } from '@/types/recipt'
 
 export function setupAxiosMock() {
@@ -24,7 +24,6 @@ export function setupAxiosMock() {
     if (n.includes('ทันต')) return 'DEN'
     return 'UP'
   }
-
 
   const ensureReceiptFields = (r: any): any => {
     const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
@@ -181,7 +180,129 @@ export function setupAxiosMock() {
   const normalizeBoth = (receipt: any) => normalizeToOldFormat(normalizeToNewFormat(receipt))
 
   // =========================
-  // API Endpoints
+  // Daily Summary (NEW) - robust amount
+  // =========================
+
+  type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
+  type SummaryEvent = {
+    createdAt: string
+    type: EventType
+    faculty: string
+    amount: number
+    sub1?: string
+    sub2?: string
+    fundName?: string
+    fullName?: string
+    projectCode?: string
+  }
+
+  type CloseState = { isClosed: boolean; closedAt?: string }
+  type ClosedMap = Record<string, CloseState>
+  const CLOSED_KEY = 'mock_daily_closed_map'
+
+  const loadClosedMap = (): ClosedMap => {
+    try {
+      return JSON.parse(localStorage.getItem(CLOSED_KEY) || '{}') as ClosedMap
+    } catch {
+      return {}
+    }
+  }
+
+  const saveClosedMap = (map: ClosedMap) => {
+    localStorage.setItem(CLOSED_KEY, JSON.stringify(map))
+  }
+
+  // ✅ parse number safely (รองรับ "12,500")
+  const toNum = (v: any) => {
+    if (v === null || v === undefined) return 0
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0
+    const s = String(v).replaceAll(',', '').trim()
+    const n = Number(s)
+    return Number.isFinite(n) ? n : 0
+  }
+
+  // ✅ sum deposit net (prefer netAmount, fallback paymentDetails-fee)
+  const sumDepositNet = (r: any) => {
+    const list = Array.isArray(r.depositList) ? r.depositList : []
+    if (!list.length) return 0
+
+    return list.reduce((sum: number, d: any) => {
+      const net = toNum(d?.netAmount)
+      if (net) return sum + net
+
+      const payments = Array.isArray(d?.paymentDetails) ? d.paymentDetails : []
+      const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
+      const fee = toNum(d?.fee)
+      return sum + (subtotal - fee)
+    }, 0)
+  }
+
+  // ✅ sum debtor (for DEBTOR_NEW)
+  const sumDebtor = (r: any) => {
+    const list = Array.isArray(r.debtorList) ? r.debtorList : []
+    if (!list.length) return 0
+    return list.reduce((sum: number, d: any) => sum + toNum(d?.amount), 0)
+  }
+
+  // ✅ old receiptList fallback
+  const sumOldReceiptList = (r: any) => {
+    const list = Array.isArray(r.receiptList) ? r.receiptList : []
+    if (!list.length) return 0
+
+    return list.reduce((sum: number, it: any) => {
+      const net = toNum(it?.depositNetAmount)
+      if (net) return sum + net
+
+      const payments = Array.isArray(it?.paymentDetails) ? it.paymentDetails : []
+      const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
+      const fee = toNum(it?.fee)
+
+      if (subtotal) return sum + (subtotal - fee)
+      return sum + toNum(it?.amount)
+    }, 0)
+  }
+
+  // ✅ decide amount by event type
+  const calcAmountByType = (type: EventType, r: any) => {
+    if (type === 'DEBTOR_NEW') {
+      const v = sumDebtor(r)
+      return v || sumOldReceiptList(r) || toNum(r.amount)
+    }
+    const v = sumDepositNet(r)
+    return v || sumOldReceiptList(r) || toNum(r.amount)
+  }
+
+  const receiptToSummaryEvent = (r: any): SummaryEvent | null => {
+    const createdAt =
+      r.createdAt instanceof Date ? r.createdAt.toISOString() : (r.createdAt || new Date().toISOString())
+
+    // ✅ Mapping ประเภทเอกสาร:
+    // ปรับได้ในอนาคตเป็น field จริง เช่น docType/documentType
+    const note = String(r.moneyTypeNote || '').toLowerCase()
+
+    let type: EventType = 'WAYBILL'
+    if (note.includes('clear')) type = 'CLEAR_DEBTOR'
+    else if (note.includes('debtor')) type = 'DEBTOR_NEW'
+    else type = 'WAYBILL'
+
+    const faculty = (r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา').trim()
+    const amount = calcAmountByType(type, r)
+
+    return {
+      createdAt,
+      type,
+      faculty,
+      amount,
+      sub1: r.subAffiliationName1 || '',
+      sub2: r.subAffiliationName2 || '',
+      fundName: r.fundName || r.moneyTypeNote || '',
+      fullName: r.fullName || '',
+      projectCode: r.projectCode || r.id || '',
+    }
+  }
+
+  // =========================
+  // API Endpoints (Existing)
   // =========================
 
   // GET /findOneReceipt/:id
@@ -221,15 +342,12 @@ export function setupAxiosMock() {
 
     const normalized = normalizeBoth(found)
 
-    // ส่ง date เป็น ISO string เพื่อให้ฝั่งหน้า new Date(...) ได้
     return [
       200,
       {
         ...normalized,
-        createdAt:
-          normalized.createdAt instanceof Date ? normalized.createdAt.toISOString() : normalized.createdAt,
-        updatedAt:
-          normalized.updatedAt instanceof Date ? normalized.updatedAt.toISOString() : normalized.updatedAt,
+        createdAt: normalized.createdAt instanceof Date ? normalized.createdAt.toISOString() : normalized.createdAt,
+        updatedAt: normalized.updatedAt instanceof Date ? normalized.updatedAt.toISOString() : normalized.updatedAt,
       },
     ]
   })
@@ -252,11 +370,12 @@ export function setupAxiosMock() {
 
     if (q) {
       const s = q.toLowerCase()
-      list = list.filter((r) =>
-        (r.fullName || '').toLowerCase().includes(s) ||
-        (r.projectCode || '').toLowerCase().includes(s) ||
-        (r.affiliationName || '').toLowerCase().includes(s) ||
-        (r.mainAffiliationName || '').toLowerCase().includes(s)
+      list = list.filter(
+        (r) =>
+          (r.fullName || '').toLowerCase().includes(s) ||
+          (r.projectCode || '').toLowerCase().includes(s) ||
+          (r.affiliationName || '').toLowerCase().includes(s) ||
+          (r.mainAffiliationName || '').toLowerCase().includes(s)
       )
     }
 
@@ -282,15 +401,12 @@ export function setupAxiosMock() {
 
     const db = loadReceipts().map(ensureReceiptFields)
 
-    // duplicate
     if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
       return [409, { message: 'Duplicate projectCode' }]
     }
 
-    // normalize both
     const normalized = normalizeBoth(incoming)
 
-    // default timestamps
     const now = new Date()
     normalized.createdAt = normalized.createdAt ?? now
     normalized.updatedAt = now
@@ -330,8 +446,8 @@ localStorage.setItem('receipts_last_update', Date.now().toString())
     const updated = sanitizeReceipt({
       ...db[idx],
       ...normalized,
-      projectCode, // keep
-      createdAt: db[idx].createdAt, // keep
+      projectCode,
+      createdAt: db[idx].createdAt,
       updatedAt: new Date(),
     })
 
@@ -362,6 +478,98 @@ localStorage.setItem('receipts_last_update', Date.now().toString())
     return [200, { success: next.length !== before }]
   })
 
-  console.log('✅ Axios Mock Setup Complete (affiliationId-ready + backward compatible)')
+  // =========================
+  // API Endpoints (NEW) for Daily Summary
+  // =========================
+
+  /**
+   * GET /summary/events
+   * query:
+   * - search
+   * - faculty
+   * - sub1
+   * - sub2
+   * - start=YYYY-MM-DD
+   * - end=YYYY-MM-DD
+   */
+  mock.onGet(/\/summary\/events(?:\?.*)?$/).reply((config) => {
+    const db = loadReceipts().map(ensureReceiptFields).map(normalizeBoth)
+
+    const url = new URL(config.url!, window.location.origin)
+    const search = (url.searchParams.get('search') || '').trim().toLowerCase()
+    const faculty = (url.searchParams.get('faculty') || '').trim()
+    const sub1 = (url.searchParams.get('sub1') || '').trim()
+    const sub2 = (url.searchParams.get('sub2') || '').trim()
+    const start = (url.searchParams.get('start') || '').trim()
+    const end = (url.searchParams.get('end') || '').trim()
+
+    let items = db.map(receiptToSummaryEvent).filter(Boolean) as SummaryEvent[]
+
+    // date range filter
+    if (start && end) {
+      const s = new Date(start + 'T00:00:00').getTime()
+      const e = new Date(end + 'T23:59:59').getTime()
+      items = items.filter((it) => {
+        const t = new Date(it.createdAt).getTime()
+        return t >= s && t <= e
+      })
+    }
+
+    // exact filters
+    if (faculty) items = items.filter((it) => it.faculty === faculty)
+    if (sub1) items = items.filter((it) => (it.sub1 || '') === sub1)
+    if (sub2) items = items.filter((it) => (it.sub2 || '') === sub2)
+
+    // text search
+    if (search) {
+      items = items.filter(
+        (it) =>
+          (it.faculty || '').toLowerCase().includes(search) ||
+          (it.sub1 || '').toLowerCase().includes(search) ||
+          (it.sub2 || '').toLowerCase().includes(search) ||
+          (it.fundName || '').toLowerCase().includes(search) ||
+          (it.fullName || '').toLowerCase().includes(search) ||
+          (it.projectCode || '').toLowerCase().includes(search)
+      )
+    }
+
+    // newest first
+    items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+
+    return [200, { items }]
+  })
+
+  // GET /daily/closed-map
+  mock.onGet('/daily/closed-map').reply(() => {
+    return [200, { map: loadClosedMap() }]
+  })
+
+  // POST /daily/close { dateKey }
+  mock.onPost('/daily/close').reply((config) => {
+    const body = JSON.parse(config.data || '{}') as { dateKey?: string }
+    const dateKey = (body.dateKey || '').trim()
+    if (!dateKey) return [400, { message: 'dateKey required' }]
+
+    const map = loadClosedMap()
+    if (map[dateKey]?.isClosed) {
+      return [409, { message: 'already closed', map }]
+    }
+
+    map[dateKey] = {
+      isClosed: true,
+      closedAt: new Date().toLocaleString('th-TH', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    }
+    saveClosedMap(map)
+
+    return [200, { ok: true, map }]
+  })
+
+  console.log('✅ Axios Mock Setup Complete (affiliationId-ready + backward compatible + daily summary endpoints + robust amount)')
   return mock
 }

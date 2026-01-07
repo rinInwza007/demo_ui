@@ -46,7 +46,6 @@ function defaultSeed(): Receipt[] {
   ];
 }
 
-// ✅ เพิ่มฟังก์ชัน sanitizeItem
 export function sanitizeItem(it: any): ReceiptItem {
   return {
     itemName: (it.itemName ?? '').trim(),
@@ -54,11 +53,10 @@ export function sanitizeItem(it: any): ReceiptItem {
     referenceNo: (it.referenceNo ?? '').trim(),
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
     amount: Number.isFinite(it.amount) ? it.amount : 0,
-    type: it.type || 'income', // ✅ เพิ่มบรรทัดนี้
+    type: it.type || 'income',
   }
 }
 
-// ✅ แก้ไข: เพิ่ม subAffiliationName1 และ subAffiliationName2
 export function sanitizeReceipt(r: any) {
   return {
     id: r.id ?? null,
@@ -67,7 +65,6 @@ export function sanitizeReceipt(r: any) {
     fullName: String(r.fullName || '').trim(),
     phone: String(r.phone || '').trim(),
 
-    // ✅ เพิ่มส่วนนี้
     mainAffiliationName: String(r.mainAffiliationName || '').trim(),
     subAffiliationName1: String(r.subAffiliationName1 || '').trim(),
     subAffiliationName2: String(r.subAffiliationName2 || '').trim(),
@@ -89,7 +86,23 @@ export function sanitizeReceipt(r: any) {
       ? r.receiptList.map(sanitizeItem)
       : [],
 
-    paymentMethods: r.paymentMethods ?? {},
+    // ✅ เพิ่มการบันทึกข้อมูลเช็ค
+    paymentMethods: r.paymentMethods ? {
+      ...r.paymentMethods,
+      check: r.paymentMethods.check ? {
+        checked: r.paymentMethods.check.checked || false,
+        amount: r.paymentMethods.check.amount || '',
+        bankName: r.paymentMethods.check.bankName || '',
+        checkNumber: r.paymentMethods.check.checkNumber || '',
+        NumIncheck: r.paymentMethods.check.NumIncheck || ''
+      } : {
+        checked: false,
+        amount: '',
+        bankName: '',
+        checkNumber: '',
+        NumIncheck: ''
+      }
+    } : {},
 
     isLocked: r.isLocked ?? false,
   }
@@ -109,7 +122,6 @@ export function loadReceipts(): Receipt[] {
           ...r,
           createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
           updatedAt: r.updatedAt ? new Date(r.updatedAt) : new Date(),
-          // ✅ เพิ่มส่วนนี้
           mainAffiliationName: r.mainAffiliationName || '',
           subAffiliationName1: r.subAffiliationName1 || '',
           subAffiliationName2: r.subAffiliationName2 || '',
@@ -128,7 +140,6 @@ export function saveReceipts(list: Receipt[]) {
     ...r,
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
     updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : r.updatedAt,
-    // ✅ เพิ่มส่วนนี้
     mainAffiliationName: r.mainAffiliationName || '',
     subAffiliationName1: r.subAffiliationName1 || '',
     subAffiliationName2: r.subAffiliationName2 || '',

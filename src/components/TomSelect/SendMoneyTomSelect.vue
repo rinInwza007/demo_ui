@@ -21,10 +21,6 @@
         {{ option.text }}
       </option>
     </select>
-
-    <p v-if="errorMessage" class="text-sm text-red-500">
-      {{ errorMessage }}
-    </p>
   </div>
 </template>
 

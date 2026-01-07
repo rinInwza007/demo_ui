@@ -304,6 +304,7 @@ type SummaryEvent = {
   sub2?: string
   fundName?: string
   fullName?: string
+  projectCode?: string
 }
 
 type FacultySummary = {
@@ -319,11 +320,8 @@ type FacultySummary = {
 type DailySummary = {
   dateKey: string
   expanded: boolean
-
-  // ✅ เพิ่มสถานะปิดยอด
   isClosed: boolean
   closedAt?: string
-
   total: {
     countWaybill: number; sumWaybill: number
     countDebtor: number;  sumDebtor: number
@@ -334,7 +332,7 @@ type DailySummary = {
 }
 
 /**
- * Filters
+ * Filters (ยังคงไว้เหมือนเดิม)
  */
 const searchText = ref('')
 const selectedMain = ref('')
@@ -343,20 +341,9 @@ const selectedSub2 = ref('')
 const dateRangeText = ref('')
 
 /**
- * Mock Data
+ * ✅ เปลี่ยนจาก mockEventsBase -> eventsFromApi
  */
-const nowISO = () => new Date().toISOString()
-const yesterdayISO = () => new Date(Date.now() - 86400000).toISOString()
-
-const mockEventsBase = ref<SummaryEvent[]>([
-  { createdAt: nowISO(), type: 'WAYBILL', faculty: 'คณะวิศวกรรมศาสตร์', amount: 12500, sub1: 'สำนักงานคณบดี', sub2: 'งานการเงิน', fundName: 'รายได้คณะ', fullName: 'Apiwat P.' },
-  { createdAt: nowISO(), type: 'DEBTOR_NEW', faculty: 'คณะวิศวกรรมศาสตร์', amount: 8900, sub1: 'ภาควิชาวิศวกรรมคอมพิวเตอร์', sub2: '', fundName: 'โครงการอบรม', fullName: 'Nuttapong K.' },
-  { createdAt: nowISO(), type: 'WAYBILL', faculty: 'คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ', amount: 22000, sub1: 'ศูนย์ฝึกอบรมวิชาชีพฯ', sub2: '', fundName: 'รายได้บริการวิชาการ', fullName: 'Somchai S.' },
-  { createdAt: nowISO(), type: 'CLEAR_DEBTOR', faculty: 'คณะวิศวกรรมศาสตร์', amount: 3000, sub1: 'สำนักงานคณบดี', sub2: 'งานการเงิน' },
-
-  { createdAt: yesterdayISO(), type: 'WAYBILL', faculty: 'คณะวิศวกรรมศาสตร์', amount: 5000, sub1: 'สำนักงานคณบดี', sub2: '', fundName: 'รายได้คณะ', fullName: 'Admin' },
-  { createdAt: yesterdayISO(), type: 'CLEAR_DEBTOR', faculty: 'คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ', amount: 1500, sub1: 'ศูนย์ฝึกอบรมวิชาชีพฯ', sub2: '' },
-])
+const eventsFromApi = ref<SummaryEvent[]>([])
 
 /**
  * Helpers: dateKey + parse range
@@ -389,19 +376,17 @@ const parseDateRange = (text: string): { start?: Date; end?: Date } => {
 }
 
 /**
- * ✅ Close State Store (ต่อวัน)
+ * ✅ Close State Store (ต่อวัน) -> ดึงจาก API
  */
 type CloseState = { isClosed: boolean; closedAt?: string }
 const closedMap = ref<Record<string, CloseState>>({})
 
 const getTodayDateKey = () => dateKeyOf(new Date().toISOString())
 const isDateClosed = (dateKey: string) => !!closedMap.value[dateKey]?.isClosed
-
 const isTodayClosed = computed(() => isDateClosed(getTodayDateKey()))
 
 /**
  * ✅ Freeze Mode (เข้ม)
- * - ถ้าวันนี้ปิดยอด -> freeze = true -> หยุด poll + ห้ามเพิ่ม mock
  */
 const freezeMode = ref(false)
 
@@ -411,9 +396,8 @@ const freezeMode = ref(false)
 const POLL_MS = 60_000
 const pollTimer = ref<number | null>(null)
 
-// ตัวเช็คเปลี่ยนวัน (เพื่อปลด freeze อัตโนมัติเมื่อขึ้นวันใหม่)
 const dayWatcherTimer = ref<number | null>(null)
-const DAY_WATCH_MS = 15_000 // เช็คทุก 15 วินาทีพอ (เบาๆ)
+const DAY_WATCH_MS = 15_000
 
 const lastUpdatedAt = ref<Date | null>(null)
 const lastUpdatedText = computed(() => {
@@ -422,12 +406,7 @@ const lastUpdatedText = computed(() => {
 })
 
 /**
- * utils
- */
-const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)]
-
-/**
- * ✅ Start/Stop Poll (Frozen แบบเข้ม)
+ * ✅ Start/Stop Poll
  */
 const stopPoll = () => {
   if (pollTimer.value) {
@@ -437,55 +416,61 @@ const stopPoll = () => {
 }
 
 const startPoll = () => {
-  // กันซ้อน
   stopPoll()
-
-  // ถ้าวันนี้ปิดยอด => ไม่เริ่ม poll
   if (isTodayClosed.value) return
-
   pollTimer.value = window.setInterval(loadLatest, POLL_MS)
 }
 
 /**
- * ✅ เพิ่ม mock event เฉพาะตอน "ไม่ Frozen"
+ * ✅ NEW: Fetch APIs
+ * - /summary/events
+ * - /daily/closed-map
  */
-const loadLatest = async () => {
-  // ✅ เข้ม: freezeMode true = หยุดเพิ่มทันที
-  if (freezeMode.value) return
+const fetchClosedMap = async () => {
+  const res = await axios.get('/daily/closed-map')
+  closedMap.value = res.data?.map || {}
+}
 
-  const todayKey = getTodayDateKey()
+const buildSummaryParams = () => {
+  // ส่ง filter ไป server ได้เลย (ถ้าคุณอยากให้ server filter)
+  const params: Record<string, string> = {}
 
-  // ✅ กันซ้ำอีกชั้น: วันนี้ปิดยอดแล้ว = ห้ามเพิ่ม
-  if (isDateClosed(todayKey)) return
+  if (searchText.value.trim()) params.search = searchText.value.trim()
+  if (selectedMain.value) params.faculty = selectedMain.value
+  if (selectedSub1.value) params.sub1 = selectedSub1.value
+  if (selectedSub2.value) params.sub2 = selectedSub2.value
 
-  const faculties = ['คณะวิศวกรรมศาสตร์', 'คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ', 'คณะพยาบาลศาสตร์', 'คณะนิติศาสตร์']
-  const types: EventType[] = ['WAYBILL', 'DEBTOR_NEW', 'CLEAR_DEBTOR']
-  const t = pick(types)
-  const f = pick(faculties)
-
-  const newEvent: SummaryEvent = {
-    createdAt: nowISO(),
-    type: t,
-    faculty: f,
-    amount: Math.floor(1000 + Math.random() * 20000),
-    sub1: 'สำนักงานคณบดี',
-    sub2: 'งานการเงิน',
-    fundName: t === 'WAYBILL' ? 'รายได้คณะ' : (t === 'DEBTOR_NEW' ? 'ลูกหนี้โครงการ' : undefined),
-    fullName: 'System',
+  const { start, end } = parseDateRange(dateRangeText.value)
+  if (start && end) {
+    params.start = dateKeyOf(start.toISOString())
+    params.end = dateKeyOf(end.toISOString())
   }
 
-  mockEventsBase.value = [newEvent, ...mockEventsBase.value]
+  return params
+}
+
+const fetchEvents = async () => {
+  const res = await axios.get('/summary/events', { params: buildSummaryParams() })
+  eventsFromApi.value = res.data?.items || []
   lastUpdatedAt.value = new Date()
 }
 
+/**
+ * ✅ loadLatest = re-fetch data (แทนการสุ่มเพิ่ม mock)
+ */
+const loadLatest = async () => {
+  if (freezeMode.value) return
+  if (isTodayClosed.value) return
+  await fetchEvents()
+}
+
 const manualRefresh = async () => {
-  // ✅ เข้ม: กดรีเฟรชตอนปิดยอดแล้ว = ไม่ทำงาน
   if (freezeMode.value || isTodayClosed.value) return
-  await loadLatest()
+  await fetchEvents()
 }
 
 /**
- * ✅ Close Daily (เปิด Freeze แบบเข้มทันที)
+ * ✅ Close Daily -> เรียก API /daily/close
  */
 const closeDaily = async () => {
   const todayKey = getTodayDateKey()
@@ -520,19 +505,13 @@ const closeDaily = async () => {
 
   if (!result.isConfirmed) return
 
-  // ✅ ปิดยอดจริง
-  closedMap.value[todayKey] = {
-    isClosed: true,
-    closedAt: new Date().toLocaleString('th-TH', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-  }
+  // ✅ ปิดยอดจริง (ให้ server เป็นคนบันทึก)
+  await axios.post('/daily/close', { dateKey: todayKey })
 
-  // ✅ เข้ม: เปิด freeze + หยุด poll ทันที
+  // ✅ refresh close map
+  await fetchClosedMap()
+
+  // ✅ เข้ม: เปิด freeze + หยุด poll
   freezeMode.value = true
   stopPoll()
   lastUpdatedAt.value = new Date()
@@ -548,8 +527,6 @@ const closeDaily = async () => {
 
 /**
  * ✅ Watch freeze condition จาก isTodayClosed
- * - ถ้าวันนี้ถูกปิดยอด -> freezeMode true + stopPoll
- * - ถ้าวันนี้ยังไม่ปิดยอด -> freezeMode false + startPoll
  */
 watch(
   isTodayClosed,
@@ -558,7 +535,6 @@ watch(
       freezeMode.value = true
       stopPoll()
     } else {
-      // ถ้าวันใหม่ยังไม่ปิดยอด ปลด freeze และเริ่ม poll
       freezeMode.value = false
       startPoll()
     }
@@ -567,23 +543,25 @@ watch(
 )
 
 /**
- * ✅ Day watcher: เมื่อวันเปลี่ยน (เช่นข้ามเที่ยงคืน)
- * - ถ้าวันใหม่ยังไม่ปิดยอด -> ปลด freeze + startPoll
+ * ✅ Day watcher: เมื่อวันเปลี่ยน
  */
 const currentDayKey = ref(getTodayDateKey())
 
 const startDayWatcher = () => {
   if (dayWatcherTimer.value) window.clearInterval(dayWatcherTimer.value)
 
-  dayWatcherTimer.value = window.setInterval(() => {
+  dayWatcherTimer.value = window.setInterval(async () => {
     const nowKey = getTodayDateKey()
     if (nowKey !== currentDayKey.value) {
       currentDayKey.value = nowKey
 
-      // วันเปลี่ยนแล้ว:
+      // วันเปลี่ยนแล้ว -> refresh closedMap ก่อนเพื่อความชัวร์
+      await fetchClosedMap()
+
       if (!isDateClosed(nowKey)) {
         freezeMode.value = false
         startPoll()
+        await fetchEvents()
       } else {
         freezeMode.value = true
         stopPoll()
@@ -601,9 +579,11 @@ const stopDayWatcher = () => {
 
 /**
  * Filters
+ * ✅ ตอนนี้ eventsFromApi ถูก filter มาแล้วจาก server
+ * แต่ยังคงกรองซ้ำฝั่งหน้าไว้ได้ (เผื่อคุณไม่ส่ง params ก็ยังทำงาน)
  */
 const filteredEvents = computed(() => {
-  let arr = [...mockEventsBase.value]
+  let arr = [...eventsFromApi.value]
 
   const { start, end } = parseDateRange(dateRangeText.value)
   if (start && end) {
@@ -620,7 +600,8 @@ const filteredEvents = computed(() => {
       e.sub1?.toLowerCase().includes(s) ||
       e.sub2?.toLowerCase().includes(s) ||
       e.fundName?.toLowerCase().includes(s) ||
-      e.fullName?.toLowerCase().includes(s)
+      e.fullName?.toLowerCase().includes(s) ||
+      e.projectCode?.toLowerCase().includes(s)
     )
   }
 
@@ -733,15 +714,16 @@ const formatThaiDate = (dateKey: string) => {
  * Mount lifecycle
  */
 onMounted(async () => {
-  // โหลดครั้งแรก 1 ที (ถ้าวันนี้ยังไม่ปิดยอด)
-  if (!isTodayClosed.value) {
-    await loadLatest()
-  }
+  // ✅ โหลด closeMap ก่อน เพื่อคุม freeze/poll ให้ถูก
+  await fetchClosedMap()
 
-  // เริ่ม poll ตามสถานะวันนี้
+  // ✅ โหลด events ครั้งแรก
+  await fetchEvents()
+
+  // ✅ เริ่ม poll ตามสถานะวันนี้
   startPoll()
 
-  // ตัวเช็คเปลี่ยนวัน
+  // ✅ ตัวเช็คเปลี่ยนวัน
   startDayWatcher()
 })
 
@@ -750,3 +732,4 @@ onBeforeUnmount(() => {
   stopDayWatcher()
 })
 </script>
+

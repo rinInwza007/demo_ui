@@ -299,9 +299,16 @@ export function setupAxiosMock() {
 
     const next = [sanitized, ...db]
     saveReceipts(next)
-
+      console.log('💾 Receipt saved:', sanitized.projectCode)
+  console.log('📤 Dispatching event...')
+localStorage.setItem('receipts_last_update', Date.now().toString())
+  window.dispatchEvent(new CustomEvent('receipts-updated', {
+    detail: { action: 'create', data: sanitized }
+  }))
+   console.log('✅ Event dispatched!')
     return [201, sanitized]
   })
+
 
   // PUT /updateReceipt/:projectCode
   mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
@@ -330,9 +337,14 @@ export function setupAxiosMock() {
 
     db[idx] = updated
     saveReceipts(db)
-
+ localStorage.setItem('receipts_last_update', Date.now().toString())
+  window.dispatchEvent(new CustomEvent('receipts-updated', {
+    detail: { action: 'update', data: updated }
+  }))
     return [200, updated]
+
   })
+
 
   // DELETE /deleteReceipt/:id
   mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
@@ -343,7 +355,10 @@ export function setupAxiosMock() {
     const before = db.length
     const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
     saveReceipts(next)
-
+localStorage.setItem('receipts_last_update', Date.now().toString())
+  window.dispatchEvent(new CustomEvent('receipts-updated', {
+    detail: { action: 'delete', id }
+  }))
     return [200, { success: next.length !== before }]
   })
 

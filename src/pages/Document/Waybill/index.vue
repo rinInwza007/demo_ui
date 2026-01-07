@@ -348,7 +348,7 @@
                 </div>
               </template>
             </div>
-            
+
             <div class="glass-panel rounded-2xl p-6 shadow-lg space-y-4">
               <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -396,8 +396,8 @@
                         v-model="row.itemName"
                         @input="() => clearRowError(index, 'itemName')"
                         :input-id="`itemName-${index}`"
-                        waybill-type="all" 
-                        department="general"  
+                        waybill-type="all"
+                        department="general"
                       >
                         <!-- 🔥 ไอคอนต้องอยู่ใน slot เท่านั้น -->
                         <template #suffix>
@@ -655,35 +655,34 @@
                     </div>
                   </div>
                 </div>
-
-                                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
-                  <div class="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      v-model="paymentMethods.debtor.checked"
-                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                    />
-                    <div class="flex-1">
-                      <div class="font-medium text-slate-800">ลูกหนี้</div>
-                      <div class="mt-2 flex items-center gap-2">
-                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
-                        <InputText
-                          :model-value="formatDisplayPaymentAmount(paymentMethods.debtor.amount)"
-                          @input="(e) => handlePaymentAmountInput('debtor', e)"
-                          @blur="() => formatPaymentAmountOnBlur('debtor')"
-                          :readonly="!paymentMethods.debtor.checked"
-                          :class="{
-                            'opacity-50 cursor-not-allowed pointer-events-none bg-gray-100':
-                              !paymentMethods.debtor.checked,
-                          }"
-                          placeholder="0.00"
-                          class="w-48 transition-all duration-200"
-                        />
-                        <span class="text-sm text-slate-700">บาท</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+<div class="bg-white/40 rounded-xl p-4 border border-white/50">
+  <div class="flex items-start gap-3">
+    <input
+      type="checkbox"
+      v-model="paymentMethods.debtor.checked"
+      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+    />
+    <div class="flex-1">
+      <div class="font-medium text-slate-800">ลูกหนี้</div>
+      <div class="mt-2 flex items-center gap-2">
+        <span class="text-sm text-slate-700">จำนวนเงิน</span>
+        <InputText
+          :model-value="formatDisplayPaymentAmount(paymentMethods.debtor.amount)"
+          @input="(e) => handlePaymentAmountInput('debtor', e)"
+          @blur="() => formatPaymentAmountOnBlur('debtor')"
+          :readonly="!paymentMethods.debtor.checked"
+          :class="{
+            'opacity-50 cursor-not-allowed pointer-events-none bg-gray-100':
+              !paymentMethods.debtor.checked,
+          }"
+          placeholder="0.00"
+          class="w-48 transition-all duration-200"
+        />
+        <span class="text-sm text-slate-700">บาท</span>
+      </div>
+    </div>
+  </div>
+</div>
 
                 <!-- อื่น ๆ -->
                 <div class="bg-white/40 rounded-xl p-4 border border-white/50">
@@ -725,7 +724,7 @@
                   </div>
                 </div>
 
-                
+
 
                 <!-- สรุปยอดเงินส่วนที่ 3 -->
                 <div class="bg-purple-500 rounded-xl p-4 mt-4">
@@ -821,8 +820,7 @@ const paymentMethods = ref({
   cash: { checked: false, amount: '' },
   check: { checked: false, amount: '' },
   debtor: { checked: false, amount: '' },
-
-  other: { checked: false, name: '', amount: '' },
+  other: { checked: false, name: '', amount: '' }
 })
 
 Object.keys(paymentMethods.value).forEach((key) => {
@@ -1138,7 +1136,7 @@ const loadReceiptData = async () => {
     if (data.paymentMethods) {
       Object.keys(data.paymentMethods).forEach((key) => {
         const methodData = data.paymentMethods[key]
-        
+
         // ตรวจสอบว่า methodData มีค่า
         if (!methodData) return
 
@@ -1148,8 +1146,8 @@ const loadReceiptData = async () => {
         // โหลด amount
         const amount = methodData.amount || 0
         if (amount > 0) {
-          const numAmount = typeof amount === 'string' 
-            ? parseFloat(amount.replace(/,/g, '')) 
+          const numAmount = typeof amount === 'string'
+            ? parseFloat(amount.replace(/,/g, ''))
             : Number(amount)
 
           if (!isNaN(numAmount)) {
@@ -1293,7 +1291,7 @@ const netTotalAmount = computed(() => {
   let total = 0
   morelist.value.forEach((row) => {
     const cleanAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
-    
+
     if (!isNaN(cleanAmount)) {
       // ✅ ถ้าเป็นรายจ่าย ให้ลบ, ถ้าเป็นรายรับให้บวก
       if (row.type === 'expense') {
@@ -1535,7 +1533,7 @@ const saveData = async () => {
     payload.updatedAt = currentDateTime
   }
 
-  try {
+   try {
     let response
     if (isEditMode.value) {
       response = await axios.put(`/updateReceipt/${receiptId.value}`, payload)
@@ -1543,6 +1541,12 @@ const saveData = async () => {
       response = await axios.post('/saveReceipt', payload)
     }
 
+    // 🔥 บังคับให้มั่นใจว่า event ถูกส่ง (double check)
+    await nextTick()
+    localStorage.setItem('receipts_last_update', Date.now().toString())
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: { action: isEditMode.value ? 'update' : 'create' }
+    }))
     await Swal.fire({
       icon: 'success',
       title: isEditMode.value ? 'อัพเดตสำเร็จ!' : 'บันทึกสำเร็จ!',

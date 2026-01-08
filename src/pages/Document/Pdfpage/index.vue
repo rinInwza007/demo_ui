@@ -1,8 +1,5 @@
 <template>
   <div>
-    <Navbar />
-    <SecondNavbar class="bg-gray-100" />
-
     <div v-if="loading" class="flex justify-center items-center h-96">
       <div class="text-lg text-gray-600">กำลังโหลดข้อมูล...</div>
     </div>
@@ -33,8 +30,6 @@ import { reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import pdfMake from 'pdfmake/build/pdfmake'
 import { vfs, fonts } from '../../../assets/fonts.js'
-import Navbar from '@/components/bar/navbar.vue'
-import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 import { loadReceipts } from '@/fake/mockDb.js'
 import { isReceivableItem } from '@/components/data/ItemNameOption'
 const route = useRoute()
@@ -365,13 +360,13 @@ function createDocDefinition() {
                         },
                       ],
                       width: 80,
-                      margin: [-18, 0, 0, 0],
+                      margin: [0, 0, 15, 0],
                     },
                     {
                       text: 'บาท',
                       width: 'auto',
                       noWrap: true,
-                      margin: [-20, 0, 0, 0],
+                      margin: [-19, 0, 0, 0],
                     },
                   ],
                 },
@@ -463,6 +458,7 @@ function createDocDefinition() {
                   style: 'form',
                   alignment: 'left',
                   noWrap: true,
+                  margin: [-10, 0, 10, 0],
                 },
                 {
                   text: 'จำนวน',
@@ -506,6 +502,7 @@ function createDocDefinition() {
                   style: 'form',
                   alignment: 'left',
                   noWrap: true,
+                  margin: [-10, 0, 10, 0],
                 },
                 {
                   text: 'จำนวน',
@@ -549,6 +546,7 @@ function createDocDefinition() {
                   style: 'form',
                   alignment: 'left',
                   noWrap: true,
+                  margin: [-10, 0, 10, 0],
                 },
                 {
                   text: 'จำนวน',
@@ -643,7 +641,7 @@ function createDocDefinition() {
                   text: 'บาท',
                   width: 'auto',
                   noWrap: true,
-                  margin: [12.5, 5, 91, 0],
+                  margin: [15.8, 2, 92, 0],
                   alignment: 'left',
                 },
               ],
@@ -670,7 +668,7 @@ function createDocDefinition() {
                   style: 'form',
                   width: 'auto',
                   noWrap: true,
-                  margin: [12.5, 5, 91, 0],
+                  margin: [15, 5, 92, 0],
                   alignment: 'left',
                 },
               ],

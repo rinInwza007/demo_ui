@@ -1,3 +1,4 @@
+
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full h-screen flex overflow-hidden">
@@ -18,14 +19,10 @@
             <p class="text-xs text-slate-800 mt-0.5">จัดการล้างลูกหนี้และติดตามประวัติการทำรายการ</p>
           </div>
           <div class="flex items-center gap-3">
-            <button
-              class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
-            >
+            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
               <i class="ph ph-bell text-xl"></i>
             </button>
-            <button
-              class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm"
-            >
+            <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
               <i class="ph ph-gear text-xl"></i>
             </button>
           </div>
@@ -37,11 +34,7 @@
             <button
               @click="activeTab = 'new'"
               class="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2"
-              :class="
-                activeTab === 'new'
-                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
-                  : 'text-slate-600 hover:bg-white/50'
-              "
+              :class="activeTab === 'new' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-slate-600 hover:bg-white/50'"
             >
               <i class="ph ph-plus-circle text-lg"></i>
               สร้างรายการใหม่
@@ -49,11 +42,7 @@
             <button
               @click="activeTab = 'history'"
               class="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2"
-              :class="
-                activeTab === 'history'
-                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
-                  : 'text-slate-600 hover:bg-white/50'
-              "
+              :class="activeTab === 'history' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-slate-600 hover:bg-white/50'"
             >
               <i class="ph ph-clock-clockwise text-lg"></i>
               ประวัติการทำรายการ
@@ -61,20 +50,20 @@
           </div>
         </div>
 
-        <!-- TAB 1: NEW ENTRY (Selection) -->
+        <!-- TAB 1: NEW ENTRY -->
         <div v-if="activeTab === 'new'" class="flex-1 px-8 pb-8 flex flex-col min-h-0">
           <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
             <div class="px-6 py-4 border-b border-white/40 bg-white/20 flex-shrink-0">
               <h2 class="text-xl font-bold text-slate-900">เลือกรายการลูกหนี้</h2>
               <p class="text-sm text-slate-600 mt-1">
-                กรุณาเลือกรายการลูกหนี้ที่ต้องการล้างบัญชี (สามารถเลือกได้หลายรายการ)
+                กรุณาเลือกรายการลูกหนี้ที่ต้องการล้างบัญชี (แสดงเฉพาะรายการที่ยังไม่ได้ล้าง)
               </p>
             </div>
 
             <div class="overflow-y-auto flex-1 p-6">
               <div v-if="filteredItems.length === 0" class="text-center py-12 text-slate-500">
                 <i class="ph ph-folder-open text-6xl mb-4 opacity-30"></i>
-                <p>ไม่พบรายการลูกหนี้</p>
+                <p>ไม่พบรายการลูกหนี้ที่ยังไม่ได้ล้าง</p>
               </div>
 
               <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -83,21 +72,13 @@
                   :key="item.id"
                   @click="toggleSelectItem(item.id)"
                   class="glass-input rounded-xl p-5 cursor-pointer transition-all duration-200 hover:shadow-xl border-2"
-                  :class="
-                    selectedItems.has(item.id)
-                      ? 'border-blue-500 bg-blue-50/50 shadow-lg'
-                      : 'border-transparent hover:border-blue-200'
-                  "
+                  :class="selectedItems.has(item.id) ? 'border-blue-500 bg-blue-50/50 shadow-lg' : 'border-transparent hover:border-blue-200'"
                 >
                   <div class="flex items-start gap-4">
                     <div class="flex-shrink-0">
                       <div
                         class="w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
-                        :class="
-                          selectedItems.has(item.id)
-                            ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white'
-                            : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-600'
-                        "
+                        :class="selectedItems.has(item.id) ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white' : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-600'"
                       >
                         <i class="ph-fill ph-buildings text-2xl"></i>
                       </div>
@@ -112,21 +93,14 @@
                         <div class="flex-shrink-0 ml-2">
                           <i
                             class="ph-fill ph-check-circle text-xl transition-all"
-                            :class="
-                              selectedItems.has(item.id)
-                                ? 'text-blue-600 opacity-100 scale-100'
-                                : 'text-slate-500 opacity-40 scale-95'
-                            "
+                            :class="selectedItems.has(item.id) ? 'text-blue-600 opacity-100 scale-100' : 'text-slate-500 opacity-40 scale-95'"
                           ></i>
                         </div>
                       </div>
 
                       <div class="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
                         <span class="text-xs text-slate-500">ยอดหนี้</span>
-                        <span
-                          class="text-base font-bold"
-                          :class="selectedItems.has(item.id) ? 'text-blue-600' : 'text-red-600'"
-                        >
+                        <span class="text-base font-bold" :class="selectedItems.has(item.id) ? 'text-blue-600' : 'text-red-600'">
                           {{ formatCurrency(item.debtorAmount) }}
                         </span>
                       </div>
@@ -178,17 +152,11 @@
               </div>
 
               <div v-else class="space-y-4">
-                <div
-                  v-for="item in historyItems"
-                  :key="item.id"
-                  class="glass-input rounded-xl overflow-hidden hover:shadow-md transition-all"
-                >
+                <div v-for="item in historyItems" :key="item.id" class="glass-input rounded-xl overflow-hidden hover:shadow-md transition-all">
                   <div class="p-5">
                     <div class="flex items-center justify-between mb-4">
                       <div class="flex items-center gap-3">
-                        <div
-                          class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-sm"
-                        >
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-sm">
                           <i class="ph-fill ph-check text-xl"></i>
                         </div>
                         <div>
@@ -202,14 +170,11 @@
                       </div>
                     </div>
 
-                  <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
-                      <span
-                        class="px-3 py-1 rounded-lg text-xs font-medium bg-green-100 text-green-700 border border-green-200"
-                      >
-                        ชำระสำเร็จ
+                    <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
+                      <span class="px-3 py-1 rounded-lg text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                        ล้างลูกหนี้สำเร็จ
                       </span>
                       <div class="flex items-center gap-3">
-                        <!-- PDF BUTTON -->
                         <button
                           @click="viewPdf(item.referenceId)"
                           class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100"
@@ -223,10 +188,7 @@
                           class="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
                         >
                           {{ expandedHistory.has(item.id) ? 'ซ่อน' : 'ดู' }}รายละเอียด
-                          <i
-                            class="ph text-base transition-transform duration-200"
-                            :class="expandedHistory.has(item.id) ? 'ph-caret-up' : 'ph-caret-right'"
-                          ></i>
+                          <i class="ph text-base transition-transform duration-200" :class="expandedHistory.has(item.id) ? 'ph-caret-up' : 'ph-caret-right'"></i>
                         </button>
                       </div>
                     </div>
@@ -240,10 +202,7 @@
                     leave-from-class="opacity-100 max-h-[1000px]"
                     leave-to-class="opacity-0 max-h-0"
                   >
-                    <div
-                      v-if="expandedHistory.has(item.id)"
-                      class="border-t border-slate-200 bg-slate-50/50 p-5"
-                    >
+                    <div v-if="expandedHistory.has(item.id)" class="border-t border-slate-200 bg-slate-50/50 p-5">
                       <div v-if="item.payments && item.payments.length > 0">
                         <div class="flex items-center gap-2 mb-4">
                           <i class="ph-fill ph-currency-circle-dollar text-lg text-slate-600"></i>
@@ -251,11 +210,7 @@
                         </div>
 
                         <div class="space-y-3">
-                          <div
-                            v-for="(payment, idx) in item.payments"
-                            :key="idx"
-                            class="bg-white rounded-lg p-4 border border-slate-200 shadow-sm"
-                          >
+                          <div v-for="(payment, idx) in item.payments" :key="idx" class="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
                             <div class="flex items-start justify-between mb-3">
                               <div class="flex items-center gap-2">
                                 <div
@@ -281,17 +236,9 @@
                                 </div>
                                 <div>
                                   <p class="font-bold text-slate-800 text-sm">
-                                    {{
-                                      payment.type === 'transfer'
-                                        ? 'ฝากเข้าบัญชี'
-                                        : payment.type === 'cash'
-                                          ? 'เงินสด'
-                                          : 'เช็ค'
-                                    }}
+                                    {{ payment.type === 'transfer' ? 'ฝากเข้าบัญชี' : payment.type === 'cash' ? 'เงินสด' : 'เช็ค' }}
                                   </p>
-                                  <p class="text-xs text-slate-500" v-if="payment.bankName">
-                                    {{ payment.bankName }}
-                                  </p>
+                                  <p class="text-xs text-slate-500" v-if="payment.bankName">{{ payment.bankName }}</p>
                                 </div>
                               </div>
                               <p class="font-bold text-slate-800">{{ formatCurrency(payment.amount) }}</p>
@@ -341,19 +288,21 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import sidebar from '@/components/bar/sidebar.vue'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
 
 setupAxiosMock()
-
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+
 const viewPdf = (id: string) => {
   router.push(`/pdfclear/${id}`)
 }
+
 const activeTab = ref<'new' | 'history'>('new')
 const searchText = ref('')
 const rawData = ref<any[]>([])
@@ -370,64 +319,42 @@ const currentUpdateTime = ref('')
 
 const isReceivableItem = (itemName: string) => {
   const receivableKeywords = [
-    'ลูกหนี้',
-    'ค่ารักษาพยาบาล',
-    'ค่าห้องพิเศษ',
-    'ค่ายา',
-    'ค่าตรวจวิเคราะห์',
-    'ค่าเอกซเรย์',
-    'ค่าบริการพยาบาล',
-    'ค่าตรวจสุขภาพ',
-    'ค่าดูแลผู้ป่วย',
-    'ค่ารักษาทันตกรรม',
-    'ค่าจัดฟัน',
-    'ค่าถอนฟัน',
-    'ค่าอุดฟัน',
-    'ค่าทำฟันปลอม',
-    'ค่าห้องพักผู้ป่วย',
-    'ค่าผ่าตัด',
-    'ค่าห้องฉุกเฉิน',
-    'ค่าเครื่องมือแพทย์',
-    'ค่าบริการทดสอบวัสดุ',
-    'ค่าบริการวิเคราะห์ดิน',
-    'ค่าบริการออกแบบ',
-    'ค่าบริการที่ปรึกษา',
-    'ค่าเช่าอุปกรณ์',
-    'ค่าตรวจวินิจฉัย',
-    'ค่าตรวจทางห้องปฏิบัติการ',
-    'ค่าบริการเวชกรรม',
-    'ค่าใช้ห้องผ่าตัด',
-    'ค่าบริการจัดยา',
-    'ค่าตรวจวิเคราะห์ยา',
-    'ค่าบริการเภสัชกรรม'
+    'ลูกหนี้', 'ค่ารักษาพยาบาล', 'ค่าห้องพิเศษ', 'ค่ายา', 'ค่าตรวจวิเคราะห์',
+    'ค่าเอกซเรย์', 'ค่าบริการพยาบาล', 'ค่าตรวจสุขภาพ', 'ค่าดูแลผู้ป่วย',
+    'ค่ารักษาทันตกรรม', 'ค่าจัดฟัน', 'ค่าถอนฟัน', 'ค่าอุดฟัน', 'ค่าทำฟันปลอม',
+    'ค่าห้องพักผู้ป่วย', 'ค่าผ่าตัด', 'ค่าห้องฉุกเฉิน', 'ค่าเครื่องมือแพทย์',
+    'ค่าบริการทดสอบวัสดุ', 'ค่าบริการวิเคราะห์ดิน', 'ค่าบริการออกแบบ',
+    'ค่าบริการที่ปรึกษา', 'ค่าเช่าอุปกรณ์', 'ค่าตรวจวินิจฉัย',
+    'ค่าตรวจทางห้องปฏิบัติการ', 'ค่าบริการเวชกรรม', 'ค่าใช้ห้องผ่าตัด',
+    'ค่าบริการจัดยา', 'ค่าตรวจวิเคราะห์ยา', 'ค่าบริการเภสัชกรรม'
   ]
-
   return receivableKeywords.some(keyword => itemName?.includes(keyword))
 }
 
 const createStableId = (receipt, item, idx) => {
-  const dataString = `${receipt.id}-${receipt.projectCode}-${idx}-${item.itemName}-${item.debtorAmount || item.amount || item.subtotal || 0}`;
+  const dataString = `${receipt.id}-${receipt.projectCode}-${idx}-${item.itemName}-${item.debtorAmount || item.amount || item.subtotal || 0}`
   const hash = dataString.split('').reduce((acc, char) => {
-    return ((acc << 5) - acc) + char.charCodeAt(0) | 0;
-  }, 0);
-  return `${receipt.projectCode}-item-${idx}-${Math.abs(hash).toString(36)}`;
-};
+    return ((acc << 5) - acc) + char.charCodeAt(0) | 0
+  }, 0)
+  return `${receipt.projectCode}-item-${idx}-${Math.abs(hash).toString(36)}`
+}
 
 const mapReceiptToDebtorItems = (receipt) => {
-  const items = [];
-  let itemList = [];
+  const items = []
+  let itemList = []
 
   if (receipt.debtorList && Array.isArray(receipt.debtorList)) {
     itemList = receipt.debtorList.map((debtor, idx) => {
-      const deposit = receipt.depositList?.[idx] || {};
+      const deposit = receipt.depositList?.[idx] || {}
       return {
         itemName: debtor.itemName,
         note: debtor.debtornote || debtor.note || '',
         debtorAmount: Number(debtor.amount || 0),
         depositNetAmount: Number(deposit.netAmount || 0),
         fee: Number(deposit.fee || 0),
-      };
-    });
+        isClearedDebt: debtor.isClearedDebt || false,
+      }
+    })
   } else if (receipt.receiptList && Array.isArray(receipt.receiptList)) {
     itemList = receipt.receiptList.map((item) => ({
       itemName: item.itemName || '-',
@@ -435,19 +362,21 @@ const mapReceiptToDebtorItems = (receipt) => {
       debtorAmount: Number(item.amount || item.debtorAmount || item.subtotal || 0),
       depositNetAmount: Number(item.depositNetAmount || 0),
       fee: Number(item.fee || 0),
-    }));
+      isClearedDebt: item.isClearedDebt || false,
+    }))
   }
 
   if (!Array.isArray(itemList) || itemList.length === 0) {
-    return items;
+    return items
   }
 
   itemList.forEach((item, idx) => {
-    const itemName = item.itemName || '-';
-    const debtAmount = Number(item.debtorAmount || 0);
+    const itemName = item.itemName || '-'
+    const debtAmount = Number(item.debtorAmount || 0)
 
-    if (isReceivableItem(itemName)) {
-      const uniqueId = createStableId(receipt, item, idx);
+    // ✅ กรองเฉพาะรายการลูกหนี้ที่ยังไม่ล้าง
+    if (isReceivableItem(itemName) && !item.isClearedDebt) {
+      const uniqueId = createStableId(receipt, item, idx)
 
       items.push({
         id: uniqueId,
@@ -466,12 +395,12 @@ const mapReceiptToDebtorItems = (receipt) => {
         _originalReceipt: receipt,
         _originalItem: item,
         _originalIndex: idx,
-      });
+      })
     }
-  });
+  })
 
-  return items;
-};
+  return items
+}
 
 const loadReceiptData = async () => {
   console.log('📥 Loading receipt data...')
@@ -483,7 +412,6 @@ const loadReceiptData = async () => {
       return
     }
 
-    // ✅ เปลี่ยนจาก localStorage เป็น API
     const res = await axios.get('/getReceipt')
     const allReceipts = res.data || []
 
@@ -496,12 +424,7 @@ const loadReceiptData = async () => {
     const scopedReceipts =
       auth.role === 'user'
         ? allReceipts.filter((r: any) => {
-            const rid =
-              r.affiliationId ||
-              r.mainAffiliationId ||
-              r.mainAffiliationCode ||
-              r._affiliationId ||
-              null
+            const rid = r.affiliationId || r.mainAffiliationId || r.mainAffiliationCode || r._affiliationId || null
             if (!rid) return false
             return rid === auth.affiliationId
           })
@@ -510,17 +433,14 @@ const loadReceiptData = async () => {
     const debtorReceipts = scopedReceipts.filter((r: any) =>
       r.moneyTypeNote === 'Debtor' ||
       (r.moneyTypeNote === 'Waybill' &&
-        (
-          (Array.isArray(r.debtorList) && r.debtorList.length >= 0) ||
-          (Array.isArray(r.receiptList) && r.receiptList.length > 0)
-        )
-      )
+        ((Array.isArray(r.debtorList) && r.debtorList.length >= 0) ||
+          (Array.isArray(r.receiptList) && r.receiptList.length > 0)))
     )
 
     const allDebtorItems = debtorReceipts.flatMap(mapReceiptToDebtorItems)
     rawData.value = allDebtorItems
 
-    console.log('✅ Loaded', allDebtorItems.length, 'debtor items')
+    console.log('✅ Loaded', allDebtorItems.length, 'pending debtor items')
   } catch (error) {
     console.error('❌ Load error:', error)
     rawData.value = []
@@ -536,88 +456,16 @@ const loadHistory = () => {
 
     if (stored) {
       const parsed = JSON.parse(stored)
-      console.log('📦 History data found:', parsed)
-
-      const hasPayments = parsed.some((item: any) => item.payments && item.payments.length > 0)
-
-      if (hasPayments) {
-        historyItems.value = parsed
-        console.log('✅ Using stored history with payments')
-      } else {
-        console.log('⚠️ Stored history has no payments, using mock data')
-        historyItems.value = getMockHistory()
-      }
+      historyItems.value = parsed
+      console.log('✅ Loaded history:', parsed.length, 'items')
     } else {
-      console.log('📭 No history found, using mock data')
-      historyItems.value = getMockHistory()
+      historyItems.value = []
+      console.log('📭 No history found')
     }
   } catch (error) {
     console.error('❌ History load error:', error)
-    historyItems.value = getMockHistory()
+    historyItems.value = []
   }
-}
-
-const getMockHistory = () => {
-  return [
-    {
-      id: 'hist-001',
-      items: '2 หน่วยงาน (5 รายการ)',
-      date: '6 ม.ค. 2026 14:30',
-      total: 15000,
-      referenceId: 'CLEAR-1234567',
-      payments: [
-        {
-          type: 'transfer',
-          amount: 10000,
-          bankName: 'ธนาคารกรุงไทย',
-          accountNumber: '512-1-43488-6',
-          referenceId: 'PAY-1234567890'
-        },
-        {
-          type: 'cash',
-          amount: 5000,
-          referenceId: 'PAY-1234567891'
-        }
-      ]
-    },
-    {
-      id: 'hist-002',
-      items: '3 หน่วยงาน (8 รายการ)',
-      date: '5 ม.ค. 2026 10:15',
-      total: 25000,
-      referenceId: 'CLEAR-2345678',
-      payments: [
-        {
-          type: 'transfer',
-          amount: 15000,
-          bankName: 'ธนาคารกสิกรไทย',
-          accountNumber: '123-4-56789-0',
-          referenceId: 'PAY-2345678901'
-        },
-        {
-          type: 'check',
-          amount: 10000,
-          bankName: 'ธนาคารไทยพาณิชย์',
-          checkNumber: 'CHK-9876543',
-          referenceId: 'PAY-2345678902'
-        }
-      ]
-    },
-    {
-      id: 'hist-003',
-      items: '1 หน่วยงาน (3 รายการ)',
-      date: '4 ม.ค. 2026 16:45',
-      total: 8500,
-      referenceId: 'CLEAR-3456789',
-      payments: [
-        {
-          type: 'cash',
-          amount: 8500,
-          referenceId: 'PAY-3456789012'
-        }
-      ]
-    }
-  ]
 }
 
 const filteredItems = computed(() => {
@@ -652,22 +500,15 @@ const selectedTotal = computed(() => {
 })
 
 const formatCurrency = (amount: number | string) => {
-  const n =
-    typeof amount === 'string'
-      ? Number(amount.toString().replace(/[^0-9.-]/g, ''))
-      : (amount as number) || 0
-
-  return n.toLocaleString('th-TH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+  const n = typeof amount === 'string' ? Number(amount.toString().replace(/[^0-9.-]/g, '')) : (amount as number) || 0
+  return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 const handleFocus = () => {
   console.log('window focused')
 }
 
-const clearSelectedDebtors = () => {
+const clearSelectedDebtors = async () => {
   if (selectedItems.value.size === 0) {
     Swal.fire({
       icon: 'warning',
@@ -682,11 +523,28 @@ const clearSelectedDebtors = () => {
   const selectedList = rawData.value.filter((item) => selectedIds.includes(item.id))
   if (selectedList.length === 0) return
 
+  // ✅ ทำเครื่องหมาย isClearedDebt = true
+  const receiptSet = new Set()
+  selectedList.forEach(item => {
+    if (item._originalItem) {
+      item._originalItem.isClearedDebt = true
+      receiptSet.add(item._originalReceipt)
+    }
+  })
+
   const groupedByReceipt = selectedList.reduce((acc, item) => {
     if (!acc[item.receiptId]) acc[item.receiptId] = []
     acc[item.receiptId].push(item)
     return acc
   }, {} as Record<string, any[]>)
+
+  // ✅ อัพเดท receipt ที่มีการเปลี่ยนแปลง
+  for (const receipt of receiptSet) {
+    await axios.post('/updateReceipt', { receipt })
+  }
+
+  localStorage.setItem('receipts_last_update', Date.now().toString())
+  window.dispatchEvent(new CustomEvent('receipts-updated', { detail: { reason: 'clear-debtor' } }))
 
   const receipts = Object.keys(groupedByReceipt).map((receiptId) => {
     const itemsInReceipt = groupedByReceipt[receiptId]
@@ -753,10 +611,23 @@ const toggleHistoryDetail = (id: string) => {
 
 const handleReceiptsUpdate = async (event?: CustomEvent) => {
   console.log('📢 Receipts updated:', event?.detail)
+
+  // ✅ ล้าง cache
+  selectedItems.value.clear()
+
   await nextTick()
   await loadReceiptData()
   loadHistory()
 }
+
+// ✅ เพิ่ม watcher สำหรับ route
+watch(() => route.path, async (newPath) => {
+  if (newPath === '/indexsavedebtor') {
+    console.log('🔄 Returned to indexsavedebtor, reloading...')
+    await loadReceiptData()
+    loadHistory()
+  }
+})
 
 watch(activeTab, async (newTab) => {
   console.log('📑 Tab changed:', newTab)
@@ -805,14 +676,6 @@ onBeforeUnmount(() => {
   }
 
   console.log('✅ Cleanup complete')
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('receipts-updated', handleReceiptsUpdate as EventListener)
-
-  if (storageWatcher) {
-    clearInterval(storageWatcher)
-  }
 })
 
 if (typeof window !== 'undefined') {

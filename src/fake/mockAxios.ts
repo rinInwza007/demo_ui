@@ -424,74 +424,135 @@ localStorage.setItem('receipts_last_update', Date.now().toString())
    console.log('✅ Event dispatched!')
     return [201, sanitized]
   })
+// PUT /updateReceipt/:projectCode
+mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
+  const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
+  const projectCode = matches ? decodeURIComponent(matches[1]) : ''
+  if (!projectCode) return [400, { message: 'projectCode is required' }]
 
+  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-  // PUT /updateReceipt/:projectCode
-  mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
-    const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
-    const projectCode = matches ? decodeURIComponent(matches[1]) : ''
-    if (!projectCode) return [400, { message: 'projectCode is required' }]
+  const db = loadReceipts().map(ensureReceiptFields)
+  const idx = db.findIndex((r: any) => r.projectCode === projectCode)
 
-    const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
+  if (idx === -1) {
+    return [404, { message: 'Receipt not found' }]
+  }
 
-    const db = loadReceipts().map(ensureReceiptFields)
-    const idx = db.findIndex((r: any) => r.projectCode === projectCode)
+  const normalized = normalizeBoth(incoming)
 
-    if (idx === -1) {
-      return [404, { message: 'Receipt not found' }]
+  const updated = sanitizeReceipt({
+    ...db[idx],
+    ...normalized,
+    projectCode,
+    createdAt: db[idx].createdAt,
+    updatedAt: new Date(),
+  })
+
+  db[idx] = updated
+  saveReceipts(db)
+
+  console.log('💾 Receipt updated:', updated.projectCode)
+  const updateTime = Date.now().toString()
+  localStorage.setItem('receipts_last_update', updateTime)
+
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'fakeApi.receipts',
+    newValue: JSON.stringify(db),
+    url: window.location.href
+  }))
+
+  window.dispatchEvent(new CustomEvent('receipts-updated', {
+    detail: {
+      action: 'update',
+      data: updated,
+      timestamp: updateTime
     }
-
-    const normalized = normalizeBoth(incoming)
-
-    const updated = sanitizeReceipt({
-      ...db[idx],
-      ...normalized,
-      projectCode,
-      createdAt: db[idx].createdAt,
-      updatedAt: new Date(),
-    })
-
-    db[idx] = updated
-    saveReceipts(db)
- localStorage.setItem('receipts_last_update', Date.now().toString())
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: { action: 'update', data: updated }
   }))
-    return [200, updated]
 
+  return [200, updated]
+})
+
+// POST /updateReceipt - สำหรับ bulk update
+mock.onPost('/updateReceipt').reply((config) => {
+  const { receipt } = JSON.parse(config.data || '{}')
+
+  if (!receipt || !receipt.projectCode) {
+    return [400, { message: 'receipt with projectCode is required' }]
+  }
+
+  const db = loadReceipts().map(ensureReceiptFields)
+  const idx = db.findIndex((r: any) => r.projectCode === receipt.projectCode)
+
+  if (idx === -1) {
+    return [404, { message: 'Receipt not found' }]
+  }
+
+  const normalized = normalizeBoth(ensureReceiptFields(receipt))
+  const updated = sanitizeReceipt({
+    ...db[idx],
+    ...normalized,
+    updatedAt: new Date(),
   })
 
+  db[idx] = updated
+  saveReceipts(db)
 
-  // DELETE /deleteReceipt/:id
-  mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
-    const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1]
-    if (!id) return [400, { success: false, message: 'id required' }]
+  console.log('💾 Receipt bulk updated:', updated.projectCode)
+  const updateTime = Date.now().toString()
+  localStorage.setItem('receipts_last_update', updateTime)
 
-    const db = loadReceipts().map(ensureReceiptFields)
-    const before = db.length
-    const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
-    saveReceipts(next)
-localStorage.setItem('receipts_last_update', Date.now().toString())
   window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: { action: 'delete', id }
+    detail: {
+      action: 'bulk-update',
+      data: updated,
+      timestamp: updateTime
+    }
   }))
-    return [200, { success: next.length !== before }]
-  })
 
-  // =========================
-  // API Endpoints (NEW) for Daily Summary
-  // =========================
+  return [200, { success: true, data: updated }]
+})
+// DELETE /deleteReceipt/:id
+mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
+  const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1]
+  if (!id) return [400, { success: false, message: 'id required' }]
 
-  /**
-   * GET /summary/events
-   * query:
-   * - search
-   * - faculty
-   * - sub1
-   * - sub2
-   * - start=YYYY-MM-DD
-   * - end=YYYY-MM-DD
-   */
+  const db = loadReceipts().map(ensureReceiptFields)
+  const before = db.length
+  const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
+  saveReceipts(next)
+
+  // ✅ เพิ่มการส่ง event
+  console.log('🗑️ Receipt deleted:', id)
+  console.log('📤 Dispatching delete event...')
+
+  const updateTime = Date.now().toString()
+  localStorage.setItem('receipts_last_update', updateTime)
+
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'fakeApi.receipts',
+    newValue: JSON.stringify(next),
+    url: window.location.href
+  }))
+
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'receipts_last_update',
+    newValue: updateTime,
+    url: window.location.href
+  }))
+
+  window.dispatchEvent(new CustomEvent('receipts-updated', {
+    detail: {
+      action: 'delete',
+      id,
+      timestamp: updateTime
+    }
+  }))
+
+  console.log('✅ Delete event dispatched!')
+
+  return [200, { success: next.length !== before }]
+})
   mock.onGet(/\/summary\/events(?:\?.*)?$/).reply((config) => {
     const db = loadReceipts().map(ensureReceiptFields).map(normalizeBoth)
 
@@ -544,31 +605,62 @@ localStorage.setItem('receipts_last_update', Date.now().toString())
     return [200, { map: loadClosedMap() }]
   })
 
-  // POST /daily/close { dateKey }
-  mock.onPost('/daily/close').reply((config) => {
-    const body = JSON.parse(config.data || '{}') as { dateKey?: string }
-    const dateKey = (body.dateKey || '').trim()
-    if (!dateKey) return [400, { message: 'dateKey required' }]
+// POST /saveReceipt
+mock.onPost('/saveReceipt').reply((config) => {
+  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-    const map = loadClosedMap()
-    if (map[dateKey]?.isClosed) {
-      return [409, { message: 'already closed', map }]
+  if (!incoming.projectCode) {
+    return [400, { message: 'projectCode is required' }]
+  }
+
+  const db = loadReceipts().map(ensureReceiptFields)
+
+  if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
+    return [409, { message: 'Duplicate projectCode' }]
+  }
+
+  const normalized = normalizeBoth(incoming)
+
+  const now = new Date()
+  normalized.createdAt = normalized.createdAt ?? now
+  normalized.updatedAt = now
+
+  const sanitized = sanitizeReceipt(normalized)
+
+  const next = [sanitized, ...db]
+  saveReceipts(next)
+
+  // ✅ เพิ่มการส่ง event
+  console.log('💾 Receipt saved:', sanitized.projectCode)
+  console.log('📤 Dispatching create event...')
+
+  const updateTime = Date.now().toString()
+  localStorage.setItem('receipts_last_update', updateTime)
+
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'fakeApi.receipts',
+    newValue: JSON.stringify(next),
+    url: window.location.href
+  }))
+
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'receipts_last_update',
+    newValue: updateTime,
+    url: window.location.href
+  }))
+
+  window.dispatchEvent(new CustomEvent('receipts-updated', {
+    detail: {
+      action: 'create',
+      data: sanitized,
+      timestamp: updateTime
     }
+  }))
 
-    map[dateKey] = {
-      isClosed: true,
-      closedAt: new Date().toLocaleString('th-TH', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    }
-    saveClosedMap(map)
+  console.log('✅ Create event dispatched!')
 
-    return [200, { ok: true, map }]
-  })
+  return [201, sanitized]
+})
 
   console.log('✅ Axios Mock Setup Complete (affiliationId-ready + backward compatible + daily summary endpoints + robust amount)')
   return mock

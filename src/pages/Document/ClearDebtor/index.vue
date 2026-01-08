@@ -188,100 +188,6 @@
                     </div>
                   </div>
                 </div>
-
-                <!-- เงินสด -->
-                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
-                  <div class="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      v-model="paymentMethods.cash.checked"
-                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                    />
-                    <div class="flex-1">
-                      <div class="font-medium text-slate-800">เงินสด</div>
-                      <div class="mt-2 flex items-center gap-2">
-                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
-                        <input
-                          type="text"
-                          v-model="paymentMethods.cash.amount"
-                          @input="handleAmountInput('cash', $event)"
-                          @blur="formatAmountOnBlur('cash')"
-                          :disabled="!paymentMethods.cash.checked"
-                          placeholder="0.00"
-                          class="glass-input px-3 py-2 rounded-lg w-48 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                        <span class="text-sm text-slate-700">บาท</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- เช็ค -->
-                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
-                  <div class="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      v-model="paymentMethods.check.checked"
-                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                    />
-                    <div class="flex-1">
-                      <div class="font-medium text-slate-800">เช็ค</div>
-                      <div class="mt-2 space-y-2">
-                        <div class="flex items-center gap-2">
-                          <span class="text-sm text-slate-700">เลขที่เช็ค</span>
-                          <input
-                            type="text"
-                            v-model="paymentMethods.check.num"
-                            :disabled="!paymentMethods.check.checked"
-                            placeholder="ระบุเลขที่เช็ค"
-                            class="glass-input px-3 py-2 rounded-lg w-48 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                        </div>
-                        <div class="flex items-center gap-2">
-                          <span class="text-sm text-slate-700">จำนวนเงิน</span>
-                          <input
-                            type="text"
-                            v-model="paymentMethods.check.amount"
-                            @input="handleAmountInput('check', $event)"
-                            @blur="formatAmountOnBlur('check')"
-                            :disabled="!paymentMethods.check.checked"
-                            placeholder="0.00"
-                            class="glass-input px-3 py-2 rounded-lg w-48 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                          <span class="text-sm text-slate-700">บาท</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-               <div class="bg-white/40 rounded-xl p-4 border border-white/50">
-  <div class="flex items-start gap-3">
-    <input
-      type="checkbox"
-      v-model="paymentMethods.debtor.checked"
-      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-    />
-    <div class="flex-1">
-      <div class="font-medium text-slate-800">ลูกหนี้</div>
-      <div class="mt-2 flex items-center gap-2">
-        <span class="text-sm text-slate-700">จำนวนเงิน</span>
-       <input
-  type="text"
-  v-model="paymentMethods.debtor.amount"
-  @input="handleAmountInput('debtor', $event)"
-  @blur="formatAmountOnBlur('debtor')"
-  :disabled="!paymentMethods.debtor.checked"
-  placeholder="0.00"
-  class="glass-input px-3 py-2 rounded-lg w-48 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-/>
-
-        <span class="text-sm text-slate-700">บาท</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-
                 <!-- อื่น ๆ -->
                 <div class="bg-white/40 rounded-xl p-4 border border-white/50">
                   <div class="flex items-start gap-3">
@@ -454,9 +360,6 @@ const paymentHistory = ref([])
 const paymentMethods = ref({
   krungthai: { checked: false, amount: '' },
   scb: { checked: false, amount: '' },
-  cash: { checked: false, amount: '' },
-  check: { checked: false, amount: '', num: '' },
-  debtor: { checked: false, amount: '' },
   other: { checked: false, name: '', amount: '' }
 })
 
@@ -642,38 +545,6 @@ function confirmPayment() {
       })
     }
   }
-
-  if (map.cash.checked) {
-    const amount = parseFloat(String(map.cash.amount).replace(/,/g, ''))
-    if (amount > 0) {
-      payments.push({
-        type: 'เงินสด',
-        amount: amount
-      })
-    }
-  }
-
-  if (map.check.checked) {
-    const amount = parseFloat(String(map.check.amount).replace(/,/g, ''))
-    if (amount > 0) {
-      payments.push({
-        type: 'เช็คธนาคาร',
-        NumCheck: map.check.num || '-',
-        amount: amount
-      })
-    }
-  }
-if (map.debtor.checked) {
-  const amount = parseFloat(String(map.debtor.amount).replace(/,/g, ''))
-  if (amount > 0) {
-    payments.push({
-      type: 'ลูกหนี้',
-      amount: amount
-    })
-  }
-}
-
-
   if (map.other.checked) {
     const amount = parseFloat(String(map.other.amount).replace(/,/g, ''))
     if (amount > 0) {

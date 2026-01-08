@@ -4,13 +4,12 @@
  * ========================================
  */
 export const incomeOptions = [
-  { value: 'ค่าบริการทางการแพทย์ (สปสช)', type: 'income' },
-  { value: 'ค่าบริการทางการแพทย์ (กรมบัญชีกลาง)', type: 'income' },
-  { value: 'ค่าบริการทางการแพทย์ (ประกันสังคม)', type: 'income' },
-  { value: 'ค่าบริการทางการแพทย์ (อื่นๆ)', type: 'income' },
-  { value: 'ค่าบริการทางการแพทย์ (อื่นๆสิทธิ - ค้างชำระ)', type: 'income' },
-  { value: 'ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย', type: 'income' },
-  { value: 'ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย', type: 'income' },
+  { value: 'รายการใบนำส่งที่ 1', type: 'income' },
+  { value: 'รายการใบนำส่งที่ 2', type: 'income' },
+  { value: 'รายการใบนำส่งที่ 3', type: 'income' },
+  { value: 'รายการใบนำส่งที่ 4', type: 'income' },
+  { value: 'รายการใบนำส่งที่ 5', type: 'income' },
+
 ]
 
 /**
@@ -18,7 +17,16 @@ export const incomeOptions = [
  * 2. รายการลูกหนี้แยกตามหน่วยงาน (รายจ่าย - ลบ)
  * ========================================
  */
-
+//  ลูกหนี้ของคณะแพทยศาสตร์medicine
+export const medicineReceivableOptions = [
+  { value: 'ค่าบริการทางการแพทย์ (สปสช) - ลูกหนี้', type: 'receivable', department: 'medicine' },
+  { value: 'ค่าบริการทางการแพทย์ (กรมบัญชีกลาง) - ลูกหนี้', type: 'receivable', department: 'medicine' },
+  { value: 'ค่าบริการทางการแพทย์ (ประกันสังคม) - ลูกหนี้', type: 'receivable', department: 'medicine' },
+  { value: 'ค่าบริการทางการแพทย์ (อื่นๆ) - ลูกหนี้', type: 'receivable', department: 'medicine' },
+  { value: 'ค่าบริการทางการแพทย์ (อื่นๆสิทธิ - ค้างชำระ) - ลูกหนี้', type: 'receivable', department: 'medicine' },
+  { value: 'ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย - ลูกหนี้', type: 'receivable', department: 'medicine' },
+  { value: 'ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย - ลูกหนี้', type: 'receivable', department: 'medicine' },
+]
 // 2.1 ลูกหนี้ทั่วไป (ใช้ได้กับทุกหน่วยงาน)
 export const generalReceivableOptions = [
   { value: 'ลูกหนี้ค่ารักษาพยาบาล', type: 'receivable', department: 'general' },
@@ -62,13 +70,7 @@ export const engineeringReceivableOptions = [
   { value: 'ลูกหนี้ค่าเช่าอุปกรณ์', type: 'receivable', department: 'engineering' },
 ]
 
-// 2.6 ลูกหนี้ของคณะแพทยศาสตร์
-export const medicineReceivableOptions = [
-  { value: 'ลูกหนี้ค่าตรวจวินิจฉัย', type: 'receivable', department: 'medicine' },
-  { value: 'ลูกหนี้ค่าตรวจทางห้องปฏิบัติการ', type: 'receivable', department: 'medicine' },
-  { value: 'ลูกหนี้ค่าบริการเวชกรรม', type: 'receivable', department: 'medicine' },
-  { value: 'ลูกหนี้ค่าใช้ห้องผ่าตัด', type: 'receivable', department: 'medicine' },
-]
+
 
 // 2.7 ลูกหนี้ของคณะเภสัชศาสตร์
 export const pharmacyReceivableOptions = [

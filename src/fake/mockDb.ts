@@ -21,9 +21,12 @@ function defaultSeed(): Receipt[] {
       "moneyType": "รายได้",
       "netTotalAmount": 4500,
       "totalPaymentAmount": 4500,
+      // ✅ เพิ่มสองฟิลด์นี้
+      "affiliationId": "DEN",
+      "affiliationName": "คณะทันตแพทยศาสตร์",
       
       "paymentMethods": {
-        "krungthai": {
+        "krungthai1": {
           "checked": true,
           "amount": 3000
         },
@@ -39,9 +42,11 @@ function defaultSeed(): Receipt[] {
           "note": "รอบไตรมาสสุดท้าย",
           "referenceNo": "INV-001",
           "amount": 4500,
-          "subtotal": 4500
+          "subtotal": 4500,
+          "type": "income"
         }
-      ]
+      ],
+      "isLocked": false
     }
   ];
 }
@@ -57,6 +62,7 @@ export function sanitizeItem(it: any): ReceiptItem {
   }
 }
 
+// ✅ อัพเดท sanitizeReceipt - เพิ่ม affiliationId และ affiliationName
 export function sanitizeReceipt(r: any) {
   return {
     id: r.id ?? null,
@@ -86,7 +92,11 @@ export function sanitizeReceipt(r: any) {
       ? r.receiptList.map(sanitizeItem)
       : [],
 
-    // ✅ เพิ่มการบันทึกข้อมูลเช็ค
+    // ✅ เพิ่มสองฟิลด์นี้
+    affiliationId: String(r.affiliationId || '').trim(),
+    affiliationName: String(r.affiliationName || r.mainAffiliationName || '').trim(),
+
+    // การบันทึกข้อมูล paymentMethods
     paymentMethods: r.paymentMethods ? {
       ...r.paymentMethods,
       check: r.paymentMethods.check ? {
@@ -108,6 +118,7 @@ export function sanitizeReceipt(r: any) {
   }
 }
 
+// ✅ อัพเดท loadReceipts - เพิ่ม affiliationId และ affiliationName
 export function loadReceipts(): Receipt[] {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -125,6 +136,9 @@ export function loadReceipts(): Receipt[] {
           mainAffiliationName: r.mainAffiliationName || '',
           subAffiliationName1: r.subAffiliationName1 || '',
           subAffiliationName2: r.subAffiliationName2 || '',
+          // ✅ เพิ่มสองบรรทัดนี้
+          affiliationId: r.affiliationId || '',
+          affiliationName: r.affiliationName || r.mainAffiliationName || '',
           receiptList: r.receiptList || [],
           paymentMethods: r.paymentMethods || {},
         }))
@@ -135,6 +149,7 @@ export function loadReceipts(): Receipt[] {
   }
 }
 
+// ✅ อัพเดท saveReceipts - เพิ่ม affiliationId และ affiliationName
 export function saveReceipts(list: Receipt[]) {
   const serialized = list.map(r => ({
     ...r,
@@ -143,6 +158,9 @@ export function saveReceipts(list: Receipt[]) {
     mainAffiliationName: r.mainAffiliationName || '',
     subAffiliationName1: r.subAffiliationName1 || '',
     subAffiliationName2: r.subAffiliationName2 || '',
+    // ✅ เพิ่มสองบรรทัดนี้
+    affiliationId: r.affiliationId || '',
+    affiliationName: r.affiliationName || r.mainAffiliationName || '',
     receiptList: r.receiptList || [],
     paymentMethods: r.paymentMethods || {},
     totalPaymentAmount: r.totalPaymentAmount || 0,

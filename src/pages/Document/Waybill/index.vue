@@ -1966,8 +1966,8 @@ if (validRows.length === 0) {
     paymentMethods: paymentMethodsData,
     totalPaymentAmount: totalSection3,
     receiptList: validRows,
-      affiliationId: authStore.user?.affiliationId || '',
-  affiliationName: authStore.user?.affiliation || '',
+    affiliationId: authStore.user?.affiliationId || '',
+    affiliationName: authStore.user?.affiliation || mainCategory.value,
   }
 
   if (isEditMode.value) {

@@ -202,22 +202,33 @@
                       </div>
                     </div>
 
-                    <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
+                  <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
                       <span
                         class="px-3 py-1 rounded-lg text-xs font-medium bg-green-100 text-green-700 border border-green-200"
                       >
                         ชำระสำเร็จ
                       </span>
-                      <button
-                        @click="toggleHistoryDetail(item.id)"
-                        class="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition-all"
-                      >
-                        {{ expandedHistory.has(item.id) ? 'ซ่อน' : 'ดู' }}รายละเอียด
-                        <i
-                          class="ph text-sm transition-transform duration-200"
-                          :class="expandedHistory.has(item.id) ? 'ph-caret-up' : 'ph-caret-down'"
-                        ></i>
-                      </button>
+                      <div class="flex items-center gap-3">
+                        <!-- PDF BUTTON -->
+                        <button
+                          @click="viewPdf(item.referenceId)"
+                          class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100"
+                        >
+                          <i class="ph ph-file-text text-base"></i>
+                          ดู PDF
+                        </button>
+                        <div class="w-px h-4 bg-gray-300 mx-1"></div>
+                        <button
+                          @click="toggleHistoryDetail(item.id)"
+                          class="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
+                        >
+                          {{ expandedHistory.has(item.id) ? 'ซ่อน' : 'ดู' }}รายละเอียด
+                          <i
+                            class="ph text-base transition-transform duration-200"
+                            :class="expandedHistory.has(item.id) ? 'ph-caret-up' : 'ph-caret-right'"
+                          ></i>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -340,7 +351,9 @@ setupAxiosMock()
 
 const router = useRouter()
 const auth = useAuthStore()
-
+const viewPdf = (id: string) => {
+  router.push(`/pdfclear/${id}`)
+}
 const activeTab = ref<'new' | 'history'>('new')
 const searchText = ref('')
 const rawData = ref<any[]>([])

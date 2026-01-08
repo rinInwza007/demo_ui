@@ -461,7 +461,14 @@ const items = computed<TableRow[]>(() => {
   if (!auth.user) return []
 
   if (auth.user.role === 'user') {
-    filtered = filtered.filter((r) => r.affiliationId === auth.user!.affiliationId)
+    filtered = filtered.filter((r) => {
+      console.log('🔍 Filtering:', {
+        receiptAffId: r.affiliationId,
+        userAffId: auth.user!.affiliationId,
+        match: r.affiliationId === auth.user!.affiliationId
+      })
+      return r.affiliationId === auth.user!.affiliationId
+    })
   }
 
   if (selectedMain.value) {

@@ -125,6 +125,7 @@
           >
             <!-- Left Filters -->
             <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+              <!-- (ช่องช่วงวันเวลาเดิมยังคงไว้ แต่ยังไม่ได้ bind) -->
               <div class="relative group">
                 <i
                   class="ph ph-calendar-blank absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors"
@@ -162,16 +163,15 @@
         <!-- Data Table Area -->
         <div class="flex-1 px-8 pb-8 flex flex-col min-h-0">
           <div class="glass-panel rounded-2xl flex-1 flex flex-col shadow-lg min-h-0">
+            <!-- ✅ ตัด "ปีงบฯ" และ "รูปแบบ" ออก + ปรับ span ใหม่ -->
             <div
               class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold uppercase tracking-wider flex-shrink-0"
             >
               <div class="col-span-1 text-center">สถานะ</div>
               <div class="col-span-2 text-center">สังกัด</div>
-              <div class="col-span-1 text-center">รายได้/โครงการ</div>
-              <div class="col-span-1 text-center">ปีงบฯ</div>
+              <div class="col-span-2 text-center mr-5">รายได้/โครงการ</div>
               <div class="col-span-2 text-center">ผู้รับผิดชอบ</div>
-              <div class="col-span-1 text-center">รูปแบบ</div>
-              <div class="col-span-1 text-center">เวลา</div>
+              <div class="col-span-2 text-center">เวลา</div>
               <div class="col-span-1 text-center">ยอดเงิน</div>
               <div class="col-span-2 text-center">จัดการ</div>
             </div>
@@ -185,39 +185,33 @@
               >
                 <!-- Status -->
                 <div class="col-span-1 flex justify-center">
-                  <div
-                    class="w-8 h-8 rounded-full flex items-center justify-center shadow-sm border border-white/50"
-                    :class="{
-                      'bg-yellow-100 text-yellow-600': item.status === 'pending',
-                      'bg-green-100 text-green-500': item.status === 'success'
-                    }"
-                  >
-                    <i v-if="item.status === 'pending'" class="ph-fill ph-clock text-lg"></i>
-                    <i v-else class="ph-fill ph-check-circle text-lg"></i>
-                  </div>
-                </div>
-
+  <div
+    class="px-3 py-1 rounded-lg border text-xs font-semibold flex items-center justify-center min-w-[90px]"
+    :class="{
+      'bg-yellow-50 text-yellow-700 border-yellow-300': item.status === 'pending',
+      'bg-green-50 text-green-700 border-green-300': item.status === 'success'
+    }"
+  >
+    <span v-if="item.status === 'pending'">รอดำเนินการ</span>
+    <span v-else>อนุมัติแล้ว</span>
+  </div>
+</div>
                 <!-- Department -->
-                <div class="col-span-2">
+                <div class="col-span-2 ml-12">
                   <div class="font-medium text-slate-800">{{ item.department }}</div>
-                  <div class="text-[11px] text-slate-700 mt-0.5 flex items-center gap-1">
+                  <div class="text-[11px] text-slate-700 mt-0.5  flex items-center gap-1">
                     <i class="ph ph-buildings text-xs"></i>
                     <span class="truncate">{{ item.subDepartment }}</span>
                   </div>
                 </div>
 
                 <!-- Project -->
-                <div class="col-span-1">
+                <div class="col-span-2 ml-20">
                   <span
                     class="bg-blue-50/50 text-blue-700 text-xs px-2.5 py-1 rounded-lg border border-blue-100 font-medium"
                   >
                     {{ item.project }}
                   </span>
-                </div>
-
-                <!-- Year -->
-                <div class="col-span-1 text-center text-sm font-medium text-slate-600 font-mono">
-                  {{ item.year }}
                 </div>
 
                 <!-- Responsible -->
@@ -230,30 +224,15 @@
                   <span class="text-sm text-slate-700 truncate">{{ item.responsible }}</span>
                 </div>
 
-                <!-- Payment Type -->
-                <div class="col-span-1">
-                  <div class="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                    <i
-                      class="ph-fill text-slate-400"
-                      :class="item.paymentType === 'เงินสด'
-                        ? 'ph-money'
-                        : (item.paymentType === 'เช็คธนาคาร'
-                          ? 'ph-scroll'
-                          : 'ph-bank')"
-                    ></i>
-                    {{ item.paymentType }}
-                  </div>
-                </div>
-
-                <!-- Time -->
-                <div class="col-span-1 text-center">
+                <!-- Time (ล่าสุดก่อน) -->
+                <div class="col-span-2 text-center">
                   <div class="text-xs font-medium text-slate-700 font-mono">
                     {{ item.time }}
                   </div>
                 </div>
 
                 <!-- Amount -->
-                <div class="col-span-1 text-right">
+                <div class="col-span-1 text-right mr-4">
                   <div class="font-bold text-slate-800 font-mono text-sm">
                     {{ formatCurrency(item.amount) }}
                   </div>
@@ -283,9 +262,7 @@
             <div
               class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between flex-shrink-0"
             >
-              <div class="text-xs text-slate-500">
-                แสดง {{ items.length }} รายการ
-              </div>
+              <div class="text-xs text-slate-500">แสดง {{ items.length }} รายการ</div>
             </div>
           </div>
         </div>
@@ -330,14 +307,6 @@ const canApprove = computed(() => auth.isRole('treasury'))
 
 type ActionKey = 'view' | 'edit' | 'delete' | 'approve' | 'lock' | 'cleardebtor'
 
-const moneyTypeLabel: Record<string, string> = {
-  cash: 'เงินสด',
-  bank: 'เช็คธนาคาร',
-  transfer: 'ฝากเข้าบัญชี',
-  debtor: 'ลูกหนี้',
-  other: 'อื่นๆ',
-}
-
 const formatThaiDateTime = (date: Date | null) => {
   if (!date || isNaN(date.getTime())) return '-'
 
@@ -367,11 +336,6 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
-const hasBeenEdited = (createdAt: Date | null, updatedAt: Date | null) => {
-  if (!createdAt || !updatedAt) return false
-  return Math.abs(updatedAt.getTime() - createdAt.getTime()) > 1000
-}
-
 type TableStatus = 'pending' | 'success'
 
 type TableRow = {
@@ -380,10 +344,9 @@ type TableRow = {
   department: string
   subDepartment: string
   time: string
+  lastTimeMs: number
   project: string
-  year: string
   responsible: string
-  paymentType: string
   amount: number
   createdAt: Date | null
   updatedAt: Date | null
@@ -391,27 +354,17 @@ type TableRow = {
   _raw: Receipt
 }
 
+const getLastDate = (createdAt: Date | null, updatedAt: Date | null) => {
+  if (createdAt && updatedAt) return updatedAt > createdAt ? updatedAt : createdAt
+  return updatedAt || createdAt
+}
+
 const mapReceiptToRow = (r: Receipt): TableRow => {
-  const fileTypesArray: string[] =
-    r.receiptList?.flatMap((item: any) => {
-      const fromPaymentDetails = (item.paymentDetails || [])
-        .map((p: any) => String(p.moneyType || '').trim())
-        .filter((t: string) => !!t)
-
-      const fromReceiptItem = item.moneyType ? [String(item.moneyType).trim()] : []
-      return [...fromPaymentDetails, ...fromReceiptItem]
-    }) || []
-
-  const uniqueFileTypes = Array.from(new Set(fileTypesArray))
-  const fileType =
-    uniqueFileTypes.length > 0
-      ? uniqueFileTypes.map((t) => moneyTypeLabel[t] || t).join(', ')
-      : '-'
-
   const createdDate = r.createdAt ? new Date(r.createdAt as any) : null
   const updatedDate = r.updatedAt ? new Date(r.updatedAt as any) : null
-  const isEdited = hasBeenEdited(createdDate, updatedDate)
-  const displayDate = isEdited ? updatedDate : createdDate
+
+  const lastDate = getLastDate(createdDate, updatedDate)
+  const lastTimeMs = lastDate?.getTime() ?? 0
 
   const locked = r.isLocked ?? false
 
@@ -420,11 +373,10 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
     status: locked ? 'success' : 'pending',
     department: r.mainAffiliationName || r.affiliationName || '-',
     subDepartment: r.subAffiliationName1 || '-',
-    time: formatThaiDateTime(displayDate),
+    time: formatThaiDateTime(lastDate),
+    lastTimeMs,
     project: r.fundName || '-',
-    year: '2568',
     responsible: r.fullName || '-',
-    paymentType: fileType,
     amount: r.netTotalAmount ? Number(String(r.netTotalAmount).replace(/,/g, '')) : 0,
     createdAt: createdDate,
     updatedAt: updatedDate,
@@ -453,39 +405,30 @@ const loadData = async () => {
 /**
  * ✅ ITEMS (สำคัญ)
  * - user: เห็นเฉพาะ affiliation ตัวเอง
- * - treasury: เห็นทั้งหมด + เรียง pending ขึ้นบน / success ลงล่าง
+ * - ทุก role: เรียง "เวลาล่าสุด" มาก่อน (updatedAt > createdAt)
  */
 const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
-
   if (!auth.user) return []
 
+  // ✅ user เห็นเฉพาะหน่วยงานตัวเอง
   if (auth.user.role === 'user') {
-    filtered = filtered.filter((r) => {
-      console.log('🔍 Filtering:', {
-        receiptAffId: r.affiliationId,
-        userAffId: auth.user!.affiliationId,
-        match: r.affiliationId === auth.user!.affiliationId
-      })
-      return r.affiliationId === auth.user!.affiliationId
-    })
+    filtered = filtered.filter((r) => r.affiliationId === auth.user!.affiliationId)
   }
 
+  // ✅ filters เดิม
   if (selectedMain.value) {
     filtered = filtered.filter((r) => {
       const main = (r.mainAffiliationName || r.affiliationName || '').trim()
       return main === selectedMain.value.trim()
     })
   }
-
   if (selectedSub1.value) {
     filtered = filtered.filter((r) => (r.subAffiliationName1 || '').trim() === selectedSub1.value.trim())
   }
-
   if (selectedSub2.value) {
     filtered = filtered.filter((r) => (r.subAffiliationName2 || '').trim() === selectedSub2.value.trim())
   }
-
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
     filtered = filtered.filter((r) => {
@@ -498,25 +441,28 @@ const items = computed<TableRow[]>(() => {
 
   const rows = filtered.map(mapReceiptToRow)
 
-  // ✅ SORT เฉพาะ treasury: pending ก่อน, success ทีหลัง
-  if (auth.isRole('treasury')) {
-    const statusRank = (s: TableStatus) => (s === 'pending' ? 0 : 1)
+  // ✅ SORT ใหม่:
+  // 1) pending ขึ้นบน
+  // 2) success ลงล่าง
+  // 3) pending: ล่าสุดก่อน (desc)
+  // 4) success: ล่าสุดไปท้าย (asc) => เพิ่ง approve จะลงล่างสุด
+  const rank = (s: TableStatus) => (s === 'pending' ? 0 : 1)
 
-    rows.sort((a, b) => {
-      const byStatus = statusRank(a.status) - statusRank(b.status)
-      if (byStatus !== 0) return byStatus
+  rows.sort((a, b) => {
+    const byStatus = rank(a.status) - rank(b.status)
+    if (byStatus !== 0) return byStatus
 
-      // ภายในกลุ่มเดียวกัน: เอารายการล่าสุดขึ้นก่อน
-      const aTime = (a.updatedAt?.getTime() ?? a.createdAt?.getTime() ?? 0)
-      const bTime = (b.updatedAt?.getTime() ?? b.createdAt?.getTime() ?? 0)
-      return bTime - aTime
-    })
-  }
+    if (a.status === 'pending') {
+      return (b.lastTimeMs ?? 0) - (a.lastTimeMs ?? 0) // ใหม่ -> เก่า
+    }
+
+    return (a.lastTimeMs ?? 0) - (b.lastTimeMs ?? 0) // เก่า -> ใหม่ (ใหม่สุดไปท้าย)
+  })
 
   return rows
 })
 
-/** ✅ Header stats: คำนวณจาก items ที่ถูกกรอง+sort แล้ว */
+/** ✅ Header stats: คำนวณจาก items ที่ถูกกรองแล้ว */
 const headerStats = computed(() => {
   const rows = items.value
   const total = rows.length
@@ -570,7 +516,7 @@ const gotowaybil = () => {
   router.push('/waybill')
 }
 
-/** ✅ Approve: กดแล้วแถวนั้นจะไหลลงล่าง (เพราะ sort) */
+/** ✅ Approve: ตั้ง isLocked + อัปเดต updatedAt เพื่อให้ "ล่าสุด" ถูกต้อง */
 const approveItem = async (row: TableRow) => {
   if (!canApprove.value) {
     Swal.fire('ไม่มีสิทธิ์', 'เฉพาะกองคลัง (treasury) เท่านั้นที่อนุมัติได้', 'warning')
@@ -593,6 +539,7 @@ const approveItem = async (row: TableRow) => {
   if (!target) return
 
   target.isLocked = true
+  target.updatedAt = new Date() as any // ✅ ทำให้เวลาล่าสุดเป็นตอน approve
 
   Swal.fire({
     position: 'top-end',

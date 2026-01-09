@@ -1870,14 +1870,14 @@ if (validRows.length === 0) {
           <p style="margin-bottom: 10px;">โปรดกรอกจำนวนเงินให้เท่ากัน</p>
           <hr style="margin: 15px 0;">
           <p style="font-weight: 600; color: #059669; margin-bottom: 8px;">
-            ✓ ยอดรวมรายการ (ส่วนที่ 2):
+            ✓ ยอดรวมรายการ (ด้านบน):
             <span style="float: right;">${totalSection2.toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })} บาท</span>
           </p>
           <p style="font-weight: 600; color: #DC2626; margin-bottom: 8px;">
-            ✗ ยอดเงินนำส่ง (ส่วนที่ 3):
+            ✗ ยอดเงินนำส่ง (ด้านล่าง):
             <span style="float: right;">${totalSection3.toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -1965,6 +1965,8 @@ if (validRows.length === 0) {
     paymentMethods: paymentMethodsData,
     totalPaymentAmount: totalSection3,
     receiptList: validRows,
+    affiliationId: authStore.user?.affiliationId || '',
+    affiliationName: authStore.user?.affiliation || mainCategory.value,
   }
 
   if (isEditMode.value) {

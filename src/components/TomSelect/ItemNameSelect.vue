@@ -6,19 +6,24 @@
       class="w-full px-2 text-sm"
     >
       <option value=""></option>
-      <option
-        v-for="option in computedOptions"
-        :key="option.value"
-        :value="option.value"
+      <!-- ✅ แบ่งหมวดตาม type: income และ receivable -->
+      <optgroup 
+        v-for="group in groupedOptions" 
+        :key="group.label"
+        :label="group.label"
       >
-        {{ option.label }}
-      </option>
+        <option
+          v-for="option in group.options"
+          :key="option.value"
+          :value="option.value"
+        >
+          {{ option.label }}
+        </option>
+      </optgroup>
     </select>
 
-    <!-- 🔥 slot สำหรับไอคอนในช่อง -->
-    <div
-      class="absolute right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
-    >
+    <!-- ไอคอนในช่อง -->
+    <div class="absolute right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-auto">
       <slot name="suffix" />
     </div>
   </div>
@@ -61,15 +66,42 @@ const emit = defineEmits(['update:modelValue', 'input'])
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
 
-// ✅ ดึง options ตามสิทธิ์ของผู้ใช้
-const computedOptions = computed(() => {
-  // ✅ ใช้ getOptionsForUser แทน
+// ✅ แบ่งกลุ่ม options ตาม type: income และ receivable
+const groupedOptions = computed(() => {
   const rawOptions = getOptionsForUser(auth, props.waybillType)
+  
+  // สร้างโครงสร้างกลุ่ม
+  const groups = {
+    income: { 
+      label: '💰 รายการนำส่งเงิน', 
+      options: [],
+      order: 1 
+    },
+    receivable: { 
+      label: '📄 รายการลูกหนี้', 
+      options: [],
+      order: 2 
+    }
+  }
 
-  return rawOptions.map(opt => ({
-    value: opt.value,
-    label: opt.value
-  }))
+  // จัดกลุ่มตาม type
+  rawOptions.forEach(opt => {
+    const mapped = {
+      value: opt.value,
+      label: opt.value
+    }
+
+    if (opt.type === 'income') {
+      groups.income.options.push(mapped)
+    } else if (opt.type === 'receivable') {
+      groups.receivable.options.push(mapped)
+    }
+  })
+
+  // ส่งคืนเฉพาะกลุ่มที่มี options และเรียงตาม order
+  return Object.values(groups)
+    .filter(g => g.options.length > 0)
+    .sort((a, b) => a.order - b.order)
 })
 
 watch(() => props.modelValue, (newVal) => {
@@ -92,6 +124,7 @@ onMounted(() => {
       create: props.allowCreate,
       placeholder: props.placeholder,
       allowEmptyOption: true,
+      lockOptgroupOrder: true, // ✅ ล็อคลำดับกลุ่ม
       onChange(value) {
         localValue.value = value
       }
@@ -99,7 +132,6 @@ onMounted(() => {
 
     const control = tomSelectInstance.control
 
-    /* 🔑 สำคัญมาก */
     control.style.position = 'relative'
     control.style.width = '100%'
     control.style.height = '2.70rem'
@@ -136,9 +168,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
-  
 .ts-dropdown {
+  z-index: 9999 !important;
   @apply rounded-xl shadow-lg border border-gray-200;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .ts-dropdown .option {
@@ -148,5 +182,37 @@ onBeforeUnmount(() => {
 .ts-dropdown .option:hover,
 .ts-dropdown .option.active {
   @apply bg-blue-50;
+}
+
+/* ✅ สไตล์สำหรับ optgroup header */
+.ts-dropdown .optgroup-header {
+  @apply font-semibold text-sm text-slate-700 py-2.5 px-3 bg-gradient-to-r from-slate-100 to-slate-50 border-b-2 border-slate-300;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+
+/* ✅ แยกสีตามกลุ่ม */
+.ts-dropdown .optgroup:first-child .optgroup-header {
+  @apply bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 text-green-800;
+}
+
+.ts-dropdown .optgroup:last-child .optgroup-header {
+  @apply bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200 text-orange-800;
+}
+
+.ts-dropdown .optgroup {
+  @apply border-b border-slate-200 last:border-b-0;
+}
+
+/* ✅ เพิ่ม indent ให้ options ภายใน group */
+.ts-dropdown .optgroup .option {
+  @apply pl-6;
+}
+
+/* ✅ เพิ่มเส้นแบ่งระหว่างกลุ่ม */
+.ts-dropdown .optgroup + .optgroup {
+  border-top: 3px solid #e2e8f0;
 }
 </style>

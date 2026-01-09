@@ -196,8 +196,6 @@
     <span v-else>อนุมัติแล้ว</span>
   </div>
 </div>
-
-
                 <!-- Department -->
                 <div class="col-span-2 ml-12">
                   <div class="font-medium text-slate-800">{{ item.department }}</div>

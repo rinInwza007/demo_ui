@@ -20,7 +20,7 @@
       ></iframe>
     </div>
 
-    <div class="mt-6 flex justify-end gap-3 mb-4">
+    <div class="mt-6 flex justify-end gap-3 mb-4 px-8">
       <button @click="gotomainpage" class="px-6 py-2 rounded-md bg-gray-600 text-white btn-back">
         กลับ
       </button>
@@ -28,7 +28,8 @@
   </div>
 </template>
 
-<script setup>
+<!-- ✅ เพิ่ม lang="ts" -->
+<script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import pdfMake from 'pdfmake/build/pdfmake'
@@ -40,16 +41,21 @@ const route = useRoute()
 const router = useRouter()
 
 const gotomainpage = () => {
-  router.back('/cleardebtor')
+  router.back()
 }
 
 pdfMake.vfs = vfs
 pdfMake.fonts = fonts
 
-const pdfUrl = ref(null)
-const receiptData = ref(null)
+// ✅ ลบฟังก์ชัน viewPdf ออกเพราะไม่ได้ใช้ในไฟล์นี้
+// const viewPdf = (id: string) => {
+//   router.push(`/pdfclear/${id}`)
+// }
+
+const pdfUrl = ref<string | null>(null)
+const receiptData = ref<any>(null)
 const loading = ref(true)
-const rows = reactive([])
+const rows = reactive<any[]>([])
 
 const summary = reactive({
   text: 'ศูนย์บาทถ้วน',
@@ -63,7 +69,7 @@ const currentDate = new Date().toLocaleDateString('th-TH', {
   day: 'numeric',
 })
 
-function convertNumberToThaiText(number) {
+function convertNumberToThaiText(number: number) {
   if (!number || number === 0) return 'ศูนย์บาทถ้วน'
   const bahtText = ['', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า']
   const unitText = ['', 'สิบ', 'รอย', 'พัน', 'หมื่น', 'แสน', 'ล้าน']
@@ -113,7 +119,6 @@ function createDocDefinition() {
       {
         stack: [
           { text: `${currentDate}`, absolutePosition: { x: 440, y: 65 }, fontSize: 13 },
-
           {
             text: 'วันที่............................................................................\n',
             absolutePosition: { x: 400, y: 66.5 },
@@ -142,7 +147,7 @@ function createDocDefinition() {
         ],
       },
 
-      // ========== ตาราง ==========
+      // ตาราง
       {
         table: {
           widths: ['8%', '15%', '*', '12%', '20%'],
@@ -176,8 +181,8 @@ function createDocDefinition() {
 
       // รายการชำระเงิน
       ...(receipt.payments && receipt.payments.length > 0 ?
-        receipt.payments.flatMap((payment) => {
-          const result = []
+        receipt.payments.flatMap((payment: any) => {
+          const result: any[] = []
 
           if (payment.type === 'transfer') {
             result.push({
@@ -313,7 +318,7 @@ function createDocDefinition() {
 
       { text: '\n\n' },
 
-      // ========== ลายเซ็น ==========
+      // ลายเซ็น
       {
         columns: [
           {
@@ -384,7 +389,6 @@ function createDocDefinition() {
         ],
         widths: ['50%', '50%']
       },
-
     ],
     styles: {
       form: { bold: true },
@@ -402,24 +406,26 @@ function previewPdf() {
 onMounted(() => {
   try {
     loading.value = true
-    const referenceId = route.params.id
+    const referenceId = route.params.id as string
 
-    // โหลดข้อมูลจาก history
     const historyData = localStorage.getItem('debtorClearHistory')
     if (!historyData) {
+      console.error('❌ No history data found')
       loading.value = false
       return
     }
 
     const history = JSON.parse(historyData)
-    const foundHistory = history.find((h) => h.referenceId === referenceId)
+    const foundHistory = history.find((h: any) => h.referenceId === referenceId)
 
     if (!foundHistory) {
+      console.error('❌ History item not found:', referenceId)
       loading.value = false
       return
     }
 
-    // แปลงข้อมูล history ให้เป็นรูปแบบที่ PDF ใช้งานได้
+    console.log('✅ Found history item:', foundHistory)
+
     receiptData.value = {
       referenceId: foundHistory.referenceId,
       fullName: foundHistory.fullName || 'ไม่ระบุ',
@@ -435,9 +441,8 @@ onMounted(() => {
     const MIN_ROWS = 8
     rows.splice(0, rows.length)
 
-    // ใส่รายการลูกหนี้ลงในตาราง
     if (foundHistory.items && Array.isArray(foundHistory.items)) {
-      foundHistory.items.forEach((item) => {
+      foundHistory.items.forEach((item: any) => {
         rows.push({
           item: item.itemName || '',
           amount: item.amount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0.00',
@@ -447,7 +452,6 @@ onMounted(() => {
       })
     }
 
-    // เติมแถวว่างให้ครบ
     while (rows.length < MIN_ROWS) {
       rows.push({ item: ' ', amount: ' ', ref: ' ', note: ' ' })
     }
@@ -459,7 +463,7 @@ onMounted(() => {
     previewPdf()
     loading.value = false
   } catch (error) {
-    console.error('PDF Error:', error)
+    console.error('❌ PDF Error:', error)
     loading.value = false
   }
 })

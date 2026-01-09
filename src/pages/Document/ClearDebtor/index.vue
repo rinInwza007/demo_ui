@@ -461,25 +461,27 @@ onMounted(() => {
       ? summary.receipts
       : []
 
-    const items = baseReceipts.flatMap(r =>
-      (r.items || []).map(item => {
-        const debtorAmount =
-          item.debtorAmount != null
-            ? Number(item.debtorAmount)
-            : Number(item.amount || 0)
+ const items = baseReceipts.flatMap(r =>
+  (r.items || [])
+    .filter(item => !item.isClearedDebt) // ✅ ตัดรายการที่ล้างแล้ว
+    .map(item => {
+      const debtorAmount =
+        item.debtorAmount != null
+          ? Number(item.debtorAmount)
+          : Number(item.amount || 0)
 
-        return {
-          ...item,
-          debtorAmount,
-          amount: debtorAmount,
-          _originalReceipt: {
-            ...r,
-            projectCode: r.projectCode || r.receiptId,
-            createdAt: r.createdAt || new Date().toISOString()
-          }
+      return {
+        ...item,
+        debtorAmount,
+        amount: debtorAmount,
+        _originalReceipt: {
+          ...r,
+          projectCode: r.projectCode || r.receiptId,
+          createdAt: r.createdAt || new Date().toISOString()
         }
-      })
-    )
+      }
+    })
+)
 
     allItems.value = items
 
@@ -612,7 +614,6 @@ const formatPaymentAmountOnBlur = (method) => {
   })
 }
 
-// Clear All Debts
 async function clearAllDebts() {
   if (remainingAmount.value > 0) {
     await Swal.fire({
@@ -650,7 +651,7 @@ async function clearAllDebts() {
   if (!result.isConfirmed) return
 
   try {
-    console.log('🧹 Starting debt clearing process...')
+    console.log('🧹 Starting debt clearing process (FLAG MODE)...')
 
     // 1. สร้างประวัติ
     const historyRecord = {
@@ -674,28 +675,38 @@ async function clearAllDebts() {
         items: r.items.map(i => ({
           itemName: i.itemName,
           amount: i.debtorAmount,
-          note: i.note
+          note: i.note,
+          referenceId: r.projectCode, // ✅ เพิ่มเพื่อใช้ในการค้นหา
         }))
       })),
-      payments: paymentHistory.value
+      payments: paymentHistory.value,
+      fullName: receipts.value[0]?.fullName,
+      phone: receipts.value[0]?.phone,
+      department: receipts.value[0]?.department,
+      mainAffiliationName: receipts.value[0]?.mainAffiliationName,
+      sendmoney: receipts.value[0]?.sendmoney,
+      fundName: receipts.value[0]?.fundName,
+      receiptId: receipts.value[0]?.receiptId || receipts.value[0]?.projectCode,
+      projectCode: receipts.value[0]?.projectCode,
     }
 
+    // 2. บันทึกประวัติ
     const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
     existingHistory.unshift(historyRecord)
     localStorage.setItem('debtorClearHistory', JSON.stringify(existingHistory))
     console.log('✅ History saved')
 
-    // 2. โหลดข้อมูล receipts
+    // 3. โหลดข้อมูล receipts
     const storedReceipts = JSON.parse(localStorage.getItem('fakeApi.receipts') || '[]')
-    console.log('📦 Total receipts before:', storedReceipts.length)
+    console.log('📦 Total receipts:', storedReceipts.length)
 
-    // 3. สร้าง Map ของรายการที่ต้องลบ (ใช้ itemName เป็น key)
-    const itemsToDelete = new Map()
+    // 4. สร้าง Map ของรายการที่ต้องทำเครื่องหมาย
+    const itemsToMark = new Map()
     receipts.value.forEach(receipt => {
       const projectCode = receipt.projectCode || receipt.receiptId
       receipt.items.forEach(item => {
         const key = `${projectCode}:${item.itemName}`
-        itemsToDelete.set(key, {
+        itemsToMark.set(key, {
           projectCode,
           itemName: item.itemName,
           debtorAmount: item.debtorAmount
@@ -703,151 +714,111 @@ async function clearAllDebts() {
       })
     })
 
-    console.log(`🎯 Items to delete: ${itemsToDelete.size}`)
+    console.log(`🎯 Items to mark as cleared: ${itemsToMark.size}`)
 
-    let removedCount = 0
-    let modifiedCount = 0
+    let markedCount = 0
 
-    // 4. ประมวลผล receipts
+    // 5. ทำเครื่องหมาย isClearedDebt = true
     const updatedReceipts = storedReceipts.map(receipt => {
       const projectCode = receipt.projectCode
 
-      // ตรวจสอบว่า receipt นี้มีรายการที่ต้องลบหรือไม่
-      const hasItemsToDelete = Array.from(itemsToDelete.values()).some(
+      const hasItemsToMark = Array.from(itemsToMark.values()).some(
         item => item.projectCode === projectCode
       )
 
-      if (!hasItemsToDelete) {
-        return receipt // ไม่เกี่ยวข้อง เก็บไว้ทั้งหมด
+      if (!hasItemsToMark) {
+        return receipt
       }
 
-      console.log(`\n🔍 Processing receipt: ${projectCode}`)
-      console.log(`   Type: ${receipt.moneyTypeNote}`)
+      console.log(`\n🏷️ Marking items in receipt: ${projectCode}`)
 
       // === กรณี Debtor ===
       if (receipt.moneyTypeNote === 'Debtor') {
-        // ลบเฉพาะ items ที่เลือก
-        const newDebtorList = (receipt.debtorList || []).filter((debtor, idx) => {
+        const newDebtorList = (receipt.debtorList || []).map(debtor => {
           const key = `${projectCode}:${debtor.itemName}`
-          const shouldDelete = itemsToDelete.has(key)
-
-          if (shouldDelete) {
-            console.log(`   ❌ Removing item: ${debtor.itemName}`)
+          if (itemsToMark.has(key)) {
+            console.log(`   ✅ Marking: ${debtor.itemName}`)
+            markedCount++
+            return { ...debtor, isClearedDebt: true }
           }
-
-          return !shouldDelete
+          return debtor
         })
 
-        // ถ้าเหลือ items -> แก้ไข receipt
-        if (newDebtorList.length > 0) {
-          console.log(`   ✏️ Modified: ${receipt.debtorList.length} -> ${newDebtorList.length} items`)
-          modifiedCount++
-
-          // ปรับ depositList ให้ตรงกับ debtorList
-          const newDepositList = (receipt.depositList || []).filter((_, idx) => {
-            const debtor = receipt.debtorList[idx]
-            const key = `${projectCode}:${debtor?.itemName}`
-            return !itemsToDelete.has(key)
-          })
-
-          return {
-            ...receipt,
-            debtorList: newDebtorList,
-            depositList: newDepositList
-          }
-        } else {
-          // ถ้าไม่เหลือ items -> ลบ receipt
-          console.log(`   🗑️ DELETE entire receipt (no items left)`)
-          removedCount++
-          return null
+        return {
+          ...receipt,
+          debtorList: newDebtorList
         }
       }
 
       // === กรณี Waybill ===
       if (receipt.moneyTypeNote === 'Waybill') {
-        const newReceiptList = (receipt.receiptList || []).filter(item => {
+        const newReceiptList = (receipt.receiptList || []).map(item => {
           const key = `${projectCode}:${item.itemName}`
-          const shouldDelete = itemsToDelete.has(key)
-
-          if (shouldDelete) {
-            console.log(`   ❌ Removing item: ${item.itemName}`)
+          if (itemsToMark.has(key)) {
+            console.log(`   ✅ Marking: ${item.itemName}`)
+            markedCount++
+            return { ...item, isClearedDebt: true }
           }
-
-          return !shouldDelete
+          return item
         })
 
-        if (newReceiptList.length > 0) {
-          console.log(`   ✏️ Modified: ${receipt.receiptList.length} -> ${newReceiptList.length} items`)
-          modifiedCount++
-
-          return {
-            ...receipt,
-            receiptList: newReceiptList
-          }
-        } else {
-          console.log(`   🗑️ DELETE entire receipt (no items left)`)
-          removedCount++
-          return null
+        return {
+          ...receipt,
+          receiptList: newReceiptList
         }
       }
 
-      console.log(`   ⚠️ Unknown type, keeping`)
       return receipt
-    }).filter(r => r !== null) // กรอง receipts ที่ถูกลบออก
+    })
 
     console.log(`\n📊 ========== SUMMARY ==========`)
-    console.log(`   Receipts before: ${storedReceipts.length}`)
-    console.log(`   Receipts after: ${updatedReceipts.length}`)
-    console.log(`   Receipts deleted: ${removedCount}`)
-    console.log(`   Receipts modified: ${modifiedCount}`)
-    console.log(`   Items deleted: ${itemsToDelete.size}`)
+    console.log(`   Total receipts: ${updatedReceipts.length}`)
+    console.log(`   Items marked as cleared: ${markedCount}`)
 
-    // 5. บันทึกกลับ localStorage
+    // 6. บันทึกกลับ localStorage
     localStorage.setItem('fakeApi.receipts', JSON.stringify(updatedReceipts))
     console.log('💾 Saved to localStorage')
 
-    // 6. ส่งสัญญาณอัพเดต
-    const updateTime = Date.now().toString()
+    // 7. ส่งสัญญาณอัพเดต
+// 7. ส่งสัญญาณอัพเดต (แก้ไขใหม่)
+const updateTime = Date.now().toString()
+localStorage.setItem('receipts_last_update', updateTime)
 
-    localStorage.setItem('receipts_last_update', updateTime)
+// ✅ ส่งทั้ง storage event และ custom event
+window.dispatchEvent(new StorageEvent('storage', {
+  key: 'fakeApi.receipts',
+  newValue: JSON.stringify(updatedReceipts),
+  url: window.location.href
+}))
 
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'receipts_last_update',
-      newValue: updateTime,
-      url: window.location.href
-    }))
+window.dispatchEvent(new StorageEvent('storage', {
+  key: 'receipts_last_update',
+  newValue: updateTime,
+  url: window.location.href
+}))
 
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'fakeApi.receipts',
-      newValue: JSON.stringify(updatedReceipts),
-      url: window.location.href
-    }))
+window.dispatchEvent(new CustomEvent('receipts-updated', {
+  detail: {
+    timestamp: updateTime,
+    action: 'clear-debts-flag',
+    marked: markedCount
+  }
+}))
 
-    window.dispatchEvent(new CustomEvent('receipts-updated', {
-      detail: {
-        timestamp: updateTime,
-        action: 'clear-debts',
-        removed: removedCount,
-        modified: modifiedCount
-      }
-    }))
-
-    console.log('🔔 All update signals sent:', updateTime)
-
-    // 7. ลบข้อมูล summary
+console.log('🔔 All update signals sent:', updateTime)
+    // 8. ลบข้อมูล summary
     localStorage.removeItem('clearDebtorSummary')
     console.log('🗑️ Cleared summary')
 
-    // 8. แสดงผลสำเร็จ
+    // 9. แสดงผลสำเร็จ
     await Swal.fire({
       title: 'สำเร็จ!',
       html: `
         <div class="text-center space-y-2">
           <p class="text-lg font-bold text-green-600">✅ ล้างหนี้เรียบร้อยแล้ว</p>
           <div class="bg-gray-50 p-4 rounded-lg mt-4 text-left">
-            <p class="text-sm text-gray-700">🗑️ ลบ receipts ทั้งหมด: <strong>${removedCount}</strong></p>
-            <p class="text-sm text-gray-700">✏️ แก้ไข receipts: <strong>${modifiedCount}</strong></p>
-            <p class="text-sm text-gray-700">📋 ลบรายการทั้งหมด: <strong>${allItems.value.length}</strong></p>
+            <p class="text-sm text-gray-700">🏷️ ทำเครื่องหมายรายการ: <strong>${markedCount}</strong></p>
+            <p class="text-sm text-gray-700">💰 ยอดหนี้ที่ล้าง: <strong>${formatNumber(totalDebt.value)} บาท</strong></p>
             <p class="text-sm text-gray-500 mt-2">รหัส: ${historyRecord.referenceId}</p>
           </div>
         </div>
@@ -860,14 +831,11 @@ async function clearAllDebts() {
 
     console.log('✅ Redirecting to indexsavedebtor...')
 
-    // 9. รอให้ storage event propagate
     await new Promise(resolve => setTimeout(resolve, 500))
-
     router.push('/indexsavedebtor')
 
   } catch (error) {
     console.error('❌ Error:', error)
-    console.error('Stack:', error.stack)
 
     await Swal.fire({
       title: 'เกิดข้อผิดพลาด!',

@@ -24,7 +24,7 @@ function defaultSeed(): Receipt[] {
       // ✅ เพิ่มสองฟิลด์นี้
       "affiliationId": "DEN",
       "affiliationName": "คณะทันตแพทยศาสตร์",
-      
+
       "paymentMethods": {
         "krungthai1": {
           "checked": true,
@@ -128,7 +128,7 @@ export function loadReceipts(): Receipt[] {
       return seed;
     }
     const data = JSON.parse(raw) as Receipt[];
-    const receipts = Array.isArray(data) 
+    const receipts = Array.isArray(data)
       ? data.map(r => ({
           ...r,
           createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),

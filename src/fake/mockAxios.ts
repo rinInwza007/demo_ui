@@ -5,8 +5,28 @@ import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb'
 
 import type { Receipt } from '@/types/recipt'
 
-export function setupAxiosMock() {
-  const mock = new AxiosMockAdapter(axios, { delayResponse: 300 })
+/**
+ * ==========================================================
+ *  Fake API via Axios Mock Adapter
+ *  - Backward compatible: receiptList <-> debtorList+depositList
+ *  - Daily summary endpoints
+ *  - Broadcast update events to refresh UI
+ * ==========================================================
+ */
+
+type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
+
+type SummaryEvent = {
+  createdAt: string
+  type: EventType
+  faculty: string
+  amount: number
+  sub1?: string
+  sub2?: string
+  fundName?: string
+  fullName?: string
+  projectCode?: string
+}
 
   // =========================
   // Helper: Ensure fields exist
@@ -22,6 +42,7 @@ export function setupAxiosMock() {
     if (n.includes('ทันต')) return 'DEN'
     return 'UP'
   }
+}
 
   const ensureReceiptFields = (r: any): any => {
     const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
@@ -60,6 +81,8 @@ export function setupAxiosMock() {
       updatedAt,
     }
   }
+  return fallback
+}
 
   // =========================
   // Normalize Functions
@@ -110,6 +133,7 @@ export function setupAxiosMock() {
       receiptList: [],
     }
   }
+}
 
   const normalizeToOldFormat = (receipt: any): any => {
     const r = ensureReceiptFields(receipt)
@@ -140,20 +164,14 @@ export function setupAxiosMock() {
       }
 
       return {
-        ...r,
-        receiptList,
-        debtorList: r.debtorList,
-        depositList: r.depositList,
+        itemName: item.itemName || '',
+        depositnote: item.note || item.depositnote || '',
+        subtotal,
+        fee,
+        netAmount: subtotal - fee,
+        paymentDetails,
       }
-    }
-
-    return {
-      ...r,
-      receiptList: [],
-      debtorList: [],
-      depositList: [],
-    }
-  }
+    })
 
   const normalizeBoth = (receipt: any) => normalizeToOldFormat(normalizeToNewFormat(receipt))
 
@@ -174,20 +192,36 @@ export function setupAxiosMock() {
     projectCode?: string
   }
 
-  type CloseState = { isClosed: boolean; closedAt?: string }
-  type ClosedMap = Record<string, CloseState>
-  const CLOSED_KEY = 'mock_daily_closed_map'
+  return { ...r, debtorList: [], depositList: [], receiptList: [] }
+}
 
-  const loadClosedMap = (): ClosedMap => {
-    try {
-      return JSON.parse(localStorage.getItem(CLOSED_KEY) || '{}') as ClosedMap
-    } catch {
-      return {}
+/** แปลงแบบใหม่ (debtorList + depositList) -> แบบเก่า (receiptList) */
+const normalizeToOldFormat = (receipt: any): any => {
+  const r = ensureReceiptFields(receipt)
+
+  if (Array.isArray(r.receiptList)) return r
+
+  if (r.debtorList && r.depositList) {
+    const maxLength = Math.max(r.debtorList.length, r.depositList.length)
+    const receiptList: any[] = []
+
+    for (let i = 0; i < maxLength; i++) {
+      const debtor = r.debtorList[i] || {}
+      const deposit = r.depositList[i] || {}
+
+      receiptList.push({
+        itemName: debtor.itemName || deposit.itemName || '',
+        note: debtor.debtornote || deposit.depositnote || '',
+        debtorAmount: toNum(debtor.amount),
+        depositSubtotal: toNum(deposit.subtotal),
+        fee: toNum(deposit.fee),
+        depositNetAmount: toNum(deposit.netAmount) || (toNum(deposit.subtotal) - toNum(deposit.fee)),
+        amount: toNum(deposit.netAmount) || (toNum(deposit.subtotal) - toNum(deposit.fee)),
+        paymentDetails: deposit.paymentDetails || [],
+      })
     }
-  }
 
-  const saveClosedMap = (map: ClosedMap) => {
-    localStorage.setItem(CLOSED_KEY, JSON.stringify(map))
+    return { ...r, receiptList, debtorList: r.debtorList, depositList: r.depositList }
   }
 
   const toNum = (v: any) => {
@@ -202,16 +236,32 @@ export function setupAxiosMock() {
     const list = Array.isArray(r.depositList) ? r.depositList : []
     if (!list.length) return 0
 
-    return list.reduce((sum: number, d: any) => {
-      const net = toNum(d?.netAmount)
-      if (net) return sum + net
+/** ให้มีครบทั้งเก่า+ใหม่ */
+const normalizeBoth = (receipt: any) => normalizeToOldFormat(normalizeToNewFormat(receipt))
 
-      const payments = Array.isArray(d?.paymentDetails) ? d.paymentDetails : []
-      const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
-      const fee = toNum(d?.fee)
-      return sum + (subtotal - fee)
-    }, 0)
-  }
+/** =========================
+ *  Robust amount calculators
+ *  ========================= */
+const sumDepositNet = (r: any) => {
+  const list = Array.isArray(r.depositList) ? r.depositList : []
+  if (!list.length) return 0
+
+  return list.reduce((sum: number, d: any) => {
+    const net = toNum(d?.netAmount)
+    if (net) return sum + net
+
+    const payments = Array.isArray(d?.paymentDetails) ? d.paymentDetails : []
+    const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
+    const fee = toNum(d?.fee)
+    return sum + (subtotal - fee)
+  }, 0)
+}
+
+const sumDebtor = (r: any) => {
+  const list = Array.isArray(r.debtorList) ? r.debtorList : []
+  if (!list.length) return 0
+  return list.reduce((sum: number, d: any) => sum + toNum(d?.amount), 0)
+}
 
   const sumDebtor = (r: any) => {
     const list = Array.isArray(r.debtorList) ? r.debtorList : []
@@ -223,18 +273,23 @@ export function setupAxiosMock() {
     const list = Array.isArray(r.receiptList) ? r.receiptList : []
     if (!list.length) return 0
 
-    return list.reduce((sum: number, it: any) => {
-      const net = toNum(it?.depositNetAmount)
-      if (net) return sum + net
+    const payments = Array.isArray(it?.paymentDetails) ? it.paymentDetails : []
+    const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
+    const fee = toNum(it?.fee)
 
-      const payments = Array.isArray(it?.paymentDetails) ? it.paymentDetails : []
-      const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
-      const fee = toNum(it?.fee)
+    if (subtotal) return sum + (subtotal - fee)
+    return sum + toNum(it?.amount)
+  }, 0)
+}
 
-      if (subtotal) return sum + (subtotal - fee)
-      return sum + toNum(it?.amount)
-    }, 0)
+const calcAmountByType = (type: EventType, r: any) => {
+  if (type === 'DEBTOR_NEW') {
+    const v = sumDebtor(r)
+    return v || sumOldReceiptList(r) || toNum(r.amount)
   }
+  const v = sumDepositNet(r)
+  return v || sumOldReceiptList(r) || toNum(r.amount)
+}
 
   const calcAmountByType = (type: EventType, r: any) => {
     if (type === 'DEBTOR_NEW') {
@@ -244,6 +299,7 @@ export function setupAxiosMock() {
     const v = sumDepositNet(r)
     return v || sumOldReceiptList(r) || toNum(r.amount)
   }
+}
 
   const receiptToSummaryEvent = (r: any): SummaryEvent | null => {
     const createdAt =
@@ -271,12 +327,15 @@ export function setupAxiosMock() {
       projectCode: r.projectCode || r.id || '',
     }
   }
+}
 
   // =========================
   // API Endpoints
   // =========================
 
-  // GET /findOneReceipt/:id
+  /** -------------------------
+   *  GET /findOneReceipt/:id
+   *  ------------------------- */
   mock.onGet(/\/findOneReceipt\/([^/]+)$/).reply((config) => {
     const id = config.url?.match(/\/findOneReceipt\/([^/]+)$/)?.[1]
     if (!id) return [400, { message: 'id required' }]
@@ -285,45 +344,39 @@ export function setupAxiosMock() {
     const found = db.find((r: any) => r.projectCode === id || r.id === id)
     if (!found) return [404, { message: 'Not found' }]
 
-    return [200, normalizeBoth(found)]
+    return [200, serializeReceipt(found)]
   })
 
-  // GET /getReceipt/:projectCode
+  /** -------------------------
+   *  GET /getReceipt/:projectCode
+   *  ------------------------- */
   mock.onGet(/\/getReceipt\/([^?]+)$/).reply((config) => {
     const url = config.url || ''
     const match = url.match(/\/getReceipt\/([^?]+)$/)
     const projectCode = match?.[1]
-
     if (!projectCode) return [400, { message: 'projectCode is required' }]
 
-    const decodedCode = decodeURIComponent(projectCode)
-
+    const decoded = decodeURIComponent(projectCode)
     const db = loadReceipts().map(ensureReceiptFields)
-    const found = db.find((r: any) => r.projectCode === decodedCode)
+    const found = db.find((r: any) => r.projectCode === decoded)
+
     if (!found) {
       return [
         404,
         {
           message: 'Receipt not found',
-          requestedCode: decodedCode,
+          requestedCode: decoded,
           availableCodes: db.map((r: any) => r.projectCode),
         },
       ]
     }
 
-    const normalized = normalizeBoth(found)
-
-    return [
-      200,
-      {
-        ...normalized,
-        createdAt: normalized.createdAt instanceof Date ? normalized.createdAt.toISOString() : normalized.createdAt,
-        updatedAt: normalized.updatedAt instanceof Date ? normalized.updatedAt.toISOString() : normalized.updatedAt,
-      },
-    ]
+    return [200, serializeReceipt(found)]
   })
 
-  // GET /getReceipt (with query params)
+  /** -------------------------
+   *  GET /getReceipt?...
+   *  ------------------------- */
   mock.onGet(/\/getReceipt(?:\?.*)?$/).reply((config) => {
     const db = loadReceipts().map(ensureReceiptFields)
 
@@ -350,19 +403,12 @@ export function setupAxiosMock() {
       )
     }
 
-    const normalized = list.map((r) => {
-      const x = normalizeBoth(r)
-      return {
-        ...x,
-        createdAt: x.createdAt instanceof Date ? x.createdAt.toISOString() : x.createdAt,
-        updatedAt: x.updatedAt instanceof Date ? x.updatedAt.toISOString() : x.updatedAt,
-      }
-    })
-
-    return [200, normalized]
+    return [200, list.map(serializeReceipt)]
   })
 
-  // POST /saveReceipt
+  /** -------------------------
+   *  POST /saveReceipt
+   *  ------------------------- */
   mock.onPost('/saveReceipt').reply((config) => {
     console.log('💾 POST /saveReceipt called')
 
@@ -374,20 +420,17 @@ export function setupAxiosMock() {
     }
 
     const db = loadReceipts().map(ensureReceiptFields)
-
     if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
       console.error('❌ Duplicate projectCode:', incoming.projectCode)
       return [409, { message: 'Duplicate projectCode' }]
     }
 
     const normalized = normalizeBoth(incoming)
-
     const now = new Date()
     normalized.createdAt = normalized.createdAt ?? now
     normalized.updatedAt = now
 
     const sanitized = sanitizeReceipt(normalized)
-
     const next = [sanitized, ...db]
     saveReceipts(next)
 
@@ -653,7 +696,9 @@ export function setupAxiosMock() {
     return [200, { items }]
   })
 
-  // GET /daily/closed-map
+  /** -------------------------
+   *  GET /daily/closed-map
+   *  ------------------------- */
   mock.onGet('/daily/closed-map').reply(() => {
     return [200, { map: loadClosedMap() }]
   })

@@ -71,13 +71,11 @@
 
               <!-- Table Header -->
               <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                <div class="col-span-3">รายการ</div>
-                <div class="col-span-3">ผู้ทำรายการ</div>
-                <div class="col-span-2 text-right pr-8">จำนวนเงิน</div>
-                <div class="col-span-2 text-center">วันที่</div>
-                <div class="col-span-2">หมายเหตุ</div>
-              </div>
-
+  <div class="col-span-3">รายการ</div>
+  <div class="col-span-3">ผู้ทำรายการ</div>
+  <div class="col-span-3 text-right pr-8">จำนวนเงิน</div>
+  <div class="col-span-3 text-center">วันที่</div>
+</div>
               <div
                 v-for="item in receipt.items"
                 :key="item.id"
@@ -98,19 +96,28 @@
                 </div>
 
                 <!-- Amount -->
-                <div class="col-span-2 text-right pr-8">
-                  <div class="font-bold text-red-600 font-mono text-sm">
-                    {{ formatMoney(item.debtorAmount) }}
-                  </div>
-                  <div class="text-[10px] text-slate-400">บาท</div>
-                </div>
+                <div class="col-span-3 pr-4">
+  <div class="flex items-center justify-end gap-2">
+    <span class="font-bold text-red-600 font-mono text-sm">
+      {{ formatMoney(item.debtorAmount) }}
+    </span>
+    <input
+      type="text"
+      class="glass-input w-24 px-2 py-1 rounded-md text-xs text-right"
+      placeholder="0.00"
+    />
+  </div>
+  <div class="text-[10px] text-slate-400 text-right">บาท</div>
+</div>
+
 
                 <!-- Date -->
-                <div class="col-span-2 text-center">
-                  <div class="text-xs text-slate-600">
-                    {{ formatDate(item._originalReceipt.createdAt) }}
-                  </div>
-                </div>
+                <div class="col-span-3 text-center">
+  <div class="text-xs text-slate-600">
+    {{ formatDate(item._originalReceipt.createdAt) }}
+  </div>
+</div>
+
 
                 <!-- Note -->
                 <div class="col-span-2">
@@ -779,10 +786,9 @@ async function clearAllDebts() {
     localStorage.setItem('fakeApi.receipts', JSON.stringify(updatedReceipts))
     console.log('💾 Saved to localStorage')
 
-    // 7. ส่งสัญญาณอัพเดต
-// 7. ส่งสัญญาณอัพเดต (แก้ไขใหม่)
-const updateTime = Date.now().toString()
-localStorage.setItem('receipts_last_update', updateTime)
+// 7. ✅ ส่งสัญญาณอัพเดต (แก้ใหม่)
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
 
 // ✅ ส่งทั้ง storage event และ custom event
 window.dispatchEvent(new StorageEvent('storage', {
@@ -836,13 +842,9 @@ console.log('🔔 All update signals sent:', updateTime)
 
   } catch (error) {
     console.error('❌ Error:', error)
-
     await Swal.fire({
       title: 'เกิดข้อผิดพลาด!',
-      html: `
-        <p>${error.message || 'ไม่สามารถล้างหนี้ได้'}</p>
-        <p class="text-xs text-gray-500 mt-2">กรุณาลองใหม่อีกครั้ง</p>
-      `,
+      html: `<p>${error.message || 'ไม่สามารถล้างหนี้ได้'}</p>`,
       icon: 'error',
       confirmButtonColor: '#DC2626'
     })

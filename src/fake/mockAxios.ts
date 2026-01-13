@@ -3,7 +3,6 @@ import axios from 'axios'
 import AxiosMockAdapter from 'axios-mock-adapter'
 import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb'
 
-// ❗ปรับ path type ให้ตรงโปรเจกต์คุณ
 import type { Receipt } from '@/types/recipt'
 
 export function setupAxiosMock() {
@@ -13,7 +12,6 @@ export function setupAxiosMock() {
   // Helper: Ensure fields exist
   // =========================
 
-  // ✅ map จากชื่อคณะ/หน่วยงาน -> affiliationId สำหรับทดสอบ
   const guessAffIdFromName = (name: string) => {
     const n = (name || '').trim()
     if (!n) return 'UP'
@@ -51,49 +49,35 @@ export function setupAxiosMock() {
     return {
       ...r,
       affiliationId: String(affId),
-
-      // ชื่อสังกัดหลัก/สังกัด
       mainAffiliationName: r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา',
       affiliationName: r.affiliationName || r.mainAffiliationName || 'มหาวิทยาลัยพะเยา',
-
-      // ✅ ตาม type ใหม่ของคุณ
       subAffiliationName1: r.subAffiliationName1 ?? r.subAffiliationName ?? '',
       subAffiliationName2: r.subAffiliationName2 ?? r.subAffiliationName2 ?? '',
-
-      // default
       moneyTypeNote: r.moneyTypeNote ?? 'Waybill',
       isLocked: r.isLocked ?? false,
-
-      // moneyType fallback
       moneyType: r.moneyType || r.sendmoney || 'transfer',
-
-      // date
       createdAt,
       updatedAt,
     }
   }
 
   // =========================
-  // Backward/Forward normalize
+  // Normalize Functions
   // =========================
 
-  /**
-   * ✅ แปลงข้อมูลจากแบบเก่า (receiptList) เป็นแบบใหม่ (debtorList + depositList)
-   */
   const normalizeToNewFormat = (receipt: any): any => {
     const r = ensureReceiptFields(receipt)
 
-    // ถ้ามี debtorList และ depositList อยู่แล้ว = แบบใหม่
     if (r.debtorList && r.depositList) {
       return r
     }
 
-    // ถ้ามี receiptList = แบบเก่า -> แปลง
     if (r.receiptList && Array.isArray(r.receiptList)) {
       const debtorList = r.receiptList.map((item: any) => ({
         itemName: item.itemName || '',
         debtornote: item.note || item.debtornote || '',
         amount: Number(item.debtorAmount ?? item.amount ?? 0),
+        isClearedDebt: item.isClearedDebt || false,
       }))
 
       const depositList = r.receiptList.map((item: any) => {
@@ -115,12 +99,10 @@ export function setupAxiosMock() {
         ...r,
         debtorList,
         depositList,
-        // เก็บ receiptList ไว้ด้วยเผื่อหน้าอื่นยังใช้
         receiptList: r.receiptList,
       }
     }
 
-    // ถ้าไม่มีทั้ง 2 แบบ
     return {
       ...r,
       debtorList: [],
@@ -129,18 +111,13 @@ export function setupAxiosMock() {
     }
   }
 
-  /**
-   * ✅ แปลงข้อมูลจากแบบใหม่ (debtorList + depositList) เป็นแบบเก่า (receiptList)
-   */
   const normalizeToOldFormat = (receipt: any): any => {
     const r = ensureReceiptFields(receipt)
 
-    // ถ้ามี receiptList อยู่แล้ว = แบบเก่า
     if (r.receiptList && Array.isArray(r.receiptList)) {
       return r
     }
 
-    // ถ้ามี debtorList และ depositList = แบบใหม่ -> แปลงเป็นแบบเก่า
     if (r.debtorList && r.depositList) {
       const maxLength = Math.max(r.debtorList.length, r.depositList.length)
 
@@ -158,6 +135,7 @@ export function setupAxiosMock() {
           depositNetAmount: Number(deposit.netAmount) || 0,
           amount: Number(deposit.netAmount) || 0,
           paymentDetails: deposit.paymentDetails || [],
+          isClearedDebt: debtor.isClearedDebt || false,
         })
       }
 
@@ -180,7 +158,7 @@ export function setupAxiosMock() {
   const normalizeBoth = (receipt: any) => normalizeToOldFormat(normalizeToNewFormat(receipt))
 
   // =========================
-  // Daily Summary (NEW) - robust amount
+  // Summary Functions
   // =========================
 
   type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
@@ -212,7 +190,6 @@ export function setupAxiosMock() {
     localStorage.setItem(CLOSED_KEY, JSON.stringify(map))
   }
 
-  // ✅ parse number safely (รองรับ "12,500")
   const toNum = (v: any) => {
     if (v === null || v === undefined) return 0
     if (typeof v === 'number') return Number.isFinite(v) ? v : 0
@@ -221,7 +198,6 @@ export function setupAxiosMock() {
     return Number.isFinite(n) ? n : 0
   }
 
-  // ✅ sum deposit net (prefer netAmount, fallback paymentDetails-fee)
   const sumDepositNet = (r: any) => {
     const list = Array.isArray(r.depositList) ? r.depositList : []
     if (!list.length) return 0
@@ -237,14 +213,12 @@ export function setupAxiosMock() {
     }, 0)
   }
 
-  // ✅ sum debtor (for DEBTOR_NEW)
   const sumDebtor = (r: any) => {
     const list = Array.isArray(r.debtorList) ? r.debtorList : []
     if (!list.length) return 0
     return list.reduce((sum: number, d: any) => sum + toNum(d?.amount), 0)
   }
 
-  // ✅ old receiptList fallback
   const sumOldReceiptList = (r: any) => {
     const list = Array.isArray(r.receiptList) ? r.receiptList : []
     if (!list.length) return 0
@@ -262,7 +236,6 @@ export function setupAxiosMock() {
     }, 0)
   }
 
-  // ✅ decide amount by event type
   const calcAmountByType = (type: EventType, r: any) => {
     if (type === 'DEBTOR_NEW') {
       const v = sumDebtor(r)
@@ -276,8 +249,6 @@ export function setupAxiosMock() {
     const createdAt =
       r.createdAt instanceof Date ? r.createdAt.toISOString() : (r.createdAt || new Date().toISOString())
 
-    // ✅ Mapping ประเภทเอกสาร:
-    // ปรับได้ในอนาคตเป็น field จริง เช่น docType/documentType
     const note = String(r.moneyTypeNote || '').toLowerCase()
 
     let type: EventType = 'WAYBILL'
@@ -302,7 +273,7 @@ export function setupAxiosMock() {
   }
 
   // =========================
-  // API Endpoints (Existing)
+  // API Endpoints
   // =========================
 
   // GET /findOneReceipt/:id
@@ -393,15 +364,19 @@ export function setupAxiosMock() {
 
   // POST /saveReceipt
   mock.onPost('/saveReceipt').reply((config) => {
+    console.log('💾 POST /saveReceipt called')
+
     const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
     if (!incoming.projectCode) {
+      console.error('❌ No projectCode')
       return [400, { message: 'projectCode is required' }]
     }
 
     const db = loadReceipts().map(ensureReceiptFields)
 
     if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
+      console.error('❌ Duplicate projectCode:', incoming.projectCode)
       return [409, { message: 'Duplicate projectCode' }]
     }
 
@@ -415,144 +390,226 @@ export function setupAxiosMock() {
 
     const next = [sanitized, ...db]
     saveReceipts(next)
-      console.log('💾 Receipt saved:', sanitized.projectCode)
-  console.log('📤 Dispatching event...')
-localStorage.setItem('receipts_last_update', Date.now().toString())
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: { action: 'create', data: sanitized }
-  }))
-   console.log('✅ Event dispatched!')
+
+    console.log('✅ Receipt saved:', sanitized.projectCode)
+
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(next),
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'receipts_last_update',
+      newValue: updateTime,
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        action: 'create',
+        data: sanitized,
+        timestamp: updateTime
+      }
+    }))
+
+    console.log('🔔 All create events dispatched:', updateTime)
+
     return [201, sanitized]
   })
-// PUT /updateReceipt/:projectCode
-mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
-  const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
-  const projectCode = matches ? decodeURIComponent(matches[1]) : ''
-  if (!projectCode) return [400, { message: 'projectCode is required' }]
 
-  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
+  // POST /updateReceipt
+  mock.onPost('/updateReceipt').reply((config) => {
+    console.log('🔧 POST /updateReceipt called')
 
-  const db = loadReceipts().map(ensureReceiptFields)
-  const idx = db.findIndex((r: any) => r.projectCode === projectCode)
+    const { receipt } = JSON.parse(config.data || '{}')
 
-  if (idx === -1) {
-    return [404, { message: 'Receipt not found' }]
-  }
+    if (!receipt || !receipt.projectCode) {
+      console.error('❌ No receipt or projectCode')
+      return [400, { message: 'receipt with projectCode is required' }]
+    }
 
-  const normalized = normalizeBoth(incoming)
+    console.log('📝 Updating receipt:', receipt.projectCode)
 
-  const updated = sanitizeReceipt({
-    ...db[idx],
-    ...normalized,
-    projectCode,
-    createdAt: db[idx].createdAt,
-    updatedAt: new Date(),
+    const db = loadReceipts().map(ensureReceiptFields)
+    const idx = db.findIndex((r: any) => r.projectCode === receipt.projectCode)
+
+    if (idx === -1) {
+      console.error('❌ Receipt not found:', receipt.projectCode)
+      return [404, { message: 'Receipt not found' }]
+    }
+
+    console.log('✅ Found receipt at index:', idx)
+
+    const normalized = normalizeBoth(ensureReceiptFields(receipt))
+    const updated = sanitizeReceipt({
+      ...db[idx],
+      ...normalized,
+      updatedAt: new Date(),
+    })
+
+    db[idx] = updated
+    saveReceipts(db)
+
+    console.log('💾 Receipt bulk updated:', updated.projectCode)
+    console.log('📊 Updated data:', {
+      projectCode: updated.projectCode,
+      debtorList: updated.debtorList?.length || 0,
+      receiptList: updated.receiptList?.length || 0,
+      hasDebtorList: !!updated.debtorList,
+      hasReceiptList: !!updated.receiptList
+    })
+
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(db),
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'receipts_last_update',
+      newValue: updateTime,
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        action: 'bulk-update',
+        data: updated,
+        timestamp: updateTime,
+        projectCode: updated.projectCode
+      }
+    }))
+
+    console.log('✅ All update events dispatched:', updateTime)
+
+    return [200, { success: true, data: updated }]
   })
 
-  db[idx] = updated
-  saveReceipts(db)
+  // PUT /updateReceipt/:projectCode
+  mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
+    console.log('🔧 PUT /updateReceipt/:projectCode called')
 
-  console.log('💾 Receipt updated:', updated.projectCode)
-  const updateTime = Date.now().toString()
-  localStorage.setItem('receipts_last_update', updateTime)
+    const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
+    const projectCode = matches ? decodeURIComponent(matches[1]) : ''
 
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'fakeApi.receipts',
-    newValue: JSON.stringify(db),
-    url: window.location.href
-  }))
-
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: {
-      action: 'update',
-      data: updated,
-      timestamp: updateTime
+    if (!projectCode) {
+      console.error('❌ No projectCode')
+      return [400, { message: 'projectCode is required' }]
     }
-  }))
 
-  return [200, updated]
-})
+    console.log('📝 Updating receipt:', projectCode)
 
-// POST /updateReceipt - สำหรับ bulk update
-mock.onPost('/updateReceipt').reply((config) => {
-  const { receipt } = JSON.parse(config.data || '{}')
+    const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-  if (!receipt || !receipt.projectCode) {
-    return [400, { message: 'receipt with projectCode is required' }]
-  }
+    const db = loadReceipts().map(ensureReceiptFields)
+    const idx = db.findIndex((r: any) => r.projectCode === projectCode)
 
-  const db = loadReceipts().map(ensureReceiptFields)
-  const idx = db.findIndex((r: any) => r.projectCode === receipt.projectCode)
+    if (idx === -1) {
+      console.error('❌ Receipt not found:', projectCode)
+      return [404, { message: 'Receipt not found' }]
+    }
 
-  if (idx === -1) {
-    return [404, { message: 'Receipt not found' }]
-  }
+    console.log('✅ Found receipt at index:', idx)
 
-  const normalized = normalizeBoth(ensureReceiptFields(receipt))
-  const updated = sanitizeReceipt({
-    ...db[idx],
-    ...normalized,
-    updatedAt: new Date(),
+    const normalized = normalizeBoth(incoming)
+
+    const updated = sanitizeReceipt({
+      ...db[idx],
+      ...normalized,
+      projectCode,
+      createdAt: db[idx].createdAt,
+      updatedAt: new Date(),
+    })
+
+    db[idx] = updated
+    saveReceipts(db)
+
+    console.log('💾 Receipt updated:', updated.projectCode)
+
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(db),
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'receipts_last_update',
+      newValue: updateTime,
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        action: 'update',
+        data: updated,
+        timestamp: updateTime,
+        projectCode: updated.projectCode
+      }
+    }))
+
+    console.log('✅ All update events dispatched:', updateTime)
+
+    return [200, updated]
   })
 
-  db[idx] = updated
-  saveReceipts(db)
+  // DELETE /deleteReceipt/:id
+  mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
+    console.log('🗑️ DELETE /deleteReceipt/:id called')
 
-  console.log('💾 Receipt bulk updated:', updated.projectCode)
-  const updateTime = Date.now().toString()
-  localStorage.setItem('receipts_last_update', updateTime)
-
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: {
-      action: 'bulk-update',
-      data: updated,
-      timestamp: updateTime
+    const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1]
+    if (!id) {
+      console.error('❌ No id')
+      return [400, { success: false, message: 'id required' }]
     }
-  }))
 
-  return [200, { success: true, data: updated }]
-})
-// DELETE /deleteReceipt/:id
-mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
-  const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1]
-  if (!id) return [400, { success: false, message: 'id required' }]
+    console.log('📝 Deleting receipt:', id)
 
-  const db = loadReceipts().map(ensureReceiptFields)
-  const before = db.length
-  const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
-  saveReceipts(next)
+    const db = loadReceipts().map(ensureReceiptFields)
+    const before = db.length
+    const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
+    saveReceipts(next)
 
-  // ✅ เพิ่มการส่ง event
-  console.log('🗑️ Receipt deleted:', id)
-  console.log('📤 Dispatching delete event...')
+    console.log(`✅ Deleted ${before - next.length} receipt(s)`)
 
-  const updateTime = Date.now().toString()
-  localStorage.setItem('receipts_last_update', updateTime)
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
 
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'fakeApi.receipts',
-    newValue: JSON.stringify(next),
-    url: window.location.href
-  }))
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(next),
+      url: window.location.href
+    }))
 
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'receipts_last_update',
-    newValue: updateTime,
-    url: window.location.href
-  }))
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'receipts_last_update',
+      newValue: updateTime,
+      url: window.location.href
+    }))
 
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: {
-      action: 'delete',
-      id,
-      timestamp: updateTime
-    }
-  }))
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        action: 'delete',
+        id,
+        timestamp: updateTime
+      }
+    }))
 
-  console.log('✅ Delete event dispatched!')
+    console.log('✅ All delete events dispatched:', updateTime)
 
-  return [200, { success: next.length !== before }]
-})
+    return [200, { success: next.length !== before }]
+  })
+
+  // GET /summary/events
   mock.onGet(/\/summary\/events(?:\?.*)?$/).reply((config) => {
     const db = loadReceipts().map(ensureReceiptFields).map(normalizeBoth)
 
@@ -566,7 +623,6 @@ mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
 
     let items = db.map(receiptToSummaryEvent).filter(Boolean) as SummaryEvent[]
 
-    // date range filter
     if (start && end) {
       const s = new Date(start + 'T00:00:00').getTime()
       const e = new Date(end + 'T23:59:59').getTime()
@@ -576,12 +632,10 @@ mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
       })
     }
 
-    // exact filters
     if (faculty) items = items.filter((it) => it.faculty === faculty)
     if (sub1) items = items.filter((it) => (it.sub1 || '') === sub1)
     if (sub2) items = items.filter((it) => (it.sub2 || '') === sub2)
 
-    // text search
     if (search) {
       items = items.filter(
         (it) =>
@@ -594,7 +648,6 @@ mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
       )
     }
 
-    // newest first
     items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
 
     return [200, { items }]
@@ -605,63 +658,6 @@ mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
     return [200, { map: loadClosedMap() }]
   })
 
-// POST /saveReceipt
-mock.onPost('/saveReceipt').reply((config) => {
-  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
-
-  if (!incoming.projectCode) {
-    return [400, { message: 'projectCode is required' }]
-  }
-
-  const db = loadReceipts().map(ensureReceiptFields)
-
-  if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
-    return [409, { message: 'Duplicate projectCode' }]
-  }
-
-  const normalized = normalizeBoth(incoming)
-
-  const now = new Date()
-  normalized.createdAt = normalized.createdAt ?? now
-  normalized.updatedAt = now
-
-  const sanitized = sanitizeReceipt(normalized)
-
-  const next = [sanitized, ...db]
-  saveReceipts(next)
-
-  // ✅ เพิ่มการส่ง event
-  console.log('💾 Receipt saved:', sanitized.projectCode)
-  console.log('📤 Dispatching create event...')
-
-  const updateTime = Date.now().toString()
-  localStorage.setItem('receipts_last_update', updateTime)
-
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'fakeApi.receipts',
-    newValue: JSON.stringify(next),
-    url: window.location.href
-  }))
-
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'receipts_last_update',
-    newValue: updateTime,
-    url: window.location.href
-  }))
-
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: {
-      action: 'create',
-      data: sanitized,
-      timestamp: updateTime
-    }
-  }))
-
-  console.log('✅ Create event dispatched!')
-
-  return [201, sanitized]
-})
-
-  console.log('✅ Axios Mock Setup Complete (affiliationId-ready + backward compatible + daily summary endpoints + robust amount)')
+  console.log('✅ Axios Mock Setup Complete')
   return mock
 }

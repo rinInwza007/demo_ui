@@ -60,51 +60,80 @@
               </p>
             </div>
 
+            <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <div class="col-span-3">รายการ</div>
+              <div class="col-span-3 text-right">ยอดยกยอดจากต้นปี</div>
+              <div class="col-span-3 text-right">ยอดที่ล้างสะสมในปีนี้</div>
+              <div class="col-span-3 text-right">ยอดคงเหลือสุทธิ</div>
+            </div>
+
             <div class="overflow-y-auto flex-1 p-6">
               <div v-if="filteredItems.length === 0" class="text-center py-12 text-slate-500">
                 <i class="ph ph-folder-open text-6xl mb-4 opacity-30"></i>
                 <p>ไม่พบรายการลูกหนี้ที่ยังไม่ได้ล้าง</p>
               </div>
 
-              <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div v-else class="space-y-2">
                 <div
                   v-for="item in filteredItems"
                   :key="item.id"
                   @click="toggleSelectItem(item.id)"
-                  class="glass-input rounded-xl p-5 cursor-pointer transition-all duration-200 hover:shadow-xl border-2"
-                  :class="selectedItems.has(item.id) ? 'border-blue-500 bg-blue-50/50 shadow-lg' : 'border-transparent hover:border-blue-200'"
+                  class="grid grid-cols-12 gap-4 px-4 py-3 cursor-pointer
+                       transition-colors duration-150
+                       rounded-xl items-center"
+                  :class="selectedItems.has(item.id)
+                    ? 'bg-blue-50'
+                    : 'hover:bg-slate-50'"
                 >
-                  <div class="flex items-start gap-4">
-                    <div class="flex-shrink-0">
-                      <div
-                        class="w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm"
-                        :class="selectedItems.has(item.id) ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white' : 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-600'"
-                      >
-                        <i class="ph-fill ph-buildings text-2xl"></i>
-                      </div>
+                  <!-- ✅ Checkbox + รายการ (col-span-3) -->
+                  <div class="col-span-3 flex items-center gap-3">
+                    <div
+                      class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
+                             border transition-all duration-150"
+                      :class="selectedItems.has(item.id)
+                        ? 'bg-green-600 text-white border-green-600 shadow-sm'
+                        : 'bg-white text-slate-400 border-slate-300 group-hover:border-green-400'"
+                    >
+                      <i
+                        class="ph-bold text-sm leading-none"
+                        :class="selectedItems.has(item.id) ? 'ph-check' : ''"
+                      ></i>
                     </div>
-
-                    <div class="flex-grow min-w-0">
-                      <div class="flex justify-between items-start mb-2">
-                        <div class="flex-grow min-w-0">
-                          <h3 class="font-bold text-slate-800 text-sm truncate">{{ item.itemName }}</h3>
-                          <p class="text-xs text-slate-500 font-mono mt-1">{{ item.department }}</p>
-                        </div>
-                        <div class="flex-shrink-0 ml-2">
-                          <i
-                            class="ph-fill ph-check-circle text-xl transition-all"
-                            :class="selectedItems.has(item.id) ? 'text-blue-600 opacity-100 scale-100' : 'text-slate-500 opacity-40 scale-95'"
-                          ></i>
-                        </div>
-                      </div>
-
-                      <div class="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
-                        <span class="text-xs text-slate-500">ยอดหนี้</span>
-                        <span class="text-base font-bold" :class="selectedItems.has(item.id) ? 'text-blue-600' : 'text-red-600'">
-                          {{ formatCurrency(item.debtorAmount) }}
-                        </span>
-                      </div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-slate-800 text-sm truncate">
+                        {{ item.itemName }}
+                      </p>
+                      <p class="text-xs text-slate-500 truncate">
+                        {{ item.department }} • {{ item.subDepartment }}
+                      </p>
+                      <p v-if="item.note" class="text-xs text-slate-400 truncate mt-0.5">
+                        {{ item.note }}
+                      </p>
                     </div>
+                  </div>
+
+                  <!-- ✅ ยอดยกยอดจากต้นปี (col-span-3) -->
+                  <div class="col-span-3 text-right">
+                    <p class="text-base font-bold text-slate-700">
+                       {{ formatCurrency(item.depositNetAmount || 0) }}
+                    </p>
+                  </div>
+
+                  <!-- ✅ ยอดที่ล้างสะสมในปีนี้ (col-span-3) -->
+                  <div class="col-span-3 text-right">
+                    <p class="text-base font-bold text-green-600">
+                       {{ formatCurrency(item.debtorAmount) }}
+                    </p>
+                  </div>
+
+                  <!-- ✅ ยอดคงเหลือสุทธิ (col-span-3) -->
+                  <div class="col-span-3 text-right">
+                    <p
+                      class="text-base font-bold"
+                      :class="(item.debtorAmount - (item.depositNetAmount || 0)) >= 0 ? 'text-blue-600' : 'text-red-600'"
+                    >
+                      {{ formatCurrency(item.debtorAmount - (item.depositNetAmount || 0)) }}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -294,6 +323,7 @@ import sidebar from '@/components/bar/sidebar.vue'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
 
+
 setupAxiosMock()
 const route = useRoute()
 const router = useRouter()
@@ -352,7 +382,7 @@ const mapReceiptToDebtorItems = (receipt) => {
         debtorAmount: Number(debtor.amount || 0),
         depositNetAmount: Number(deposit.netAmount || 0),
         fee: Number(deposit.fee || 0),
-        isClearedDebt: debtor.isClearedDebt || false,
+        isClearedDebt: debtor.isClearedDebt || false, // ✅ เอามาจาก debtor
       }
     })
   } else if (receipt.receiptList && Array.isArray(receipt.receiptList)) {
@@ -362,7 +392,7 @@ const mapReceiptToDebtorItems = (receipt) => {
       debtorAmount: Number(item.amount || item.debtorAmount || item.subtotal || 0),
       depositNetAmount: Number(item.depositNetAmount || 0),
       fee: Number(item.fee || 0),
-      isClearedDebt: item.isClearedDebt || false,
+      isClearedDebt: item.isClearedDebt || false, // ✅ เอามาจาก receiptList
     }))
   }
 
@@ -374,7 +404,7 @@ const mapReceiptToDebtorItems = (receipt) => {
     const itemName = item.itemName || '-'
     const debtAmount = Number(item.debtorAmount || 0)
 
-    // ✅ กรองเฉพาะรายการลูกหนี้ที่ยังไม่ล้าง
+    // ✅ กรองเฉพาะรายการลูกหนี้ที่ยังไม่ล้าง (เพิ่มเงื่อนไข !item.isClearedDebt)
     if (isReceivableItem(itemName) && !item.isClearedDebt) {
       const uniqueId = createStableId(receipt, item, idx)
 
@@ -392,6 +422,7 @@ const mapReceiptToDebtorItems = (receipt) => {
         responsible: receipt.fullName || '-',
         phone: receipt.phone || '-',
         status: 'pending',
+        isClearedDebt: item.isClearedDebt || false, // ✅ เก็บ flag ไว้ใช้ต่อ
         _originalReceipt: receipt,
         _originalItem: item,
         _originalIndex: idx,
@@ -437,10 +468,20 @@ const loadReceiptData = async () => {
           (Array.isArray(r.receiptList) && r.receiptList.length > 0)))
     )
 
-    const allDebtorItems = debtorReceipts.flatMap(mapReceiptToDebtorItems)
-    rawData.value = allDebtorItems
+    console.log('📊 Total debtor receipts:', debtorReceipts.length)
 
-    console.log('✅ Loaded', allDebtorItems.length, 'pending debtor items')
+    const allDebtorItems = debtorReceipts.flatMap(mapReceiptToDebtorItems)
+
+    // ✅ เพิ่ม debug
+    const clearedItems = allDebtorItems.filter(item => item.isClearedDebt)
+    const pendingItems = allDebtorItems.filter(item => !item.isClearedDebt)
+
+    console.log('🏷️ Cleared items:', clearedItems.length)
+    console.log('⏳ Pending items:', pendingItems.length)
+
+    rawData.value = pendingItems // ✅ เก็บเฉพาะรายการที่ยังไม่ล้าง
+
+    console.log('✅ Loaded', pendingItems.length, 'pending debtor items')
   } catch (error) {
     console.error('❌ Load error:', error)
     rawData.value = []
@@ -521,30 +562,60 @@ const clearSelectedDebtors = async () => {
 
   const selectedIds = Array.from(selectedItems.value)
   const selectedList = rawData.value.filter((item) => selectedIds.includes(item.id))
+
+  console.log('📋 Selected items:', selectedList.length)
+  console.log('🔍 Selected items detail:', selectedList.map(i => i.itemName))
+
   if (selectedList.length === 0) return
 
   // ✅ ทำเครื่องหมาย isClearedDebt = true
   const receiptSet = new Set()
   selectedList.forEach(item => {
     if (item._originalItem) {
+      console.log(`🏷️ Marking: ${item.itemName} as cleared (isClearedDebt=true)`)
       item._originalItem.isClearedDebt = true
       receiptSet.add(item._originalReceipt)
     }
   })
 
+  console.log(`📦 Receipts to update: ${receiptSet.size}`)
+
+  // ✅ อัพเดท receipt ที่มีการเปลี่ยนแปลง
+  let updateCount = 0
+  for (const receipt of receiptSet) {
+    console.log(`🔄 Updating receipt: ${receipt.projectCode}`)
+
+    try {
+      const response = await axios.post('/updateReceipt', { receipt })
+      console.log(`✅ Updated successfully:`, response.data)
+      updateCount++
+    } catch (error) {
+      console.error(`❌ Update failed:`, error)
+    }
+  }
+
+  console.log(`✅ Updated ${updateCount} receipts`)
+
+  // ✅ ส่งสัญญาณอัพเดต
+  const updateTime = Date.now().toString()
+  localStorage.setItem('receipts_last_update', updateTime)
+
+  window.dispatchEvent(new CustomEvent('receipts-updated', {
+    detail: {
+      reason: 'clear-debtor',
+      timestamp: updateTime,
+      updatedCount: updateCount
+    }
+  }))
+
+  console.log('🔔 Update signal sent:', updateTime)
+
+  // ✅ สร้าง summary สำหรับหน้าถัดไป
   const groupedByReceipt = selectedList.reduce((acc, item) => {
     if (!acc[item.receiptId]) acc[item.receiptId] = []
     acc[item.receiptId].push(item)
     return acc
   }, {} as Record<string, any[]>)
-
-  // ✅ อัพเดท receipt ที่มีการเปลี่ยนแปลง
-  for (const receipt of receiptSet) {
-    await axios.post('/updateReceipt', { receipt })
-  }
-
-  localStorage.setItem('receipts_last_update', Date.now().toString())
-  window.dispatchEvent(new CustomEvent('receipts-updated', { detail: { reason: 'clear-debtor' } }))
 
   const receipts = Object.keys(groupedByReceipt).map((receiptId) => {
     const itemsInReceipt = groupedByReceipt[receiptId]
@@ -596,6 +667,10 @@ const clearSelectedDebtors = async () => {
   }
 
   localStorage.setItem('clearDebtorSummary', JSON.stringify(summary))
+
+  console.log('💾 Summary saved:', summary)
+  console.log('🚀 Navigating to /cleardebtor/multi')
+
   router.push(`/cleardebtor/multi`)
 }
 
@@ -610,20 +685,66 @@ const toggleHistoryDetail = (id: string) => {
 }
 
 const handleReceiptsUpdate = async (event?: CustomEvent) => {
-  console.log('📢 Receipts updated:', event?.detail)
+  console.log('🔔 ========== RECEIPTS UPDATE EVENT ==========')
+  console.log('📢 Event detail:', event?.detail)
+  console.log('⏰ Current time:', currentUpdateTime.value)
+  console.log('⏰ New time:', localStorage.getItem('receipts_last_update'))
 
   // ✅ ล้าง cache
+  const beforeClear = selectedItems.value.size
   selectedItems.value.clear()
+  console.log(`🧹 Cleared ${beforeClear} selected items`)
 
   await nextTick()
+
+  console.log('🔄 Reloading receipt data...')
+  const beforeCount = rawData.value.length
+
   await loadReceiptData()
+
+  const afterCount = rawData.value.length
+  console.log(`📊 Before: ${beforeCount} items, After: ${afterCount} items`)
+
   loadHistory()
+
+  console.log('✅ ========== RELOAD COMPLETE ==========\n')
 }
 
 // ✅ เพิ่ม watcher สำหรับ route
 watch(() => route.path, async (newPath) => {
   if (newPath === '/indexsavedebtor') {
-    console.log('🔄 Returned to indexsavedebtor, reloading...')
+    console.log('🔄 ========== ROUTE CHANGED ==========')
+    console.log('🔄 Returned to indexsavedebtor')
+
+    // ✅ ล้าง cache ก่อน
+    selectedItems.value.clear()
+    const beforeCount = rawData.value.length
+    rawData.value = []
+
+    await nextTick()
+
+    console.log('🔄 Force reloading...')
+    await loadReceiptData()
+
+    const afterCount = rawData.value.length
+    console.log(`📊 Before: ${beforeCount} items, After: ${afterCount} items`)
+
+    loadHistory()
+
+    console.log('✅ ========== ROUTE RELOAD COMPLETE ==========\n')
+  }
+})
+
+// ✅ เพิ่ม watcher สำหรับ route
+watch(() => route.path, async (newPath) => {
+  if (newPath === '/indexsavedebtor') {
+    console.log('🔄 Returned to indexsavedebtor, force reloading...')
+
+    // ✅ ล้าง cache ก่อน
+    selectedItems.value.clear()
+    rawData.value = []
+
+    await nextTick()
     await loadReceiptData()
     loadHistory()
   }
@@ -649,17 +770,28 @@ onMounted(async () => {
   currentUpdateTime.value = localStorage.getItem('receipts_last_update') || Date.now().toString()
 
   window.addEventListener('focus', handleFocus)
-  // ✅ แก้ไขตรงนี้
   window.addEventListener('receipts-updated', handleReceiptsUpdate as EventListener)
+
+  // ✅ เพิ่มการฟัง storage event
+  window.addEventListener('storage', async (e) => {
+    if (e.key === 'fakeApi.receipts' || e.key === 'receipts_last_update') {
+      console.log('💾 Storage changed:', e.key)
+      await loadReceiptData()
+      loadHistory()
+    }
+  })
 
   storageWatcher = setInterval(async () => {
     const lastUpdate = localStorage.getItem('receipts_last_update')
 
     if (lastUpdate && lastUpdate !== currentUpdateTime.value) {
       console.log('🔄 Timestamp changed (fallback)')
+      console.log('   Old:', currentUpdateTime.value)
+      console.log('   New:', lastUpdate)
+
       currentUpdateTime.value = lastUpdate
       await loadReceiptData()
-      loadHistory() // ✅ เพิ่มบรรทัดนี้
+      loadHistory()
     }
   }, 1000)
 })

@@ -36,4 +36,6 @@ coverage
 __screenshots__/
 
 
+**/pnpm-debug.log
+
 pnpm-lock.yaml

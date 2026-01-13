@@ -2,310 +2,316 @@
 import axios from 'axios'
 import AxiosMockAdapter from 'axios-mock-adapter'
 import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb'
-
-// ❗ปรับ path type ให้ตรงโปรเจกต์คุณ
 import type { Receipt } from '@/types/recipt'
 
+/**
+ * ==========================================================
+ *  Fake API via Axios Mock Adapter
+ *  - Backward compatible: receiptList <-> debtorList+depositList
+ *  - Daily summary endpoints
+ *  - Broadcast update events to refresh UI
+ * ==========================================================
+ */
+
+type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
+
+type SummaryEvent = {
+  createdAt: string
+  type: EventType
+  faculty: string
+  amount: number
+  sub1?: string
+  sub2?: string
+  fundName?: string
+  fullName?: string
+  projectCode?: string
+}
+
+type CloseState = { isClosed: boolean; closedAt?: string }
+type ClosedMap = Record<string, CloseState>
+
+const CLOSED_KEY = 'mock_daily_closed_map'
+const LAST_UPDATE_KEY = 'receipts_last_update'
+
+/** =========================
+ *  LocalStorage: closed-map
+ *  ========================= */
+const loadClosedMap = (): ClosedMap => {
+  try {
+    return JSON.parse(localStorage.getItem(CLOSED_KEY) || '{}') as ClosedMap
+  } catch {
+    return {}
+  }
+}
+
+const saveClosedMap = (map: ClosedMap) => {
+  localStorage.setItem(CLOSED_KEY, JSON.stringify(map))
+}
+
+/** =========================
+ *  Helpers: id mapping
+ *  ========================= */
+const guessAffIdFromName = (name: string) => {
+  const n = (name || '').trim()
+  if (!n) return 'UP'
+  if (n.includes('กองคลัง')) return 'FIN'
+  if (n.includes('วิศวกรรม')) return 'ENG'
+  if (n.includes('แพทย์')) return 'MED'
+  if (n.includes('พยาบาล')) return 'NUR'
+  if (n.includes('ทันต')) return 'DEN'
+  return 'UP'
+}
+
+/** =========================
+ *  Helpers: number parsing
+ *  ========================= */
+const toNum = (v: any) => {
+  if (v === null || v === undefined) return 0
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0
+  const s = String(v).replaceAll(',', '').trim()
+  const n = Number(s)
+  return Number.isFinite(n) ? n : 0
+}
+
+/** =========================
+ *  Helpers: Dates
+ *  ========================= */
+const toDate = (v: any, fallback: Date) => {
+  if (v instanceof Date) return v
+  if (v) {
+    const d = new Date(v)
+    return Number.isFinite(d.getTime()) ? d : fallback
+  }
+  return fallback
+}
+
+const isoOrKeep = (v: any) => (v instanceof Date ? v.toISOString() : v)
+
+/** =========================
+ *  Ensure receipt fields exist (compat)
+ *  ========================= */
+const ensureReceiptFields = (r: any): any => {
+  const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
+
+  const affId =
+    r.affiliationId ||
+    r.mainAffiliationId ||
+    r.affId ||
+    guessAffIdFromName(mainName || r.affiliationName || '')
+
+  const createdAt = toDate(r.createdAt, new Date())
+  const updatedAt = toDate(r.updatedAt, createdAt)
+
+  return {
+    ...r,
+    affiliationId: String(affId),
+
+    // ชื่อสังกัดหลัก/สังกัด
+    mainAffiliationName: r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา',
+    affiliationName: r.affiliationName || r.mainAffiliationName || 'มหาวิทยาลัยพะเยา',
+
+    // type ใหม่
+    subAffiliationName1: r.subAffiliationName1 ?? r.subAffiliationName ?? '',
+    subAffiliationName2: r.subAffiliationName2 ?? '',
+
+    // default fields
+    moneyTypeNote: r.moneyTypeNote ?? 'Waybill',
+    isLocked: r.isLocked ?? false,
+
+    // moneyType fallback
+    moneyType: r.moneyType || r.sendmoney || 'transfer',
+
+    createdAt,
+    updatedAt,
+  }
+}
+
+/** =========================
+ *  Backward/Forward normalize
+ *  ========================= */
+
+/** แปลงแบบเก่า (receiptList) -> แบบใหม่ (debtorList + depositList) */
+const normalizeToNewFormat = (receipt: any): any => {
+  const r = ensureReceiptFields(receipt)
+
+  if (r.debtorList && r.depositList) return r
+
+  if (Array.isArray(r.receiptList)) {
+    const debtorList = r.receiptList.map((item: any) => ({
+      itemName: item.itemName || '',
+      debtornote: item.note || item.debtornote || '',
+      amount: toNum(item.debtorAmount ?? item.amount ?? 0),
+    }))
+
+    const depositList = r.receiptList.map((item: any) => {
+      const paymentDetails = Array.isArray(item.paymentDetails) ? item.paymentDetails : []
+      const subtotal = paymentDetails.reduce((sum: number, p: any) => sum + toNum(p.amount), 0)
+      const fee = toNum(item.fee)
+
+      return {
+        itemName: item.itemName || '',
+        depositnote: item.note || item.depositnote || '',
+        subtotal,
+        fee,
+        netAmount: subtotal - fee,
+        paymentDetails,
+      }
+    })
+
+    return { ...r, debtorList, depositList, receiptList: r.receiptList }
+  }
+
+  return { ...r, debtorList: [], depositList: [], receiptList: [] }
+}
+
+/** แปลงแบบใหม่ (debtorList + depositList) -> แบบเก่า (receiptList) */
+const normalizeToOldFormat = (receipt: any): any => {
+  const r = ensureReceiptFields(receipt)
+
+  if (Array.isArray(r.receiptList)) return r
+
+  if (r.debtorList && r.depositList) {
+    const maxLength = Math.max(r.debtorList.length, r.depositList.length)
+    const receiptList: any[] = []
+
+    for (let i = 0; i < maxLength; i++) {
+      const debtor = r.debtorList[i] || {}
+      const deposit = r.depositList[i] || {}
+
+      receiptList.push({
+        itemName: debtor.itemName || deposit.itemName || '',
+        note: debtor.debtornote || deposit.depositnote || '',
+        debtorAmount: toNum(debtor.amount),
+        depositSubtotal: toNum(deposit.subtotal),
+        fee: toNum(deposit.fee),
+        depositNetAmount: toNum(deposit.netAmount) || (toNum(deposit.subtotal) - toNum(deposit.fee)),
+        amount: toNum(deposit.netAmount) || (toNum(deposit.subtotal) - toNum(deposit.fee)),
+        paymentDetails: deposit.paymentDetails || [],
+      })
+    }
+
+    return { ...r, receiptList, debtorList: r.debtorList, depositList: r.depositList }
+  }
+
+  return { ...r, receiptList: [], debtorList: [], depositList: [] }
+}
+
+/** ให้มีครบทั้งเก่า+ใหม่ */
+const normalizeBoth = (receipt: any) => normalizeToOldFormat(normalizeToNewFormat(receipt))
+
+/** =========================
+ *  Robust amount calculators
+ *  ========================= */
+const sumDepositNet = (r: any) => {
+  const list = Array.isArray(r.depositList) ? r.depositList : []
+  if (!list.length) return 0
+
+  return list.reduce((sum: number, d: any) => {
+    const net = toNum(d?.netAmount)
+    if (net) return sum + net
+
+    const payments = Array.isArray(d?.paymentDetails) ? d.paymentDetails : []
+    const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
+    const fee = toNum(d?.fee)
+    return sum + (subtotal - fee)
+  }, 0)
+}
+
+const sumDebtor = (r: any) => {
+  const list = Array.isArray(r.debtorList) ? r.debtorList : []
+  if (!list.length) return 0
+  return list.reduce((sum: number, d: any) => sum + toNum(d?.amount), 0)
+}
+
+const sumOldReceiptList = (r: any) => {
+  const list = Array.isArray(r.receiptList) ? r.receiptList : []
+  if (!list.length) return 0
+
+  return list.reduce((sum: number, it: any) => {
+    const net = toNum(it?.depositNetAmount)
+    if (net) return sum + net
+
+    const payments = Array.isArray(it?.paymentDetails) ? it.paymentDetails : []
+    const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
+    const fee = toNum(it?.fee)
+
+    if (subtotal) return sum + (subtotal - fee)
+    return sum + toNum(it?.amount)
+  }, 0)
+}
+
+const calcAmountByType = (type: EventType, r: any) => {
+  if (type === 'DEBTOR_NEW') {
+    const v = sumDebtor(r)
+    return v || sumOldReceiptList(r) || toNum(r.amount)
+  }
+  const v = sumDepositNet(r)
+  return v || sumOldReceiptList(r) || toNum(r.amount)
+}
+
+/** =========================
+ *  Summary mapping
+ *  ========================= */
+const receiptToSummaryEvent = (r: any): SummaryEvent | null => {
+  const createdAt =
+    r.createdAt instanceof Date ? r.createdAt.toISOString() : (r.createdAt || new Date().toISOString())
+
+  const note = String(r.moneyTypeNote || '').toLowerCase()
+  let type: EventType = 'WAYBILL'
+  if (note.includes('clear')) type = 'CLEAR_DEBTOR'
+  else if (note.includes('debtor')) type = 'DEBTOR_NEW'
+
+  const faculty = (r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา').trim()
+  const amount = calcAmountByType(type, r)
+
+  return {
+    createdAt,
+    type,
+    faculty,
+    amount,
+    sub1: r.subAffiliationName1 || '',
+    sub2: r.subAffiliationName2 || '',
+    fundName: r.fundName || r.moneyTypeNote || '',
+    fullName: r.fullName || '',
+    projectCode: r.projectCode || r.id || '',
+  }
+}
+
+/** =========================
+ *  Broadcasting updates
+ *  ========================= */
+const broadcastReceiptsUpdate = (payload: { action: string; data?: any; id?: string }) => {
+  const ts = Date.now().toString()
+  localStorage.setItem(LAST_UPDATE_KEY, ts)
+
+  window.dispatchEvent(
+    new CustomEvent('receipts-updated', {
+      detail: { ...payload, timestamp: ts },
+    })
+  )
+}
+
+/** =========================
+ *  Response serializer
+ *  ========================= */
+const serializeReceipt = (r: any) => {
+  const x = normalizeBoth(r)
+  return {
+    ...x,
+    createdAt: isoOrKeep(x.createdAt),
+    updatedAt: isoOrKeep(x.updatedAt),
+  }
+}
+
+/** =========================
+ *  Setup Mock
+ *  ========================= */
 export function setupAxiosMock() {
   const mock = new AxiosMockAdapter(axios, { delayResponse: 300 })
 
-  // =========================
-  // Helper: Ensure fields exist
-  // =========================
-
-  // ✅ map จากชื่อคณะ/หน่วยงาน -> affiliationId สำหรับทดสอบ
-  const guessAffIdFromName = (name: string) => {
-    const n = (name || '').trim()
-    if (!n) return 'UP'
-    if (n.includes('กองคลัง')) return 'FIN'
-    if (n.includes('วิศวกรรม')) return 'ENG'
-    if (n.includes('แพทย์')) return 'MED'
-    if (n.includes('พยาบาล')) return 'NUR'
-    if (n.includes('ทันต')) return 'DEN'
-    return 'UP'
-  }
-
-  const ensureReceiptFields = (r: any): any => {
-    const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
-
-    const affId =
-      r.affiliationId ||
-      r.mainAffiliationId ||
-      r.affId ||
-      guessAffIdFromName(mainName || r.affiliationName || '')
-
-    const createdAt =
-      r.createdAt instanceof Date
-        ? r.createdAt
-        : r.createdAt
-          ? new Date(r.createdAt)
-          : new Date()
-
-    const updatedAt =
-      r.updatedAt instanceof Date
-        ? r.updatedAt
-        : r.updatedAt
-          ? new Date(r.updatedAt)
-          : createdAt
-
-    return {
-      ...r,
-      affiliationId: String(affId),
-
-      // ชื่อสังกัดหลัก/สังกัด
-      mainAffiliationName: r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา',
-      affiliationName: r.affiliationName || r.mainAffiliationName || 'มหาวิทยาลัยพะเยา',
-
-      // ✅ ตาม type ใหม่ของคุณ
-      subAffiliationName1: r.subAffiliationName1 ?? r.subAffiliationName ?? '',
-      subAffiliationName2: r.subAffiliationName2 ?? r.subAffiliationName2 ?? '',
-
-      // default
-      moneyTypeNote: r.moneyTypeNote ?? 'Waybill',
-      isLocked: r.isLocked ?? false,
-
-      // moneyType fallback
-      moneyType: r.moneyType || r.sendmoney || 'transfer',
-
-      // date
-      createdAt,
-      updatedAt,
-    }
-  }
-
-  // =========================
-  // Backward/Forward normalize
-  // =========================
-
-  /**
-   * ✅ แปลงข้อมูลจากแบบเก่า (receiptList) เป็นแบบใหม่ (debtorList + depositList)
-   */
-  const normalizeToNewFormat = (receipt: any): any => {
-    const r = ensureReceiptFields(receipt)
-
-    // ถ้ามี debtorList และ depositList อยู่แล้ว = แบบใหม่
-    if (r.debtorList && r.depositList) {
-      return r
-    }
-
-    // ถ้ามี receiptList = แบบเก่า -> แปลง
-    if (r.receiptList && Array.isArray(r.receiptList)) {
-      const debtorList = r.receiptList.map((item: any) => ({
-        itemName: item.itemName || '',
-        debtornote: item.note || item.debtornote || '',
-        amount: Number(item.debtorAmount ?? item.amount ?? 0),
-      }))
-
-      const depositList = r.receiptList.map((item: any) => {
-        const paymentDetails = Array.isArray(item.paymentDetails) ? item.paymentDetails : []
-        const subtotal = paymentDetails.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0)
-        const fee = Number(item.fee) || 0
-
-        return {
-          itemName: item.itemName || '',
-          depositnote: item.note || item.depositnote || '',
-          subtotal,
-          fee,
-          netAmount: subtotal - fee,
-          paymentDetails,
-        }
-      })
-
-      return {
-        ...r,
-        debtorList,
-        depositList,
-        // เก็บ receiptList ไว้ด้วยเผื่อหน้าอื่นยังใช้
-        receiptList: r.receiptList,
-      }
-    }
-
-    // ถ้าไม่มีทั้ง 2 แบบ
-    return {
-      ...r,
-      debtorList: [],
-      depositList: [],
-      receiptList: [],
-    }
-  }
-
-  /**
-   * ✅ แปลงข้อมูลจากแบบใหม่ (debtorList + depositList) เป็นแบบเก่า (receiptList)
-   */
-  const normalizeToOldFormat = (receipt: any): any => {
-    const r = ensureReceiptFields(receipt)
-
-    // ถ้ามี receiptList อยู่แล้ว = แบบเก่า
-    if (r.receiptList && Array.isArray(r.receiptList)) {
-      return r
-    }
-
-    // ถ้ามี debtorList และ depositList = แบบใหม่ -> แปลงเป็นแบบเก่า
-    if (r.debtorList && r.depositList) {
-      const maxLength = Math.max(r.debtorList.length, r.depositList.length)
-
-      const receiptList: any[] = []
-      for (let i = 0; i < maxLength; i++) {
-        const debtor = r.debtorList[i] || {}
-        const deposit = r.depositList[i] || {}
-
-        receiptList.push({
-          itemName: debtor.itemName || deposit.itemName || '',
-          note: debtor.debtornote || deposit.depositnote || '',
-          debtorAmount: Number(debtor.amount) || 0,
-          depositSubtotal: Number(deposit.subtotal) || 0,
-          fee: Number(deposit.fee) || 0,
-          depositNetAmount: Number(deposit.netAmount) || 0,
-          amount: Number(deposit.netAmount) || 0,
-          paymentDetails: deposit.paymentDetails || [],
-        })
-      }
-
-      return {
-        ...r,
-        receiptList,
-        debtorList: r.debtorList,
-        depositList: r.depositList,
-      }
-    }
-
-    return {
-      ...r,
-      receiptList: [],
-      debtorList: [],
-      depositList: [],
-    }
-  }
-
-  const normalizeBoth = (receipt: any) => normalizeToOldFormat(normalizeToNewFormat(receipt))
-
-  // =========================
-  // Daily Summary (NEW) - robust amount
-  // =========================
-
-  type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
-  type SummaryEvent = {
-    createdAt: string
-    type: EventType
-    faculty: string
-    amount: number
-    sub1?: string
-    sub2?: string
-    fundName?: string
-    fullName?: string
-    projectCode?: string
-  }
-
-  type CloseState = { isClosed: boolean; closedAt?: string }
-  type ClosedMap = Record<string, CloseState>
-  const CLOSED_KEY = 'mock_daily_closed_map'
-
-  const loadClosedMap = (): ClosedMap => {
-    try {
-      return JSON.parse(localStorage.getItem(CLOSED_KEY) || '{}') as ClosedMap
-    } catch {
-      return {}
-    }
-  }
-
-  const saveClosedMap = (map: ClosedMap) => {
-    localStorage.setItem(CLOSED_KEY, JSON.stringify(map))
-  }
-
-  // ✅ parse number safely (รองรับ "12,500")
-  const toNum = (v: any) => {
-    if (v === null || v === undefined) return 0
-    if (typeof v === 'number') return Number.isFinite(v) ? v : 0
-    const s = String(v).replaceAll(',', '').trim()
-    const n = Number(s)
-    return Number.isFinite(n) ? n : 0
-  }
-
-  // ✅ sum deposit net (prefer netAmount, fallback paymentDetails-fee)
-  const sumDepositNet = (r: any) => {
-    const list = Array.isArray(r.depositList) ? r.depositList : []
-    if (!list.length) return 0
-
-    return list.reduce((sum: number, d: any) => {
-      const net = toNum(d?.netAmount)
-      if (net) return sum + net
-
-      const payments = Array.isArray(d?.paymentDetails) ? d.paymentDetails : []
-      const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
-      const fee = toNum(d?.fee)
-      return sum + (subtotal - fee)
-    }, 0)
-  }
-
-  // ✅ sum debtor (for DEBTOR_NEW)
-  const sumDebtor = (r: any) => {
-    const list = Array.isArray(r.debtorList) ? r.debtorList : []
-    if (!list.length) return 0
-    return list.reduce((sum: number, d: any) => sum + toNum(d?.amount), 0)
-  }
-
-  // ✅ old receiptList fallback
-  const sumOldReceiptList = (r: any) => {
-    const list = Array.isArray(r.receiptList) ? r.receiptList : []
-    if (!list.length) return 0
-
-    return list.reduce((sum: number, it: any) => {
-      const net = toNum(it?.depositNetAmount)
-      if (net) return sum + net
-
-      const payments = Array.isArray(it?.paymentDetails) ? it.paymentDetails : []
-      const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
-      const fee = toNum(it?.fee)
-
-      if (subtotal) return sum + (subtotal - fee)
-      return sum + toNum(it?.amount)
-    }, 0)
-  }
-
-  // ✅ decide amount by event type
-  const calcAmountByType = (type: EventType, r: any) => {
-    if (type === 'DEBTOR_NEW') {
-      const v = sumDebtor(r)
-      return v || sumOldReceiptList(r) || toNum(r.amount)
-    }
-    const v = sumDepositNet(r)
-    return v || sumOldReceiptList(r) || toNum(r.amount)
-  }
-
-  const receiptToSummaryEvent = (r: any): SummaryEvent | null => {
-    const createdAt =
-      r.createdAt instanceof Date ? r.createdAt.toISOString() : (r.createdAt || new Date().toISOString())
-
-    // ✅ Mapping ประเภทเอกสาร:
-    // ปรับได้ในอนาคตเป็น field จริง เช่น docType/documentType
-    const note = String(r.moneyTypeNote || '').toLowerCase()
-
-    let type: EventType = 'WAYBILL'
-    if (note.includes('clear')) type = 'CLEAR_DEBTOR'
-    else if (note.includes('debtor')) type = 'DEBTOR_NEW'
-    else type = 'WAYBILL'
-
-    const faculty = (r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา').trim()
-    const amount = calcAmountByType(type, r)
-
-    return {
-      createdAt,
-      type,
-      faculty,
-      amount,
-      sub1: r.subAffiliationName1 || '',
-      sub2: r.subAffiliationName2 || '',
-      fundName: r.fundName || r.moneyTypeNote || '',
-      fullName: r.fullName || '',
-      projectCode: r.projectCode || r.id || '',
-    }
-  }
-
-  // =========================
-  // API Endpoints (Existing)
-  // =========================
-
-  // GET /findOneReceipt/:id
+  /** -------------------------
+   *  GET /findOneReceipt/:id
+   *  ------------------------- */
   mock.onGet(/\/findOneReceipt\/([^/]+)$/).reply((config) => {
     const id = config.url?.match(/\/findOneReceipt\/([^/]+)$/)?.[1]
     if (!id) return [400, { message: 'id required' }]
@@ -314,45 +320,39 @@ export function setupAxiosMock() {
     const found = db.find((r: any) => r.projectCode === id || r.id === id)
     if (!found) return [404, { message: 'Not found' }]
 
-    return [200, normalizeBoth(found)]
+    return [200, serializeReceipt(found)]
   })
 
-  // GET /getReceipt/:projectCode
+  /** -------------------------
+   *  GET /getReceipt/:projectCode
+   *  ------------------------- */
   mock.onGet(/\/getReceipt\/([^?]+)$/).reply((config) => {
     const url = config.url || ''
     const match = url.match(/\/getReceipt\/([^?]+)$/)
     const projectCode = match?.[1]
-
     if (!projectCode) return [400, { message: 'projectCode is required' }]
 
-    const decodedCode = decodeURIComponent(projectCode)
-
+    const decoded = decodeURIComponent(projectCode)
     const db = loadReceipts().map(ensureReceiptFields)
-    const found = db.find((r: any) => r.projectCode === decodedCode)
+    const found = db.find((r: any) => r.projectCode === decoded)
+
     if (!found) {
       return [
         404,
         {
           message: 'Receipt not found',
-          requestedCode: decodedCode,
+          requestedCode: decoded,
           availableCodes: db.map((r: any) => r.projectCode),
         },
       ]
     }
 
-    const normalized = normalizeBoth(found)
-
-    return [
-      200,
-      {
-        ...normalized,
-        createdAt: normalized.createdAt instanceof Date ? normalized.createdAt.toISOString() : normalized.createdAt,
-        updatedAt: normalized.updatedAt instanceof Date ? normalized.updatedAt.toISOString() : normalized.updatedAt,
-      },
-    ]
+    return [200, serializeReceipt(found)]
   })
 
-  // GET /getReceipt (with query params)
+  /** -------------------------
+   *  GET /getReceipt?...
+   *  ------------------------- */
   mock.onGet(/\/getReceipt(?:\?.*)?$/).reply((config) => {
     const db = loadReceipts().map(ensureReceiptFields)
 
@@ -379,180 +379,118 @@ export function setupAxiosMock() {
       )
     }
 
-    const normalized = list.map((r) => {
-      const x = normalizeBoth(r)
-      return {
-        ...x,
-        createdAt: x.createdAt instanceof Date ? x.createdAt.toISOString() : x.createdAt,
-        updatedAt: x.updatedAt instanceof Date ? x.updatedAt.toISOString() : x.updatedAt,
-      }
-    })
-
-    return [200, normalized]
+    return [200, list.map(serializeReceipt)]
   })
 
-  // POST /saveReceipt
+  /** -------------------------
+   *  POST /saveReceipt
+   *  ------------------------- */
   mock.onPost('/saveReceipt').reply((config) => {
     const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-    if (!incoming.projectCode) {
-      return [400, { message: 'projectCode is required' }]
-    }
+    if (!incoming.projectCode) return [400, { message: 'projectCode is required' }]
 
     const db = loadReceipts().map(ensureReceiptFields)
-
     if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
       return [409, { message: 'Duplicate projectCode' }]
     }
 
     const normalized = normalizeBoth(incoming)
-
     const now = new Date()
     normalized.createdAt = normalized.createdAt ?? now
     normalized.updatedAt = now
 
     const sanitized = sanitizeReceipt(normalized)
-
     const next = [sanitized, ...db]
     saveReceipts(next)
-      console.log('💾 Receipt saved:', sanitized.projectCode)
-  console.log('📤 Dispatching event...')
-localStorage.setItem('receipts_last_update', Date.now().toString())
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: { action: 'create', data: sanitized }
-  }))
-   console.log('✅ Event dispatched!')
+
+    console.log('💾 Receipt saved:', sanitized.projectCode)
+    broadcastReceiptsUpdate({ action: 'create', data: sanitized })
+
     return [201, sanitized]
   })
-// PUT /updateReceipt/:projectCode
-mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
-  const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
-  const projectCode = matches ? decodeURIComponent(matches[1]) : ''
-  if (!projectCode) return [400, { message: 'projectCode is required' }]
 
-  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
+  /** -------------------------
+   *  PUT /updateReceipt/:projectCode
+   *  ------------------------- */
+  mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
+    const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
+    const projectCode = matches ? decodeURIComponent(matches[1]) : ''
+    if (!projectCode) return [400, { message: 'projectCode is required' }]
 
-  const db = loadReceipts().map(ensureReceiptFields)
-  const idx = db.findIndex((r: any) => r.projectCode === projectCode)
+    const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-  if (idx === -1) {
-    return [404, { message: 'Receipt not found' }]
-  }
+    const db = loadReceipts().map(ensureReceiptFields)
+    const idx = db.findIndex((r: any) => r.projectCode === projectCode)
+    if (idx === -1) return [404, { message: 'Receipt not found' }]
 
-  const normalized = normalizeBoth(incoming)
+    const normalized = normalizeBoth(incoming)
 
-  const updated = sanitizeReceipt({
-    ...db[idx],
-    ...normalized,
-    projectCode,
-    createdAt: db[idx].createdAt,
-    updatedAt: new Date(),
+    const updated = sanitizeReceipt({
+      ...db[idx],
+      ...normalized,
+      projectCode,
+      createdAt: db[idx].createdAt,
+      updatedAt: new Date(),
+    })
+
+    db[idx] = updated
+    saveReceipts(db)
+
+    console.log('💾 Receipt updated:', updated.projectCode)
+    broadcastReceiptsUpdate({ action: 'update', data: updated })
+
+    return [200, updated]
   })
 
-  db[idx] = updated
-  saveReceipts(db)
+  /** -------------------------
+   *  POST /updateReceipt  (bulk update)
+   *  ------------------------- */
+  mock.onPost('/updateReceipt').reply((config) => {
+    const { receipt } = JSON.parse(config.data || '{}')
+    if (!receipt || !receipt.projectCode) return [400, { message: 'receipt with projectCode is required' }]
 
-  console.log('💾 Receipt updated:', updated.projectCode)
-  const updateTime = Date.now().toString()
-  localStorage.setItem('receipts_last_update', updateTime)
+    const db = loadReceipts().map(ensureReceiptFields)
+    const idx = db.findIndex((r: any) => r.projectCode === receipt.projectCode)
+    if (idx === -1) return [404, { message: 'Receipt not found' }]
 
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'fakeApi.receipts',
-    newValue: JSON.stringify(db),
-    url: window.location.href
-  }))
+    const normalized = normalizeBoth(ensureReceiptFields(receipt))
+    const updated = sanitizeReceipt({
+      ...db[idx],
+      ...normalized,
+      updatedAt: new Date(),
+    })
 
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: {
-      action: 'update',
-      data: updated,
-      timestamp: updateTime
-    }
-  }))
+    db[idx] = updated
+    saveReceipts(db)
 
-  return [200, updated]
-})
+    console.log('💾 Receipt bulk updated:', updated.projectCode)
+    broadcastReceiptsUpdate({ action: 'bulk-update', data: updated })
 
-// POST /updateReceipt - สำหรับ bulk update
-mock.onPost('/updateReceipt').reply((config) => {
-  const { receipt } = JSON.parse(config.data || '{}')
-
-  if (!receipt || !receipt.projectCode) {
-    return [400, { message: 'receipt with projectCode is required' }]
-  }
-
-  const db = loadReceipts().map(ensureReceiptFields)
-  const idx = db.findIndex((r: any) => r.projectCode === receipt.projectCode)
-
-  if (idx === -1) {
-    return [404, { message: 'Receipt not found' }]
-  }
-
-  const normalized = normalizeBoth(ensureReceiptFields(receipt))
-  const updated = sanitizeReceipt({
-    ...db[idx],
-    ...normalized,
-    updatedAt: new Date(),
+    return [200, { success: true, data: updated }]
   })
 
-  db[idx] = updated
-  saveReceipts(db)
+  /** -------------------------
+   *  DELETE /deleteReceipt/:id
+   *  ------------------------- */
+  mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
+    const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1]
+    if (!id) return [400, { success: false, message: 'id required' }]
 
-  console.log('💾 Receipt bulk updated:', updated.projectCode)
-  const updateTime = Date.now().toString()
-  localStorage.setItem('receipts_last_update', updateTime)
+    const db = loadReceipts().map(ensureReceiptFields)
+    const before = db.length
+    const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
+    saveReceipts(next)
 
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: {
-      action: 'bulk-update',
-      data: updated,
-      timestamp: updateTime
-    }
-  }))
+    console.log('🗑️ Receipt deleted:', id)
+    broadcastReceiptsUpdate({ action: 'delete', id })
 
-  return [200, { success: true, data: updated }]
-})
-// DELETE /deleteReceipt/:id
-mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
-  const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1]
-  if (!id) return [400, { success: false, message: 'id required' }]
+    return [200, { success: next.length !== before }]
+  })
 
-  const db = loadReceipts().map(ensureReceiptFields)
-  const before = db.length
-  const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
-  saveReceipts(next)
-
-  // ✅ เพิ่มการส่ง event
-  console.log('🗑️ Receipt deleted:', id)
-  console.log('📤 Dispatching delete event...')
-
-  const updateTime = Date.now().toString()
-  localStorage.setItem('receipts_last_update', updateTime)
-
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'fakeApi.receipts',
-    newValue: JSON.stringify(next),
-    url: window.location.href
-  }))
-
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'receipts_last_update',
-    newValue: updateTime,
-    url: window.location.href
-  }))
-
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: {
-      action: 'delete',
-      id,
-      timestamp: updateTime
-    }
-  }))
-
-  console.log('✅ Delete event dispatched!')
-
-  return [200, { success: next.length !== before }]
-})
+  /** -------------------------
+   *  GET /summary/events?...
+   *  ------------------------- */
   mock.onGet(/\/summary\/events(?:\?.*)?$/).reply((config) => {
     const db = loadReceipts().map(ensureReceiptFields).map(normalizeBoth)
 
@@ -566,7 +504,7 @@ mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
 
     let items = db.map(receiptToSummaryEvent).filter(Boolean) as SummaryEvent[]
 
-    // date range filter
+    // date range
     if (start && end) {
       const s = new Date(start + 'T00:00:00').getTime()
       const e = new Date(end + 'T23:59:59').getTime()
@@ -600,68 +538,13 @@ mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
     return [200, { items }]
   })
 
-  // GET /daily/closed-map
+  /** -------------------------
+   *  GET /daily/closed-map
+   *  ------------------------- */
   mock.onGet('/daily/closed-map').reply(() => {
     return [200, { map: loadClosedMap() }]
   })
 
-// POST /saveReceipt
-mock.onPost('/saveReceipt').reply((config) => {
-  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
-
-  if (!incoming.projectCode) {
-    return [400, { message: 'projectCode is required' }]
-  }
-
-  const db = loadReceipts().map(ensureReceiptFields)
-
-  if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
-    return [409, { message: 'Duplicate projectCode' }]
-  }
-
-  const normalized = normalizeBoth(incoming)
-
-  const now = new Date()
-  normalized.createdAt = normalized.createdAt ?? now
-  normalized.updatedAt = now
-
-  const sanitized = sanitizeReceipt(normalized)
-
-  const next = [sanitized, ...db]
-  saveReceipts(next)
-
-  // ✅ เพิ่มการส่ง event
-  console.log('💾 Receipt saved:', sanitized.projectCode)
-  console.log('📤 Dispatching create event...')
-
-  const updateTime = Date.now().toString()
-  localStorage.setItem('receipts_last_update', updateTime)
-
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'fakeApi.receipts',
-    newValue: JSON.stringify(next),
-    url: window.location.href
-  }))
-
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'receipts_last_update',
-    newValue: updateTime,
-    url: window.location.href
-  }))
-
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: {
-      action: 'create',
-      data: sanitized,
-      timestamp: updateTime
-    }
-  }))
-
-  console.log('✅ Create event dispatched!')
-
-  return [201, sanitized]
-})
-
-  console.log('✅ Axios Mock Setup Complete (affiliationId-ready + backward compatible + daily summary endpoints + robust amount)')
+  console.log('✅ Axios Mock Setup Complete (clean + backward compatible + summary endpoints)')
   return mock
 }

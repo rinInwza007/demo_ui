@@ -416,7 +416,7 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
   const locked = r.isLocked ?? false
 
   return {
-    id: r.projectCode,
+    id: r.delNumber,
     status: locked ? 'success' : 'pending',
     department: r.mainAffiliationName || r.affiliationName || '-',
     subDepartment: r.subAffiliationName1 || '-',
@@ -589,7 +589,8 @@ const approveItem = async (row: TableRow) => {
 
   if (!result.isConfirmed) return
 
-  const target = rawData.value.find((r) => r.projectCode === row.id)
+  const target = rawData.value.find((r) => r.delNumber === row.id)
+
   if (!target) return
 
   target.isLocked = true

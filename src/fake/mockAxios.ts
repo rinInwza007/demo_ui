@@ -25,53 +25,51 @@ export function setupAxiosMock() {
     return 'UP'
   }
 
-  const ensureReceiptFields = (r: any): any => {
-    const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
+ const ensureReceiptFields = (r: any): any => {
+  const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
 
-    const affId =
-      r.affiliationId ||
-      r.mainAffiliationId ||
-      r.affId ||
-      guessAffIdFromName(mainName || r.affiliationName || '')
+  const affId =
+    r.affiliationId ||
+    r.mainAffiliationId ||
+    r.affId ||
+    guessAffIdFromName(mainName || r.affiliationName || '')
 
-    const createdAt =
-      r.createdAt instanceof Date
-        ? r.createdAt
-        : r.createdAt
-          ? new Date(r.createdAt)
-          : new Date()
+  const createdAt =
+    r.createdAt instanceof Date
+      ? r.createdAt
+      : r.createdAt
+        ? new Date(r.createdAt)
+        : new Date()
 
-    const updatedAt =
-      r.updatedAt instanceof Date
-        ? r.updatedAt
-        : r.updatedAt
-          ? new Date(r.updatedAt)
-          : createdAt
+  const updatedAt =
+    r.updatedAt instanceof Date
+      ? r.updatedAt
+      : r.updatedAt
+        ? new Date(r.updatedAt)
+        : createdAt
 
-    return {
-      ...r,
-      affiliationId: String(affId),
+  return {
+    ...r,
+    // ✅ เพิ่มบรรทัดนี้
+    delNumber: r.delNumber || r.id || '',
+    id: r.id || r.delNumber || '', // ✅ รองรับทั้ง 2 แบบ
+    affiliationId: String(affId),
 
-      // ชื่อสังกัดหลัก/สังกัด
-      mainAffiliationName: r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา',
-      affiliationName: r.affiliationName || r.mainAffiliationName || 'มหาวิทยาลัยพะเยา',
+    mainAffiliationName: r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา',
+    affiliationName: r.affiliationName || r.mainAffiliationName || 'มหาวิทยาลัยพะเยา',
 
-      // ✅ ตาม type ใหม่ของคุณ
-      subAffiliationName1: r.subAffiliationName1 ?? r.subAffiliationName ?? '',
-      subAffiliationName2: r.subAffiliationName2 ?? r.subAffiliationName2 ?? '',
+    subAffiliationName1: r.subAffiliationName1 ?? r.subAffiliationName ?? '',
+    subAffiliationName2: r.subAffiliationName2 ?? r.subAffiliationName2 ?? '',
 
-      // default
-      moneyTypeNote: r.moneyTypeNote ?? 'Waybill',
-      isLocked: r.isLocked ?? false,
+    moneyTypeNote: r.moneyTypeNote ?? 'Waybill',
+    isLocked: r.isLocked ?? false,
 
-      // moneyType fallback
-      moneyType: r.moneyType || r.sendmoney || 'transfer',
+    moneyType: r.moneyType || r.sendmoney || 'transfer',
 
-      // date
-      createdAt,
-      updatedAt,
-    }
+    createdAt,
+    updatedAt,
   }
+}
 
   // =========================
   // Backward/Forward normalize
@@ -317,40 +315,35 @@ export function setupAxiosMock() {
     return [200, normalizeBoth(found)]
   })
 
-  // GET /getReceipt/:projectCode
-  mock.onGet(/\/getReceipt\/([^?]+)$/).reply((config) => {
-    const url = config.url || ''
-    const match = url.match(/\/getReceipt\/([^?]+)$/)
-    const projectCode = match?.[1]
+// ✅ GET /getReceipt/:id (รองรับทั้ง delNumber และ projectCode)
+mock.onGet(/\/getReceipt\/([^?]+)$/).reply((config) => {
+  const url = config.url || ''
+  const match = url.match(/\/getReceipt\/([^?]+)$/)
+  const id = match?.[1]
 
-    if (!projectCode) return [400, { message: 'projectCode is required' }]
+  if (!id) return [400, { message: 'id is required' }]
 
-    const decodedCode = decodeURIComponent(projectCode)
+  const decodedId = decodeURIComponent(id)
 
-    const db = loadReceipts().map(ensureReceiptFields)
-    const found = db.find((r: any) => r.projectCode === decodedCode)
-    if (!found) {
-      return [
-        404,
-        {
-          message: 'Receipt not found',
-          requestedCode: decodedCode,
-          availableCodes: db.map((r: any) => r.projectCode),
-        },
-      ]
-    }
+  const db = loadReceipts().map(ensureReceiptFields)
+  
+  // ✅ ค้นหาด้วย delNumber หรือ id หรือ projectCode
+  const found = db.find((r: any) => 
+    r.delNumber === decodedId || r.id === decodedId || r.projectCode === decodedId
+  )
+  
+  if (!found) {
+    return [404, { message: 'Receipt not found', requestedId: decodedId }]
+  }
 
-    const normalized = normalizeBoth(found)
+  const normalized = normalizeBoth(found)
 
-    return [
-      200,
-      {
-        ...normalized,
-        createdAt: normalized.createdAt instanceof Date ? normalized.createdAt.toISOString() : normalized.createdAt,
-        updatedAt: normalized.updatedAt instanceof Date ? normalized.updatedAt.toISOString() : normalized.updatedAt,
-      },
-    ]
-  })
+  return [200, {
+    ...normalized,
+    createdAt: normalized.createdAt instanceof Date ? normalized.createdAt.toISOString() : normalized.createdAt,
+    updatedAt: normalized.updatedAt instanceof Date ? normalized.updatedAt.toISOString() : normalized.updatedAt,
+  }]
+})
 
   // GET /getReceipt (with query params)
   mock.onGet(/\/getReceipt(?:\?.*)?$/).reply((config) => {
@@ -391,49 +384,89 @@ export function setupAxiosMock() {
     return [200, normalized]
   })
 
-  // POST /saveReceipt
-  mock.onPost('/saveReceipt').reply((config) => {
-    const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
+// ✅ GET /checkDelNumber/:delNumber - ตรวจสอบเลขที่นำส่งซ้ำ
+mock.onGet(/\/checkDelNumber\/(.+)$/).reply((config) => {
+  const matches = config.url?.match(/\/checkDelNumber\/(.+)$/)
+  const delNumber = matches ? decodeURIComponent(matches[1]) : ''
+  
+  if (!delNumber) {
+    return [400, { message: 'delNumber is required' }]
+  }
 
-    if (!incoming.projectCode) {
-      return [400, { message: 'projectCode is required' }]
-    }
+  const db = loadReceipts().map(ensureReceiptFields)
+  const exists = db.some((r: any) => r.delNumber === delNumber)
 
-    const db = loadReceipts().map(ensureReceiptFields)
+  return [200, { exists }]
+})
 
-    if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
-      return [409, { message: 'Duplicate projectCode' }]
-    }
+// ✅ POST /saveReceipt
+mock.onPost('/saveReceipt').reply((config) => {
+  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-    const normalized = normalizeBoth(incoming)
+  // ✅ ตรวจสอบ delNumber แทน projectCode
+  if (!incoming.delNumber) {
+    return [400, { message: 'delNumber is required' }]
+  }
 
-    const now = new Date()
-    normalized.createdAt = normalized.createdAt ?? now
-    normalized.updatedAt = now
+  const db = loadReceipts().map(ensureReceiptFields)
 
-    const sanitized = sanitizeReceipt(normalized)
+  // ✅ เช็คซ้ำด้วย delNumber
+  if (db.some((r: any) => r.delNumber === incoming.delNumber)) {
+    return [409, { message: 'Duplicate delNumber' }]
+  }
 
-    const next = [sanitized, ...db]
-    saveReceipts(next)
-      console.log('💾 Receipt saved:', sanitized.projectCode)
-  console.log('📤 Dispatching event...')
-localStorage.setItem('receipts_last_update', Date.now().toString())
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: { action: 'create', data: sanitized }
+  const normalized = normalizeBoth(incoming)
+
+  const now = new Date()
+  normalized.createdAt = normalized.createdAt ?? now
+  normalized.updatedAt = now
+  
+  // ✅ ใช้ delNumber เป็น id
+  normalized.id = incoming.delNumber
+
+  const sanitized = sanitizeReceipt(normalized)
+
+  const next = [sanitized, ...db]
+  saveReceipts(next)
+
+  console.log('💾 Receipt saved:', sanitized.delNumber)
+  const updateTime = Date.now().toString()
+  localStorage.setItem('receipts_last_update', updateTime)
+
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'fakeApi.receipts',
+    newValue: JSON.stringify(next),
+    url: window.location.href
   }))
-   console.log('✅ Event dispatched!')
-    return [201, sanitized]
-  })
-// PUT /updateReceipt/:projectCode
+
+  window.dispatchEvent(new CustomEvent('receipts-updated', {
+    detail: {
+      action: 'create',
+      data: sanitized,
+      timestamp: updateTime
+    }
+  }))
+
+  console.log('✅ Create event dispatched!')
+
+  return [201, sanitized]
+})
+
+
+// ✅ PUT /updateReceipt/:id (รองรับทั้ง delNumber และ projectCode)
 mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
   const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
-  const projectCode = matches ? decodeURIComponent(matches[1]) : ''
-  if (!projectCode) return [400, { message: 'projectCode is required' }]
+  const id = matches ? decodeURIComponent(matches[1]) : ''
+  if (!id) return [400, { message: 'id is required' }]
 
   const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
   const db = loadReceipts().map(ensureReceiptFields)
-  const idx = db.findIndex((r: any) => r.projectCode === projectCode)
+  
+  // ✅ ค้นหาด้วย delNumber หรือ id หรือ projectCode
+  const idx = db.findIndex((r: any) => 
+    r.delNumber === id || r.id === id || r.projectCode === id
+  )
 
   if (idx === -1) {
     return [404, { message: 'Receipt not found' }]
@@ -444,7 +477,8 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,
-    projectCode,
+    delNumber: incoming.delNumber || db[idx].delNumber, // ✅ อัปเดต delNumber
+    id: db[idx].id, // ✅ เก็บ id เดิมไว้
     createdAt: db[idx].createdAt,
     updatedAt: new Date(),
   })
@@ -452,15 +486,9 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
   db[idx] = updated
   saveReceipts(db)
 
-  console.log('💾 Receipt updated:', updated.projectCode)
+  console.log('💾 Receipt updated:', updated.delNumber)
   const updateTime = Date.now().toString()
   localStorage.setItem('receipts_last_update', updateTime)
-
-  window.dispatchEvent(new StorageEvent('storage', {
-    key: 'fakeApi.receipts',
-    newValue: JSON.stringify(db),
-    url: window.location.href
-  }))
 
   window.dispatchEvent(new CustomEvent('receipts-updated', {
     detail: {
@@ -476,11 +504,6 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
 // POST /updateReceipt - สำหรับ bulk update
 mock.onPost('/updateReceipt').reply((config) => {
   const { receipt } = JSON.parse(config.data || '{}')
-
-  if (!receipt || !receipt.projectCode) {
-    return [400, { message: 'receipt with projectCode is required' }]
-  }
-
   const db = loadReceipts().map(ensureReceiptFields)
   const idx = db.findIndex((r: any) => r.projectCode === receipt.projectCode)
 
@@ -519,7 +542,9 @@ mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
 
   const db = loadReceipts().map(ensureReceiptFields)
   const before = db.length
-  const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
+  const next = db.filter((r: any) => 
+    r.delNumber !== id && r.id !== id && r.projectCode !== id
+  )
   saveReceipts(next)
 
   // ✅ เพิ่มการส่ง event
@@ -608,11 +633,6 @@ mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
 // POST /saveReceipt
 mock.onPost('/saveReceipt').reply((config) => {
   const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
-
-  if (!incoming.projectCode) {
-    return [400, { message: 'projectCode is required' }]
-  }
-
   const db = loadReceipts().map(ensureReceiptFields)
 
   if (db.some((r: any) => r.projectCode === incoming.projectCode)) {

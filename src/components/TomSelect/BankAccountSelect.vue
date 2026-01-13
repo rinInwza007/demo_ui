@@ -10,6 +10,7 @@
             :id="inputId"
             v-model="localAccountNumber"
             class="w-full px-2 text-sm"
+            :placeholder="placeholder"
           >
             <option value=""></option>
             <option
@@ -36,16 +37,18 @@
           :disabled="!localAccountNumber"
           :class="[
             'w-full px-3 py-2.5 text-sm rounded-xl border transition-all',
-            isFromPredefinedOption || !localAccountNumber
+            isFromPredefinedOption
+              ? 'bg-gray-100 cursor-not-allowed opacity-50'
+              : !localAccountNumber
               ? 'bg-gray-100 cursor-not-allowed opacity-50'
               : 'bg-white border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200',
           ]"
-          placeholder="ชื่อธนาคารจะแสดงอัตโนมัติ"
+          :placeholder="isFromPredefinedOption ? 'ชื่อธนาคารจะแสดงอัตโนมัติ' : 'กรอกชื่อธนาคาร'"
         />
       </div>
 
       <!-- ชื่อบัญชี -->
-      <div class="flex flex-col gap-1 w-52">
+      <div class="flex flex-col gap-1 w-72">
         <label class="text-xs font-medium text-gray-600">ชื่อบัญชี</label>
         <input
           v-model="localAccountName"
@@ -54,11 +57,13 @@
           :disabled="!localAccountNumber"
           :class="[
             'w-full px-3 py-2.5 text-sm rounded-xl border transition-all',
-            isFromPredefinedOption || !localAccountNumber
+            isFromPredefinedOption
+              ? 'bg-gray-100 cursor-not-allowed opacity-50'
+              : !localAccountNumber
               ? 'bg-gray-100 cursor-not-allowed opacity-50'
               : 'bg-white border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200',
           ]"
-          placeholder="ชื่อบัญชีจะแสดงอัตโนมัติ"
+          :placeholder="isFromPredefinedOption ? 'ชื่อบัญชีจะแสดงอัตโนมัติ' : 'กรอกชื่อบัญชี'"
         />
       </div>
     </div>
@@ -85,6 +90,10 @@ const props = defineProps({
   disabled: {
     type: Boolean,
     default: false,
+  },
+    placeholder: {
+    type: String,
+    default: 'กรอกเลขบัญชี'
   },
   errorMessage: {
     type: String,
@@ -125,7 +134,7 @@ const localAccountName = ref(props.modelValue?.accountName || '')
 
 let tomSelectInstance = null
 
-// ตรวจสอบว่าเลขบัญชีมาจาก predefined options หรือไม่
+// ✅ ตรวจสอบว่าเลขบัญชีมาจาก predefined options หรือไม่
 const isFromPredefinedOption = computed(() => {
   return props.bankAccountOptions.some(
     (opt) => opt.accountNumber === localAccountNumber.value
@@ -135,52 +144,48 @@ const isFromPredefinedOption = computed(() => {
 // Watch เมื่อเปลี่ยนเลขบัญชี
 watch(localAccountNumber, (newAccountNumber) => {
   if (!newAccountNumber) {
-    // ถ้าล้างเลขบัญชี ให้ล้างทั้งหมด
     localBankName.value = ''
     localAccountName.value = ''
-  } else {
-    // ตรวจสอบว่ามีใน options หรือไม่
-    const found = props.bankAccountOptions.find(
-      (opt) => opt.accountNumber === newAccountNumber
-    )
-
-    if (found) {
-      // ถ้าเจอ → auto-fill
-      localBankName.value = found.bankName
-      localAccountName.value = found.accountName
-    } else {
-      // ถ้าไม่เจอ (สร้างใหม่) → เคลียร์และให้กรอกเอง
-      localBankName.value = ''
-      localAccountName.value = ''
-    }
   }
-
-  emitChange()
 })
 
-// Watch เมื่อเปลี่ยน bankName หรือ accountName (กรณีสร้างใหม่)
+// ✅ Watch เมื่อเปลี่ยน bankName หรือ accountName (เฉพาะกรณีสร้างใหม่)
 watch([localBankName, localAccountName], () => {
   if (!isFromPredefinedOption.value && localAccountNumber.value) {
     emitChange()
   }
 })
-
+const syncingFromParent = ref(false)
 // Watch modelValue จากภายนอก
 watch(
   () => props.modelValue,
   (newVal) => {
-    if (newVal) {
-      localAccountNumber.value = newVal.accountNumber || ''
-      localBankName.value = newVal.bankName || ''
-      localAccountName.value = newVal.accountName || ''
+    if (!newVal || syncingFromParent.value) return
 
-      // อัพเดต TomSelect value
-      if (tomSelectInstance && tomSelectInstance.getValue() !== newVal.accountNumber) {
-        tomSelectInstance.setValue(newVal.accountNumber || '', true)
+    syncingFromParent.value = true
+
+    const newAccountNumber = newVal.accountNumber || ''
+    const newBankName = newVal.bankName || ''
+    const newAccountName = newVal.accountName || ''
+
+    // อัพเดต local values
+    localAccountNumber.value = newAccountNumber
+    localBankName.value = newBankName
+    localAccountName.value = newAccountName
+
+    // อัพเดต TomSelect
+    if (tomSelectInstance) {
+      const currentValue = tomSelectInstance.getValue()
+      if (currentValue !== newAccountNumber) {
+        tomSelectInstance.setValue(newAccountNumber || '', true)
       }
     }
+
+    setTimeout(() => {
+      syncingFromParent.value = false
+    }, 100)
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 
 const emitChange = () => {
@@ -198,20 +203,35 @@ onMounted(() => {
 
   if (el && !el.tomselect) {
     tomSelectInstance = new TomSelect(el, {
-      create: true, // อนุญาตให้สร้างเลขบัญชีใหม่
+      create: true,
       placeholder: 'เลือกหรือกรอกเลขบัญชี',
       allowEmptyOption: true,
       createOnBlur: true,
       createFilter: (input) => {
-        // อนุญาตให้สร้างได้ถ้ากรอกอะไรก็ได้
         return input.length > 0
       },
       onChange(value) {
+        if (syncingFromParent.value) return
+
         localAccountNumber.value = value
+
+        const found = props.bankAccountOptions.find(
+          (opt) => opt.accountNumber === value
+        )
+
+        if (found) {
+          localBankName.value = found.bankName
+          localAccountName.value = found.accountName
+        } else {
+          localBankName.value = ''
+          localAccountName.value = ''
+        }
+
+        emitChange()
       },
     })
 
-    // Custom styling
+    // Custom styling (เหมือนเดิม)
     const control = tomSelectInstance.control
     control.style.width = '100%'
     control.style.height = '2.70rem'
@@ -235,9 +255,16 @@ onMounted(() => {
       input.style.color = '#334155'
     }
 
-    // ถ้ามีค่าเริ่มต้น ให้ set ลงไป
+    // ✅ โหลดค่าเริ่มต้น
     if (props.modelValue?.accountNumber) {
+      syncingFromParent.value = true
       tomSelectInstance.setValue(props.modelValue.accountNumber, true)
+      localAccountNumber.value = props.modelValue.accountNumber
+      localBankName.value = props.modelValue.bankName || ''
+      localAccountName.value = props.modelValue.accountName || ''
+      setTimeout(() => {
+        syncingFromParent.value = false
+      }, 100)
     }
   }
 })

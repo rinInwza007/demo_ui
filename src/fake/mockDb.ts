@@ -5,8 +5,8 @@ const LS_KEY = 'fakeApi.receipts';
 function defaultSeed(): Receipt[] {
   return [
     {
-      "id": "1734567890123-abc45",
-      "delNumber": "WB-001",
+      "id": "WB-001", // ✅ ใช้ delNumber เป็น id
+      "delNumber": "WB-001", // ✅ เพิ่มฟิลด์นี้
       "createdAt": "2025-10-05T14:22:10.000Z",
       "updatedAt": "2025-10-05T14:22:10.000Z",
       "fullName": "จตุพล สิงห์คำ",
@@ -21,20 +21,27 @@ function defaultSeed(): Receipt[] {
       "moneyType": "รายได้",
       "netTotalAmount": 4500,
       "totalPaymentAmount": 4500,
-      // ✅ เพิ่มสองฟิลด์นี้
       "affiliationId": "DEN",
       "affiliationName": "คณะทันตแพทยศาสตร์",
       
       "paymentMethods": {
-        "krungthai1": {
-          "checked": true,
-          "amount": 3000
-        },
         "cash": {
           "checked": true,
           "amount": 1500
         }
       },
+
+      "bankTransfers": [
+        {
+          "id": 1,
+          "accountData": {
+            "accountNumber": "671-2-90667-9",
+            "bankName": "ธนาคารกรุงไทย",
+            "accountName": "โรงพยาบาลมหาวิทยาลัยพะเยา"
+          },
+          "amount": 3000
+        }
+      ],
 
       "receiptList": [
         {
@@ -65,8 +72,8 @@ export function sanitizeItem(it: any): ReceiptItem {
 // ✅ อัพเดท sanitizeReceipt - เพิ่ม affiliationId และ affiliationName
 export function sanitizeReceipt(r: any) {
   return {
-    id: r.id ?? null,
-    delNumber: r.delNumber ?? null,
+    id: r.delNumber,
+    delNumber: r.delNumber, // ✅ fix
 
     fullName: String(r.fullName || '').trim(),
     phone: String(r.phone || '').trim(),
@@ -76,7 +83,7 @@ export function sanitizeReceipt(r: any) {
     subAffiliationName2: String(r.subAffiliationName2 || '').trim(),
 
     fundName: String(r.fundName || '').trim(),
-    projectCode: String(r.projectCode || '').trim(),
+    projectCode: r.projectCode ? String(r.projectCode).trim() : null,
 
     moneyType: String(r.moneyType || '').trim(),
     sendmoney: String(r.sendmoney || '').trim(),
@@ -113,6 +120,18 @@ export function sanitizeReceipt(r: any) {
         NumIncheck: ''
       }
     } : {},
+        // ✅ เพิ่มข้อมูลธนาคาร
+    bankTransfers: Array.isArray(r.bankTransfers)
+      ? r.bankTransfers.map((bank: any) => ({
+          id: bank.id || Date.now(),
+          accountData: {
+            accountNumber: String(bank.accountData?.accountNumber || '').trim(),
+            bankName: String(bank.accountData?.bankName || '').trim(),
+            accountName: String(bank.accountData?.accountName || '').trim(),
+          },
+          amount: bank.amount || 0,
+        }))
+      : [],
 
     isLocked: r.isLocked ?? false,
   }
@@ -136,11 +155,11 @@ export function loadReceipts(): Receipt[] {
           mainAffiliationName: r.mainAffiliationName || '',
           subAffiliationName1: r.subAffiliationName1 || '',
           subAffiliationName2: r.subAffiliationName2 || '',
-          // ✅ เพิ่มสองบรรทัดนี้
           affiliationId: r.affiliationId || '',
           affiliationName: r.affiliationName || r.mainAffiliationName || '',
           receiptList: r.receiptList || [],
           paymentMethods: r.paymentMethods || {},
+          bankTransfers: Array.isArray(r.bankTransfers) ? r.bankTransfers : [], // ✅ เพิ่มบรรทัดนี้
         }))
       : defaultSeed();
     return receipts;
@@ -158,11 +177,11 @@ export function saveReceipts(list: Receipt[]) {
     mainAffiliationName: r.mainAffiliationName || '',
     subAffiliationName1: r.subAffiliationName1 || '',
     subAffiliationName2: r.subAffiliationName2 || '',
-    // ✅ เพิ่มสองบรรทัดนี้
     affiliationId: r.affiliationId || '',
     affiliationName: r.affiliationName || r.mainAffiliationName || '',
     receiptList: r.receiptList || [],
     paymentMethods: r.paymentMethods || {},
+    bankTransfers: Array.isArray(r.bankTransfers) ? r.bankTransfers : [], // ✅ เพิ่มบรรทัดนี้
     totalPaymentAmount: r.totalPaymentAmount || 0,
   }));
   localStorage.setItem(LS_KEY, JSON.stringify(serialized));

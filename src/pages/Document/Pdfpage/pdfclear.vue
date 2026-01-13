@@ -108,7 +108,7 @@ function createDocDefinition() {
         ],
       },
       {
-        text: 'มหาวิทยาลัยพะเยา \n ใบนำส่งเงินลูกหนี้\n',
+        text: 'มหาวิทยาลัยพะเยา \n ใบล้างลูหนี้\n',
         style: 'header',
         alignment: 'center',
         margin: [0, -20, 0, 0],

@@ -174,7 +174,7 @@ function createDocDefinition() {
   deleteRowEmpty()
 
   const receipt = receiptData.value || {}
-
+const bankTransfers = receipt.bankTransfers || []
   const { debtors, normalItems, totalDebtor, hasDebtor } = separateDebtorItems()
 
   const pm = receipt.paymentMethods || {}
@@ -438,137 +438,43 @@ function createDocDefinition() {
           ]
         : []),
 
-      // กรุงไทย 1
-      ...(pm.krungthai1?.checked && krungthai1Amt > 0
-        ? [
-            {
-              columns: [
-                { ...createCheckbox(), margin: [100, 12, 0, 0] },
-                {
-                  text: 'นำฝากบัญชีกรุงไทย เลขที่บัญชี 671-2-90667-9',
-                  style: 'form',
-                  margin: [110, 10, 0, 0],
-                },
-              ],
-            },
-            {
-              columns: [
-                {
-                  text: 'ชื่อบัญชี โรงพยาบาลมหาวิทยาลัยพะเยา',
-                  style: 'form',
-                  alignment: 'left',
-                  noWrap: true,
-                  margin: [-10, 0, 10, 0],
-                },
-                {
-                  text: 'จำนวน',
-                  margin: [90, 0, 0, 0],
-                },
-                {
-                  text: krungthai1Amt.toLocaleString('th-TH', {
-                    minimumFractionDigits: 2,
-                  }),
-                  margin: [-9, 0, 0, 0],
-                  noWrap: true,
-                },
-                {
-                  text: 'บาท',
-                  noWrap: true,
-                  margin: [-110, 0, 0, 0],
-                },
-              ],
-              margin: [130, 2, 100, 0],
-            },
-          ]
-        : []),
-
-      // กรุงไทย 2
-      ...(pm.krungthai2?.checked && krungthai2Amt > 0
-        ? [
-            {
-              columns: [
-                { ...createCheckbox(), margin: [100, 12, 0, 0] },
-                {
-                  text: 'นำฝากบัญชีกรุงไทย เลขที่บัญชี 980-9-61729-1',
-                  style: 'form',
-                  margin: [110, 10, 0, 0],
-                },
-              ],
-            },
-            {
-              columns: [
-                {
-                  text: 'ชื่อบัญชี มหาวิทยาลัยพะเยา (กองทุนทั่วไป)',
-                  style: 'form',
-                  alignment: 'left',
-                  noWrap: true,
-                  margin: [-10, 0, 10, 0],
-                },
-                {
-                  text: 'จำนวน',
-                  margin: [77.5, 0, 0, 0],
-                },
-                {
-                  text: krungthai2Amt.toLocaleString('th-TH', {
-                    minimumFractionDigits: 2,
-                  }),
-                  margin: [-33.5, 0, 0, 0],
-                  noWrap: true,
-                },
-                {
-                  text: 'บาท',
-                  noWrap: true,
-                  margin: [-147, 0, 0, 0],
-                },
-              ],
-              margin: [130, 2, 100, 0],
-            },
-          ]
-        : []),
-
-      // กรุงไทย 3
-      ...(pm.krungthai3?.checked && krungthai3Amt > 0
-        ? [
-            {
-              columns: [
-                { ...createCheckbox(), margin: [100, 12, 0, 0] },
-                {
-                  text: 'นำฝากบัญชีกรุงไทย เลขที่บัญชี 662-0-96023-5',
-                  style: 'form',
-                  margin: [110, 10, 0, 0],
-                },
-              ],
-            },
-            {
-              columns: [
-                {
-                  text: 'ชื่อบัญชี กองทุนเพื่อการจัดตั้งธนาคารเลือด',
-                  style: 'form',
-                  alignment: 'left',
-                  noWrap: true,
-                  margin: [-10, 0, 10, 0],
-                },
-                {
-                  text: 'จำนวน',
-                  margin: [80.25, 0, 0, 0],
-                },
-                {
-                  text: krungthai3Amt.toLocaleString('th-TH', {
-                    minimumFractionDigits: 2,
-                  }),
-                  margin: [-27.5, 0, 0, 0],
-                  noWrap: true,
-                },
-                {
-                  text: 'บาท',
-                  noWrap: true,
-                  margin: [-137.5, 0, 0, 0],
-                },
-              ],
-              margin: [130, 2, 100, 0],
-            },
-          ]
-        : []),
+...(bankTransfers.length > 0
+  ? bankTransfers.flatMap((bank) => [
+      {
+        columns: [
+          { ...createCheckbox(), margin: [100, 12, 0, 0] },
+          {
+            text: `นำฝากบัญชี ${bank.accountData.bankName} เลขที่ ${bank.accountData.accountNumber}`,
+            margin: [110, 10, 0, 0],
+            bold: true,
+          },
+        ],
+      },
+      {
+        columns: [
+          {
+            text: `ชื่อบัญชี ${bank.accountData.accountName}`,
+            margin: [120, 0, 0, 0],
+            noWrap: true,
+          },
+          {
+            text: 'จำนวน',
+            margin: [70, 0, 0, 0],
+          },
+          {
+            text: bank.amount.toLocaleString('th-TH', {
+              minimumFractionDigits: 2,
+            }),
+            margin: [0, 0, 0, 0],
+          },
+          {
+            text: 'บาท',
+            margin: [0, 0, 0, 0],
+          },
+        ],
+      },
+    ])
+  : []),
 
       // อื่น ๆ
       ...(pm.other?.checked && otherAmt > 0
@@ -741,29 +647,24 @@ function previewPdf() {
   })
 }
 
-// ✅ โหลดข้อมูลตาม projectCode จาก URL
 onMounted(() => {
   try {
     loading.value = true
-
-    // ✅ ดึง projectCode จาก URL params
-    const projectCode = route.params.id
-    console.log('🔍 Loading receipt with projectCode:', projectCode)
+const delNumber = route.params.id
+console.log('🔍 Loading receipt with delNumber:', delNumber)
 
     // ✅ โหลดข้อมูลทั้งหมด
     const receipts = loadReceipts()
     console.log('📦 Total receipts:', receipts.length)
-
-    // ✅ ค้นหา receipt ที่ตรงกับ projectCode
-    const foundReceipt = receipts.find((r) => r.projectCode === projectCode)
+const foundReceipt = receipts.find((r) => r.delNumber === delNumber)
 
     if (!foundReceipt) {
-      console.error('❌ Receipt not found for projectCode:', projectCode)
+      console.error('❌ Receipt not found for delNumber:', delNumber)
       loading.value = false
       return
     }
 
-    console.log('✅ Found receipt:', foundReceipt.projectCode, foundReceipt.fullName)
+    console.log('✅ Found receipt:', foundReceipt.delNumber, foundReceipt.fullName)
     receiptData.value = foundReceipt
 
     // ✅ สร้าง rows จากข้อมูล receiptList

@@ -1,28 +1,23 @@
-// @/components/Function/useBankTransferManager.js
 import { ref, computed } from 'vue'
 
 export function useBankTransferManager() {
-  // ✅ Initial state - มีรายการเริ่มต้น 1 รายการ
+  // รายการธนาคาร (ไม่มีรายการเริ่มต้น - ให้กดเพิ่มเอง)
   const bankTransfers = ref([
     {
-      id: 'bank-init-1',
-      checked: false,
+      id: Date.now(),
       accountData: {
         accountNumber: '',
         bankName: '',
         accountName: '',
       },
       amount: '',
-    },
+    }
   ])
 
-  // ✅ เพิ่มรายการธนาคาร
+  // เพิ่มรายการธนาคาร
   const addBankTransfer = () => {
-    const newId = `bank-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    
     bankTransfers.value.push({
-      id: newId,
-      checked: false,
+      id: Date.now(),
       accountData: {
         accountNumber: '',
         bankName: '',
@@ -30,82 +25,185 @@ export function useBankTransferManager() {
       },
       amount: '',
     })
-
-    console.log('✅ เพิ่มรายการธนาคาร:', bankTransfers.value.length, 'รายการ')
-    
-    return newId // คืนค่า ID เพื่อใช้ scroll
   }
 
-  // ✅ ลบรายการธนาคาร
+  // ลบรายการธนาคาร
   const removeBankTransfer = (index) => {
-    if (bankTransfers.value.length > 1) {
-      const removed = bankTransfers.value.splice(index, 1)[0]
-      console.log('🗑️ ลบรายการธนาคาร:', removed.id)
-      return true
-    }
-    console.warn('⚠️ ไม่สามารถลบได้ ต้องมีอย่างน้อย 1 รายการ')
-    return false
+    bankTransfers.value.splice(index, 1)
   }
 
-  // ✅ Format จำนวนเงิน
+  // Format จำนวนเงินเมื่อเสร็จสิ้นการกรอก
   const formatBankAmount = (index) => {
-    if (!bankTransfers.value[index]) return
-    
-    const value = bankTransfers.value[index].amount
-    if (!value) return
+    const bank = bankTransfers.value[index]
+    if (!bank.amount) return
 
-    const cleanValue = value.toString().replace(/,/g, '')
+    const cleanValue = bank.amount.toString().replace(/,/g, '')
     const numValue = parseFloat(cleanValue)
 
     if (isNaN(numValue)) {
-      bankTransfers.value[index].amount = ''
+      bank.amount = ''
       return
     }
 
-    bankTransfers.value[index].amount = numValue.toLocaleString('en-US', {
+    bank.amount = numValue.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
   }
 
-  // ✅ Handle input (ยอมรับเฉพาะตัวเลขและจุดทศนิยม)
+  // Handle input จำนวนเงิน
   const handleBankAmountInput = (index, event) => {
-    if (!bankTransfers.value[index]) return
-    
     const value = event.target.value.replace(/[^0-9.]/g, '')
     const parts = value.split('.')
     
-    // ป้องกันจุดทศนิยมมากกว่า 1 จุด
     if (parts.length > 2) return
 
     bankTransfers.value[index].amount = value
   }
 
-  // ✅ Reset รายการธนาคาร (เมื่อ uncheck)
+  // Format display สำหรับจำนวนเงิน
+  const formatDisplayBankAmount = (value) => {
+    if (!value) return ''
+
+    const cleanValue = value.toString().replace(/,/g, '')
+    const parts = cleanValue.split('.')
+    const integerPart = parts[0]
+    const decimalPart = parts[1]
+
+    if (!integerPart) return ''
+
+    const formattedInteger = Number(integerPart).toLocaleString('en-US')
+
+    if (decimalPart !== undefined) {
+      return `${formattedInteger}.${decimalPart}`
+    }
+
+    return formattedInteger
+  }
+
+  // Clear error สำหรับ bank transfer
+  const clearBankError = (index, field, errors) => {
+    if (errors.value.bankTransfers?.[index]?.[field]) {
+      delete errors.value.bankTransfers[index][field]
+      
+      if (Object.keys(errors.value.bankTransfers[index]).length === 0) {
+        delete errors.value.bankTransfers[index]
+      }
+    }
+  }
+
+  // ตรวจสอบว่าเลขบัญชีมาจาก predefined options
+  const isFromPredefinedOption = (accountNumber, bankAccountOptions = []) => {
+    if (!accountNumber) return false
+    return bankAccountOptions.some(opt => opt.accountNumber === accountNumber)
+  }
+
+  // รีเซ็ทค่ารายการ
   const resetBankTransfer = (index) => {
-    if (!bankTransfers.value[index]) return
-    
-    bankTransfers.value[index].accountData = {
+    const bank = bankTransfers.value[index]
+    bank.accountData = {
       accountNumber: '',
       bankName: '',
       accountName: '',
     }
-    bankTransfers.value[index].amount = ''
+    bank.amount = ''
   }
 
-  // ✅ คำนวณยอดรวมจากธนาคาร
+  // รีเซ็ททั้งหมด
+  const resetAllBankTransfers = () => {
+    bankTransfers.value = []
+  }
+
+  // ✅ แก้ไข: โหลดข้อมูลจาก API
+  const loadBankTransfers = (data) => {
+    console.log('🔄 Loading bank transfers from data:', data)
+    
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.log('⚠️ No bank data to load')
+      resetAllBankTransfers()
+      return
+    }
+
+    bankTransfers.value = data.map((item) => {
+      console.log('Processing item:', item)
+      
+      return {
+        id: item.id || Date.now() + Math.random(),
+        accountData: {
+          // ✅ แก้ไขตรงนี้ - ดึงจาก item.accountData
+          accountNumber: item.accountData?.accountNumber || '',
+          bankName: item.accountData?.bankName || '',
+          accountName: item.accountData?.accountName || '',
+        },
+        amount: item.amount ? 
+          (typeof item.amount === 'number' ? 
+            item.amount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }) : item.amount
+          ) : '',
+      }
+    })
+    
+    console.log('✅ Bank transfers loaded:', bankTransfers.value)
+  }
+
+  const formatBankAmountOnBlur = (index) => {
+    const bank = bankTransfers.value[index]
+    if (!bank.amount) return
+
+    const cleanValue = bank.amount.toString().replace(/,/g, '')
+    const numValue = parseFloat(cleanValue)
+
+    if (isNaN(numValue)) {
+      bank.amount = ''
+      return
+    }
+
+    bank.amount = numValue.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  }
+
+  // ✅ แก้ไข: เตรียมข้อมูลสำหรับบันทึก
+  const getBankTransfersData = () => {
+    console.log('📤 Preparing bank transfers data from:', bankTransfers.value)
+    
+    const result = bankTransfers.value
+      .filter(bank => {
+        // กรองเฉพาะที่มีข้อมูลครบถ้วน
+        const hasAccountData = bank.accountData?.accountNumber && 
+                               bank.accountData?.bankName && 
+                               bank.accountData?.accountName
+        const hasAmount = bank.amount && parseFloat(String(bank.amount).replace(/,/g, '')) > 0
+        
+        return hasAccountData && hasAmount
+      })
+      .map(bank => ({
+        id: bank.id,
+        accountData: {
+          accountNumber: bank.accountData.accountNumber,
+          bankName: bank.accountData.bankName,
+          accountName: bank.accountData.accountName,
+        },
+        amount: parseFloat(String(bank.amount || '0').replace(/,/g, '')),
+      }))
+    
+    console.log('📦 Bank transfers data prepared:', result)
+    return result
+  }
+
+  // คำนวณยอดรวมธนาคาร
   const totalBankAmount = computed(() => {
     return bankTransfers.value.reduce((sum, bank) => {
-      if (bank.checked && bank.amount) {
-        const cleanAmount = String(bank.amount).replace(/,/g, '')
-        const amount = Number(cleanAmount) || 0
-        return sum + amount
-      }
-      return sum
+      const cleanAmount = String(bank.amount || '0').replace(/,/g, '')
+      const amount = Number(cleanAmount) || 0
+      return sum + amount
     }, 0)
   })
 
-  // ✅ Format ยอดรวม
+  // ยอดรวมที่ format แล้ว
   const formattedTotalBankAmount = computed(() => {
     return totalBankAmount.value.toLocaleString('en-US', {
       minimumFractionDigits: 2,
@@ -113,88 +211,37 @@ export function useBankTransferManager() {
     })
   })
 
-  // ✅ ตรวจสอบว่ามีรายการที่ checked หรือไม่
-  const hasCheckedBank = computed(() => {
-    return bankTransfers.value.some(bank => bank.checked)
+  // ตรวจสอบว่ามีรายการธนาคารหรือไม่
+  const hasBankTransfers = computed(() => {
+    return bankTransfers.value.length > 0
   })
 
-  // ✅ นับจำนวนรายการที่ checked
-  const checkedBankCount = computed(() => {
-    return bankTransfers.value.filter(bank => bank.checked).length
+  // จำนวนรายการธนาคารทั้งหมด
+  const bankTransferCount = computed(() => {
+    return bankTransfers.value.length
   })
-
-  // ✅ รีเซ็ตทั้งหมด
-  const resetAllBankTransfers = () => {
-    bankTransfers.value = [
-      {
-        id: 'bank-init-1',
-        checked: false,
-        accountData: {
-          accountNumber: '',
-          bankName: '',
-          accountName: '',
-        },
-        amount: '',
-      },
-    ]
-  }
-
-  // ✅ โหลดข้อมูลจาก API
-  const loadBankTransfers = (data) => {
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      resetAllBankTransfers()
-      return
-    }
-
-    bankTransfers.value = data.map((bank, index) => ({
-      id: bank.id || `bank-loaded-${index + 1}`,
-      checked: bank.checked !== undefined ? bank.checked : true,
-      accountData: {
-        accountNumber: bank.accountNumber || '',
-        bankName: bank.bankName || '',
-        accountName: bank.accountName || '',
-      },
-      amount: bank.amount
-        ? Number(bank.amount).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        : '',
-    }))
-
-    console.log('✅ โหลดรายการธนาคาร:', bankTransfers.value.length)
-  }
-
-  // ✅ Export ข้อมูลสำหรับบันทึก
-  const getBankTransfersData = () => {
-    return bankTransfers.value
-      .filter(bank => bank.checked)
-      .map(bank => ({
-        accountNumber: bank.accountData.accountNumber,
-        bankName: bank.accountData.bankName,
-        accountName: bank.accountData.accountName,
-        amount: parseFloat(String(bank.amount || '0').replace(/,/g, '')),
-      }))
-  }
 
   return {
     // States
     bankTransfers,
-    
+    formatBankAmountOnBlur,
     // Actions
     addBankTransfer,
     removeBankTransfer,
     formatBankAmount,
     handleBankAmountInput,
+    formatDisplayBankAmount,
     resetBankTransfer,
     resetAllBankTransfers,
     loadBankTransfers,
     getBankTransfersData,
+    clearBankError,
+    isFromPredefinedOption,
     
     // Computed
     totalBankAmount,
     formattedTotalBankAmount,
-    hasCheckedBank,
-    checkedBankCount,
+    hasBankTransfers,
+    bankTransferCount,
   }
 }

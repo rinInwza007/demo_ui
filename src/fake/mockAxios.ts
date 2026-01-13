@@ -2,6 +2,7 @@
 import axios from 'axios'
 import AxiosMockAdapter from 'axios-mock-adapter'
 import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb'
+
 import type { Receipt } from '@/types/recipt'
 
 /**
@@ -27,126 +28,140 @@ type SummaryEvent = {
   projectCode?: string
 }
 
-type CloseState = { isClosed: boolean; closedAt?: string }
-type ClosedMap = Record<string, CloseState>
+  // =========================
+  // Helper: Ensure fields exist
+  // =========================
 
-const CLOSED_KEY = 'mock_daily_closed_map'
-const LAST_UPDATE_KEY = 'receipts_last_update'
-
-/** =========================
- *  LocalStorage: closed-map
- *  ========================= */
-const loadClosedMap = (): ClosedMap => {
-  try {
-    return JSON.parse(localStorage.getItem(CLOSED_KEY) || '{}') as ClosedMap
-  } catch {
-    return {}
+  const guessAffIdFromName = (name: string) => {
+    const n = (name || '').trim()
+    if (!n) return 'UP'
+    if (n.includes('กองคลัง')) return 'FIN'
+    if (n.includes('วิศวกรรม')) return 'ENG'
+    if (n.includes('แพทย์')) return 'MED'
+    if (n.includes('พยาบาล')) return 'NUR'
+    if (n.includes('ทันต')) return 'DEN'
+    return 'UP'
   }
 }
 
-const saveClosedMap = (map: ClosedMap) => {
-  localStorage.setItem(CLOSED_KEY, JSON.stringify(map))
-}
+  const ensureReceiptFields = (r: any): any => {
+    const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
 
-/** =========================
- *  Helpers: id mapping
- *  ========================= */
-const guessAffIdFromName = (name: string) => {
-  const n = (name || '').trim()
-  if (!n) return 'UP'
-  if (n.includes('กองคลัง')) return 'FIN'
-  if (n.includes('วิศวกรรม')) return 'ENG'
-  if (n.includes('แพทย์')) return 'MED'
-  if (n.includes('พยาบาล')) return 'NUR'
-  if (n.includes('ทันต')) return 'DEN'
-  return 'UP'
-}
+    const affId =
+      r.affiliationId ||
+      r.mainAffiliationId ||
+      r.affId ||
+      guessAffIdFromName(mainName || r.affiliationName || '')
 
-/** =========================
- *  Helpers: number parsing
- *  ========================= */
-const toNum = (v: any) => {
-  if (v === null || v === undefined) return 0
-  if (typeof v === 'number') return Number.isFinite(v) ? v : 0
-  const s = String(v).replaceAll(',', '').trim()
-  const n = Number(s)
-  return Number.isFinite(n) ? n : 0
-}
+    const createdAt =
+      r.createdAt instanceof Date
+        ? r.createdAt
+        : r.createdAt
+          ? new Date(r.createdAt)
+          : new Date()
 
-/** =========================
- *  Helpers: Dates
- *  ========================= */
-const toDate = (v: any, fallback: Date) => {
-  if (v instanceof Date) return v
-  if (v) {
-    const d = new Date(v)
-    return Number.isFinite(d.getTime()) ? d : fallback
+    const updatedAt =
+      r.updatedAt instanceof Date
+        ? r.updatedAt
+        : r.updatedAt
+          ? new Date(r.updatedAt)
+          : createdAt
+
+    return {
+      ...r,
+      affiliationId: String(affId),
+      mainAffiliationName: r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา',
+      affiliationName: r.affiliationName || r.mainAffiliationName || 'มหาวิทยาลัยพะเยา',
+      subAffiliationName1: r.subAffiliationName1 ?? r.subAffiliationName ?? '',
+      subAffiliationName2: r.subAffiliationName2 ?? r.subAffiliationName2 ?? '',
+      moneyTypeNote: r.moneyTypeNote ?? 'Waybill',
+      isLocked: r.isLocked ?? false,
+      moneyType: r.moneyType || r.sendmoney || 'transfer',
+      createdAt,
+      updatedAt,
+    }
   }
   return fallback
 }
 
-const isoOrKeep = (v: any) => (v instanceof Date ? v.toISOString() : v)
+  // =========================
+  // Normalize Functions
+  // =========================
 
-/** =========================
- *  Ensure receipt fields exist (compat)
- *  ========================= */
-const ensureReceiptFields = (r: any): any => {
-  const mainName = (r.mainAffiliationName || r.affiliationName || '').trim()
+  const normalizeToNewFormat = (receipt: any): any => {
+    const r = ensureReceiptFields(receipt)
 
-  const affId =
-    r.affiliationId ||
-    r.mainAffiliationId ||
-    r.affId ||
-    guessAffIdFromName(mainName || r.affiliationName || '')
+    if (r.debtorList && r.depositList) {
+      return r
+    }
 
-  const createdAt = toDate(r.createdAt, new Date())
-  const updatedAt = toDate(r.updatedAt, createdAt)
+    if (r.receiptList && Array.isArray(r.receiptList)) {
+      const debtorList = r.receiptList.map((item: any) => ({
+        itemName: item.itemName || '',
+        debtornote: item.note || item.debtornote || '',
+        amount: Number(item.debtorAmount ?? item.amount ?? 0),
+        isClearedDebt: item.isClearedDebt || false,
+      }))
 
-  return {
-    ...r,
-    affiliationId: String(affId),
+      const depositList = r.receiptList.map((item: any) => {
+        const paymentDetails = Array.isArray(item.paymentDetails) ? item.paymentDetails : []
+        const subtotal = paymentDetails.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0)
+        const fee = Number(item.fee) || 0
 
-    // ชื่อสังกัดหลัก/สังกัด
-    mainAffiliationName: r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา',
-    affiliationName: r.affiliationName || r.mainAffiliationName || 'มหาวิทยาลัยพะเยา',
+        return {
+          itemName: item.itemName || '',
+          depositnote: item.note || item.depositnote || '',
+          subtotal,
+          fee,
+          netAmount: subtotal - fee,
+          paymentDetails,
+        }
+      })
 
-    // type ใหม่
-    subAffiliationName1: r.subAffiliationName1 ?? r.subAffiliationName ?? '',
-    subAffiliationName2: r.subAffiliationName2 ?? '',
+      return {
+        ...r,
+        debtorList,
+        depositList,
+        receiptList: r.receiptList,
+      }
+    }
 
-    // default fields
-    moneyTypeNote: r.moneyTypeNote ?? 'Waybill',
-    isLocked: r.isLocked ?? false,
-
-    // moneyType fallback
-    moneyType: r.moneyType || r.sendmoney || 'transfer',
-
-    createdAt,
-    updatedAt,
+    return {
+      ...r,
+      debtorList: [],
+      depositList: [],
+      receiptList: [],
+    }
   }
 }
 
-/** =========================
- *  Backward/Forward normalize
- *  ========================= */
+  const normalizeToOldFormat = (receipt: any): any => {
+    const r = ensureReceiptFields(receipt)
 
-/** แปลงแบบเก่า (receiptList) -> แบบใหม่ (debtorList + depositList) */
-const normalizeToNewFormat = (receipt: any): any => {
-  const r = ensureReceiptFields(receipt)
+    if (r.receiptList && Array.isArray(r.receiptList)) {
+      return r
+    }
 
-  if (r.debtorList && r.depositList) return r
+    if (r.debtorList && r.depositList) {
+      const maxLength = Math.max(r.debtorList.length, r.depositList.length)
 
-  if (Array.isArray(r.receiptList)) {
-    const debtorList = r.receiptList.map((item: any) => ({
-      itemName: item.itemName || '',
-      debtornote: item.note || item.debtornote || '',
-      amount: toNum(item.debtorAmount ?? item.amount ?? 0),
-    }))
+      const receiptList: any[] = []
+      for (let i = 0; i < maxLength; i++) {
+        const debtor = r.debtorList[i] || {}
+        const deposit = r.depositList[i] || {}
 
-    const depositList = r.receiptList.map((item: any) => {
-      const paymentDetails = Array.isArray(item.paymentDetails) ? item.paymentDetails : []
-      const subtotal = paymentDetails.reduce((sum: number, p: any) => sum + toNum(p.amount), 0)
-      const fee = toNum(item.fee)
+        receiptList.push({
+          itemName: debtor.itemName || deposit.itemName || '',
+          note: debtor.debtornote || deposit.depositnote || '',
+          debtorAmount: Number(debtor.amount) || 0,
+          depositSubtotal: Number(deposit.subtotal) || 0,
+          fee: Number(deposit.fee) || 0,
+          depositNetAmount: Number(deposit.netAmount) || 0,
+          amount: Number(deposit.netAmount) || 0,
+          paymentDetails: deposit.paymentDetails || [],
+          isClearedDebt: debtor.isClearedDebt || false,
+        })
+      }
 
       return {
         itemName: item.itemName || '',
@@ -158,7 +173,23 @@ const normalizeToNewFormat = (receipt: any): any => {
       }
     })
 
-    return { ...r, debtorList, depositList, receiptList: r.receiptList }
+  const normalizeBoth = (receipt: any) => normalizeToOldFormat(normalizeToNewFormat(receipt))
+
+  // =========================
+  // Summary Functions
+  // =========================
+
+  type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
+  type SummaryEvent = {
+    createdAt: string
+    type: EventType
+    faculty: string
+    amount: number
+    sub1?: string
+    sub2?: string
+    fundName?: string
+    fullName?: string
+    projectCode?: string
   }
 
   return { ...r, debtorList: [], depositList: [], receiptList: [] }
@@ -193,8 +224,17 @@ const normalizeToOldFormat = (receipt: any): any => {
     return { ...r, receiptList, debtorList: r.debtorList, depositList: r.depositList }
   }
 
-  return { ...r, receiptList: [], debtorList: [], depositList: [] }
-}
+  const toNum = (v: any) => {
+    if (v === null || v === undefined) return 0
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0
+    const s = String(v).replaceAll(',', '').trim()
+    const n = Number(s)
+    return Number.isFinite(n) ? n : 0
+  }
+
+  const sumDepositNet = (r: any) => {
+    const list = Array.isArray(r.depositList) ? r.depositList : []
+    if (!list.length) return 0
 
 /** ให้มีครบทั้งเก่า+ใหม่ */
 const normalizeBoth = (receipt: any) => normalizeToOldFormat(normalizeToNewFormat(receipt))
@@ -223,13 +263,15 @@ const sumDebtor = (r: any) => {
   return list.reduce((sum: number, d: any) => sum + toNum(d?.amount), 0)
 }
 
-const sumOldReceiptList = (r: any) => {
-  const list = Array.isArray(r.receiptList) ? r.receiptList : []
-  if (!list.length) return 0
+  const sumDebtor = (r: any) => {
+    const list = Array.isArray(r.debtorList) ? r.debtorList : []
+    if (!list.length) return 0
+    return list.reduce((sum: number, d: any) => sum + toNum(d?.amount), 0)
+  }
 
-  return list.reduce((sum: number, it: any) => {
-    const net = toNum(it?.depositNetAmount)
-    if (net) return sum + net
+  const sumOldReceiptList = (r: any) => {
+    const list = Array.isArray(r.receiptList) ? r.receiptList : []
+    if (!list.length) return 0
 
     const payments = Array.isArray(it?.paymentDetails) ? it.paymentDetails : []
     const subtotal = payments.reduce((ss: number, p: any) => ss + toNum(p?.amount), 0)
@@ -249,65 +291,47 @@ const calcAmountByType = (type: EventType, r: any) => {
   return v || sumOldReceiptList(r) || toNum(r.amount)
 }
 
-/** =========================
- *  Summary mapping
- *  ========================= */
-const receiptToSummaryEvent = (r: any): SummaryEvent | null => {
-  const createdAt =
-    r.createdAt instanceof Date ? r.createdAt.toISOString() : (r.createdAt || new Date().toISOString())
-
-  const note = String(r.moneyTypeNote || '').toLowerCase()
-  let type: EventType = 'WAYBILL'
-  if (note.includes('clear')) type = 'CLEAR_DEBTOR'
-  else if (note.includes('debtor')) type = 'DEBTOR_NEW'
-
-  const faculty = (r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา').trim()
-  const amount = calcAmountByType(type, r)
-
-  return {
-    createdAt,
-    type,
-    faculty,
-    amount,
-    sub1: r.subAffiliationName1 || '',
-    sub2: r.subAffiliationName2 || '',
-    fundName: r.fundName || r.moneyTypeNote || '',
-    fullName: r.fullName || '',
-    projectCode: r.projectCode || r.id || '',
+  const calcAmountByType = (type: EventType, r: any) => {
+    if (type === 'DEBTOR_NEW') {
+      const v = sumDebtor(r)
+      return v || sumOldReceiptList(r) || toNum(r.amount)
+    }
+    const v = sumDepositNet(r)
+    return v || sumOldReceiptList(r) || toNum(r.amount)
   }
 }
 
-/** =========================
- *  Broadcasting updates
- *  ========================= */
-const broadcastReceiptsUpdate = (payload: { action: string; data?: any; id?: string }) => {
-  const ts = Date.now().toString()
-  localStorage.setItem(LAST_UPDATE_KEY, ts)
+  const receiptToSummaryEvent = (r: any): SummaryEvent | null => {
+    const createdAt =
+      r.createdAt instanceof Date ? r.createdAt.toISOString() : (r.createdAt || new Date().toISOString())
 
-  window.dispatchEvent(
-    new CustomEvent('receipts-updated', {
-      detail: { ...payload, timestamp: ts },
-    })
-  )
-}
+    const note = String(r.moneyTypeNote || '').toLowerCase()
 
-/** =========================
- *  Response serializer
- *  ========================= */
-const serializeReceipt = (r: any) => {
-  const x = normalizeBoth(r)
-  return {
-    ...x,
-    createdAt: isoOrKeep(x.createdAt),
-    updatedAt: isoOrKeep(x.updatedAt),
+    let type: EventType = 'WAYBILL'
+    if (note.includes('clear')) type = 'CLEAR_DEBTOR'
+    else if (note.includes('debtor')) type = 'DEBTOR_NEW'
+    else type = 'WAYBILL'
+
+    const faculty = (r.mainAffiliationName || r.affiliationName || 'มหาวิทยาลัยพะเยา').trim()
+    const amount = calcAmountByType(type, r)
+
+    return {
+      createdAt,
+      type,
+      faculty,
+      amount,
+      sub1: r.subAffiliationName1 || '',
+      sub2: r.subAffiliationName2 || '',
+      fundName: r.fundName || r.moneyTypeNote || '',
+      fullName: r.fullName || '',
+      projectCode: r.projectCode || r.id || '',
+    }
   }
 }
 
-/** =========================
- *  Setup Mock
- *  ========================= */
-export function setupAxiosMock() {
-  const mock = new AxiosMockAdapter(axios, { delayResponse: 300 })
+  // =========================
+  // API Endpoints
+  // =========================
 
   /** -------------------------
    *  GET /findOneReceipt/:id
@@ -386,12 +410,18 @@ export function setupAxiosMock() {
    *  POST /saveReceipt
    *  ------------------------- */
   mock.onPost('/saveReceipt').reply((config) => {
+    console.log('💾 POST /saveReceipt called')
+
     const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-    if (!incoming.projectCode) return [400, { message: 'projectCode is required' }]
+    if (!incoming.projectCode) {
+      console.error('❌ No projectCode')
+      return [400, { message: 'projectCode is required' }]
+    }
 
     const db = loadReceipts().map(ensureReceiptFields)
     if (db.some((r: any) => r.projectCode === incoming.projectCode)) {
+      console.error('❌ Duplicate projectCode:', incoming.projectCode)
       return [409, { message: 'Duplicate projectCode' }]
     }
 
@@ -404,25 +434,132 @@ export function setupAxiosMock() {
     const next = [sanitized, ...db]
     saveReceipts(next)
 
-    console.log('💾 Receipt saved:', sanitized.projectCode)
-    broadcastReceiptsUpdate({ action: 'create', data: sanitized })
+    console.log('✅ Receipt saved:', sanitized.projectCode)
+
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(next),
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'receipts_last_update',
+      newValue: updateTime,
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        action: 'create',
+        data: sanitized,
+        timestamp: updateTime
+      }
+    }))
+
+    console.log('🔔 All create events dispatched:', updateTime)
 
     return [201, sanitized]
   })
 
-  /** -------------------------
-   *  PUT /updateReceipt/:projectCode
-   *  ------------------------- */
+  // POST /updateReceipt
+  mock.onPost('/updateReceipt').reply((config) => {
+    console.log('🔧 POST /updateReceipt called')
+
+    const { receipt } = JSON.parse(config.data || '{}')
+
+    if (!receipt || !receipt.projectCode) {
+      console.error('❌ No receipt or projectCode')
+      return [400, { message: 'receipt with projectCode is required' }]
+    }
+
+    console.log('📝 Updating receipt:', receipt.projectCode)
+
+    const db = loadReceipts().map(ensureReceiptFields)
+    const idx = db.findIndex((r: any) => r.projectCode === receipt.projectCode)
+
+    if (idx === -1) {
+      console.error('❌ Receipt not found:', receipt.projectCode)
+      return [404, { message: 'Receipt not found' }]
+    }
+
+    console.log('✅ Found receipt at index:', idx)
+
+    const normalized = normalizeBoth(ensureReceiptFields(receipt))
+    const updated = sanitizeReceipt({
+      ...db[idx],
+      ...normalized,
+      updatedAt: new Date(),
+    })
+
+    db[idx] = updated
+    saveReceipts(db)
+
+    console.log('💾 Receipt bulk updated:', updated.projectCode)
+    console.log('📊 Updated data:', {
+      projectCode: updated.projectCode,
+      debtorList: updated.debtorList?.length || 0,
+      receiptList: updated.receiptList?.length || 0,
+      hasDebtorList: !!updated.debtorList,
+      hasReceiptList: !!updated.receiptList
+    })
+
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(db),
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'receipts_last_update',
+      newValue: updateTime,
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        action: 'bulk-update',
+        data: updated,
+        timestamp: updateTime,
+        projectCode: updated.projectCode
+      }
+    }))
+
+    console.log('✅ All update events dispatched:', updateTime)
+
+    return [200, { success: true, data: updated }]
+  })
+
+  // PUT /updateReceipt/:projectCode
   mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
+    console.log('🔧 PUT /updateReceipt/:projectCode called')
+
     const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
     const projectCode = matches ? decodeURIComponent(matches[1]) : ''
-    if (!projectCode) return [400, { message: 'projectCode is required' }]
+
+    if (!projectCode) {
+      console.error('❌ No projectCode')
+      return [400, { message: 'projectCode is required' }]
+    }
+
+    console.log('📝 Updating receipt:', projectCode)
 
     const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
     const db = loadReceipts().map(ensureReceiptFields)
     const idx = db.findIndex((r: any) => r.projectCode === projectCode)
-    if (idx === -1) return [404, { message: 'Receipt not found' }]
+
+    if (idx === -1) {
+      console.error('❌ Receipt not found:', projectCode)
+      return [404, { message: 'Receipt not found' }]
+    }
+
+    console.log('✅ Found receipt at index:', idx)
 
     const normalized = normalizeBoth(incoming)
 
@@ -438,59 +575,84 @@ export function setupAxiosMock() {
     saveReceipts(db)
 
     console.log('💾 Receipt updated:', updated.projectCode)
-    broadcastReceiptsUpdate({ action: 'update', data: updated })
+
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(db),
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'receipts_last_update',
+      newValue: updateTime,
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        action: 'update',
+        data: updated,
+        timestamp: updateTime,
+        projectCode: updated.projectCode
+      }
+    }))
+
+    console.log('✅ All update events dispatched:', updateTime)
 
     return [200, updated]
   })
 
-  /** -------------------------
-   *  POST /updateReceipt  (bulk update)
-   *  ------------------------- */
-  mock.onPost('/updateReceipt').reply((config) => {
-    const { receipt } = JSON.parse(config.data || '{}')
-    if (!receipt || !receipt.projectCode) return [400, { message: 'receipt with projectCode is required' }]
-
-    const db = loadReceipts().map(ensureReceiptFields)
-    const idx = db.findIndex((r: any) => r.projectCode === receipt.projectCode)
-    if (idx === -1) return [404, { message: 'Receipt not found' }]
-
-    const normalized = normalizeBoth(ensureReceiptFields(receipt))
-    const updated = sanitizeReceipt({
-      ...db[idx],
-      ...normalized,
-      updatedAt: new Date(),
-    })
-
-    db[idx] = updated
-    saveReceipts(db)
-
-    console.log('💾 Receipt bulk updated:', updated.projectCode)
-    broadcastReceiptsUpdate({ action: 'bulk-update', data: updated })
-
-    return [200, { success: true, data: updated }]
-  })
-
-  /** -------------------------
-   *  DELETE /deleteReceipt/:id
-   *  ------------------------- */
+  // DELETE /deleteReceipt/:id
   mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {
+    console.log('🗑️ DELETE /deleteReceipt/:id called')
+
     const id = config.url?.match(/\/deleteReceipt\/([^/]+)$/)?.[1]
-    if (!id) return [400, { success: false, message: 'id required' }]
+    if (!id) {
+      console.error('❌ No id')
+      return [400, { success: false, message: 'id required' }]
+    }
+
+    console.log('📝 Deleting receipt:', id)
 
     const db = loadReceipts().map(ensureReceiptFields)
     const before = db.length
     const next = db.filter((r: any) => r.projectCode !== id && r.id !== id)
     saveReceipts(next)
 
-    console.log('🗑️ Receipt deleted:', id)
-    broadcastReceiptsUpdate({ action: 'delete', id })
+    console.log(`✅ Deleted ${before - next.length} receipt(s)`)
+
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(next),
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'receipts_last_update',
+      newValue: updateTime,
+      url: window.location.href
+    }))
+
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        action: 'delete',
+        id,
+        timestamp: updateTime
+      }
+    }))
+
+    console.log('✅ All delete events dispatched:', updateTime)
 
     return [200, { success: next.length !== before }]
   })
 
-  /** -------------------------
-   *  GET /summary/events?...
-   *  ------------------------- */
+  // GET /summary/events
   mock.onGet(/\/summary\/events(?:\?.*)?$/).reply((config) => {
     const db = loadReceipts().map(ensureReceiptFields).map(normalizeBoth)
 
@@ -504,7 +666,6 @@ export function setupAxiosMock() {
 
     let items = db.map(receiptToSummaryEvent).filter(Boolean) as SummaryEvent[]
 
-    // date range
     if (start && end) {
       const s = new Date(start + 'T00:00:00').getTime()
       const e = new Date(end + 'T23:59:59').getTime()
@@ -514,12 +675,10 @@ export function setupAxiosMock() {
       })
     }
 
-    // exact filters
     if (faculty) items = items.filter((it) => it.faculty === faculty)
     if (sub1) items = items.filter((it) => (it.sub1 || '') === sub1)
     if (sub2) items = items.filter((it) => (it.sub2 || '') === sub2)
 
-    // text search
     if (search) {
       items = items.filter(
         (it) =>
@@ -532,7 +691,6 @@ export function setupAxiosMock() {
       )
     }
 
-    // newest first
     items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
 
     return [200, { items }]
@@ -545,6 +703,6 @@ export function setupAxiosMock() {
     return [200, { map: loadClosedMap() }]
   })
 
-  console.log('✅ Axios Mock Setup Complete (clean + backward compatible + summary endpoints)')
+  console.log('✅ Axios Mock Setup Complete')
   return mock
 }

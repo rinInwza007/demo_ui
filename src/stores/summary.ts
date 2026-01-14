@@ -1,19 +1,21 @@
 // stores/summary.ts
 import { defineStore } from 'pinia'
 import type { Receipt } from '@/types/recipt'
+import { getItemType } from '@/components/data/ItemNameOption'
 
+/* =========================
+ * Types
+ * ========================= */
 type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
 type Direction = 'INCOME' | 'DEBT_NEW' | 'DEBT_CLEAR'
 
 export type LedgerEntry = {
-  /** 🔑 เลขเอกสาร + suffix (INC / DEBT / CLR) */
   docKey: string
-
-  /** 🔑 เลขใบนำส่งจริง (1 ใบ ต่อ 1 เลข) */
   delNumber: string
 
   eventType: EventType
   direction: Direction
+
   amount: number
   signed: number
 
@@ -22,11 +24,14 @@ export type LedgerEntry = {
   sub1: string
   sub2: string
 
-  createdAt: string
-  updatedAt: string
+  // ✅ เพิ่ม affiliationId
+  affiliationId: string
 
   fundName: string
   fullName: string
+
+  createdAt: string
+  updatedAt: string
 }
 
 export type UnitAgg = {
@@ -52,6 +57,9 @@ export type DashboardTotals = {
   net: number
 }
 
+/* =========================
+ * Utils
+ * ========================= */
 const toNum = (v: any) => {
   const n = Number(String(v ?? 0).replaceAll(',', '').trim())
   return Number.isFinite(n) ? n : 0
@@ -81,97 +89,109 @@ const initUnitAgg = (e: LedgerEntry): UnitAgg => ({
   byDoc: {},
 })
 
-/* =========================================================
- * 🔥 CORE: Receipt → LedgerEntries
- * ========================================================= */
+/* =========================
+ * ✅ แมป mainAffiliationName → affiliationId
+ * ========================= */
+const getAffiliationId = (mainAffiliationName: string): string => {
+  const mapping: Record<string, string> = {
+    'คณะแพทยศาสตร์': 'MED',
+    'โรงพยาบาลมหาวิทยาลัยพะเยา': 'MED',
+    'คณะพยาบาลศาสตร์': 'NUR',
+    'คณะวิศวกรรมศาสตร์': 'ENG',
+    'โรงพยาบาลทันตกรรมมหาวิทยาลัยพะเยา': 'DEN',
+    'คณะทันตแพทยศาสตร์': 'DEN',
+    'คณะเภสัชศาสตร์': 'PHA',
+    'กองคลัง': 'FIN',
+  }
+
+  return mapping[mainAffiliationName] || 'UNKNOWN'
+}
+
+/* =========================
+ * CORE: Receipt → Ledger
+ * ========================= */
 const receiptToLedgers = (r: Receipt): LedgerEntry[] => {
   const entries: LedgerEntry[] = []
 
   const delNumber = safeStr((r as any).delNumber)
-  if (!delNumber) return entries // ❗ ไม่มีเลขนำส่ง = ไม่เอาเข้า summary
+  if (!delNumber) {
+    console.warn('⚠️ No delNumber in receipt:', r)
+    return entries
+  }
 
-  const faculty = safeStr((r as any).mainAffiliationName || 'มหาวิทยาลัยพะเยา')
+  const faculty = safeStr((r as any).mainAffiliationName || '')
   const sub1 = safeStr((r as any).subAffiliationName1 || '')
   const sub2 = safeStr((r as any).subAffiliationName2 || '')
   const unitKey = makeUnitKey(faculty, sub1, sub2)
 
+  // ✅ แปลงชื่อเป็น affiliationId
+  const affiliationId = getAffiliationId(faculty)
+
   const createdAt = safeStr((r as any).createdAt || new Date().toISOString())
   const updatedAt = safeStr((r as any).updatedAt || createdAt)
+  const fullName = safeStr((r as any).fullName || '')
 
-  /* ---------- รายรับ ---------- */
-  r.receiptList?.forEach((item: any, i: number) => {
+  if (!Array.isArray(r.receiptList)) {
+    console.warn(`⚠️ No receiptList in ${delNumber}`)
+    return entries
+  }
+
+  console.log(`🔍 Processing receipt ${delNumber}`)
+  console.log(`   🏢 Faculty: ${faculty} → AffiliationId: ${affiliationId}`)
+
+  r.receiptList.forEach((item: any, i: number) => {
     const amount = toNum(item.amount)
     if (!amount) return
 
-    entries.push({
-      docKey: `${delNumber}-INC-${i}`,
-      delNumber,
-      eventType: 'WAYBILL',
-      direction: 'INCOME',
-      amount,
-      signed: amount,
-      unitKey,
-      faculty,
-      sub1,
-      sub2,
-      createdAt,
-      updatedAt,
-      fundName: safeStr(item.itemName),
-      fullName: '',
-    })
+    const itemName = safeStr(item.itemName)
+    const actualType = getItemType(itemName)
+
+    if (actualType === 'receivable') {
+      entries.push({
+        docKey: `${delNumber}-DEBT-${i}`,
+        delNumber,
+        eventType: 'DEBTOR_NEW',
+        direction: 'DEBT_NEW',
+        amount,
+        signed: -amount,
+        unitKey,
+        faculty,
+        sub1,
+        sub2,
+        affiliationId,  // ✅ เพิ่ม
+        fundName: itemName,
+        fullName,
+        createdAt,
+        updatedAt,
+      })
+    } else if (actualType === 'clear') {
+      entries.push({
+        docKey: `${delNumber}-CLR-${i}`,
+        delNumber,
+        eventType: 'CLEAR_DEBTOR',
+        direction: 'DEBT_CLEAR',
+        amount,
+        signed: amount,
+        unitKey,
+        faculty,
+        sub1,
+        sub2,
+        affiliationId,  // ✅ เพิ่ม
+        fundName: itemName,
+        fullName,
+        createdAt,
+        updatedAt,
+      })
+    }
   })
 
-  /* ---------- ลูกหนี้ใหม่ ---------- */
-  r.debtorList?.forEach((item: any, i: number) => {
-    const amount = toNum(item.amount)
-    if (!amount) return
-
-    entries.push({
-      docKey: `${delNumber}-DEBT-${i}`,
-      delNumber,
-      eventType: 'DEBTOR_NEW',
-      direction: 'DEBT_NEW',
-      amount,
-      signed: -amount,
-      unitKey,
-      faculty,
-      sub1,
-      sub2,
-      createdAt,
-      updatedAt,
-      fundName: '',
-      fullName: safeStr(item.fullName),
-    })
-  })
-
-  /* ---------- ล้างลูกหนี้ ---------- */
-  r.depositList?.forEach((item: any, i: number) => {
-    const amount = toNum(item.amount)
-    if (!amount) return
-
-    entries.push({
-      docKey: `${delNumber}-CLR-${i}`,
-      delNumber,
-      eventType: 'CLEAR_DEBTOR',
-      direction: 'DEBT_CLEAR',
-      amount,
-      signed: amount,
-      unitKey,
-      faculty,
-      sub1,
-      sub2,
-      createdAt,
-      updatedAt,
-      fundName: '',
-      fullName: safeStr(item.fullName),
-    })
-  })
-
+  console.log(`✅ Receipt ${delNumber}: Created ${entries.length} ledger entries`)
   return entries
 }
 
-/* ========================================================= */
-
+/* =========================
+ * Store
+ * ========================= */
 export const useSummaryStore = defineStore('Summary', {
   state: () => ({
     ledgerByDoc: {} as Record<string, LedgerEntry>,
@@ -182,6 +202,64 @@ export const useSummaryStore = defineStore('Summary', {
   getters: {
     ledger: (s) => Object.values(s.ledgerByDoc),
     units: (s) => Object.values(s.unitsByKey),
+
+    pendingDebts: (s) => {
+      const balanceMap = new Map<string, {
+        debtAmount: number
+        clearedAmount: number
+        balance: number
+        entry: LedgerEntry
+      }>()
+
+      for (const e of Object.values(s.ledgerByDoc)) {
+        if (e.direction === 'DEBT_NEW' || e.direction === 'DEBT_CLEAR') {
+          const key = `${e.delNumber}|${e.fundName}`
+
+          const current = balanceMap.get(key) || {
+            debtAmount: 0,
+            clearedAmount: 0,
+            balance: 0,
+            entry: e
+          }
+
+          if (e.direction === 'DEBT_NEW') {
+            current.debtAmount += e.amount
+            current.balance -= e.amount
+          } else {
+            current.clearedAmount += e.amount
+            current.balance += e.amount
+          }
+
+          if (new Date(e.updatedAt) > new Date(current.entry.updatedAt)) {
+            current.entry = e
+          }
+
+          balanceMap.set(key, current)
+        }
+      }
+
+      return [...balanceMap.entries()]
+        .filter(([, data]) => data.balance < 0)
+        .map(([key, data]) => ({
+          id: key,
+          delNumber: data.entry.delNumber,
+          receiptId: data.entry.delNumber,
+          itemName: data.entry.fundName,
+          debtorAmount: data.debtAmount,
+          depositNetAmount: data.clearedAmount,
+          balanceAmount: Math.abs(data.balance),
+          department: data.entry.faculty,
+          subDepartment: data.entry.sub1,
+          affiliationId: data.entry.affiliationId,  // ✅ เพิ่ม
+          fundName: data.entry.fundName,
+          responsible: data.entry.fullName,
+          status: 'pending',
+          createdAt: data.entry.createdAt,
+          updatedAt: data.entry.updatedAt,
+          _ledgerEntry: data.entry,
+        }))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    },
   },
 
   actions: {
@@ -212,11 +290,23 @@ export const useSummaryStore = defineStore('Summary', {
     },
 
     ingestMany(receipts: Receipt[]) {
+      console.log('📥 Ingesting receipts:', receipts.length)
+
       this.ledgerByDoc = {}
-      receipts.flatMap(receiptToLedgers).forEach(e => {
-        this.ledgerByDoc[e.docKey] = e
-      })
+
+      receipts
+        .flatMap(receiptToLedgers)
+        .forEach((e) => {
+          this.ledgerByDoc[e.docKey] = e
+        })
+
       this.rebuildAll()
+
+      console.log('✅ Summary updated')
+      console.log('📋 Total ledger entries:', Object.keys(this.ledgerByDoc).length)
+      console.log('💰 Debt entries:', Object.values(this.ledgerByDoc).filter(e => e.direction === 'DEBT_NEW').length)
+      console.log('🧹 Clear entries:', Object.values(this.ledgerByDoc).filter(e => e.direction === 'DEBT_CLEAR').length)
+      console.log('📊 Totals:', this.totals)
     },
   },
 })

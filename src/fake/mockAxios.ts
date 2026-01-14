@@ -547,103 +547,134 @@ export function setupAxiosMock() {
     return [201, serializeReceipt(sanitized)]
   })
 
-  /** ✅ POST /updateReceipt - อัพเดททั้ง 2 storage */
-  mock.onPost('/updateReceipt').reply((config) => {
-    console.log('🔧 POST /updateReceipt called')
+/** ✅ POST /updateReceipt - อัพเดททั้ง 2 storage */
+mock.onPost('/updateReceipt').reply(async (config) => {
+  console.log('🔧 POST /updateReceipt called')
 
-    const { receipt } = JSON.parse(config.data || '{}')
-    if (!receipt) {
-      console.error('❌ No receipt in request body')
-      return [400, { message: 'receipt object is required' }]
+  const { receipt } = JSON.parse(config.data || '{}')
+  if (!receipt) {
+    console.error('❌ No receipt in request body')
+    return [400, { message: 'receipt object is required' }]
+  }
+
+  const oldDelNumber = receipt.id || receipt.delNumber
+  if (!oldDelNumber) {
+    console.error('❌ No delNumber in receipt')
+    return [400, { message: 'receipt.delNumber is required' }]
+  }
+
+  const db = loadReceipts().map(ensureReceiptFields)
+  const found = findReceiptByDelNumber(db, oldDelNumber)
+  
+  if (!found) {
+    console.error('❌ Receipt not found:', oldDelNumber)
+    return [404, { message: 'Receipt not found', delNumber: oldDelNumber }]
+  }
+
+  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ให้ตรวจสอบว่าเลขใหม่ซ้ำหรือไม่
+  const newDelNumber = receipt.delNumber
+  if (newDelNumber && newDelNumber !== oldDelNumber) {
+    const duplicate = db.find(r => r.delNumber === newDelNumber && r.delNumber !== oldDelNumber)
+    if (duplicate) {
+      return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', delNumber: newDelNumber }]
     }
+  }
 
-    if (!receipt.delNumber) {
-      console.error('❌ No delNumber in receipt')
-      return [400, { message: 'receipt.delNumber is required' }]
-    }
-
-    const db = loadReceipts().map(ensureReceiptFields)
-    const found = findReceiptByDelNumber(db, receipt.delNumber)
-    
-    if (!found) {
-      console.error('❌ Receipt not found:', receipt.delNumber)
-      return [404, { message: 'Receipt not found', delNumber: receipt.delNumber }]
-    }
-
-    const idx = db.indexOf(found)
-    const normalized = normalizeBoth(ensureReceiptFields(receipt))
-    const updated = sanitizeReceipt({
-      ...db[idx],
-      ...normalized,
-      delNumber: db[idx].delNumber,
-      id: db[idx].delNumber, // ✅ ให้ id = delNumber
-      updatedAt: new Date(),
-    })
-
-    // ✅ บันทึกไปทั้ง 2 storage
-    saveToBothStorages(updated)
-
-    db[idx] = updated
-
-    dispatchUpdateEvents({
-      action: 'bulk-update',
-      data: updated,
-      delNumber: updated.delNumber,
-      list: db,
-    })
-
-    console.log('✅ Bulk updated in both storages:', updated.delNumber)
-    return [200, { success: true, data: serializeReceipt(updated) }]
+  const idx = db.indexOf(found)
+  const normalized = normalizeBoth(ensureReceiptFields(receipt))
+  
+  const updated = sanitizeReceipt({
+    ...db[idx],
+    ...normalized,
+    delNumber: newDelNumber || db[idx].delNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    id: newDelNumber || db[idx].delNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    updatedAt: new Date(),
   })
 
-  /** ✅ PUT /updateReceipt/:delNumber - อัพเดททั้ง 2 storage */
-  mock.onPut(/\/updateReceipt\/(.+)$/).reply((config) => {
-    console.log('🔧 PUT /updateReceipt/:delNumber called')
+  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ต้องลบ record เก่าออกก่อน
+  if (newDelNumber && newDelNumber !== oldDelNumber) {
+    deleteFromBothStorages(oldDelNumber)
+  }
 
-    const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
-    const delNumber = matches ? decodeURIComponent(matches[1]) : ''
-    
-    if (!delNumber) {
-      console.error('❌ No delNumber in URL')
-      return [400, { message: 'delNumber is required' }]
-    }
+  // ✅ บันทึกด้วยเลขใหม่
+  saveToBothStorages(updated)
 
-    const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
+  db[idx] = updated
 
-    const db = loadReceipts().map(ensureReceiptFields)
-    const found = findReceiptByDelNumber(db, delNumber)
-    
-    if (!found) {
-      console.error('❌ Receipt not found:', delNumber)
-      return [404, { message: 'Receipt not found', delNumber }]
-    }
-
-    const idx = db.indexOf(found)
-    const normalized = normalizeBoth(incoming)
-    const updated = sanitizeReceipt({
-      ...db[idx],
-      ...normalized,
-      delNumber: db[idx].delNumber,
-      id: db[idx].delNumber, // ✅ ให้ id = delNumber
-      createdAt: db[idx].createdAt,
-      updatedAt: new Date(),
-    })
-
-    // ✅ บันทึกไปทั้ง 2 storage
-    saveToBothStorages(updated)
-
-    db[idx] = updated
-
-    dispatchUpdateEvents({
-      action: 'update',
-      data: updated,
-      delNumber: updated.delNumber,
-      list: db,
-    })
-
-    console.log('✅ Updated in both storages:', updated.delNumber)
-    return [200, serializeReceipt(updated)]
+  dispatchUpdateEvents({
+    action: 'bulk-update',
+    data: updated,
+    delNumber: updated.delNumber,
+    list: db,
   })
+
+  console.log('✅ Bulk updated in both storages:', updated.delNumber)
+  return [200, { success: true, data: serializeReceipt(updated) }]
+})
+
+/** ✅ PUT /updateReceipt/:delNumber - อัพเดททั้ง 2 storage */
+mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
+  console.log('🔧 PUT /updateReceipt/:delNumber called')
+
+  const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
+  const oldDelNumber = matches ? decodeURIComponent(matches[1]) : ''
+  
+  if (!oldDelNumber) {
+    console.error('❌ No delNumber in URL')
+    return [400, { message: 'delNumber is required' }]
+  }
+
+  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
+
+  const db = loadReceipts().map(ensureReceiptFields)
+  const found = findReceiptByDelNumber(db, oldDelNumber)
+  
+  if (!found) {
+    console.error('❌ Receipt not found:', oldDelNumber)
+    return [404, { message: 'Receipt not found', delNumber: oldDelNumber }]
+  }
+
+  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ให้ตรวจสอบว่าเลขใหม่ซ้ำหรือไม่
+  const newDelNumber = incoming.delNumber
+  if (newDelNumber && newDelNumber !== oldDelNumber) {
+    const duplicate = db.find(r => r.delNumber === newDelNumber && r.delNumber !== oldDelNumber)
+    if (duplicate) {
+      return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', delNumber: newDelNumber }]
+    }
+  }
+
+  const idx = db.indexOf(found)
+  const normalized = normalizeBoth(incoming)
+  
+  const updated = sanitizeReceipt({
+    ...db[idx],
+    ...normalized,
+    delNumber: newDelNumber || db[idx].delNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    id: newDelNumber || db[idx].delNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    createdAt: db[idx].createdAt,
+    updatedAt: new Date(),
+  })
+
+  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ต้องลบ record เก่าออกก่อน
+  if (newDelNumber && newDelNumber !== oldDelNumber) {
+    deleteFromBothStorages(oldDelNumber)
+  }
+
+  // ✅ บันทึกด้วยเลขใหม่
+  saveToBothStorages(updated)
+
+  db[idx] = updated
+
+  dispatchUpdateEvents({
+    action: 'update',
+    data: updated,
+    delNumber: updated.delNumber,
+    list: db,
+  })
+
+  console.log('✅ Updated in both storages:', updated.delNumber)
+  return [200, serializeReceipt(updated)]
+})
 
   /** ✅ DELETE /deleteReceipt/:id - ลบจากทั้ง 2 storage */
   mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {

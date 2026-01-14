@@ -95,14 +95,17 @@
                   <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
                 </div>
 
-                <!-- Amount -->
-                <div class="col-span-3 pr-4">
+  <!-- Amount -->
+<div class="col-span-3 pr-4">
   <div class="flex items-center justify-end gap-2">
     <span class="font-bold text-red-600 font-mono text-sm">
       {{ formatMoney(item.debtorAmount) }}
     </span>
     <input
       type="text"
+      v-model="item.paymentInput"
+      @input="(e) => handlePaymentInputChange(item, e)"
+      @blur="() => formatPaymentInput(item)"
       class="glass-input w-24 px-2 py-1 rounded-md text-xs text-right"
       placeholder="0.00"
     />
@@ -127,7 +130,20 @@
                 </div>
               </div>
             </div>
-
+           <div
+              class="rounded-xl p-6 shadow-lg mb-6"
+              style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);"
+            >
+              <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
+                <div class="flex items-center gap-3">
+                  <i class="ph-fill ph-coins text-3xl"></i>
+                  <span class="text-xl font-bold">ยอดที่ต้องชำระ</span>
+                </div>
+                <span class="text-3xl font-bold">
+                  {{ formatNumber(totalPaymentInput) }} บาท
+                </span>
+              </div>
+            </div>
             <!-- Payment Section -->
             <div class="glass-panel rounded-2xl p-6 shadow-lg">
               <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
@@ -135,104 +151,78 @@
               </h2>
 
               <!-- Payment Methods -->
-              <div class="space-y-4 mb-6">
-                <!-- ธ.กรุงไทย -->
-                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
-                  <div class="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      v-model="paymentMethods.krungthai.checked"
-                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                    />
-                    <div class="flex-1">
-                      <div class="font-medium text-slate-800">
-                        ธ.กรุงไทย สาขาพะเยา (มหาวิทยาลัยพะเยา)
-                      </div>
-                      <div class="text-sm text-slate-600">บช.ที่ 512-1-43488-6</div>
-                      <div class="mt-2 flex items-center gap-2">
-                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
-                        <input
-                          type="text"
-                          v-model="paymentMethods.krungthai.amount"
-                          @input="handleAmountInput('krungthai', $event)"
-                          @blur="formatAmountOnBlur('krungthai')"
-                          :disabled="!paymentMethods.krungthai.checked"
-                          placeholder="0.00"
-                          class="glass-input px-3 py-2 rounded-lg w-48 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                        <span class="text-sm text-slate-700">บาท</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div
+  v-for="(bank, index) in bankTransfers"
+  :key="bank.id"
+  class="bg-white/40 rounded-xl p-4 border border-white/50 transition-all"
+>
+  <div
+    class="grid grid-cols-[1.2fr_1.2fr_1fr_0.2fr] gap-3 items-start"
+  >
+    <!-- เลขบัญชี -->
+    <div class="flex flex-col gap-1.5">
+      <BankAccountSelect
+      placeholder="กรอกเลขบัญชี"
+        v-model="bank.accountData"
+        :input-id="`bank-account-${bank.id}`"
+        :error-message="errors.bankTransfers?.[index]?.accountNumber"
+        :bank-account-options="bankAccountOptions"
+        @change="() => clearBankError(index, 'accountNumber', errors)"
+      />
+    </div>
 
-                <!-- ธ.ไทยพาณิชย์ -->
-                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
-                  <div class="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      v-model="paymentMethods.scb.checked"
-                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                    />
-                    <div class="flex-1">
-                      <div class="font-medium text-slate-800">
-                        ธ.ไทยพาณิชย์ สาขามหาวิทยาลัยพะเยา
-                      </div>
-                      <div class="text-sm text-slate-600">บช.ที่ 891-2-00225-5</div>
-                      <div class="mt-2 flex items-center gap-2">
-                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
-                        <input
-                          type="text"
-                          v-model="paymentMethods.scb.amount"
-                          @input="handleAmountInput('scb', $event)"
-                          @blur="formatAmountOnBlur('scb')"
-                          :disabled="!paymentMethods.scb.checked"
-                          placeholder="0.00"
-                          class="glass-input px-3 py-2 rounded-lg w-48 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                        <span class="text-sm text-slate-700">บาท</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- อื่น ๆ -->
-                <div class="bg-white/40 rounded-xl p-4 border border-white/50">
-                  <div class="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      v-model="paymentMethods.other.checked"
-                      class="mt-1 w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                    />
-                    <div class="flex-1">
-                      <div class="flex items-center gap-2 mb-2">
-                        <span class="font-medium text-slate-800">อื่น ๆ</span>
-                        <input
-                          type="text"
-                          v-model="paymentMethods.other.name"
-                          :disabled="!paymentMethods.other.checked"
-                          placeholder="ระบุประเภท"
-                          class="glass-input px-3 py-2 rounded-lg w-64 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <span class="text-sm text-slate-700">จำนวนเงิน</span>
-                        <input
-                          type="text"
-                          v-model="paymentMethods.other.amount"
-                          @input="handleAmountInput('other', $event)"
-                          @blur="formatAmountOnBlur('other')"
-                          :disabled="!paymentMethods.other.checked"
-                          placeholder="0.00"
-                          class="glass-input px-3 py-2 rounded-lg w-48 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                        <span class="text-sm text-slate-700">บาท</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+    <!-- จำนวนเงิน -->
+    <div class="flex items-center gap-2 whitespace-nowrap ml-10 mt-3">
+      <span class="text-sm text-slate-700">จำนวนเงิน</span>
+      <InputText
+        :model-value="formatDisplayPaymentAmount(bank.amount)"
+        @input="(e) => handleBankAmountInput(index, e)"
+        @blur="() => formatBankAmountOnBlur(index)"
+        placeholder="0.00"
+        class="w-40"
+      />
+      <span class="text-sm text-slate-700">บาท</span>
+    </div>
 
-              </div>
+    <!-- ปุ่มลบ -->
+    <button
+      @click="removeBankTransfer(index)"
+      class="px-3 py-2 mt-5 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start"
+      title="ลบรายการ"
+    >
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+        />
+      </svg>
+    </button>
+  </div>
+</div>
 
+
+    <!-- ปุ่มเพิ่มรายการธนาคาร -->
+    <button
+      @click="addBankTransfer"
+      class="w-full border-2 border-dashed border-red-500 rounded-lg py-3 text-gray-600 hover:border-red-600 hover:text-red-600 hover:bg-red-50 transition-all flex items-center justify-center gap-2 font-medium"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 4v16m8-8H4"
+        />
+      </svg>
+      เพิ่มรายการธนาคาร
+    </button>
               <!-- Payment History -->
               <div v-if="paymentHistory.length > 0" class="space-y-3 mb-6">
                 <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b border-white/40 pb-3">
@@ -314,7 +304,7 @@
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
                   <div class="flex items-center gap-3">
                     <i class="ph-fill ph-wallet text-3xl"></i>
-                    <span class="text-xl font-bold">ยอดหนี้คงเหลือ</span>
+                    <span class="text-xl font-bold">ยอดรวมที่จะจ่าย</span>
                   </div>
                   <span class="text-3xl font-bold">
                     {{ formatNumber(remainingAmount) }} บาท
@@ -352,11 +342,41 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import sidebar from '@/components/bar/sidebar.vue'
-// Components (คุณต้องมี components เหล่านี้)
-// import sidebar from '@/components/bar/sidebar.vue'
+import BankAccountSelect from '@/components/TomSelect/BankAccountSelect.vue'
+import InputText from '@/components/input/inputtext.vue'
+import { useBankTransferManager } from '@/components/Function/FuncClear.js'
 
 const route = useRoute()
 const router = useRouter()
+
+// ✅ ใช้ Bank Transfer Manager
+const {
+  bankTransfers,
+  addBankTransfer,
+  removeBankTransfer,
+  handleBankAmountInput,
+  formatBankAmountOnBlur,
+  formatDisplayBankAmount,
+  totalBankAmount,
+  formattedTotalBankAmount,
+  getBankTransfersData,
+} = useBankTransferManager()
+
+// ✅ รายการธนาคารที่มีอยู่แล้ว (สำหรับ dropdown)
+const bankAccountOptions = ref([
+  {
+    accountNumber: '512-1-43488-6',
+    bankName: 'ธ.กรุงไทย',
+    accountName: 'มหาวิทยาลัยพะเยา สาขาพะเยา'
+  },
+  {
+    accountNumber: '891-2-00225-5',
+    bankName: 'ธ.ไทยพาณิชย์',
+    accountName: 'มหาวิทยาลัยพะเยา สาขามหาวิทยาลัย'
+  }
+])
+
+const errors = ref({ bankTransfers: {} })
 
 // State
 const receipts = ref([])
@@ -380,22 +400,7 @@ const totalPaid = computed(() =>
 )
 
 // คำนวณยอดที่กำลังจะชำระ (จากช่องกรอก)
-const currentPaymentAmount = computed(() => {
-  const methods = paymentMethods.value
-  let total = 0
-
-  Object.keys(methods).forEach(key => {
-    if (methods[key].checked && methods[key].amount) {
-      const cleanValue = methods[key].amount.toString().replace(/,/g, '')
-      const num = parseFloat(cleanValue)
-      if (!isNaN(num)) {
-        total += num
-      }
-    }
-  })
-
-  return total
-})
+const currentPaymentAmount = computed(() => totalBankAmount.value)
 
 // คำนวณยอดหนี้คงเหลือ (หักทั้งที่จ่ายแล้ว + กำลังจะจ่าย)
 const remainingAmount = computed(() =>
@@ -477,16 +482,17 @@ onMounted(() => {
           ? Number(item.debtorAmount)
           : Number(item.amount || 0)
 
-      return {
-        ...item,
-        debtorAmount,
-        amount: debtorAmount,
-        _originalReceipt: {
-          ...r,
-          projectCode: r.projectCode || r.receiptId,
-          createdAt: r.createdAt || new Date().toISOString()
-        }
-      }
+ return {
+  ...item,
+  debtorAmount,
+  amount: debtorAmount,
+  paymentInput: '', // เพิ่มบรรทัดนี้
+  _originalReceipt: {
+    ...r,
+    projectCode: r.projectCode || r.receiptId,
+    createdAt: r.createdAt || new Date().toISOString()
+  }
+}
     })
 )
 
@@ -591,15 +597,18 @@ function confirmPayment() {
 
   Swal.fire('สำเร็จ', 'บันทึกการชำระเงินแล้ว', 'success')
 }
+// ✅ Format สำหรับแสดงผล
 const formatDisplayPaymentAmount = (value) => {
-  if (!value) return ''
-  const num = parseFloat(String(value).replace(/,/g, ''))
-  return isNaN(num)
-    ? ''
-    : num.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
+  return formatDisplayBankAmount(value)
+}
+// ✅ Clear error
+const clearBankError = (index, field) => {
+  if (errors.value.bankTransfers?.[index]?.[field]) {
+    delete errors.value.bankTransfers[index][field]
+    if (Object.keys(errors.value.bankTransfers[index]).length === 0) {
+      delete errors.value.bankTransfers[index]
+    }
+  }
 }
 
 const handlePaymentAmountInput = (method, event) => {
@@ -629,6 +638,7 @@ async function clearAllDebts() {
         <div class="text-left space-y-2">
           <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold text-red-600">${formatNumber(totalDebt.value)} บาท</span></p>
           <p class="text-gray-700">ชำระแล้ว: <span class="font-bold text-green-600">${formatNumber(totalPaid.value)} บาท</span></p>
+          <p class="text-gray-700">กำลังจะชำระ: <span class="font-bold text-blue-600">${formatNumber(currentPaymentAmount.value)} บาท</span></p>
           <p class="text-gray-700">คงเหลือ: <span class="font-bold text-orange-600">${formatNumber(remainingAmount.value)} บาท</span></p>
         </div>
       `,
@@ -639,12 +649,13 @@ async function clearAllDebts() {
     return
   }
 
-  const result = await Swal.fire({
+const result = await Swal.fire({
     title: 'ยืนยันการล้างหนี้?',
     html: `
       <div class="text-left space-y-2">
         <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold">${formatNumber(totalDebt.value)} บาท</span></p>
         <p class="text-gray-700">จำนวนรายการ: <span class="font-bold">${allItems.value.length} รายการ</span></p>
+        <p class="text-gray-700">จำนวนธนาคาร: <span class="font-bold">${bankTransfers.length} รายการ</span></p>
       </div>
     `,
     icon: 'question',
@@ -659,7 +670,19 @@ async function clearAllDebts() {
 
   try {
     console.log('🧹 Starting debt clearing process (FLAG MODE)...')
+  // ✅ ดึงข้อมูลธนาคาร
+    const bankData = getBankTransfersData()
+    console.log('🏦 Bank transfers:', bankData)
 
+    // ✅ แปลงเป็น payments format
+    const newPayments = bankData.map(bank => ({
+      type: 'ฝากเข้าบัญชี',
+      bankName: bank.accountData.bankName,
+      accountName: bank.accountData.accountName,
+      accountNumber: bank.accountData.accountNumber,
+      amount: bank.amount
+    }))
+console.log('💰 New payments:', newPayments)
     // 1. สร้างประวัติ
     const historyRecord = {
       id: Date.now().toString(),
@@ -686,7 +709,7 @@ async function clearAllDebts() {
           referenceId: r.projectCode, // ✅ เพิ่มเพื่อใช้ในการค้นหา
         }))
       })),
-      payments: paymentHistory.value,
+      payments: [...paymentHistory.value, ...newPayments],
       fullName: receipts.value[0]?.fullName,
       phone: receipts.value[0]?.phone,
       department: receipts.value[0]?.department,
@@ -850,6 +873,45 @@ console.log('🔔 All update signals sent:', updateTime)
     })
   }
 }
+// Payment Amount Handlers
+// Payment Amount Handlers
+const handlePaymentInputChange = (item, event) => {
+  const value = event.target.value.replace(/[^0-9.]/g, '')
+  const parts = value.split('.')
+  if (parts.length > 2) return
+
+  item.paymentInput = value
+}
+
+const formatPaymentInput = (item) => {
+  const value = item.paymentInput
+  if (!value) {
+    item.paymentInput = ''
+    return
+  }
+
+  const cleanValue = String(value).replace(/,/g, '')
+  const numValue = parseFloat(cleanValue)
+
+  if (isNaN(numValue)) {
+    item.paymentInput = ''
+    return
+  }
+
+  item.paymentInput = numValue.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
+const totalPaymentInput = computed(() => {
+  return allItems.value.reduce((sum, item) => {
+    const value = item.paymentInput || '0'
+    const cleanValue = String(value).replace(/,/g, '')
+    const numValue = parseFloat(cleanValue) || 0
+    return sum + numValue
+  }, 0)
+})
 </script>
 
 <style scoped>

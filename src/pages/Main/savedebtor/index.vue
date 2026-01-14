@@ -126,15 +126,12 @@
                     </p>
                   </div>
 
-                  <!-- ✅ ยอดคงเหลือสุทธิ (col-span-3) -->
-                  <div class="col-span-3 text-right">
-                    <p
-                      class="text-base font-bold"
-                      :class="(item.debtorAmount - (item.depositNetAmount || 0)) >= 0 ? 'text-blue-600' : 'text-red-600'"
-                    >
-                      {{ formatCurrency(item.debtorAmount - (item.depositNetAmount || 0)) }}
-                    </p>
-                  </div>
+<!-- ✅ ยอดคงเหลือสุทธิ (col-span-3) -->
+<div class="col-span-3 text-right">
+  <p class="text-base font-bold text-red-600">
+    {{ formatCurrency(item.balanceAmount || 0) }}
+  </p>
+</div>
                 </div>
               </div>
             </div>
@@ -316,514 +313,287 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, onMounted, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import sidebar from '@/components/bar/sidebar.vue'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
+import { useSummaryStore } from '@/stores/summary'
+import { storeToRefs } from 'pinia'
 
-
+/* =========================
+ * Setup
+ * ========================= */
 setupAxiosMock()
-const route = useRoute()
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
-const viewPdf = (id: string) => {
-  router.push(`/pdfclear/${id}`)
-}
+/* =========================
+ * Summary Store
+ * ========================= */
+const summaryStore = useSummaryStore()
+const { ledger, totals } = storeToRefs(summaryStore)
 
+/* =========================
+ * State
+ * ========================= */
 const activeTab = ref<'new' | 'history'>('new')
-const searchText = ref('')
 const rawData = ref<any[]>([])
-const selectedMain = ref('')
-const selectedSub1 = ref('')
-const selectedSub2 = ref('')
 const selectedItems = ref<Set<string>>(new Set())
 const historyItems = ref<any[]>([])
-const isLoading = ref(false)
 const expandedHistory = ref<Set<string>>(new Set())
+const isLoading = ref(false)
 
-let storageWatcher: any = null
-const currentUpdateTime = ref('')
+/* =========================
+ * Utils
+ * ========================= */
+const formatCurrency = (amount: number | string) => {
+  const n =
+    typeof amount === 'string'
+      ? Number(amount.replace(/[^0-9.-]/g, ''))
+      : amount || 0
 
-const isReceivableItem = (itemName: string) => {
-  const receivableKeywords = [
-    'ลูกหนี้', 'ค่ารักษาพยาบาล', 'ค่าห้องพิเศษ', 'ค่ายา', 'ค่าตรวจวิเคราะห์',
-    'ค่าเอกซเรย์', 'ค่าบริการพยาบาล', 'ค่าตรวจสุขภาพ', 'ค่าดูแลผู้ป่วย',
-    'ค่ารักษาทันตกรรม', 'ค่าจัดฟัน', 'ค่าถอนฟัน', 'ค่าอุดฟัน', 'ค่าทำฟันปลอม',
-    'ค่าห้องพักผู้ป่วย', 'ค่าผ่าตัด', 'ค่าห้องฉุกเฉิน', 'ค่าเครื่องมือแพทย์',
-    'ค่าบริการทดสอบวัสดุ', 'ค่าบริการวิเคราะห์ดิน', 'ค่าบริการออกแบบ',
-    'ค่าบริการที่ปรึกษา', 'ค่าเช่าอุปกรณ์', 'ค่าตรวจวินิจฉัย',
-    'ค่าตรวจทางห้องปฏิบัติการ', 'ค่าบริการเวชกรรม', 'ค่าใช้ห้องผ่าตัด',
-    'ค่าบริการจัดยา', 'ค่าตรวจวิเคราะห์ยา', 'ค่าบริการเภสัชกรรม'
-  ]
-  return receivableKeywords.some(keyword => itemName?.includes(keyword))
-}
-
-const createStableId = (receipt, item, idx) => {
-  const dataString = `${receipt.id}-${receipt.projectCode}-${idx}-${item.itemName}-${item.debtorAmount || item.amount || item.subtotal || 0}`
-  const hash = dataString.split('').reduce((acc, char) => {
-    return ((acc << 5) - acc) + char.charCodeAt(0) | 0
-  }, 0)
-  return `${receipt.projectCode}-item-${idx}-${Math.abs(hash).toString(36)}`
-}
-
-const mapReceiptToDebtorItems = (receipt) => {
-  const items = []
-  let itemList = []
-
-  if (receipt.debtorList && Array.isArray(receipt.debtorList)) {
-    itemList = receipt.debtorList.map((debtor, idx) => {
-      const deposit = receipt.depositList?.[idx] || {}
-      return {
-        itemName: debtor.itemName,
-        note: debtor.debtornote || debtor.note || '',
-        debtorAmount: Number(debtor.amount || 0),
-        depositNetAmount: Number(deposit.netAmount || 0),
-        fee: Number(deposit.fee || 0),
-        isClearedDebt: debtor.isClearedDebt || false, // ✅ เอามาจาก debtor
-      }
-    })
-  } else if (receipt.receiptList && Array.isArray(receipt.receiptList)) {
-    itemList = receipt.receiptList.map((item) => ({
-      itemName: item.itemName || '-',
-      note: item.note || '',
-      debtorAmount: Number(item.amount || item.debtorAmount || item.subtotal || 0),
-      depositNetAmount: Number(item.depositNetAmount || 0),
-      fee: Number(item.fee || 0),
-      isClearedDebt: item.isClearedDebt || false, // ✅ เอามาจาก receiptList
-    }))
-  }
-
-  if (!Array.isArray(itemList) || itemList.length === 0) {
-    return items
-  }
-
-  itemList.forEach((item, idx) => {
-    const itemName = item.itemName || '-'
-    const debtAmount = Number(item.debtorAmount || 0)
-
-    // ✅ กรองเฉพาะรายการลูกหนี้ที่ยังไม่ล้าง (เพิ่มเงื่อนไข !item.isClearedDebt)
-    if (isReceivableItem(itemName) && !item.isClearedDebt) {
-      const uniqueId = createStableId(receipt, item, idx)
-
-      items.push({
-        id: uniqueId,
-        receiptId: receipt.projectCode,
-        itemName: itemName,
-        note: item.note || '',
-        debtorAmount: debtAmount,
-        depositNetAmount: Number(item.depositNetAmount || 0),
-        fee: Number(item.fee || 0),
-        department: receipt.mainAffiliationName || receipt.affiliationName || 'ไม่ระบุ',
-        subDepartment: receipt.subAffiliationName1 || '-',
-        fundName: receipt.fundName || '-',
-        responsible: receipt.fullName || '-',
-        phone: receipt.phone || '-',
-        status: 'pending',
-        isClearedDebt: item.isClearedDebt || false, // ✅ เก็บ flag ไว้ใช้ต่อ
-        _originalReceipt: receipt,
-        _originalItem: item,
-        _originalIndex: idx,
-      })
-    }
+  return n.toLocaleString('th-TH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   })
-
-  return items
 }
+
 
 const loadReceiptData = async () => {
-  console.log('📥 Loading receipt data...')
+  console.log('📥 Load debtor from Summary Store')
+  console.log('🔑 Auth status:', {
+    isLoggedIn: auth.isLoggedIn,
+    role: auth.role,
+    affiliationId: auth.user?.affiliationId
+  })
+
   isLoading.value = true
 
   try {
     if (!auth.isLoggedIn) {
+      console.warn('⚠️ User not logged in')
       rawData.value = []
       return
     }
 
+    // 1️⃣ โหลด receipt จาก main storage
     const res = await axios.get('/getReceipt')
     const allReceipts = res.data || []
 
-    if (!Array.isArray(allReceipts)) {
-      console.log('⚠️ Invalid data format')
-      rawData.value = []
-      return
+    console.log('📦 All receipts loaded:', allReceipts.length)
+    console.log('📄 First receipt:', allReceipts[0])
+
+    // ✅ Debug: ดูรายการใน receiptList
+    allReceipts.forEach((r: any, i: number) => {
+      console.log(`Receipt ${i + 1} [${r.delNumber}]:`, {
+        receiptListCount: r.receiptList?.length || 0,
+        items: r.receiptList?.map((item: any) => ({
+          name: item.itemName,
+          amount: item.amount,
+          type: item.type // morelist type (ไม่ใช้)
+        }))
+      })
+    })
+
+    // 2️⃣ ป้อนเข้า Summary Store (จะคำนวณ pendingDebts อัตโนมัติ)
+    summaryStore.ingestMany(allReceipts)
+    console.log('📊 Summary updated')
+
+    // ✅ Debug: ดู ledger entries
+    console.log('📋 Ledger entries:', summaryStore.ledger.length)
+    console.log('📋 Sample ledger entries:', summaryStore.ledger.slice(0, 5))
+
+    // 3️⃣ ดึงลูกหนี้คงค้างจาก pendingDebts getter
+    let pendingItems = summaryStore.pendingDebts
+
+    console.log('💰 Pending debts from getter:', pendingItems.length)
+    console.log('💰 Sample pending debt:', pendingItems[0])
+
+    // 4️⃣ จำกัดสิทธิ์ user - ใช้ affiliationId เปรียบเทียบ
+    if (auth.role === 'user') {
+      const userAffiliationId = auth.user?.affiliationId
+
+      console.log(`👤 User role detected`)
+      console.log(`👤 User affiliationId: ${userAffiliationId}`)
+      console.log(`👤 Pending items before filter:`, pendingItems.map(item => ({
+        id: item.id,
+        department: item.department,
+        affiliationId: item.affiliationId
+      })))
+
+      if (userAffiliationId) {
+        pendingItems = pendingItems.filter(
+          (item) => item.affiliationId === userAffiliationId
+        )
+        console.log(`👤 After filter: ${pendingItems.length} items`)
+      } else {
+        console.warn(`⚠️ No affiliationId found for user - showing all items`)
+      }
     }
 
-    const scopedReceipts =
-      auth.role === 'user'
-        ? allReceipts.filter((r: any) => {
-            const rid = r.affiliationId || r.mainAffiliationId || r.mainAffiliationCode || r._affiliationId || null
-            if (!rid) return false
-            return rid === auth.affiliationId
-          })
-        : allReceipts
+    // 5️⃣ เก็บลง rawData
+    rawData.value = pendingItems
 
-    const debtorReceipts = scopedReceipts.filter((r: any) =>
-      r.moneyTypeNote === 'Debtor' ||
-      (r.moneyTypeNote === 'Waybill' &&
-        ((Array.isArray(r.debtorList) && r.debtorList.length >= 0) ||
-          (Array.isArray(r.receiptList) && r.receiptList.length > 0)))
-    )
-
-    console.log('📊 Total debtor receipts:', debtorReceipts.length)
-
-    const allDebtorItems = debtorReceipts.flatMap(mapReceiptToDebtorItems)
-
-    // ✅ เพิ่ม debug
-    const clearedItems = allDebtorItems.filter(item => item.isClearedDebt)
-    const pendingItems = allDebtorItems.filter(item => !item.isClearedDebt)
-
-    console.log('🏷️ Cleared items:', clearedItems.length)
-    console.log('⏳ Pending items:', pendingItems.length)
-
-    rawData.value = pendingItems // ✅ เก็บเฉพาะรายการที่ยังไม่ล้าง
-
-    console.log('✅ Loaded', pendingItems.length, 'pending debtor items')
-  } catch (error) {
-    console.error('❌ Load error:', error)
+    console.log('✅ Loaded pending debts:', rawData.value.length)
+    console.log('📊 Totals:', totals.value)
+    console.log('📊 Final rawData:', rawData.value)
+  } catch (err) {
+    console.error('❌ Load error:', err)
     rawData.value = []
   } finally {
     isLoading.value = false
   }
 }
-
+/* =========================
+ * History
+ * ========================= */
 const loadHistory = () => {
-  console.log('📜 Loading history...')
   try {
     const stored = localStorage.getItem('debtorClearHistory')
-
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      historyItems.value = parsed
-      console.log('✅ Loaded history:', parsed.length, 'items')
-    } else {
-      historyItems.value = []
-      console.log('📭 No history found')
-    }
-  } catch (error) {
-    console.error('❌ History load error:', error)
+    historyItems.value = stored ? JSON.parse(stored) : []
+  } catch {
     historyItems.value = []
   }
 }
 
-const filteredItems = computed(() => {
-  let filtered = [...rawData.value]
+/* =========================
+ * Computed
+ * ========================= */
+const filteredItems = computed(() => rawData.value)
 
-  if (searchText.value.trim()) {
-    const search = searchText.value.toLowerCase()
-    filtered = filtered.filter((item) => {
-      return (
-        item.itemName?.toLowerCase().includes(search) ||
-        item.note?.toLowerCase().includes(search) ||
-        item.department?.toLowerCase().includes(search) ||
-        item.subDepartment?.toLowerCase().includes(search)
-      )
-    })
-  }
-
-  if (selectedMain.value) filtered = filtered.filter((item) => item.department === selectedMain.value)
-  if (selectedSub1.value) filtered = filtered.filter((item) => item.subDepartment === selectedSub1.value)
-  if (selectedSub2.value) {
-    filtered = filtered.filter((item) => item._originalReceipt?.subAffiliationName2 === selectedSub2.value)
-  }
-
-  return filtered
-})
-
-const selectedTotal = computed(() => {
-  const selectedIds = Array.from(selectedItems.value)
-  return rawData.value
-    .filter((item) => selectedIds.includes(item.id))
-    .reduce((sum, item) => sum + Number(item.debtorAmount || 0), 0)
-})
-
-const formatCurrency = (amount: number | string) => {
-  const n = typeof amount === 'string' ? Number(amount.toString().replace(/[^0-9.-]/g, '')) : (amount as number) || 0
-  return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-const handleFocus = () => {
-  console.log('window focused')
-}
-
+const selectedTotal = computed(() =>
+  rawData.value
+    .filter((i) => selectedItems.value.has(i.id))
+    .reduce((sum, i) => sum + Number(i.balanceAmount || 0), 0)
+)
 const clearSelectedDebtors = async () => {
   if (selectedItems.value.size === 0) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'กรุณาเลือกรายการ',
-      text: 'โปรดเลือกรายการลูกหนี้ที่ต้องการล้างอย่างน้อย 1 รายการ',
-      confirmButtonColor: '#7E22CE'
-    })
+    alert('กรุณาเลือกรายการที่ต้องการล้างลูกหนี้')
     return
   }
 
-  const selectedIds = Array.from(selectedItems.value)
-  const selectedList = rawData.value.filter((item) => selectedIds.includes(item.id))
+  console.log('🧹 Starting debt clearing...')
+  console.log('📊 Selected items:', selectedItems.value.size)
 
-  console.log('📋 Selected items:', selectedList.length)
-  console.log('🔍 Selected items detail:', selectedList.map(i => i.itemName))
+  const selectedItemsList = rawData.value.filter(i => selectedItems.value.has(i.id))
+  console.log('📋 Selected debts:', selectedItemsList)
 
-  if (selectedList.length === 0) return
+  // ✅ จัดกลุ่มตาม receiptId/projectCode
+  const groupedByReceipt = selectedItemsList.reduce((acc, item) => {
+    // หา receiptId จาก _originalReceipt หรือใช้ item.receiptId
+    const receiptId = item._originalReceipt?.projectCode || item.receiptId || 'UNKNOWN'
 
-  // ✅ ทำเครื่องหมาย isClearedDebt = true
-  const receiptSet = new Set()
-  selectedList.forEach(item => {
-    if (item._originalItem) {
-      console.log(`🏷️ Marking: ${item.itemName} as cleared (isClearedDebt=true)`)
-      item._originalItem.isClearedDebt = true
-      receiptSet.add(item._originalReceipt)
+    if (!acc[receiptId]) {
+      acc[receiptId] = []
     }
-  })
-
-  console.log(`📦 Receipts to update: ${receiptSet.size}`)
-
-  // ✅ อัพเดท receipt ที่มีการเปลี่ยนแปลง
-  let updateCount = 0
-  for (const receipt of receiptSet) {
-    console.log(`🔄 Updating receipt: ${receipt.projectCode}`)
-
-    try {
-      const response = await axios.post('/updateReceipt', { receipt })
-      console.log(`✅ Updated successfully:`, response.data)
-      updateCount++
-    } catch (error) {
-      console.error(`❌ Update failed:`, error)
-    }
-  }
-
-  console.log(`✅ Updated ${updateCount} receipts`)
-
-  // ✅ ส่งสัญญาณอัพเดต
-  const updateTime = Date.now().toString()
-  localStorage.setItem('receipts_last_update', updateTime)
-
-  window.dispatchEvent(new CustomEvent('receipts-updated', {
-    detail: {
-      reason: 'clear-debtor',
-      timestamp: updateTime,
-      updatedCount: updateCount
-    }
-  }))
-
-  console.log('🔔 Update signal sent:', updateTime)
-
-  // ✅ สร้าง summary สำหรับหน้าถัดไป
-  const groupedByReceipt = selectedList.reduce((acc, item) => {
-    if (!acc[item.receiptId]) acc[item.receiptId] = []
-    acc[item.receiptId].push(item)
+    acc[receiptId].push(item)
     return acc
-  }, {} as Record<string, any[]>)
+  }, {})
 
-  const receipts = Object.keys(groupedByReceipt).map((receiptId) => {
-    const itemsInReceipt = groupedByReceipt[receiptId]
-    const firstItem = itemsInReceipt[0]
-    const originalReceipt = firstItem._originalReceipt
+  console.log('📦 Grouped by receipt:', Object.keys(groupedByReceipt).length)
 
-    const items = itemsInReceipt.map((item) => {
-      const debtAmount = Number(item.debtorAmount || 0)
-      return {
-        id: item.id,
-        itemName: item.itemName,
-        note: item.note,
-        amount: debtAmount,
-        debtorAmount: debtAmount,
-        depositNetAmount: Number(item.depositNetAmount || 0),
-        fee: Number(item.fee || 0),
-        responsible: item.responsible || originalReceipt?.fullName || 'ไม่ระบุ',
-      }
-    })
+  // ✅ สร้าง receipts array สำหรับส่งต่อ
+  const receipts = Object.keys(groupedByReceipt).map(receiptId => {
+    const items = groupedByReceipt[receiptId]
+    const firstItem = items[0]
+    const originalReceipt = firstItem._originalReceipt || {}
 
-    const totalDebtorAmount = items.reduce((sum, i) => sum + Number(i.debtorAmount || 0), 0)
-    const totalPaidAmount = items.reduce((sum, i) => sum + Number(i.depositNetAmount || 0), 0)
+    // คำนวณยอดรวม
+    const totalDebtorAmount = items.reduce((sum, i) => sum + Number(i.balanceAmount || i.debtorAmount || 0), 0)
 
     return {
-      receiptId,
-      items,
-      totalDebtorAmount,
-      totalPaidAmount,
-      fullName: originalReceipt?.fullName || 'ไม่ระบุ',
-      phone: originalReceipt?.phone || '-',
-      department: firstItem.department || originalReceipt?.mainAffiliationName || 'ไม่ระบุ',
-      subDepartment: firstItem.subDepartment || originalReceipt?.subAffiliationName1 || '-',
-      fundName: originalReceipt?.fundName || '-',
+      receiptId: receiptId,
       projectCode: receiptId,
-      sendmoney: originalReceipt?.sendmoney || '-',
-      mainAffiliationName: originalReceipt?.mainAffiliationName || firstItem.department || 'ไม่ระบุ',
-      subAffiliationName1: originalReceipt?.subAffiliationName1 || firstItem.subDepartment || '-',
-      subAffiliationName2: originalReceipt?.subAffiliationName2 || '',
-      createdAt: originalReceipt?.createdAt || new Date().toISOString(),
-      updatedAt: originalReceipt?.updatedAt || new Date().toISOString(),
+      fullName: originalReceipt.fullName || firstItem.responsible || 'ไม่ระบุ',
+      phone: originalReceipt.phone || '-',
+      department: firstItem.department || originalReceipt.mainAffiliationName || 'ไม่ระบุ',
+      subDepartment: firstItem.subDepartment || originalReceipt.subAffiliationName1 || '-',
+      mainAffiliationName: originalReceipt.mainAffiliationName || firstItem.department || 'ไม่ระบุ',
+      subAffiliationName1: originalReceipt.subAffiliationName1 || firstItem.subDepartment || '-',
+      fundName: originalReceipt.fundName || '-',
+      sendmoney: originalReceipt.sendmoney || '-',
+      items: items.map(item => ({
+        id: item.id,
+        itemName: item.itemName,
+        debtorAmount: Number(item.balanceAmount || item.debtorAmount || 0),
+        amount: Number(item.balanceAmount || item.debtorAmount || 0),
+        note: item.note || '',
+        responsible: item.responsible || originalReceipt.fullName || '-',
+        isClearedDebt: false,
+        _originalReceipt: originalReceipt
+      })),
+      totalDebtorAmount: totalDebtorAmount,
+      createdAt: originalReceipt.createdAt || new Date().toISOString()
     }
   })
 
+  // ✅ สร้าง summary object
   const summary = {
-    receipts,
-    totalDebtorAmount: receipts.reduce((sum, r) => sum + Number(r.totalDebtorAmount || 0), 0),
-    totalPaidAmount: receipts.reduce((sum, r) => sum + Number(r.totalPaidAmount || 0), 0),
-    totalItems: selectedList.length,
+    receipts: receipts,
+    totalDebtorAmount: receipts.reduce((sum, r) => sum + r.totalDebtorAmount, 0),
+    totalPaidAmount: 0,
+    totalItems: selectedItemsList.length
   }
 
+  console.log('💾 Summary to save:', summary)
+  console.log('📊 Total amount:', formatCurrency(summary.totalDebtorAmount))
+
+  // ✅ บันทึกลง localStorage
   localStorage.setItem('clearDebtorSummary', JSON.stringify(summary))
+  console.log('✅ Summary saved to localStorage')
 
-  console.log('💾 Summary saved:', summary)
+  // ✅ นำทางไปหน้า cleardebtor/multi
   console.log('🚀 Navigating to /cleardebtor/multi')
-
-  router.push(`/cleardebtor/multi`)
+  router.push('/cleardebtor/multi')
 }
-
+/* =========================
+ * Actions
+ * ========================= */
 const toggleSelectItem = (id: string) => {
-  if (selectedItems.value.has(id)) selectedItems.value.delete(id)
-  else selectedItems.value.add(id)
+  selectedItems.value.has(id)
+    ? selectedItems.value.delete(id)
+    : selectedItems.value.add(id)
 }
 
 const toggleHistoryDetail = (id: string) => {
-  if (expandedHistory.value.has(id)) expandedHistory.value.delete(id)
-  else expandedHistory.value.add(id)
+  expandedHistory.value.has(id)
+    ? expandedHistory.value.delete(id)
+    : expandedHistory.value.add(id)
 }
 
-const handleReceiptsUpdate = async (event?: CustomEvent) => {
-  console.log('🔔 ========== RECEIPTS UPDATE EVENT ==========')
-  console.log('📢 Event detail:', event?.detail)
-  console.log('⏰ Current time:', currentUpdateTime.value)
-  console.log('⏰ New time:', localStorage.getItem('receipts_last_update'))
-
-  // ✅ ล้าง cache
-  const beforeClear = selectedItems.value.size
-  selectedItems.value.clear()
-  console.log(`🧹 Cleared ${beforeClear} selected items`)
-
-  await nextTick()
-
-  console.log('🔄 Reloading receipt data...')
-  const beforeCount = rawData.value.length
-
-  await loadReceiptData()
-
-  const afterCount = rawData.value.length
-  console.log(`📊 Before: ${beforeCount} items, After: ${afterCount} items`)
-
-  loadHistory()
-
-  console.log('✅ ========== RELOAD COMPLETE ==========\n')
+const viewPdf = (id: string) => {
+  router.push(`/pdfclear/${id}`)
 }
 
-// ✅ เพิ่ม watcher สำหรับ route
-watch(() => route.path, async (newPath) => {
-  if (newPath === '/indexsavedebtor') {
-    console.log('🔄 ========== ROUTE CHANGED ==========')
-    console.log('🔄 Returned to indexsavedebtor')
-
-    // ✅ ล้าง cache ก่อน
-    selectedItems.value.clear()
-    const beforeCount = rawData.value.length
-    rawData.value = []
-
-    await nextTick()
-
-    console.log('🔄 Force reloading...')
-    await loadReceiptData()
-
-    const afterCount = rawData.value.length
-    console.log(`📊 Before: ${beforeCount} items, After: ${afterCount} items`)
-
-    loadHistory()
-
-    console.log('✅ ========== ROUTE RELOAD COMPLETE ==========\n')
-  }
-})
-
-// ✅ เพิ่ม watcher สำหรับ route
-watch(() => route.path, async (newPath) => {
-  if (newPath === '/indexsavedebtor') {
-    console.log('🔄 Returned to indexsavedebtor, force reloading...')
-
-    // ✅ ล้าง cache ก่อน
-    selectedItems.value.clear()
-    rawData.value = []
-
-    await nextTick()
-    await loadReceiptData()
-    loadHistory()
-  }
-})
-
-watch(activeTab, async (newTab) => {
-  console.log('📑 Tab changed:', newTab)
-  await nextTick()
-
-  if (newTab === 'new') {
-    await loadReceiptData()
-  } else if (newTab === 'history') {
-    loadHistory()
-  }
-})
-
+/* =========================
+ * Lifecycle
+ * ========================= */
 onMounted(async () => {
-  console.log('🚀 Component mounted')
-
   await loadReceiptData()
   loadHistory()
-
-  currentUpdateTime.value = localStorage.getItem('receipts_last_update') || Date.now().toString()
-
-  window.addEventListener('focus', handleFocus)
-  window.addEventListener('receipts-updated', handleReceiptsUpdate as EventListener)
-
-  // ✅ เพิ่มการฟัง storage event
-  window.addEventListener('storage', async (e) => {
-    if (e.key === 'fakeApi.receipts' || e.key === 'receipts_last_update') {
-      console.log('💾 Storage changed:', e.key)
-      await loadReceiptData()
-      loadHistory()
-    }
-  })
-
-  storageWatcher = setInterval(async () => {
-    const lastUpdate = localStorage.getItem('receipts_last_update')
-
-    if (lastUpdate && lastUpdate !== currentUpdateTime.value) {
-      console.log('🔄 Timestamp changed (fallback)')
-      console.log('   Old:', currentUpdateTime.value)
-      console.log('   New:', lastUpdate)
-
-      currentUpdateTime.value = lastUpdate
-      await loadReceiptData()
-      loadHistory()
-    }
-  }, 1000)
 })
 
-onBeforeUnmount(() => {
-  console.log('👋 Component unmounting')
-
-  window.removeEventListener('focus', handleFocus)
-  // ✅ แก้ไขตรงนี้ด้วย
-  window.removeEventListener('receipts-updated', handleReceiptsUpdate as EventListener)
-
-  if (storageWatcher) {
-    clearInterval(storageWatcher)
-  }
-
-  console.log('✅ Cleanup complete')
+watch(activeTab, async (tab) => {
+  if (tab === 'new') await loadReceiptData()
+  if (tab === 'history') loadHistory()
 })
 
+/* =========================
+ * Debug
+ * ========================= */
 if (typeof window !== 'undefined') {
-  (window as any).debugSaveDebtor = {
-    loadReceiptData,
-    loadHistory,
+  ;(window as any).debugClearDebtor = {
+    ledger,
     rawData,
-    currentUpdateTime,
-    selectedItems,
-    expandedHistory
+    totals,
+    loadReceiptData,
   }
-
-  console.log('🔧 Debug tools available: window.debugSaveDebtor')
 }
-
 </script>
+
 
 <style scoped>
 body {

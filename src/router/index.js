@@ -42,7 +42,7 @@ const routes = [
   { path: '/pdfpage/:id?', name: 'pdfpage', component: pdfpage },
   { path: '/pdfDebtor/:id?', name: 'pdfDebtor', component: pdfDebtor },
   { path: '/indexsavedebtor', name: 'indexsavedebtor', component: indexsavedebtor },
-  { path: '/cleardebtor/:id', name: 'cleardebtor', component: ClearDebtor },
+  { path: '/cleardebtor/multi', name: 'cleardebtor-multi', component: ClearDebtor },
   { path: '/indexwaybilldebtor', name: 'indexwaybilldebtor', component: indexwaybilldebtor },
   { path: '/daily_closing', name: 'daily_closing', component: daily_closing },
 { path: '/daily_report/:dateKey', name: 'daily_report', component: Daily_Report },

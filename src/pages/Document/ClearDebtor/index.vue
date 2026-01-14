@@ -297,6 +297,7 @@
               </div>
 
               <!-- Remaining Debt -->
+          <!-- Remaining Debt -->
               <div
                 class="rounded-xl p-6 shadow-lg mb-4"
                 style="background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);"
@@ -307,7 +308,7 @@
                     <span class="text-xl font-bold">ยอดรวมที่จะจ่าย</span>
                   </div>
                   <span class="text-3xl font-bold">
-                    {{ formatNumber(remainingAmount) }} บาท
+                    {{ formatNumber(totalBankAmount) }} บาท
                   </span>
                 </div>
               </div>
@@ -631,33 +632,75 @@ const formatPaymentAmountOnBlur = (method) => {
 }
 
 async function clearAllDebts() {
-  if (remainingAmount.value > 0) {
+  // ✅ คำนวณยอดรวมที่จะจ่าย (ยอดที่ต้องชำระ + ยอดรวมที่จะจ่าย)
+  const totalPaymentInputValue = totalPaymentInput.value
+  const totalBankValue = totalBankAmount.value
+  const combinedPayment = totalPaymentInputValue + totalBankValue
+
+  // ✅ ตรวจสอบว่ายอด 2 ช่องเท่ากันหรือไม่
+  const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
+
+  if (paymentDifference > 0.01) {
     await Swal.fire({
-      title: 'ยังชำระเงินไม่ครบ',
+      icon: 'error',
+      title: 'ยอดไม่ตรงกัน',
       html: `
         <div class="text-left space-y-2">
-          <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold text-red-600">${formatNumber(totalDebt.value)} บาท</span></p>
-          <p class="text-gray-700">ชำระแล้ว: <span class="font-bold text-green-600">${formatNumber(totalPaid.value)} บาท</span></p>
-          <p class="text-gray-700">กำลังจะชำระ: <span class="font-bold text-blue-600">${formatNumber(currentPaymentAmount.value)} บาท</span></p>
-          <p class="text-gray-700">คงเหลือ: <span class="font-bold text-orange-600">${formatNumber(remainingAmount.value)} บาท</span></p>
+          <p class="text-gray-700 mb-2">ยอดที่กรอกใน 2 ช่องต้องเท่ากัน</p>
+          <hr class="my-3">
+          <p class="text-gray-700">
+            <span class="font-bold text-blue-600">• ยอดที่ต้องชำระ (textbox):</span>
+            <span class="float-right">${formatNumber(totalPaymentInputValue)} บาท</span>
+          </p>
+          <p class="text-gray-700">
+            <span class="font-bold text-purple-600">• ยอดรวมที่จะจ่าย (ธนาคาร):</span>
+            <span class="float-right">${formatNumber(totalBankValue)} บาท</span>
+          </p>
+          <hr class="my-3">
+          <p class="text-gray-700">
+            <span class="font-bold text-red-600">✗ ส่วนต่าง:</span>
+            <span class="float-right font-bold">${formatNumber(paymentDifference)} บาท</span>
+          </p>
+          <p class="text-sm text-gray-500 mt-2">กรุณากรอกจำนวนเงินให้เท่ากันในทั้ง 2 ส่วน</p>
         </div>
       `,
-      icon: 'warning',
       confirmButtonText: 'รับทราบ',
-      confirmButtonColor: '#7E22CE'
+      confirmButtonColor: '#DC2626',
+      width: '500px',
     })
     return
   }
 
-const result = await Swal.fire({
-    title: 'ยืนยันการล้างหนี้?',
-    html: `
+  // ✅ คำนวณส่วนต่างกับยอดหนี้ทั้งหมด
+  const debtDifference = totalDebt.value - totalPaymentInputValue
+
+  // ✅ แสดงข้อความยืนยัน พร้อมส่วนต่าง (ถ้ามี)
+  const confirmMessage = debtDifference > 0.01
+    ? `
+      <div class="text-left space-y-2">
+        <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold text-red-600">${formatNumber(totalDebt.value)} บาท</span></p>
+        <p class="text-gray-700">ยอดที่จะชำระ: <span class="font-bold text-green-600">${formatNumber(totalPaymentInputValue)} บาท</span></p>
+        <hr class="my-2">
+        <p class="text-gray-700">
+          <span class="font-bold text-orange-600">⚠️ ยอดคงเหลือ (ส่วนต่าง):</span>
+          <span class="float-right font-bold text-orange-600">${formatNumber(debtDifference)} บาท</span>
+        </p>
+        <hr class="my-2">
+        <p class="text-gray-700">จำนวนรายการ: <span class="font-bold">${allItems.value.length} รายการ</span></p>
+        <p class="text-gray-700">จำนวนธนาคาร: <span class="font-bold">${bankTransfers.length} รายการ</span></p>
+      </div>
+    `
+    : `
       <div class="text-left space-y-2">
         <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold">${formatNumber(totalDebt.value)} บาท</span></p>
         <p class="text-gray-700">จำนวนรายการ: <span class="font-bold">${allItems.value.length} รายการ</span></p>
         <p class="text-gray-700">จำนวนธนาคาร: <span class="font-bold">${bankTransfers.length} รายการ</span></p>
       </div>
-    `,
+    `
+
+  const result = await Swal.fire({
+    title: 'ยืนยันการล้างหนี้?',
+    html: confirmMessage,
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'ยืนยัน',

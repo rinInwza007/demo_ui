@@ -24,7 +24,6 @@ export type LedgerEntry = {
   sub1: string
   sub2: string
 
-  // ✅ เพิ่ม affiliationId
   affiliationId: string
 
   fundName: string
@@ -32,6 +31,9 @@ export type LedgerEntry = {
 
   createdAt: string
   updatedAt: string
+
+  // ✅ เพิ่ม flag สำหรับตรวจสอบว่าล้างแล้วหรือยัง
+  isClearedDebt?: boolean
 }
 
 export type UnitAgg = {
@@ -108,7 +110,7 @@ const getAffiliationId = (mainAffiliationName: string): string => {
 }
 
 /* =========================
- * CORE: Receipt → Ledger
+ * ✅ CORE: Receipt → Ledger (ใช้ receiptList เท่านั้น)
  * ========================= */
 const receiptToLedgers = (r: Receipt): LedgerEntry[] => {
   const entries: LedgerEntry[] = []
@@ -124,13 +126,13 @@ const receiptToLedgers = (r: Receipt): LedgerEntry[] => {
   const sub2 = safeStr((r as any).subAffiliationName2 || '')
   const unitKey = makeUnitKey(faculty, sub1, sub2)
 
-  // ✅ แปลงชื่อเป็น affiliationId
   const affiliationId = getAffiliationId(faculty)
 
   const createdAt = safeStr((r as any).createdAt || new Date().toISOString())
   const updatedAt = safeStr((r as any).updatedAt || createdAt)
   const fullName = safeStr((r as any).fullName || '')
 
+  // ✅ ใช้เฉพาะ receiptList
   if (!Array.isArray(r.receiptList)) {
     console.warn(`⚠️ No receiptList in ${delNumber}`)
     return entries
@@ -139,12 +141,18 @@ const receiptToLedgers = (r: Receipt): LedgerEntry[] => {
   console.log(`🔍 Processing receipt ${delNumber}`)
   console.log(`   🏢 Faculty: ${faculty} → AffiliationId: ${affiliationId}`)
 
+  // ✅ วนลูปเฉพาะ receiptList
   r.receiptList.forEach((item: any, i: number) => {
     const amount = toNum(item.amount)
     if (!amount) return
 
     const itemName = safeStr(item.itemName)
     const actualType = getItemType(itemName)
+
+    // ✅ ดึง flag isClearedDebt จาก item ใน receiptList
+    const isClearedDebt = item.isClearedDebt === true
+
+    console.log(`   📋 Item ${i}: ${itemName} | Type: ${actualType} | Cleared: ${isClearedDebt}`)
 
     if (actualType === 'receivable') {
       entries.push({
@@ -158,11 +166,12 @@ const receiptToLedgers = (r: Receipt): LedgerEntry[] => {
         faculty,
         sub1,
         sub2,
-        affiliationId,  // ✅ เพิ่ม
+        affiliationId,
         fundName: itemName,
         fullName,
         createdAt,
         updatedAt,
+        isClearedDebt, // ✅ เพิ่ม flag
       })
     } else if (actualType === 'clear') {
       entries.push({
@@ -176,11 +185,12 @@ const receiptToLedgers = (r: Receipt): LedgerEntry[] => {
         faculty,
         sub1,
         sub2,
-        affiliationId,  // ✅ เพิ่ม
+        affiliationId,
         fundName: itemName,
         fullName,
         createdAt,
         updatedAt,
+        isClearedDebt, // ✅ เพิ่ม flag
       })
     }
   })
@@ -203,15 +213,23 @@ export const useSummaryStore = defineStore('Summary', {
     ledger: (s) => Object.values(s.ledgerByDoc),
     units: (s) => Object.values(s.unitsByKey),
 
+    // ✅ FIXED: เพิ่มการกรอง isClearedDebt
     pendingDebts: (s) => {
       const balanceMap = new Map<string, {
         debtAmount: number
         clearedAmount: number
         balance: number
         entry: LedgerEntry
+        isClearedDebt: boolean
       }>()
 
       for (const e of Object.values(s.ledgerByDoc)) {
+        // ✅ ข้ามรายการที่ล้างแล้ว
+        if (e.isClearedDebt === true) {
+          console.log(`⏭️ Skipping cleared debt: ${e.fundName} in ${e.delNumber}`)
+          continue
+        }
+
         if (e.direction === 'DEBT_NEW' || e.direction === 'DEBT_CLEAR') {
           const key = `${e.delNumber}|${e.fundName}`
 
@@ -219,7 +237,8 @@ export const useSummaryStore = defineStore('Summary', {
             debtAmount: 0,
             clearedAmount: 0,
             balance: 0,
-            entry: e
+            entry: e,
+            isClearedDebt: false,
           }
 
           if (e.direction === 'DEBT_NEW') {
@@ -238,8 +257,9 @@ export const useSummaryStore = defineStore('Summary', {
         }
       }
 
+      // ✅ กรองเฉพาะรายการที่มี balance < 0 และไม่ได้ล้างแล้ว
       return [...balanceMap.entries()]
-        .filter(([, data]) => data.balance < 0)
+        .filter(([, data]) => data.balance < 0 && !data.isClearedDebt)
         .map(([key, data]) => ({
           id: key,
           delNumber: data.entry.delNumber,
@@ -250,15 +270,73 @@ export const useSummaryStore = defineStore('Summary', {
           balanceAmount: Math.abs(data.balance),
           department: data.entry.faculty,
           subDepartment: data.entry.sub1,
-          affiliationId: data.entry.affiliationId,  // ✅ เพิ่ม
+          affiliationId: data.entry.affiliationId,
           fundName: data.entry.fundName,
           responsible: data.entry.fullName,
           status: 'pending',
           createdAt: data.entry.createdAt,
           updatedAt: data.entry.updatedAt,
+          isClearedDebt: false,
           _ledgerEntry: data.entry,
         }))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    },
+
+    // ✅ เพิ่ม getter สำหรับรายการที่ล้างแล้ว
+    clearedDebts: (s) => {
+      const clearedMap = new Map<string, {
+        debtAmount: number
+        clearedAmount: number
+        entry: LedgerEntry
+      }>()
+
+      for (const e of Object.values(s.ledgerByDoc)) {
+        // ✅ เอาเฉพาะรายการที่ล้างแล้ว
+        if (e.isClearedDebt !== true) continue
+
+        if (e.direction === 'DEBT_NEW' || e.direction === 'DEBT_CLEAR') {
+          const key = `${e.delNumber}|${e.fundName}`
+
+          const current = clearedMap.get(key) || {
+            debtAmount: 0,
+            clearedAmount: 0,
+            entry: e,
+          }
+
+          if (e.direction === 'DEBT_NEW') {
+            current.debtAmount += e.amount
+          } else {
+            current.clearedAmount += e.amount
+          }
+
+          if (new Date(e.updatedAt) > new Date(current.entry.updatedAt)) {
+            current.entry = e
+          }
+
+          clearedMap.set(key, current)
+        }
+      }
+
+      return [...clearedMap.entries()]
+        .map(([key, data]) => ({
+          id: key,
+          delNumber: data.entry.delNumber,
+          receiptId: data.entry.delNumber,
+          itemName: data.entry.fundName,
+          debtorAmount: data.debtAmount,
+          clearedAmount: data.clearedAmount,
+          department: data.entry.faculty,
+          subDepartment: data.entry.sub1,
+          affiliationId: data.entry.affiliationId,
+          fundName: data.entry.fundName,
+          responsible: data.entry.fullName,
+          status: 'cleared',
+          createdAt: data.entry.createdAt,
+          updatedAt: data.entry.updatedAt,
+          isClearedDebt: true,
+          _ledgerEntry: data.entry,
+        }))
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     },
   },
 
@@ -302,10 +380,13 @@ export const useSummaryStore = defineStore('Summary', {
 
       this.rebuildAll()
 
+      const clearedCount = Object.values(this.ledgerByDoc).filter(e => e.isClearedDebt).length
+
       console.log('✅ Summary updated')
       console.log('📋 Total ledger entries:', Object.keys(this.ledgerByDoc).length)
       console.log('💰 Debt entries:', Object.values(this.ledgerByDoc).filter(e => e.direction === 'DEBT_NEW').length)
       console.log('🧹 Clear entries:', Object.values(this.ledgerByDoc).filter(e => e.direction === 'DEBT_CLEAR').length)
+      console.log('✅ Cleared debts:', clearedCount)
       console.log('📊 Totals:', this.totals)
     },
   },

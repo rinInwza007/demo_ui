@@ -22,6 +22,7 @@ const addRow = () => {
   morelist.value.push({
     id: morelist.value.length + 1,
     type: 'income', // ✅
+    isExpense: false,
     itemName: null,
     referenceNo: '',
     note: '',

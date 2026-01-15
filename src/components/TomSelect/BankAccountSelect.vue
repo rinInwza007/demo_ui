@@ -38,7 +38,7 @@
           :class="[
             'w-full px-3 py-2.5 text-sm rounded-xl border transition-all',
             isFromPredefinedOption
-              ? 'bg-gray-100 cursor-not-allowed opacity-50'
+              ? 'bg-white font-medium cursor-default'
               : !localAccountNumber
               ? 'bg-gray-100 cursor-not-allowed opacity-50'
               : 'bg-white border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200',
@@ -58,7 +58,7 @@
           :class="[
             'w-full px-3 py-2.5 text-sm rounded-xl border transition-all',
             isFromPredefinedOption
-              ? 'bg-gray-100 cursor-not-allowed opacity-50'
+              ? 'bg-whitee font-medium cursor-default'
               : !localAccountNumber
               ? 'bg-gray-100 cursor-not-allowed opacity-50'
               : 'bg-white border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200',

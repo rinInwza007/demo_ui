@@ -39,10 +39,21 @@
         <div v-else class="flex-1 overflow-y-auto px-8 pb-8">
           <div class="max-w-6xl mx-auto space-y-6">
             <div class="glass-panel rounded-2xl p-6 shadow-lg space-y-4">
+              <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
                 <span class="w-1 h-6 bg-blue-500 rounded-full"></span>ส่วนที่ 1: ข้อมูลผู้บันทึก
               </h2>
-
+    <!-- ปุ่ม Template -->
+    <div class="flex gap-2">
+      <button
+        @click="showLoadDialog = true"
+        class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+      >
+        <i class="ph ph-folder-open text-lg"></i>
+        <span class="text-sm font-medium">โหลด Template</span>
+      </button>
+    </div>
+    </div>
               <!-- แถวที่ 1: เลขที่นำส่ง | ชื่อ (แสดงเสมอ) -->
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="flex flex-col gap-2">
@@ -811,6 +822,13 @@
               </p>
             </div>
             <div class="flex justify-end gap-3 pb-4">
+      <button
+        @click="showSaveDialog = true"
+        class="flex items-center mr-[755px] gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+      >
+        <i class="ph ph-floppy-disk text-lg"></i>
+        <span class="text-sm font-medium">บันทึก Template</span>
+      </button>
               <button
                 @click="gotomainpage"
                 class="px-6 py-3 rounded-xl bg-white/60 backdrop-blur-sm text-slate-700 hover:bg-white/80 border border-white/60 transition-all shadow-sm"
@@ -829,6 +847,150 @@
         </div>
       </main>
     </div>
+
+<!-- 💾 Dialog บันทึก Template -->
+<div v-if="showSaveDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="glass-panel rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-xl font-bold text-slate-800">บันทึก Template</h3>
+      <button @click="showSaveDialog = false; templateName = ''" class="text-slate-500 hover:text-slate-700">
+        <i class="ph ph-x text-2xl"></i>
+      </button>
+    </div>
+    
+    <div class="space-y-4">
+      <!-- ✅ แสดงข้อมูล User -->
+      <div class="bg-purple-50 rounded-lg p-3 text-sm">
+        <p class="font-semibold text-purple-900 mb-1">👤 บันทึกสำหรับ:</p>
+        <p class="text-purple-800">{{ authStore.user?.fullName }}</p>
+        <p class="text-purple-700 text-xs">{{ authStore.user?.affiliation }}</p>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อ Template</label>
+        <InputText
+          v-model="templateName"
+          placeholder="เช่น: งานการเงิน - ทันตแพทย์"
+          class="w-full"
+          @keyup.enter="saveTemplate"
+        />
+      </div>
+      
+      <!-- แสดงข้อมูลที่จะบันทึก -->
+      <div class="bg-blue-50 rounded-lg p-3 text-sm">
+        <p class="font-semibold text-blue-900 mb-2">📋 ข้อมูลที่จะบันทึก:</p>
+        <ul class="space-y-1 text-blue-800">
+          <li>✓ ชื่อ-นามสกุล</li>
+          <li>✓ เบอร์โทร</li>
+          <li>✓ หน่วยงาน (ทั้ง 3 ระดับ)</li>
+          <li>✓ กองทุน</li>
+          <li>✓ ขอนำส่งเงิน</li>
+          <li>✓ รหัสโครงการ</li>
+        </ul>
+      </div>
+      
+      <div class="flex gap-3">
+        <button
+          @click="showSaveDialog = false; templateName = ''"
+          class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all"
+        >
+          ยกเลิก
+        </button>
+        <button
+          @click="saveTemplate"
+          class="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md"
+        >
+          บันทึก
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 📂 Dialog โหลด Template -->
+<div v-if="showLoadDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="glass-panel rounded-2xl p-6 w-full max-w-2xl mx-4 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-xl font-bold text-slate-800">โหลด Template</h3>
+      <button @click="showLoadDialog = false; searchTerm = ''" class="text-slate-500 hover:text-slate-700">
+        <i class="ph ph-x text-2xl"></i>
+      </button>
+    </div>
+    
+    <!-- ช่องค้นหา -->
+    <div class="mb-4">
+      <div class="relative">
+        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <input
+          v-model="searchTerm"
+          type="text"
+          placeholder="ค้นหา Template..."
+          class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+    </div>
+    
+    <!-- รายการ Templates -->
+<div
+  v-for="template in filteredTemplates"
+  :key="template.id"
+  class="bg-white/40 rounded-xl p-4 border border-white/50 hover:bg-white/60 transition-all group"
+>
+  <div class="flex items-start justify-between">
+    <div class="flex-1">
+      <div class="flex items-center gap-2 mb-2">
+        <h4 class="font-semibold text-slate-800">{{ template.name }}</h4>
+        <!-- ✅ แสดงคณะ -->
+        <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+          {{ template.affiliationName || authStore.user?.affiliation }}
+        </span>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
+        <div><span class="font-medium">ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
+        <div><span class="font-medium">เบอร์:</span> {{ template.data.phone || '-' }}</div>
+        <div><span class="font-medium">หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
+        <div><span class="font-medium">กองทุน:</span> {{ template.data.fundName || '-' }}</div>
+      </div>
+      
+      <!-- ✅ แสดงใครสร้าง -->
+      <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+        <span>
+          <i class="ph ph-user"></i> {{ template.userName || authStore.user?.fullName }}
+        </span>
+        <span>
+          <i class="ph ph-calendar"></i> {{ new Date(template.createdAt).toLocaleDateString('th-TH', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }) }}
+        </span>
+      </div>
+    </div>
+    
+    <div class="flex gap-2 ml-4">
+      <button
+        @click="loadTemplate(template)"
+        class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+        title="โหลด Template"
+      >
+        <i class="ph ph-download-simple"></i>
+      </button>
+      <button
+        @click="deleteTemplate(template.id)"
+        class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+        title="ลบ Template"
+      >
+        <i class="ph ph-trash"></i>
+      </button>
+    </div>
+  </div>
+    </div>
+  </div>
+</div>
   </div>
 </template>
 
@@ -924,6 +1086,161 @@ const bankAccountOptions = ref([
   },
 ])
 
+//ส่วนของtemplate --------------------------------------------------------------------------
+
+
+const templates = ref([])
+const showSaveDialog = ref(false)
+const showLoadDialog = ref(false)
+const templateName = ref('')
+const searchTerm = ref('')
+
+const getTemplateStorageKey = () => {
+  if (!authStore.user) return null
+  // ใช้ affiliationId + userId เป็น key
+  return `waybill_templates_${authStore.user.affiliationId}_${authStore.user.id}`
+}
+
+onMounted(() => {
+  const saved = localStorage.getItem('waybill_templates')
+  if (saved) {
+    templates.value = JSON.parse(saved)
+  }
+})
+
+// ✅ บันทึก Template
+const saveTemplate = () => {
+  if (!templateName.value.trim()) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'กรุณาตั้งชื่อ Template',
+      confirmButtonColor: '#7E22CE'
+    })
+    return
+  }
+
+  // ✅ ตรวจสอบว่า Login อยู่หรือไม่
+  if (!authStore.user) {
+    Swal.fire({
+      icon: 'error',
+      title: 'กรุณา Login ก่อน',
+      confirmButtonColor: '#DC2626'
+    })
+    return
+  }
+
+  const template = {
+    id: Date.now(),
+    name: templateName.value.trim(),
+    data: {
+      fullName: formData.value.fullName,
+      phone: formData.value.phone,
+      mainCategory: mainCategory.value,
+      subCategory: subCategory.value,
+      subCategory2: subCategory2.value,
+      fundName: formData.value.fundName,
+      sendmoney: formData.value.sendmoney,
+      projectCode: formData.value.projectCode
+    },
+    userId: authStore.user.id,
+    userName: authStore.user.fullName,
+    affiliationId: authStore.user.affiliationId,
+    affiliationName: authStore.user.affiliation,
+    createdAt: new Date().toISOString()
+  }
+
+  templates.value.push(template)
+  
+  // ✅ บันทึกลง localStorage ของ User นี้
+  const storageKey = getTemplateStorageKey()
+  if (storageKey) {
+    localStorage.setItem(storageKey, JSON.stringify(templates.value))
+  }
+  
+  templateName.value = ''
+  showSaveDialog.value = false
+  
+  Swal.fire({
+    icon: 'success',
+    title: 'บันทึก Template สำเร็จ!',
+    text: `สำหรับ ${authStore.user.affiliation}`,
+    timer: 1500,
+    showConfirmButton: false
+  })
+}
+
+// ✅ โหลด Template
+const loadTemplate = async (template) => {
+  formData.value.fullName = template.data.fullName
+  formData.value.phone = template.data.phone
+  formData.value.fundName = template.data.fundName
+  formData.value.sendmoney = template.data.sendmoney
+  formData.value.projectCode = template.data.projectCode
+  
+  mainCategory.value = template.data.mainCategory
+  await nextTick()
+  
+  if (template.data.subCategory) {
+    subCategory.value = template.data.subCategory
+    await nextTick()
+  }
+  
+  if (template.data.subCategory2) {
+    subCategory2.value = template.data.subCategory2
+  }
+  
+  showLoadDialog.value = false
+  
+  Swal.fire({
+    icon: 'success',
+    title: 'โหลด Template สำเร็จ!',
+    timer: 1500,
+    showConfirmButton: false
+  })
+}
+
+// ✅ ลบ Template
+const deleteTemplate = (id) => {
+  Swal.fire({
+    title: 'ยืนยันการลบ?',
+    text: 'คุณต้องการลบ Template นี้หรือไม่?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#DC2626',
+    cancelButtonColor: '#6B7280',
+    confirmButtonText: 'ลบ',
+    cancelButtonText: 'ยกเลิก'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      templates.value = templates.value.filter(t => t.id !== id)
+      
+      // ✅ อัพเดท localStorage ของ User นี้
+      const storageKey = getTemplateStorageKey()
+      if (storageKey) {
+        localStorage.setItem(storageKey, JSON.stringify(templates.value))
+      }
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'ลบ Template สำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      })
+    }
+  })
+}
+
+// ✅ กรอง Template
+const filteredTemplates = computed(() => {
+  if (!searchTerm.value) return templates.value
+  return templates.value.filter(t => 
+    t.name.toLowerCase().includes(searchTerm.value.toLowerCase())
+  )
+})
+
+
+//--------------------------------------------------------------------------------------------
+
 const handleExpenseToggle = (index) => {
   // เมื่อ toggle checkbox จะเปลี่ยน type
   morelist.value[index].type = morelist.value[index].isExpense ? 'expense' : 'income'
@@ -945,19 +1262,6 @@ const paymentMethods = ref({
   other: { checked: false, name: '', amount: '' },
 })
 
-Object.keys(paymentMethods.value).forEach((key) => {
-  watch(
-    () => paymentMethods.value[key].checked,
-    (checked) => {
-      if (!checked) {
-        paymentMethods.value[key].amount = ''
-        if ('name' in paymentMethods.value[key]) {
-          paymentMethods.value[key].name = ''
-        }
-      }
-    },
-  )
-})
 //เกี่ยวกับคณะที่เลือกเองตามสิทธิ
 const mapAffiliationToMainCategory = (affiliationId) => {
   const mapping = {
@@ -974,40 +1278,18 @@ const mapAffiliationToMainCategory = (affiliationId) => {
   return mapping[affiliationId] || ''
 }
 const updateDebtorAmount = () => {
-  // ⭐ เพิ่มการตรวจสอบ
-  if (!morelist.value || morelist.value.length === 0) {
-    return
-  }
-
-  let totalDebtor = 0
+  if (!morelist.value?.length || !paymentMethods.value?.debtor) return
   
-  morelist.value.forEach((row) => {
-    // ⭐ เพิ่มการตรวจสอบ
-    if (!row || !row.itemName) return
-    
-    if (isReceivableItem(row.itemName)) {
-      const cleanAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
-      if (!isNaN(cleanAmount) && cleanAmount > 0) {
-        totalDebtor += cleanAmount
-      }
-    }
-  })
+  const totalDebtor = morelist.value
+    .filter(row => row?.itemName && isReceivableItem(row.itemName))
+    .reduce((sum, row) => {
+      const amount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
+      return sum + (isNaN(amount) ? 0 : amount)
+    }, 0)
   
-  // ⭐ เพิ่มการตรวจสอบ paymentMethods
-  if (!paymentMethods.value || !paymentMethods.value.debtor) {
-    return
-  }
-  
-  if (totalDebtor > 0) {
-    paymentMethods.value.debtor.checked = true
-    paymentMethods.value.debtor.amount = totalDebtor.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  } else {
-    paymentMethods.value.debtor.checked = false
-    paymentMethods.value.debtor.amount = ''
-  }
+  paymentMethods.value.debtor.checked = totalDebtor > 0
+  paymentMethods.value.debtor.amount = totalDebtor > 0 ? 
+    totalDebtor.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''
 }
 
 // ✅ Watch รายการเพื่ออัพเดทลูกหนี้
@@ -1049,8 +1331,23 @@ onMounted(async () => {
   if (isEditMode.value) {
     await loadReceiptData()
   }
-})
 
+  loadUserTemplates()
+})
+const loadUserTemplates = () => {
+  const storageKey = getTemplateStorageKey()
+  if (!storageKey) return
+
+  const saved = localStorage.getItem(storageKey)
+  if (saved) {
+    try {
+      templates.value = JSON.parse(saved)
+    } catch (error) {
+      console.error('Error loading templates:', error)
+      templates.value = []
+    }
+  }
+}
 // เพิ่ม computed สำหรับคำนวณยอดรวมส่วนที่ 3
 const paymentTotal = computed(() => {
   let total = totalBankAmount.value // จากธนาคาร
@@ -1192,11 +1489,6 @@ const errors = ref({
   paymentMethods: {},
   bankTransfers: {},
 })
-const clearPaymentError = (method, field = 'amount') => {
-  if (errors.value.paymentMethods?.[method]?.[field]) {
-    delete errors.value.paymentMethods[method][field]
-  }
-}
 const clearError = (field) => {
   if (errors.value[field]) {
     delete errors.value[field]
@@ -2024,7 +2316,24 @@ watch(
 
 <style lang="scss" scoped>
 /* Animated Background Mesh */
+/* Animation สำหรับ Dialog */
+.fixed {
+  animation: fadeIn 0.2s ease-in-out;
+}
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.glass-panel {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 .mesh-bg {
   position: fixed;
   top: 0;

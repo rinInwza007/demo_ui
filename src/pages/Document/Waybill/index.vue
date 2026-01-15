@@ -886,6 +886,7 @@
           <li>✓ กองทุน</li>
           <li>✓ ขอนำส่งเงิน</li>
           <li>✓ รหัสโครงการ</li>
+            <li>✓ รายการนำส่งเงิน ({{ morelist.filter(r => r.itemName).length }} รายการ)</li>
         </ul>
       </div>
       
@@ -931,63 +932,78 @@
       </div>
     </div>
     
-    <!-- รายการ Templates -->
-<div
-  v-for="template in filteredTemplates"
-  :key="template.id"
-  class="bg-white/40 rounded-xl p-4 border border-white/50 hover:bg-white/60 transition-all group"
->
-  <div class="flex items-start justify-between">
-    <div class="flex-1">
-      <div class="flex items-center gap-2 mb-2">
-        <h4 class="font-semibold text-slate-800">{{ template.name }}</h4>
-        <!-- ✅ แสดงคณะ -->
-        <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-          {{ template.affiliationName || authStore.user?.affiliation }}
-        </span>
+    <!-- ✅ รายการ Templates (เพิ่ม overflow-y-auto) -->
+    <div class="flex-1 overflow-y-auto space-y-3 pr-2">
+      <div
+        v-for="template in filteredTemplates"
+        :key="template.id"
+        class="bg-white/40 rounded-xl p-4 border border-white/50 hover:bg-white/60 transition-all group"
+      >
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <h4 class="font-semibold text-slate-800">{{ template.name }}</h4>
+              <!-- ✅ แสดงคณะ -->
+              <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                {{ template.affiliationName || authStore.user?.affiliation }}
+              </span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
+              <div><span class="font-medium">ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
+              <div><span class="font-medium">เบอร์:</span> {{ template.data.phone || '-' }}</div>
+              <div><span class="font-medium">หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
+              <div><span class="font-medium">กองทุน:</span> {{ template.data.fundName || '-' }}</div>
+              <div class="col-span-2">
+                <span class="font-medium">รายการ:</span> 
+                {{ template.data.receiptItems?.length || 0 }} รายการ
+                <span v-if="template.data.receiptItems?.length > 0" class="text-xs text-gray-500">
+                  ({{ template.data.receiptItems.map(r => r.itemName).join(', ').substring(0, 50) }}...)
+                </span>
+              </div>
+            </div>
+            
+            <!-- ✅ แสดงใครสร้าง -->
+            <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+              <span>
+                <i class="ph ph-user"></i> {{ template.userName || authStore.user?.fullName }}
+              </span>
+              <span>
+                <i class="ph ph-calendar"></i> {{ new Date(template.createdAt).toLocaleDateString('th-TH', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }) }}
+              </span>
+            </div>
+          </div>
+          
+          <div class="flex gap-2 ml-4">
+            <button
+              @click="loadTemplate(template)"
+              class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+              title="โหลด Template"
+            >
+              <i class="ph ph-download-simple"></i>
+            </button>
+            <button
+              @click="deleteTemplate(template.id)"
+              class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+              title="ลบ Template"
+            >
+              <i class="ph ph-trash"></i>
+            </button>
+          </div>
+        </div>
       </div>
       
-      <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
-        <div><span class="font-medium">ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
-        <div><span class="font-medium">เบอร์:</span> {{ template.data.phone || '-' }}</div>
-        <div><span class="font-medium">หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
-        <div><span class="font-medium">กองทุน:</span> {{ template.data.fundName || '-' }}</div>
+      <!-- แสดงเมื่อไม่มี Template -->
+      <div v-if="filteredTemplates.length === 0" class="text-center py-8 text-gray-500">
+        <i class="ph ph-folder-open text-4xl mb-2"></i>
+        <p>{{ searchTerm ? 'ไม่พบ Template ที่ค้นหา' : 'ยังไม่มี Template' }}</p>
       </div>
-      
-      <!-- ✅ แสดงใครสร้าง -->
-      <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
-        <span>
-          <i class="ph ph-user"></i> {{ template.userName || authStore.user?.fullName }}
-        </span>
-        <span>
-          <i class="ph ph-calendar"></i> {{ new Date(template.createdAt).toLocaleDateString('th-TH', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          }) }}
-        </span>
-      </div>
-    </div>
-    
-    <div class="flex gap-2 ml-4">
-      <button
-        @click="loadTemplate(template)"
-        class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
-        title="โหลด Template"
-      >
-        <i class="ph ph-download-simple"></i>
-      </button>
-      <button
-        @click="deleteTemplate(template.id)"
-        class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
-        title="ลบ Template"
-      >
-        <i class="ph ph-trash"></i>
-      </button>
-    </div>
-  </div>
     </div>
   </div>
 </div>
@@ -1108,7 +1124,7 @@ onMounted(() => {
   }
 })
 
-// ✅ บันทึก Template
+// ✅ บันทึก Template (รวมรายการนำส่งเงิน)
 const saveTemplate = () => {
   if (!templateName.value.trim()) {
     Swal.fire({
@@ -1129,6 +1145,14 @@ const saveTemplate = () => {
     return
   }
 
+  // ✅ เก็บเฉพาะชื่อรายการที่มีข้อมูล (ไม่เอาเลขที่อ้างอิงและจำนวนเงิน)
+  const receiptItems = morelist.value
+    .filter(row => row.itemName && row.itemName.trim() !== '')
+    .map(row => ({
+      itemName: row.itemName,
+      isExpense: row.isExpense || false
+    }))
+
   const template = {
     id: Date.now(),
     name: templateName.value.trim(),
@@ -1140,7 +1164,8 @@ const saveTemplate = () => {
       subCategory2: subCategory2.value,
       fundName: formData.value.fundName,
       sendmoney: formData.value.sendmoney,
-      projectCode: formData.value.projectCode
+      projectCode: formData.value.projectCode,
+      receiptItems: receiptItems // ✅ เพิ่มรายการ
     },
     userId: authStore.user.id,
     userName: authStore.user.fullName,
@@ -1169,7 +1194,7 @@ const saveTemplate = () => {
   })
 }
 
-// ✅ โหลด Template
+// ✅ โหลด Template (รวมรายการนำส่งเงิน)
 const loadTemplate = async (template) => {
   formData.value.fullName = template.data.fullName
   formData.value.phone = template.data.phone
@@ -1187,6 +1212,35 @@ const loadTemplate = async (template) => {
   
   if (template.data.subCategory2) {
     subCategory2.value = template.data.subCategory2
+    await nextTick()
+  }
+  
+  // ✅ ล้าง morelist เก่าทิ้งก่อน
+  morelist.value = []
+  await nextTick()
+  
+  // ✅ โหลดรายการนำส่งเงิน (เฉพาะชื่อรายการ)
+  if (template.data.receiptItems && template.data.receiptItems.length > 0) {
+    morelist.value = template.data.receiptItems.map((item, index) => ({
+      id: index + 1,
+      referenceNo: '', // ไม่โหลดเลขที่อ้างอิง
+      itemName: item.itemName,
+      note: '',
+      amount: '', // ไม่โหลดจำนวนเงิน
+      type: item.isExpense ? 'expense' : 'income',
+      isExpense: item.isExpense || false
+    }))
+    
+    await nextTick()
+    
+    // Init TomSelect สำหรับแต่ละแถว
+    morelist.value.forEach((_, i) => {
+      initItemNameTomSelect(i)
+    })
+  } else {
+    // ✅ ถ้าไม่มีรายการใน template ให้สร้างแถวว่าง 2 แถว (เหมือนตอนเริ่มต้น)
+    addRow()
+    addRow()
   }
   
   showLoadDialog.value = false

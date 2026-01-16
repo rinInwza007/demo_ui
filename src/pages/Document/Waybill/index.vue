@@ -50,7 +50,7 @@
         class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
       >
         <i class="ph ph-folder-open text-lg"></i>
-        <span class="text-sm font-medium">โหลด Template</span>
+        <span class="text-base font-medium">โหลด Template</span>
       </button>
     </div>
     </div>
@@ -461,7 +461,7 @@
               <div class="grid grid-cols-[_1fr_4fr] gap-6">
                 <button
                   @click="addRow"
-                  class="border-2 border-dashed border-[#7E22CE] rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
+                  class="border-2 border-dashed text-xl  border-[#7E22CE] rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -824,10 +824,10 @@
             <div class="flex justify-end gap-3 pb-4">
       <button
         @click="showSaveDialog = true"
-        class="flex items-center mr-[755px] gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+        class="flex items-center mr-[742px] gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
       >
         <i class="ph ph-floppy-disk text-lg"></i>
-        <span class="text-sm font-medium">บันทึก Template</span>
+        <span class="text-base font-medium">บันทึก Template</span>
       </button>
               <button
                 @click="gotomainpage"

@@ -8,7 +8,7 @@
       <div class="text-lg text-red-600">ไม่พบข้อมูล</div>
     </div>
 
-    <div v-else class="flex justify-center items-center -mt-10">
+    <div v-else class="flex justify-center items-center ">
       <iframe
         v-if="pdfUrl"
         :src="pdfUrl"
@@ -175,7 +175,7 @@ function createDocDefinition() {
 
   const receipt = receiptData.value || {}
 const bankTransfers = receipt.bankTransfers || []
-  const { debtors, normalItems, totalDebtor, hasDebtor } = separateDebtorItems()
+  const { debtors, totalDebtor, hasDebtor } = separateDebtorItems()
 
   const pm = receipt.paymentMethods || {}
 
@@ -183,13 +183,8 @@ const bankTransfers = receipt.bankTransfers || []
     const amt = pm[key]?.amount || 0
     return typeof amt === 'string' ? parseFloat(amt.replace(/,/g, '')) : Number(amt)
   }
-
-  const krungthai1Amt = pm.krungthai1?.checked ? getAmount('krungthai1') : 0
-  const krungthai2Amt = pm.krungthai2?.checked ? getAmount('krungthai2') : 0
-  const krungthai3Amt = pm.krungthai3?.checked ? getAmount('krungthai3') : 0
   const cashAmt = pm.cash?.checked ? getAmount('cash') : 0
   const checkAmt = pm.check?.checked ? getAmount('check') : 0
-  const debtorAmt = pm.debtor?.checked ? getAmount('debtor') : 0
   const otherAmt = pm.other?.checked ? getAmount('other') : 0
   const otherName = pm.other?.name?.trim() || 'อื่น ๆ'
 
@@ -282,8 +277,8 @@ const bankTransfers = receipt.bankTransfers || []
       {
         stack: [
           {
-            text: `${receipt.projectCode || ''}`,
-            absolutePosition: { x: 265, y: 115 },
+            text: `${receipt.projectCode || '- '}`,
+            absolutePosition: { x: 240, y: 115 },
             fontSize: 13,
           },
           {
@@ -331,24 +326,69 @@ const bankTransfers = receipt.bankTransfers || []
 
       // ========== ส่วนที่ 3: การนำส่งเงิน ==========
 
+...(bankTransfers.length > 0
+  ? bankTransfers.flatMap((bank) => [
+      {
+        columns: [
+          { ...createCheckbox(), margin: [100, 12, 0, 0] },
+          {
+            text: `นำฝากบัญชี ${bank.accountData.bankName} เลขที่ ${bank.accountData.accountNumber}`,
+            margin: [110, 10, 0, 0],
+            bold: true,
+          },
+        ],
+      },
+{
+  columns: [
+    {
+      text: `ชื่อบัญชี ${bank.accountData.accountName}`,
+      margin: [120, 0, 0, 0],
+      width: 200,
+      noWrap: true,
+    },
+    {
+      text: 'จำนวน',
+      width: 50,
+      margin: [163, 0, 0, 0],
+      noWrap: true,
+    },
+    {
+      text: bank.amount.toLocaleString('th-TH', {
+        minimumFractionDigits: 2,
+      }),
+      width: 80,
+      margin: [155, 0, 0, 0],
+      noWrap: true,
+    },
+    {
+      text: 'บาท',
+      width: 30,
+      noWrap: true,
+      margin: [115, 0, 0, 0],
+    },
+  ],
+},
+    ])
+  : []),
+
       ...(pm.cash?.checked && cashAmt > 0
         ? [
             {
               columns: [
                 {
                   columns: [
-                    { ...createCheckbox(), margin: [100, 2, 0, 0] },
+                    { ...createCheckbox(), margin: [100, 7, 0, 0] },
                     {
                       text: 'เงินสด',
                       style: 'form',
-                      margin: [110, 0, 0, 0],
+                      margin: [110, 5, 0, 0],
                       noWrap: true,
                       width: 'auto',
                     },
                     {
                       text: 'จำนวน',
                       width: 'auto',
-                      margin: [220, 0, 0, 0],
+                      margin: [220, 5, 0, 0],
                       noWrap: true,
                     },
                     {
@@ -360,13 +400,13 @@ const bankTransfers = receipt.bankTransfers || []
                         },
                       ],
                       width: 80,
-                      margin: [0, 0, 15, 0],
+                      margin: [0, 5, 15, 0],
                     },
                     {
                       text: 'บาท',
                       width: 'auto',
                       noWrap: true,
-                      margin: [-19, 0, 0, 0],
+                      margin: [-19, 5, 0, 0],
                     },
                   ],
                 },
@@ -380,18 +420,18 @@ const bankTransfers = receipt.bankTransfers || []
         ? [
             {
               columns: [
-                { ...createCheckbox(), margin: [100, 2, 0, 0] },
+                { ...createCheckbox(), margin: [100, 7, 0, 0] },
                 {
                   text: 'เช็ค',
                   style: 'form',
                   width: 'auto',
                   noWrap: true,
-                  margin: [110, 0, 0, 0],
+                  margin: [110, 5, 0, 0],
                 },
                 {
                   text: `ธนาคาร${pm.check.bankName ?? ''}`,
                   style: 'form',
-                  margin: [10, 0, 0, 0],
+                  margin: [10, 5, 0, 0],
                 },
               ],
             },
@@ -420,61 +460,23 @@ const bankTransfers = receipt.bankTransfers || []
                       alignment: 'right',
                       width: 'auto',
                       noWrap: true,
-                      margin: [18.5, 0, 0, 0],
+                      margin: [18.5, 5, 0, 0],
                     },
                     {
                       text: 'บาท',
                       noWrap: true,
                       width: 'auto',
-                      margin: [16.5, 0, 0, 0],
+                      margin: [16.5, 5, 0, 0],
                     },
                   ],
                   alignment: 'right',
                   width: 'auto',
                 },
               ],
-              margin: [130, 2, 92.5, 0],
+              margin: [130, 7, 92.5, 0],
             },
           ]
         : []),
-
-...(bankTransfers.length > 0
-  ? bankTransfers.flatMap((bank) => [
-      {
-        columns: [
-          { ...createCheckbox(), margin: [100, 12, 0, 0] },
-          {
-            text: `นำฝากบัญชี ${bank.accountData.bankName} เลขที่ ${bank.accountData.accountNumber}`,
-            margin: [110, 10, 0, 0],
-            bold: true,
-          },
-        ],
-      },
-      {
-        columns: [
-          {
-            text: `ชื่อบัญชี ${bank.accountData.accountName}`,
-            margin: [120, 0, 0, 0],
-            noWrap: true,
-          },
-          {
-            text: 'จำนวน',
-            margin: [70, 0, 0, 0],
-          },
-          {
-            text: bank.amount.toLocaleString('th-TH', {
-              minimumFractionDigits: 2,
-            }),
-            margin: [0, 0, 0, 0],
-          },
-          {
-            text: 'บาท',
-            margin: [0, 0, 0, 0],
-          },
-        ],
-      },
-    ])
-  : []),
 
       // อื่น ๆ
       ...(pm.other?.checked && otherAmt > 0
@@ -584,59 +586,87 @@ const bankTransfers = receipt.bankTransfers || []
         : []),
 
 
-      // ลายเซ็น (เดิมไม่เปลี่ยน)
-      { text: '\n' },
-      { text: '\n' },
-      {
-        columns: [
-          {
-            stack: [
-              { style: 'form', text: 'ลงชื่อ', margin: [20, 0, 0, 0], alignment: 'left' },
-              {
-                text: receipt.fullName || '',
-                alignment: 'center',
-                margin: [0, 0, 0, -15],
-                fontSize: 13,
-              },
-              {
-                style: 'form',
-                text: '(........................................................................)',
-                alignment: 'center',
-              },
-              { style: 'form', text: 'ผู้นำส่งเงิน', alignment: 'center', margin: [10, 0, 0, 0] },
-              { text: currentDate, alignment: 'center', margin: [0, 0, 0, -15], fontSize: 13 },
-              {
-                style: 'form',
-                text: 'ลงวันที่.......................................................',
-                alignment: 'center',
-              },
-            ],
-          },
-          {
-            stack: [
-              { style: 'form', text: 'ลงชื่อ', margin: [0, 0, 225, 0], alignment: 'center' },
-              {
-                style: 'form',
-                text: '(........................................................................)',
-                alignment: 'center',
-                margin: [0, 1, 0, 0],
-              },
-              { style: 'form', text: 'ผู้รับเงิน', alignment: 'center' },
-              {
-                style: 'form',
-                text: 'ลงวันที่.......................................................',
-                alignment: 'center',
-                margin: [0, 3, 0, 0],
-              },
-            ],
-          },
-        ],
-        widths: ['50%', '50%'],
-      },
-    ],
-    styles: {
-      form: { bold: true },
+{
+  unbreakable: true,
+  stack: [
+    { text: '\n' },
+    { text: '\n' },
+    {
+      columns: [
+        {
+          stack: [
+            {
+              style: 'form',
+              text: 'ลงชื่อ',
+              margin: [20, 0, 0, 0],
+              alignment: 'left',
+            },
+            {
+              text: receipt.fullName || '',
+              alignment: 'center',
+              margin: [0, 0, 0, -15],
+              fontSize: 13,
+            },
+            {
+              style: 'form',
+              text: '(........................................................................)',
+              alignment: 'center',
+            },
+            {
+              style: 'form',
+              text: 'ผู้นำส่งเงิน',
+              alignment: 'center',
+              margin: [10, 0, 0, 0],
+            },
+            {
+              text: currentDate,
+              alignment: 'center',
+              margin: [0, 0, 0, -15],
+              fontSize: 13,
+            },
+            {
+              style: 'form',
+              text: 'ลงวันที่.......................................................',
+              alignment: 'center',
+            },
+          ],
+        },
+        {
+          stack: [
+            {
+              style: 'form',
+              text: 'ลงชื่อ',
+              margin: [0, 0, 225, 0],
+              alignment: 'center',
+            },
+            {
+              style: 'form',
+              text: '(........................................................................)',
+              alignment: 'center',
+              margin: [0, 1, 0, 0],
+            },
+            {
+              style: 'form',
+              text: 'ผู้รับเงิน',
+              alignment: 'center',
+            },
+            {
+              style: 'form',
+              text: 'ลงวันที่.......................................................',
+              alignment: 'center',
+              margin: [0, 3, 0, 0],
+            },
+          ],
+        },
+      ],
+      widths: ['50%', '50%'],
     },
+  ],
+  styles: {
+    form: { bold: true },
+  },
+}
+    ],
   }
 }
 
@@ -674,7 +704,7 @@ const foundReceipt = receipts.find((r) => r.delNumber === delNumber)
 
       receiptData.value.receiptList.forEach((item) => {
         const cleanAmount = item.amount ? parseFloat(item.amount.toString().replace(/,/g, '')) : 0
-
+const isDebtor = isReceivableItem(item.itemName)
         rows.push({
           id: String(rowNumber++),
           ref: item.referenceNo || '',
@@ -683,7 +713,7 @@ const foundReceipt = receipts.find((r) => r.delNumber === delNumber)
             cleanAmount > 0
               ? cleanAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })
               : '',
-          note: item.note || '',
+          note: isDebtor ? 'ลูกหนี้' : (item.note || ''),
         })
       })
 

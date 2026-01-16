@@ -26,10 +26,6 @@ export const incomeOptions = [
  */
 //  ลูกหนี้ของคณะแพทยศาสตร์medicine
 
-
-
-
-
 export const medicineReceivableOptions: Item[] = [
   { id:1, crerateAt:new Date(), updateAt:new Date() , name: 'ค่าบริการทางการแพทย์ (สปสช) - ลูกหนี้', type: 'นำส่ง', Affiliation: {id:1, AffiliationName:'sdsd', type:'กอง', fullAffiliationName:"........" } },
   { id:2, crerateAt:new Date(), updateAt:new Date(),name: 'ค่าบริการทางการแพทย์ (กรมบัญชีกลาง) - ลูกหนี้', type: 'นำส่ง', Affiliation: {id:1, AffiliationName:'sdsd', type:'กอง', fullAffiliationName:"........" } },

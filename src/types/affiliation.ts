@@ -3,7 +3,7 @@ export type affiliationType = 'คณะ' | 'กอง' | 'ศูนย์' | '�
 
 export interface Affiliation {
   /** Affiliation ID */
-  id: string;
+  id: number;
   /** Main affiliation name */
   AffiliationName: string;
   /** Sub affiliation name */

@@ -7,10 +7,34 @@ export type moneySource = 'นำส่ง' | 'ลูกหนี้' | 'วิ�
 export type nagativeMoneyType = 'add' | 'other';
 
 export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other';
+export type ItemType =  'นำส่ง' | 'ลูกหนี้' | 'วิจัย';
+
+export interface  Item {
+  id: number;
+  name: string;
+  type: ItemType;
+  Affiliation: Affiliation;
+  crerateAt: Date;
+  updateAt: Date;
+
+}
+
+
+export interface indexsavedebtor {
+  id:number;
+  item: Item;
+  beginningOFTheYear:number;
+  totalOftheYear:number;
+  crerateAt: Date;
+  updateAt: Date;
+
+
+}
+
 
 export interface ReceiptItem {
   /** Item name */
-  itemName: string;
+  itemName: Item;
 
   /** Reference number */
   referenceNo: string;
@@ -33,7 +57,14 @@ export interface ReceiptItem {
   keyword?: string[];
   subtotal?: number;
   netAmount?: number;
-    paymentDetails: {
+
+  crerateAt: Date;
+  updateAt: Date;
+  paymentDetails: paymentDetails[]
+}
+
+
+ export interface paymentDetails {
     moneyType: string
     amount: number
     referenceNo?: string
@@ -41,17 +72,15 @@ export interface ReceiptItem {
     accountNumber?: string | null
     accountName?: string | null
     bankName?: string | null
-  }[]
-}
-
+  }
 export interface Receipt {
   /** Full name */
   fullName: string;
 
   /** Phone number */
   phone: string;
-isLocked?: boolean; 
- moneyType: string;  
+isLocked?: boolean;
+ moneyType: string;
   /** Affiliation ID */
   affiliationId: string;
   mainAffiliationName?: string;
@@ -61,7 +90,7 @@ isLocked?: boolean;
   affiliationName: string;
 sendmoney?: string;
   moneyTypeNote?: string;
-  
+
   /** Net total amount */
   netTotalAmount: number;
   totalDebtorAmount?: number;

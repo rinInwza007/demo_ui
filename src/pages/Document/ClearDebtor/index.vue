@@ -70,67 +70,76 @@
               </div>
 
               <!-- Table Header -->
-              <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-  <div class="col-span-3">รายการ</div>
-  <div class="col-span-3">ผู้ทำรายการ</div>
-  <div class="col-span-3 text-right pr-8">จำนวนเงิน</div>
-  <div class="col-span-3 text-center">วันที่</div>
+<div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+  <div class="col-span-2">เลขที่ใบเสร็จ</div>
+  <div class="col-span-2">รายการ</div>
+  <div class="col-span-2">ผู้ทำรายการ</div>
+  <div class="col-span-1 text-right">หนี้</div>
+  <div class="col-span-3 text-right">จำนวนเงินที่ชำระ</div>
+  <div class="col-span-2">หมายเหตุ</div>
 </div>
-              <div
-                v-for="item in receipt.items"
-                :key="item.id"
-                class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl
-                       transition-all duration-200 border border-white/50 hover:bg-white/50"
-              >
-                <!-- Item Name -->
-                <div class="col-span-3">
-                  <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
-                </div>
-
-                <!-- Full Name -->
-                <div class="col-span-3 flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm">
-                    {{ (item.responsible || '-').charAt(0) }}
-                  </div>
-                  <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
-                </div>
-
-  <!-- Amount -->
-<div class="col-span-3 pr-4">
-  <div class="flex items-center justify-end gap-2">
-    <span class="font-bold text-red-600 font-mono text-sm">
-      {{ formatMoney(item.debtorAmount) }}
-    </span>
+<div
+  v-for="item in receipt.items"
+  :key="item.id"
+  class="group grid grid-cols-12 gap-4 px-6 py-4 mb-2 items-center rounded-xl
+         transition-all duration-200 border border-white/50 hover:bg-white/50"
+>
+  <!-- Receipt Number -->
+  <div class="col-span-2">
     <input
       type="text"
-      v-model="item.paymentInput"
-      @input="(e) => handlePaymentInputChange(item, e)"
-      @blur="() => formatPaymentInput(item)"
-      class="glass-input w-24 px-2 py-1 rounded-md text-xs text-right"
-      placeholder="0.00"
+      v-model="item.receiptNumber"
+      class="glass-input w-full px-3 py-2 rounded-md text-sm"
+      placeholder="เลขที่ใบเสร็จ"
     />
   </div>
-  <div class="text-[10px] text-slate-400 text-right">บาท</div>
+
+  <!-- Item Name -->
+  <div class="col-span-2">
+    <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
+  </div>
+
+  <!-- Full Name -->
+  <div class="col-span-2 flex items-center gap-2">
+    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0">
+      {{ (item.responsible || '-').charAt(0) }}
+    </div>
+    <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
+  </div>
+
+  <!-- Debt Amount -->
+  <div class="col-span-1 text-right">
+    <span class="font-bold text-red-600 font-mono text-sm whitespace-nowrap">
+      {{ formatMoney(item.debtorAmount) }}
+    </span>
+  </div>
+
+  <!-- Payment Input -->
+<div class="col-span-3 flex justify-end">
+  <input
+    type="text"
+    v-model="item.paymentInput"
+    @input="(e) => handlePaymentInputChange(item, e)"
+    @blur="() => formatPaymentInput(item)"
+    class="glass-input w-40 px-3 py-2 rounded-md text-sm text-right"
+    placeholder="0.00"
+  />
 </div>
 
-
-                <!-- Date -->
-                <div class="col-span-3 text-center">
-  <div class="text-xs text-slate-600">
-    {{ formatDate(item._originalReceipt.createdAt) }}
+  <!-- Note -->
+  <div class="col-span-2">
+    <input
+      type="text"
+      v-model="item.note"
+      class="glass-input w-full px-3 py-2 rounded-md text-sm"
+      placeholder="หมายเหตุ"
+    />
   </div>
 </div>
-
-
-                <!-- Note -->
-                <div class="col-span-2">
-                  <div class="text-sm text-slate-600 truncate">
-                    {{ item.note }}
-                  </div>
-                </div>
-              </div>
             </div>
-           <div
+
+            <!-- ยอดที่ต้องชำระ -->
+            <div
               class="rounded-xl p-6 shadow-lg mb-6"
               style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);"
             >
@@ -144,6 +153,7 @@
                 </span>
               </div>
             </div>
+
             <!-- Payment Section -->
             <div class="glass-panel rounded-2xl p-6 shadow-lg">
               <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
@@ -152,79 +162,72 @@
 
               <!-- Payment Methods -->
               <div
-  v-for="(bank, index) in bankTransfers"
-  :key="bank.id"
-  class="bg-white/40 rounded-xl p-4 border border-white/50 transition-all"
->
-  <div
-    class="grid grid-cols-[1.2fr_1.2fr_1fr_0.2fr] gap-3 items-start"
-  >
-    <!-- เลขบัญชี -->
-    <div class="flex flex-col gap-1.5">
-      <BankAccountSelect
-      placeholder="กรอกเลขบัญชี"
-        v-model="bank.accountData"
-        :input-id="`bank-account-${bank.id}`"
-        :error-message="errors.bankTransfers?.[index]?.accountNumber"
-        :bank-account-options="bankAccountOptions"
-        @change="() => clearBankError(index, 'accountNumber', errors)"
-      />
-    </div>
+                v-for="(bank, index) in bankTransfers"
+                :key="bank.id"
+                class="bg-white/40 rounded-xl p-4 border border-white/50 transition-all mb-3"
+              >
+                <div class="grid grid-cols-[1.2fr_1.2fr_1fr_0.2fr] gap-3 items-start">
+                  <!-- เลขบัญชี -->
+                  <div class="flex flex-col gap-1.5">
+                    <BankAccountSelect
+                      placeholder="กรอกเลขบัญชี"
+                      v-model="bank.accountData"
+                      :input-id="`bank-account-${bank.id}`"
+                      :error-message="errors.bankTransfers?.[index]?.accountNumber"
+                      :bank-account-options="bankAccountOptions"
+                      @change="() => clearBankError(index, 'accountNumber', errors)"
+                    />
+                  </div>
 
-    <!-- จำนวนเงิน -->
-    <div class="flex items-center gap-2 whitespace-nowrap ml-10 mt-3">
-      <span class="text-sm text-slate-700">จำนวนเงิน</span>
-      <InputText
-        :model-value="formatDisplayPaymentAmount(bank.amount)"
-        @input="(e) => handleBankAmountInput(index, e)"
-        @blur="() => formatBankAmountOnBlur(index)"
-        placeholder="0.00"
-        class="w-40"
-      />
-      <span class="text-sm text-slate-700">บาท</span>
-    </div>
+                  <!-- จำนวนเงิน -->
+                  <div class="flex items-center gap-2 whitespace-nowrap ml-10 mt-3">
+                    <span class="text-sm text-slate-700">จำนวนเงิน</span>
+                    <InputText
+                      :model-value="formatDisplayPaymentAmount(bank.amount)"
+                      @input="(e) => handleBankAmountInput(index, e)"
+                      @blur="() => formatBankAmountOnBlur(index)"
+                      placeholder="0.00"
+                      class="w-40"
+                    />
+                    <span class="text-sm text-slate-700">บาท</span>
+                  </div>
 
-    <!-- ปุ่มลบ -->
-    <button
-      @click="removeBankTransfer(index)"
-      class="px-3 py-2 mt-5 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start"
-      title="ลบรายการ"
-    >
-      <svg
-        class="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-        />
-      </svg>
-    </button>
-  </div>
-</div>
+                  <!-- ปุ่มลบ -->
+                  <button
+                    @click="removeBankTransfer(index)"
+                    class="px-3 py-2 mt-5 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start"
+                    title="ลบรายการ"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
+              <!-- ปุ่มเพิ่มรายการธนาคาร -->
+              <button
+                @click="addBankTransfer"
+                class="w-full border-2 border-dashed border-red-500 rounded-lg py-3 text-gray-600 hover:border-red-600 hover:text-red-600 hover:bg-red-50 transition-all flex items-center justify-center gap-2 font-medium"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                เพิ่มรายการธนาคาร
+              </button>
 
-    <!-- ปุ่มเพิ่มรายการธนาคาร -->
-    <button
-      @click="addBankTransfer"
-      class="w-full border-2 border-dashed border-red-500 rounded-lg py-3 text-gray-600 hover:border-red-600 hover:text-red-600 hover:bg-red-50 transition-all flex items-center justify-center gap-2 font-medium"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M12 4v16m8-8H4"
-        />
-      </svg>
-      เพิ่มรายการธนาคาร
-    </button>
               <!-- Payment History -->
-              <div v-if="paymentHistory.length > 0" class="space-y-3 mb-6">
+              <div v-if="paymentHistory.length > 0" class="space-y-3 mb-6 mt-6">
                 <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b border-white/40 pb-3">
                   <i class="ph ph-clock-clockwise text-xl"></i>
                   ประวัติการชำระเงิน
@@ -296,8 +299,7 @@
                 </div>
               </div>
 
-              <!-- Remaining Debt -->
-          <!-- Remaining Debt -->
+              <!-- ยอดรวมที่จะจ่าย -->
               <div
                 class="rounded-xl p-6 shadow-lg mb-4"
                 style="background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);"
@@ -315,9 +317,6 @@
 
               <!-- Action Buttons -->
               <div class="flex justify-end gap-3">
-                <!-- ปุ่มบันทึกการจ่าย -->
-
-
                 <!-- ปุ่มล้างหนี้ -->
                 <button
                   class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all active:scale-95 hover:shadow-xl"
@@ -474,28 +473,28 @@ onMounted(() => {
       ? summary.receipts
       : []
 
- const items = baseReceipts.flatMap(r =>
-  (r.items || [])
-    .filter(item => !item.isClearedDebt) // ✅ ตัดรายการที่ล้างแล้ว
-    .map(item => {
-      const debtorAmount =
-        item.debtorAmount != null
-          ? Number(item.debtorAmount)
-          : Number(item.amount || 0)
+    const items = baseReceipts.flatMap(r =>
+      (r.items || [])
+        .filter(item => !item.isClearedDebt)
+        .map(item => {
+          const debtorAmount =
+            item.debtorAmount != null
+              ? Number(item.debtorAmount)
+              : Number(item.amount || 0)
 
- return {
-  ...item,
-  debtorAmount,
-  amount: debtorAmount,
-  paymentInput: '', // เพิ่มบรรทัดนี้
-  _originalReceipt: {
-    ...r,
-    projectCode: r.projectCode || r.receiptId,
-    createdAt: r.createdAt || new Date().toISOString()
-  }
-}
-    })
-)
+          return {
+            ...item,
+            debtorAmount,
+            amount: debtorAmount,
+            paymentInput: '',
+            _originalReceipt: {
+              ...r,
+              projectCode: r.projectCode || r.receiptId,
+              createdAt: r.createdAt || new Date().toISOString()
+            }
+          }
+        })
+    )
 
     allItems.value = items
 
@@ -561,6 +560,7 @@ function confirmPayment() {
       })
     }
   }
+
   if (map.other.checked) {
     const amount = parseFloat(String(map.other.amount).replace(/,/g, ''))
     if (amount > 0) {
@@ -598,10 +598,12 @@ function confirmPayment() {
 
   Swal.fire('สำเร็จ', 'บันทึกการชำระเงินแล้ว', 'success')
 }
+
 // ✅ Format สำหรับแสดงผล
 const formatDisplayPaymentAmount = (value) => {
   return formatDisplayBankAmount(value)
 }
+
 // ✅ Clear error
 const clearBankError = (index, field) => {
   if (errors.value.bankTransfers?.[index]?.[field]) {
@@ -631,8 +633,48 @@ const formatPaymentAmountOnBlur = (method) => {
   })
 }
 
+// Payment Input Handlers
+const handlePaymentInputChange = (item, event) => {
+  const value = event.target.value.replace(/[^0-9.]/g, '')
+  const parts = value.split('.')
+  if (parts.length > 2) return
+
+  item.paymentInput = value
+}
+
+const formatPaymentInput = (item) => {
+  const value = item.paymentInput
+  if (!value) {
+    item.paymentInput = ''
+    return
+  }
+
+  const cleanValue = String(value).replace(/,/g, '')
+  const numValue = parseFloat(cleanValue)
+
+  if (isNaN(numValue)) {
+    item.paymentInput = ''
+    return
+  }
+
+  item.paymentInput = numValue.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
+const totalPaymentInput = computed(() => {
+  return allItems.value.reduce((sum, item) => {
+    const value = item.paymentInput || '0'
+    const cleanValue = String(value).replace(/,/g, '')
+    const numValue = parseFloat(cleanValue) || 0
+    return sum + numValue
+  }, 0)
+})
+
+// Clear All Debts Function
 async function clearAllDebts() {
-  // ✅ คำนวณยอดรวมที่จะจ่าย (ยอดที่ต้องชำระ + ยอดรวมที่จะจ่าย)
+  // ✅ คำนวณยอดรวมที่จะจ่าย
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
   const combinedPayment = totalPaymentInputValue + totalBankValue
@@ -712,8 +754,9 @@ async function clearAllDebts() {
   if (!result.isConfirmed) return
 
   try {
-    console.log('🧹 Starting debt clearing process (FLAG MODE)...')
-  // ✅ ดึงข้อมูลธนาคาร
+    console.log('🧹 Starting debt clearing process...')
+
+    // ✅ ดึงข้อมูลธนาคาร
     const bankData = getBankTransfersData()
     console.log('🏦 Bank transfers:', bankData)
 
@@ -725,8 +768,9 @@ async function clearAllDebts() {
       accountNumber: bank.accountData.accountNumber,
       amount: bank.amount
     }))
-console.log('💰 New payments:', newPayments)
-    // 1. สร้างประวัติ
+    console.log('💰 New payments:', newPayments)
+
+    // ✅ สร้างประวัติ
     const historyRecord = {
       id: Date.now().toString(),
       date: new Date().toLocaleString('th-TH', {
@@ -744,12 +788,13 @@ console.log('💰 New payments:', newPayments)
         department: r.department,
         subDepartment: r.subDepartment,
         projectCode: r.projectCode,
+        delNumber: r.delNumber,
         totalAmount: r.totalDebtorAmount,
         items: r.items.map(i => ({
           itemName: i.itemName,
           amount: i.debtorAmount,
           note: i.note,
-          referenceId: r.projectCode, // ✅ เพิ่มเพื่อใช้ในการค้นหา
+          referenceId: r.projectCode,
         }))
       })),
       payments: [...paymentHistory.value, ...newPayments],
@@ -763,75 +808,65 @@ console.log('💰 New payments:', newPayments)
       projectCode: receipts.value[0]?.projectCode,
     }
 
-    // 2. บันทึกประวัติ
+    // ✅ บันทึกประวัติ
     const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
     existingHistory.unshift(historyRecord)
     localStorage.setItem('debtorClearHistory', JSON.stringify(existingHistory))
     console.log('✅ History saved')
 
-    // 3. โหลดข้อมูล receipts
+    // ✅ โหลดข้อมูล receipts
     const storedReceipts = JSON.parse(localStorage.getItem('fakeApi.receipts') || '[]')
     console.log('📦 Total receipts:', storedReceipts.length)
 
-    // 4. สร้าง Map ของรายการที่ต้องทำเครื่องหมาย
+    // ✅ สร้าง Map ของรายการที่ต้องล้าง
     const itemsToMark = new Map()
     receipts.value.forEach(receipt => {
-      const projectCode = receipt.projectCode || receipt.receiptId
+      const delNumber = receipt.delNumber || receipt.projectCode || receipt.receiptId
+      console.log(`   🔍 Mapping items for: ${delNumber}`)
+
       receipt.items.forEach(item => {
-        const key = `${projectCode}:${item.itemName}`
+        const key = `${delNumber}:${item.itemName}`
         itemsToMark.set(key, {
-          projectCode,
+          delNumber,
           itemName: item.itemName,
           debtorAmount: item.debtorAmount
         })
       })
     })
 
-    console.log(`🎯 Items to mark as cleared: ${itemsToMark.size}`)
+    console.log(`🎯 Items to mark: ${itemsToMark.size}`)
 
     let markedCount = 0
 
-    // 5. ทำเครื่องหมาย isClearedDebt = true
+    // ✅ ทำเครื่องหมาย isClearedDebt = true
     const updatedReceipts = storedReceipts.map(receipt => {
-      const projectCode = receipt.projectCode
+      const delNumber = receipt.delNumber
 
+      console.log(`\n📋 Processing receipt: ${delNumber}`)
+
+      // ตรวจสอบว่ามีรายการที่ต้องล้างหรือไม่
       const hasItemsToMark = Array.from(itemsToMark.values()).some(
-        item => item.projectCode === projectCode
+        item => item.delNumber === delNumber
       )
 
       if (!hasItemsToMark) {
+        console.log(`   ⏭️ Skip - no items to mark`)
         return receipt
       }
 
-      console.log(`\n🏷️ Marking items in receipt: ${projectCode}`)
+      console.log(`   ✅ Has items to mark`)
 
-      // === กรณี Debtor ===
-      if (receipt.moneyTypeNote === 'Debtor') {
-        const newDebtorList = (receipt.debtorList || []).map(debtor => {
-          const key = `${projectCode}:${debtor.itemName}`
+      // ✅ ทำเครื่องหมายใน receiptList
+      if (Array.isArray(receipt.receiptList)) {
+        const newReceiptList = receipt.receiptList.map(item => {
+          const key = `${delNumber}:${item.itemName}`
+
           if (itemsToMark.has(key)) {
-            console.log(`   ✅ Marking: ${debtor.itemName}`)
-            markedCount++
-            return { ...debtor, isClearedDebt: true }
-          }
-          return debtor
-        })
-
-        return {
-          ...receipt,
-          debtorList: newDebtorList
-        }
-      }
-
-      // === กรณี Waybill ===
-      if (receipt.moneyTypeNote === 'Waybill') {
-        const newReceiptList = (receipt.receiptList || []).map(item => {
-          const key = `${projectCode}:${item.itemName}`
-          if (itemsToMark.has(key)) {
-            console.log(`   ✅ Marking: ${item.itemName}`)
+            console.log(`      ✅ MARKING: ${item.itemName}`)
             markedCount++
             return { ...item, isClearedDebt: true }
           }
+
           return item
         })
 
@@ -846,64 +881,59 @@ console.log('💰 New payments:', newPayments)
 
     console.log(`\n📊 ========== SUMMARY ==========`)
     console.log(`   Total receipts: ${updatedReceipts.length}`)
-    console.log(`   Items marked as cleared: ${markedCount}`)
+    console.log(`   Items marked: ${markedCount}`)
 
-    // 6. บันทึกกลับ localStorage
+    // ✅ บันทึกข้อมูลที่อัปเดตกลับเข้า localStorage
     localStorage.setItem('fakeApi.receipts', JSON.stringify(updatedReceipts))
-    console.log('💾 Saved to localStorage')
+    console.log('💾 Updated receipts saved to localStorage')
 
-// 7. ✅ ส่งสัญญาณอัพเดต (แก้ใหม่)
+    // ✅ ส่งสัญญาณอัพเดต
     const updateTime = Date.now().toString()
     localStorage.setItem('receipts_last_update', updateTime)
 
-// ✅ ส่งทั้ง storage event และ custom event
-window.dispatchEvent(new StorageEvent('storage', {
-  key: 'fakeApi.receipts',
-  newValue: JSON.stringify(updatedReceipts),
-  url: window.location.href
-}))
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(updatedReceipts),
+      url: window.location.href
+    }))
 
-window.dispatchEvent(new StorageEvent('storage', {
-  key: 'receipts_last_update',
-  newValue: updateTime,
-  url: window.location.href
-}))
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'receipts_last_update',
+      newValue: updateTime,
+      url: window.location.href
+    }))
 
-window.dispatchEvent(new CustomEvent('receipts-updated', {
-  detail: {
-    timestamp: updateTime,
-    action: 'clear-debts-flag',
-    marked: markedCount
-  }
-}))
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        timestamp: updateTime,
+        action: 'clear-debts',
+        marked: markedCount
+      }
+    }))
 
-console.log('🔔 All update signals sent:', updateTime)
-    // 8. ลบข้อมูล summary
+    console.log('🔔 Update signals sent')
+
+    // ✅ ลบข้อมูล summary ที่ใช้งานแล้ว
     localStorage.removeItem('clearDebtorSummary')
-    console.log('🗑️ Cleared summary')
+    console.log('🗑️ Cleared summary data')
 
-    // 9. แสดงผลสำเร็จ
+    // ✅ แสดงข้อความสำเร็จ
     await Swal.fire({
-      title: 'สำเร็จ!',
+      title: 'ล้างหนี้สำเร็จ!',
       html: `
-        <div class="text-center space-y-2">
-          <p class="text-lg font-bold text-green-600">✅ ล้างหนี้เรียบร้อยแล้ว</p>
-          <div class="bg-gray-50 p-4 rounded-lg mt-4 text-left">
-            <p class="text-sm text-gray-700">🏷️ ทำเครื่องหมายรายการ: <strong>${markedCount}</strong></p>
-            <p class="text-sm text-gray-700">💰 ยอดหนี้ที่ล้าง: <strong>${formatNumber(totalDebt.value)} บาท</strong></p>
-            <p class="text-sm text-gray-500 mt-2">รหัส: ${historyRecord.referenceId}</p>
-          </div>
+        <div class="text-left space-y-2">
+          <p class="text-gray-700">✅ ล้างหนี้รายการ: <span class="font-bold">${markedCount} รายการ</span></p>
+          <p class="text-gray-700">💰 ยอดเงินรวม: <span class="font-bold text-green-600">${formatNumber(totalDebt.value)} บาท</span></p>
+          <p class="text-gray-700">🔖 เลขที่อ้างอิง: <span class="font-mono text-sm">${historyRecord.referenceId}</span></p>
         </div>
       `,
       icon: 'success',
-      confirmButtonColor: '#10B981',
-      timer: 4000,
-      timerProgressBar: true
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#10B981'
     })
 
-    console.log('✅ Redirecting to indexsavedebtor...')
-
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // ✅ นำทางกลับหน้า indexsavedebtor
+    console.log('🚀 Navigating back to /indexsavedebtor')
     router.push('/indexsavedebtor')
 
   } catch (error) {
@@ -916,45 +946,6 @@ console.log('🔔 All update signals sent:', updateTime)
     })
   }
 }
-// Payment Amount Handlers
-// Payment Amount Handlers
-const handlePaymentInputChange = (item, event) => {
-  const value = event.target.value.replace(/[^0-9.]/g, '')
-  const parts = value.split('.')
-  if (parts.length > 2) return
-
-  item.paymentInput = value
-}
-
-const formatPaymentInput = (item) => {
-  const value = item.paymentInput
-  if (!value) {
-    item.paymentInput = ''
-    return
-  }
-
-  const cleanValue = String(value).replace(/,/g, '')
-  const numValue = parseFloat(cleanValue)
-
-  if (isNaN(numValue)) {
-    item.paymentInput = ''
-    return
-  }
-
-  item.paymentInput = numValue.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
-
-const totalPaymentInput = computed(() => {
-  return allItems.value.reduce((sum, item) => {
-    const value = item.paymentInput || '0'
-    const cleanValue = String(value).replace(/,/g, '')
-    const numValue = parseFloat(cleanValue) || 0
-    return sum + numValue
-  }, 0)
-})
 </script>
 
 <style scoped>

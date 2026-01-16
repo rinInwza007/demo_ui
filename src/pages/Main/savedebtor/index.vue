@@ -1,4 +1,3 @@
-
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full h-screen flex overflow-hidden">
@@ -34,7 +33,7 @@
             <button
               @click="activeTab = 'new'"
               class="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2"
-              :class="activeTab === 'new' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-slate-600 hover:bg-white/50'"
+              :class="activeTab === 'new' ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg' : 'text-slate-600 hover:bg-white/50'"
             >
               <i class="ph ph-plus-circle text-lg"></i>
               สร้างรายการใหม่
@@ -42,7 +41,7 @@
             <button
               @click="activeTab = 'history'"
               class="flex-1 py-3 px-6 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2"
-              :class="activeTab === 'history' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' : 'text-slate-600 hover:bg-white/50'"
+              :class="activeTab === 'history' ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg' : 'text-slate-600 hover:bg-white/50'"
             >
               <i class="ph ph-clock-clockwise text-lg"></i>
               ประวัติการทำรายการ
@@ -75,7 +74,7 @@
 
               <div v-else class="space-y-2">
                 <div
-                  v-for="item in filteredItems"
+                  v-for="item in paginatedItemsNew"
                   :key="item.id"
                   @click="toggleSelectItem(item.id)"
                   class="grid grid-cols-12 gap-4 px-4 py-3 cursor-pointer
@@ -85,7 +84,7 @@
                     ? 'bg-blue-50'
                     : 'hover:bg-slate-50'"
                 >
-                  <!-- ✅ Checkbox + รายการ (col-span-3) -->
+                  <!-- Checkbox + รายการ (col-span-3) -->
                   <div class="col-span-3 flex items-center gap-3">
                     <div
                       class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
@@ -112,27 +111,62 @@
                     </div>
                   </div>
 
-                  <!-- ✅ ยอดยกยอดจากต้นปี (col-span-3) -->
+                  <!-- ยอดยกยอดจากต้นปี (col-span-3) -->
                   <div class="col-span-3 text-right">
                     <p class="text-base font-bold text-slate-700">
                        {{ formatCurrency(item.depositNetAmount || 0) }}
                     </p>
                   </div>
 
-                  <!-- ✅ ยอดที่ล้างสะสมในปีนี้ (col-span-3) -->
+                  <!-- ยอดที่ล้างสะสมในปีนี้ (col-span-3) -->
                   <div class="col-span-3 text-right">
                     <p class="text-base font-bold text-green-600">
                        {{ formatCurrency(item.debtorAmount) }}
                     </p>
                   </div>
 
-<!-- ✅ ยอดคงเหลือสุทธิ (col-span-3) -->
-<div class="col-span-3 text-right">
-  <p class="text-base font-bold text-red-600">
-    {{ formatCurrency(item.balanceAmount || 0) }}
-  </p>
-</div>
+                  <!-- ยอดคงเหลือสุทธิ (col-span-3) -->
+                  <div class="col-span-3 text-right">
+                    <p class="text-base font-bold text-red-600">
+                      {{ formatCurrency(item.balanceAmount || 0) }}
+                    </p>
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Pagination Controls for New Tab -->
+            <div v-if="totalPagesNew > 1" class="px-6 py-3 border-t border-white/40 bg-white/5 flex items-center justify-center flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <button
+                  @click="goToPageNew(currentPageNew - 1)"
+                  :disabled="currentPageNew === 1"
+                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <i class="ph ph-caret-left text-lg"></i>
+                </button>
+
+                <template v-for="page in totalPagesNew" :key="page">
+                  <button
+                    v-if="page === 1 || page === totalPagesNew || (page >= currentPageNew - 1 && page <= currentPageNew + 1)"
+                    @click="goToPageNew(page)"
+                    class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
+                    :class="currentPageNew === page
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md'
+                      : 'glass-input text-slate-600 hover:text-purple-600'"
+                  >
+                    {{ page }}
+                  </button>
+                  <span v-else-if="page === currentPageNew - 2 || page === currentPageNew + 2" class="text-slate-400 px-1">...</span>
+                </template>
+
+                <button
+                  @click="goToPageNew(currentPageNew + 1)"
+                  :disabled="currentPageNew === totalPagesNew"
+                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <i class="ph ph-caret-right text-lg"></i>
+                </button>
               </div>
             </div>
 
@@ -178,7 +212,7 @@
               </div>
 
               <div v-else class="space-y-4">
-                <div v-for="item in historyItems" :key="item.id" class="glass-input rounded-xl overflow-hidden hover:shadow-md transition-all">
+                <div v-for="item in paginatedItemsHistory" :key="item.id" class="glass-input rounded-xl overflow-hidden hover:shadow-md transition-all">
                   <div class="p-5">
                     <div class="flex items-center justify-between mb-4">
                       <div class="flex items-center gap-3">
@@ -302,8 +336,45 @@
               </div>
             </div>
 
+            <!-- Pagination Controls for History Tab -->
+            <div v-if="totalPagesHistory > 1" class="px-6 py-3 border-t border-white/40 bg-white/5 flex items-center justify-center flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <button
+                  @click="goToPageHistory(currentPageHistory - 1)"
+                  :disabled="currentPageHistory === 1"
+                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <i class="ph ph-caret-left text-lg"></i>
+                </button>
+
+                <template v-for="page in totalPagesHistory" :key="page">
+                  <button
+                    v-if="page === 1 || page === totalPagesHistory || (page >= currentPageHistory - 1 && page <= currentPageHistory + 1)"
+                    @click="goToPageHistory(page)"
+                    class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
+                    :class="currentPageHistory === page
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md'
+                      : 'glass-input text-slate-600 hover:text-purple-600'"
+                  >
+                    {{ page }}
+                  </button>
+                  <span v-else-if="page === currentPageHistory - 2 || page === currentPageHistory + 2" class="text-slate-400 px-1">...</span>
+                </template>
+
+                <button
+                  @click="goToPageHistory(currentPageHistory + 1)"
+                  :disabled="currentPageHistory === totalPagesHistory"
+                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <i class="ph ph-caret-right text-lg"></i>
+                </button>
+              </div>
+            </div>
+
             <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-center flex-shrink-0">
-              <p class="text-xs text-slate-500">แสดงประวัติทั้งหมด {{ historyItems.length }} รายการ</p>
+              <p class="text-xs text-slate-500">
+                แสดงประวัติ {{ ((currentPageHistory - 1) * itemsPerPage) + 1 }}-{{ Math.min(currentPageHistory * itemsPerPage, historyItems.length) }} จาก {{ historyItems.length }} รายการ
+              </p>
             </div>
           </div>
         </div>
@@ -346,6 +417,11 @@ const historyItems = ref<any[]>([])
 const expandedHistory = ref<Set<string>>(new Set())
 const isLoading = ref(false)
 
+// Pagination
+const currentPageNew = ref(1)
+const currentPageHistory = ref(1)
+const itemsPerPage = 5
+
 /* =========================
  * Utils
  * ========================= */
@@ -361,7 +437,9 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
-
+/* =========================
+ * Load Receipt Data
+ * ========================= */
 const loadReceiptData = async () => {
   console.log('📥 Load debtor from Summary Store')
   console.log('🔑 Auth status:', {
@@ -386,23 +464,23 @@ const loadReceiptData = async () => {
     console.log('📦 All receipts loaded:', allReceipts.length)
     console.log('📄 First receipt:', allReceipts[0])
 
-    // ✅ Debug: ดูรายการใน receiptList
+    // Debug: ดูรายการใน receiptList
     allReceipts.forEach((r: any, i: number) => {
       console.log(`Receipt ${i + 1} [${r.delNumber}]:`, {
         receiptListCount: r.receiptList?.length || 0,
         items: r.receiptList?.map((item: any) => ({
           name: item.itemName,
           amount: item.amount,
-          type: item.type // morelist type (ไม่ใช้)
+          type: item.type
         }))
       })
     })
 
-    // 2️⃣ ป้อนเข้า Summary Store (จะคำนวณ pendingDebts อัตโนมัติ)
+    // 2️⃣ FORCE RELOAD Summary Store
     summaryStore.ingestMany(allReceipts)
-    console.log('📊 Summary updated')
+    console.log('📊 Summary store reloaded')
 
-    // ✅ Debug: ดู ledger entries
+    // Debug: ดู ledger entries
     console.log('📋 Ledger entries:', summaryStore.ledger.length)
     console.log('📋 Sample ledger entries:', summaryStore.ledger.slice(0, 5))
 
@@ -411,6 +489,12 @@ const loadReceiptData = async () => {
 
     console.log('💰 Pending debts from getter:', pendingItems.length)
     console.log('💰 Sample pending debt:', pendingItems[0])
+
+    // Debug: ตรวจสอบว่ามีรายการที่ cleared หลุดมาหรือไม่
+    const clearedItems = pendingItems.filter(item => item.isClearedDebt === true)
+    if (clearedItems.length > 0) {
+      console.error('❌ ERROR: Found cleared items in pending list:', clearedItems)
+    }
 
     // 4️⃣ จำกัดสิทธิ์ user - ใช้ affiliationId เปรียบเทียบ
     if (auth.role === 'user') {
@@ -447,6 +531,7 @@ const loadReceiptData = async () => {
     isLoading.value = false
   }
 }
+
 /* =========================
  * History
  * ========================= */
@@ -464,11 +549,31 @@ const loadHistory = () => {
  * ========================= */
 const filteredItems = computed(() => rawData.value)
 
+// Pagination for New Tab
+const totalPagesNew = computed(() => Math.ceil(filteredItems.value.length / itemsPerPage))
+const paginatedItemsNew = computed(() => {
+  const start = (currentPageNew.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredItems.value.slice(start, end)
+})
+
+// Pagination for History Tab
+const totalPagesHistory = computed(() => Math.ceil(historyItems.value.length / itemsPerPage))
+const paginatedItemsHistory = computed(() => {
+  const start = (currentPageHistory.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return historyItems.value.slice(start, end)
+})
+
 const selectedTotal = computed(() =>
   rawData.value
     .filter((i) => selectedItems.value.has(i.id))
     .reduce((sum, i) => sum + Number(i.balanceAmount || 0), 0)
 )
+
+/* =========================
+ * Clear Selected Debtors
+ * ========================= */
 const clearSelectedDebtors = async () => {
   if (selectedItems.value.size === 0) {
     alert('กรุณาเลือกรายการที่ต้องการล้างลูกหนี้')
@@ -481,9 +586,8 @@ const clearSelectedDebtors = async () => {
   const selectedItemsList = rawData.value.filter(i => selectedItems.value.has(i.id))
   console.log('📋 Selected debts:', selectedItemsList)
 
-  // ✅ จัดกลุ่มตาม receiptId/projectCode
+  // จัดกลุ่มตาม receiptId/projectCode
   const groupedByReceipt = selectedItemsList.reduce((acc, item) => {
-    // หา receiptId จาก _originalReceipt หรือใช้ item.receiptId
     const receiptId = item._originalReceipt?.projectCode || item.receiptId || 'UNKNOWN'
 
     if (!acc[receiptId]) {
@@ -495,17 +599,17 @@ const clearSelectedDebtors = async () => {
 
   console.log('📦 Grouped by receipt:', Object.keys(groupedByReceipt).length)
 
-  // ✅ สร้าง receipts array สำหรับส่งต่อ
+  // สร้าง receipts array สำหรับส่งต่อ
   const receipts = Object.keys(groupedByReceipt).map(receiptId => {
     const items = groupedByReceipt[receiptId]
     const firstItem = items[0]
     const originalReceipt = firstItem._originalReceipt || {}
 
-    // คำนวณยอดรวม
     const totalDebtorAmount = items.reduce((sum, i) => sum + Number(i.balanceAmount || i.debtorAmount || 0), 0)
 
     return {
       receiptId: receiptId,
+      delNumber: receiptId,
       projectCode: receiptId,
       fullName: originalReceipt.fullName || firstItem.responsible || 'ไม่ระบุ',
       phone: originalReceipt.phone || '-',
@@ -530,7 +634,7 @@ const clearSelectedDebtors = async () => {
     }
   })
 
-  // ✅ สร้าง summary object
+  // สร้าง summary object
   const summary = {
     receipts: receipts,
     totalDebtorAmount: receipts.reduce((sum, r) => sum + r.totalDebtorAmount, 0),
@@ -541,14 +645,15 @@ const clearSelectedDebtors = async () => {
   console.log('💾 Summary to save:', summary)
   console.log('📊 Total amount:', formatCurrency(summary.totalDebtorAmount))
 
-  // ✅ บันทึกลง localStorage
+  // บันทึกลง localStorage
   localStorage.setItem('clearDebtorSummary', JSON.stringify(summary))
   console.log('✅ Summary saved to localStorage')
 
-  // ✅ นำทางไปหน้า cleardebtor/multi
+  // นำทางไปหน้า cleardebtor/multi
   console.log('🚀 Navigating to /cleardebtor/multi')
   router.push('/cleardebtor/multi')
 }
+
 /* =========================
  * Actions
  * ========================= */
@@ -568,18 +673,62 @@ const viewPdf = (id: string) => {
   router.push(`/pdfclear/${id}`)
 }
 
+// Pagination actions
+const goToPageNew = (page: number) => {
+  if (page >= 1 && page <= totalPagesNew.value) {
+    currentPageNew.value = page
+  }
+}
+
+const goToPageHistory = (page: number) => {
+  if (page >= 1 && page <= totalPagesHistory.value) {
+    currentPageHistory.value = page
+  }
+}
+
 /* =========================
- * Lifecycle
+ * Lifecycle & Watchers
  * ========================= */
 onMounted(async () => {
   await loadReceiptData()
   loadHistory()
+
+  // ฟังการเปลี่ยนแปลงจาก localStorage
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === 'fakeApi.receipts' || e.key === 'receipts_last_update') {
+      console.log('🔄 Storage changed - reloading...')
+      loadReceiptData()
+    }
+  }
+
+  window.addEventListener('storage', handleStorageChange)
+
+  // Cleanup
+  onBeforeUnmount(() => {
+    window.removeEventListener('storage', handleStorageChange)
+  })
 })
 
 watch(activeTab, async (tab) => {
-  if (tab === 'new') await loadReceiptData()
-  if (tab === 'history') loadHistory()
+  if (tab === 'new') {
+    await loadReceiptData()
+    currentPageNew.value = 1
+  }
+  if (tab === 'history') {
+    loadHistory()
+    currentPageHistory.value = 1
+  }
 })
+
+watch(
+  () => route.path,
+  async (newPath) => {
+    if (newPath === '/indexsavedebtor' && activeTab.value === 'new') {
+      console.log('🔄 Route changed to savedebtor - reloading...')
+      await loadReceiptData()
+    }
+  }
+)
 
 /* =========================
  * Debug
@@ -593,7 +742,6 @@ if (typeof window !== 'undefined') {
   }
 }
 </script>
-
 
 <style scoped>
 body {
@@ -633,6 +781,7 @@ body {
   left: -100px;
   animation-delay: 0s;
 }
+
 .orb-2 {
   width: 500px;
   height: 500px;
@@ -641,6 +790,7 @@ body {
   right: -100px;
   animation-delay: 2s;
 }
+
 .orb-3 {
   width: 400px;
   height: 400px;

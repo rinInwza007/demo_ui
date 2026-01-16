@@ -3,7 +3,7 @@ import axios from 'axios'
 import AxiosMockAdapter from 'axios-mock-adapter'
 import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb'
 import type { Receipt } from '@/types/recipt'
-
+import { useSummaryStore } from '@/stores/summary'
 /**
  * ==========================================================
  * Fake API via Axios Mock Adapter
@@ -54,7 +54,7 @@ const guessAffIdFromName = (name: string) => {
 /** ✅ ค้นหา receipt จาก delNumber หรือ id */
 const findReceiptByDelNumber = (db: any[], searchId: string) => {
   const decoded = decodeURIComponent(searchId).trim()
-  
+
   return db.find(
     (r: any) =>
       String(r.delNumber || '').trim() === decoded ||
@@ -81,35 +81,35 @@ const saveSummaryStorage = (data: any[]) => {
 /** ✅ บันทึกไปทั้ง 2 storage พร้อมกัน */
 const saveToBothStorages = (receipt: any) => {
   console.log('🔄 Starting dual storage save...')
-  
+
   // 1. บันทึก storage หลัก
   const mainDb = loadReceipts()
   const existingIndex = mainDb.findIndex(r => r.delNumber === receipt.delNumber)
-  
+
   if (existingIndex >= 0) {
     mainDb[existingIndex] = receipt
   } else {
     mainDb.unshift(receipt)
   }
-  
+
   saveReceipts(mainDb)
   console.log('✅ [1/2] Main Storage saved:', receipt.delNumber)
   console.log('   📦 Main Storage count:', mainDb.length)
-  
+
   // 2. บันทึก summary storage
   const summaryDb = loadSummaryStorage()
   const summaryIndex = summaryDb.findIndex((r: any) => r.delNumber === receipt.delNumber)
-  
+
   if (summaryIndex >= 0) {
     summaryDb[summaryIndex] = receipt
   } else {
     summaryDb.unshift(receipt)
   }
-  
+
   saveSummaryStorage(summaryDb)
   console.log('✅ [2/2] Summary Storage saved:', receipt.delNumber)
   console.log('   📦 Summary Storage count:', summaryDb.length)
-  
+
   // Verify sync
   if (mainDb.length === summaryDb.length) {
     console.log('✅ ✨ BOTH STORAGES SYNCED! ✨')
@@ -117,7 +117,7 @@ const saveToBothStorages = (receipt: any) => {
     console.error('❌ WARNING: Storages NOT synced!')
     console.error('   Main:', mainDb.length, '| Summary:', summaryDb.length)
   }
-  
+
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 }
 
@@ -125,7 +125,7 @@ const saveToBothStorages = (receipt: any) => {
 const deleteFromBothStorages = (delNumber: string) => {
   console.log('🗑️ Starting dual storage delete...')
   console.log('   Deleting:', delNumber)
-  
+
   // 1. ลบจาก storage หลัก
   const mainDb = loadReceipts()
   const beforeMain = mainDb.length
@@ -133,7 +133,7 @@ const deleteFromBothStorages = (delNumber: string) => {
   saveReceipts(filteredMain)
   console.log('✅ [1/2] Main Storage deleted')
   console.log('   📦 Before:', beforeMain, '→ After:', filteredMain.length)
-  
+
   // 2. ลบจาก summary storage
   const summaryDb = loadSummaryStorage()
   const beforeSummary = summaryDb.length
@@ -141,7 +141,7 @@ const deleteFromBothStorages = (delNumber: string) => {
   saveSummaryStorage(filteredSummary)
   console.log('✅ [2/2] Summary Storage deleted')
   console.log('   📦 Before:', beforeSummary, '→ After:', filteredSummary.length)
-  
+
   // Verify sync
   if (filteredMain.length === filteredSummary.length) {
     console.log('✅ ✨ BOTH STORAGES SYNCED! ✨')
@@ -149,7 +149,7 @@ const deleteFromBothStorages = (delNumber: string) => {
     console.error('❌ WARNING: Storages NOT synced!')
     console.error('   Main:', filteredMain.length, '| Summary:', filteredSummary.length)
   }
-  
+
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 }
 
@@ -418,11 +418,11 @@ export function setupAxiosMock() {
     const decoded = decodeURIComponent(id)
     const db = loadReceipts().map(ensureReceiptFields)
     const found = findReceiptByDelNumber(db, decoded)
-    
+
     if (!found) {
       console.warn('❌ findOneReceipt - Not found:', decoded)
-      return [404, { 
-        message: 'Receipt not found', 
+      return [404, {
+        message: 'Receipt not found',
         searchedId: decoded,
         availableDelNumbers: db.map(r => r.delNumber).filter(Boolean)
       }]
@@ -476,15 +476,15 @@ export function setupAxiosMock() {
     let list: any[] = db
 
     if (fullName) {
-      list = list.filter((r) => 
+      list = list.filter((r) =>
         (r.fullName || '').toLowerCase().includes(fullName.toLowerCase())
       )
     }
-    
+
     if (delNumber) {
       list = list.filter((r) => r.delNumber === delNumber)
     }
-    
+
     if (affiliationId) {
       list = list.filter((r) => String(r.affiliationId) === String(affiliationId))
     }
@@ -516,7 +516,7 @@ export function setupAxiosMock() {
     }
 
     const db = loadReceipts().map(ensureReceiptFields)
-    
+
     const existing = findReceiptByDelNumber(db, incoming.delNumber)
     if (existing) {
       console.error('❌ Duplicate delNumber:', incoming.delNumber)
@@ -530,10 +530,10 @@ export function setupAxiosMock() {
     normalized.id = normalized.delNumber // ✅ ให้ id = delNumber
 
     const sanitized = sanitizeReceipt(normalized)
-    
+
     // ✅ บันทึกไปทั้ง 2 storage
     saveToBothStorages(sanitized)
-    
+
     const next = [sanitized, ...db]
 
     dispatchUpdateEvents({
@@ -689,12 +689,12 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
     const decoded = decodeURIComponent(id)
     const db = loadReceipts().map(ensureReceiptFields)
     const found = findReceiptByDelNumber(db, decoded)
-    
+
     if (found) {
       // ✅ ลบจากทั้ง 2 storage
       deleteFromBothStorages(found.delNumber)
     }
-    
+
     const next = db.filter((r: any) => {
       const match = findReceiptByDelNumber([r], decoded)
       return !match
@@ -714,7 +714,7 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
   /** ✅ GET /getSummary - ดึงข้อมูลจาก summary storage */
   mock.onGet(/\/getSummary(?:\?.*)?$/).reply((config) => {
     const summaryDb = loadSummaryStorage().map(ensureReceiptFields)
-    
+
     const url = new URL(config.url!, window.location.origin)
     const affiliationId = url.searchParams.get('affiliationId')
     const q = url.searchParams.get('q')

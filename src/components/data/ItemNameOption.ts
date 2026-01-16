@@ -1,8 +1,15 @@
+
+import { Item } from '@/types/recipt';
+
+
 /**
  * ========================================
  * 1. รายการนำส่งเงิน (รายได้ - บวก)
  * ========================================
  */
+
+
+
 export const incomeOptions = [
   { value: 'รายการใบนำส่งที่ 1', type: 'income' },
   { value: 'รายการใบนำส่งที่ 2', type: 'income' },
@@ -18,14 +25,15 @@ export const incomeOptions = [
  * ========================================
  */
 //  ลูกหนี้ของคณะแพทยศาสตร์medicine
-export const medicineReceivableOptions = [
-  { value: 'ค่าบริการทางการแพทย์ (สปสช) - ลูกหนี้', type: 'receivable', department: 'medicine' },
-  { value: 'ค่าบริการทางการแพทย์ (กรมบัญชีกลาง) - ลูกหนี้', type: 'receivable', department: 'medicine' },
-  { value: 'ค่าบริการทางการแพทย์ (ประกันสังคม) - ลูกหนี้', type: 'receivable', department: 'medicine' },
-  { value: 'ค่าบริการทางการแพทย์ (อื่นๆ) - ลูกหนี้', type: 'receivable', department: 'medicine' },
-  { value: 'ค่าบริการทางการแพทย์ (อื่นๆสิทธิ - ค้างชำระ) - ลูกหนี้', type: 'receivable', department: 'medicine' },
-  { value: 'ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย - ลูกหนี้', type: 'receivable', department: 'medicine' },
-  { value: 'ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย - ลูกหนี้', type: 'receivable', department: 'medicine' },
+
+export const medicineReceivableOptions: Item[] = [
+  { id:1, crerateAt:new Date(), updateAt:new Date() , name: 'ค่าบริการทางการแพทย์ (สปสช) - ลูกหนี้', type: 'นำส่ง', Affiliation: {id:1, AffiliationName:'sdsd', type:'กอง', fullAffiliationName:"........" } },
+  { id:2, crerateAt:new Date(), updateAt:new Date(),name: 'ค่าบริการทางการแพทย์ (กรมบัญชีกลาง) - ลูกหนี้', type: 'นำส่ง', Affiliation: {id:1, AffiliationName:'sdsd', type:'กอง', fullAffiliationName:"........" } },
+  { id:3, crerateAt:new Date(), updateAt:new Date(),name: 'ค่าบริการทางการแพทย์ (ประกันสังคม) - ลูกหนี้', type: 'นำส่ง', Affiliation: {id:1, AffiliationName:'sdsd', type:'กอง', fullAffiliationName:"........" } },
+  { id:4, crerateAt:new Date(), updateAt:new Date(),name: 'ค่าบริการทางการแพทย์ (อื่นๆ) - ลูกหนี้', type: 'นำส่ง', Affiliation: {id:1, AffiliationName:'sdsd', type:'กอง', fullAffiliationName:"........" } },
+  { id:5, crerateAt:new Date(), updateAt:new Date(),name: 'ค่าบริการทางการแพทย์ (อื่นๆสิทธิ - ค้างชำระ) - ลูกหนี้', type: 'นำส่ง', Affiliation: {id:1, AffiliationName:'sdsd', type:'กอง', fullAffiliationName:"........" }},
+  { id:6, crerateAt:new Date(), updateAt:new Date(),name: 'ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย - ลูกหนี้', type: 'ลูกหนี้',  Affiliation: {id:1, AffiliationName:'sdsd', type:'กอง', fullAffiliationName:"........" } },
+  { id:7, crerateAt:new Date(), updateAt:new Date(),name: 'ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย - ลูกหนี้', type: 'ลูกหนี้', Affiliation: {id:1, AffiliationName:'sdsd', type:'กอง', fullAffiliationName:"........" } },
 ]
 // 2.1 ลูกหนี้ทั่วไป (ใช้ได้กับทุกหน่วยงาน)
 export const generalReceivableOptions = [
@@ -112,7 +120,7 @@ export const getOptionsByWaybillType = (waybillType) => {
   if (waybillType === 'income') {
     return incomeOptions
   }
-  
+
   if (waybillType === 'receivable') {
     return [
       ...generalReceivableOptions,
@@ -124,7 +132,7 @@ export const getOptionsByWaybillType = (waybillType) => {
       ...pharmacyReceivableOptions,
     ]
   }
-  
+
   return []
 }
 
@@ -143,7 +151,7 @@ export const getReceivableOptionsByDepartment = (department) => {
     medicine: [...generalReceivableOptions, ...medicineReceivableOptions],
     pharmacy: [...generalReceivableOptions, ...pharmacyReceivableOptions],
   }
-  
+
   return departmentMap[department] || generalReceivableOptions
 }
 
@@ -180,7 +188,7 @@ export const getOptionsForUser = (auth, waybillType = 'all') => {
     } else {
       // user ทั่วไป เห็นแค่ลูกหนี้ของคณะตัวเอง (ไม่รวม general)
       const userDepartment = getDepartmentFromAffiliationId(auth.user.affiliationId)
-      
+
       const departmentOnlyMap = {
         nursing: nursingReceivableOptions,
         dentistry: dentistryReceivableOptions,
@@ -189,7 +197,7 @@ export const getOptionsForUser = (auth, waybillType = 'all') => {
         medicine: medicineReceivableOptions,
         pharmacy: pharmacyReceivableOptions,
       }
-      
+
       const departmentOptions = departmentOnlyMap[userDepartment] || []
       result = [...result, ...departmentOptions]
     }
@@ -218,7 +226,7 @@ export const getAllOptions = (department = 'general') => {
  */
 export const getDropdownOptions = (waybillType, department = 'general') => {
   let options = []
-  
+
   if (waybillType === 'income') {
     options = incomeOptions
   } else if (waybillType === 'receivable') {
@@ -226,7 +234,7 @@ export const getDropdownOptions = (waybillType, department = 'general') => {
   } else {
     options = getAllOptions(department)
   }
-  
+
   return options.map(opt => opt.value)
 }
 
@@ -245,7 +253,7 @@ export const isReceivableItem = (itemName) => {
     ...medicineReceivableOptions,
     ...pharmacyReceivableOptions,
   ]
-  
+
   return allReceivables.some(opt => opt.value === itemName)
 }
 
@@ -265,7 +273,7 @@ export const getItemType = (itemName) => {
     ...medicineReceivableOptions,
     ...pharmacyReceivableOptions,
   ]
-  
+
   const foundOption = allOptions.find(opt => opt.value === itemName)
   return foundOption ? foundOption.type : 'unknown'
 }
@@ -285,7 +293,7 @@ export const getItemDepartment = (itemName) => {
     ...medicineReceivableOptions,
     ...pharmacyReceivableOptions,
   ]
-  
+
   const foundOption = allReceivables.find(opt => opt.value === itemName)
   return foundOption ? foundOption.department : 'unknown'
 }

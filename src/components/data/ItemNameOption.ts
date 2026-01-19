@@ -28,7 +28,7 @@ export const medicineReceivableOptions: Item[] = [
   { id: 204, name: 'ค่าบริการทางการแพทย์ (อื่นๆ) - ลูกหนี้', type: 'receivable', affiliationId: 'MED', createdAt: new Date(), updatedAt: new Date() },
   { id: 205, name: 'ค่าบริการทางการแพทย์ (อื่นๆสิทธิ - ค้างชำระ) - ลูกหนี้', type: 'receivable', affiliationId: 'MED', createdAt: new Date(), updatedAt: new Date() },
   { id: 206, name: 'ค่าบริการทางการแพทย์ (สปสช) เหมาจ่าย - ลูกหนี้', type: 'receivable', affiliationId: 'MED', createdAt: new Date(), updatedAt: new Date() },
-  { id: 7, name: 'ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย - ลูกหนี้', type: 'receivable', affiliationId: 'MED', createdAt: new Date(), updatedAt: new Date() },
+  { id: 207, name: 'ค่าบริการทางการแพทย์ (ประกันสังคม) เหมาจ่าย - ลูกหนี้', type: 'receivable', affiliationId: 'MED', createdAt: new Date(), updatedAt: new Date() },
 ]
 
 // 2.2 คณะพยาบาลศาสตร์ (NUR)

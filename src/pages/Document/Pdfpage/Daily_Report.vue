@@ -43,7 +43,37 @@ pdfMake.vfs = vfs
 pdfMake.fonts = fonts
 
 const pdfUrl = ref(null)
-const dailyData = ref(null)
+const dailyData = ref({
+  dateKey: '2026-01-18',
+  items: [
+    {
+      delNumber: '6968/50',
+      description: 'ลูกหนี้ทางทันตกรรม สิทธิ กรมบัญชีกลาง',
+      debtorIncrease: 7540.00,
+      debtorDecrease: '',
+      cash: '',
+      transfer: '',
+      total: 7540.00
+    },
+    {
+      delNumber: '002',
+      description: 'ค่ารักษาพยาบาล',
+      debtorIncrease: 3500,
+      debtorDecrease: 0,
+      cash: 0,
+      transfer: 0,
+      total: 3500
+    }
+  ],
+  totals: {
+    debtorIncrease: 3500,
+    debtorDecrease: 0,
+    cash: 1000,
+    transfer: 500,
+    grandTotal: 5000
+  }
+})
+
 const loading = ref(true)
 
 const formatCurrency = (num) => {
@@ -125,14 +155,14 @@ function createDocDefinition() {
     pageSize: 'A4',
     pageOrientation: 'landscape',
     pageMargins: [30, 60, 30, 80],
-    defaultStyle: { font: 'THSarabun', fontSize: 13 },
+    defaultStyle: { font: 'THSarabun', fontSize: 10 },
     
     header: (currentPage, pageCount) => ({
       columns: [
         { 
           text: 'มหาวิทยาลัยพะเยา\nรายงานการรับเงิน', 
           alignment: 'center',
-          fontSize: 16,
+          fontSize: 12,
           bold: true,
           margin: [0, 15, 0, 0]
         }
@@ -143,13 +173,14 @@ function createDocDefinition() {
       {
         text: `วันที่ ${formatThaiDate(data.dateKey)}`,
         alignment: 'right',
-        fontSize: 14,
+        fontSize: 12,
         bold: true,
         margin: [0, 0, 80, 0]
       },
 
       {
         margin: [70, 0, 0, 0],
+        fontSize: 10,
         table: {
           headerRows: 3,
           widths: [
@@ -188,7 +219,7 @@ function createDocDefinition() {
       {
         text: `วันที่ ${formatThaiDate(data.dateKey)}`,
         alignment: 'right',
-        fontSize: 14,
+        fontSize: 10,
         bold: true,
         margin: [0, 0, 80, 10]
       },
@@ -205,7 +236,7 @@ function createDocDefinition() {
             ],
             [
               { text: 'ยอดเงินสดรายวันรับส่ง', alignment: 'left' },
-              { text: '', alignment: 'right' }
+              { text: '12000', alignment: 'right' }
             ],
             [
               { text: 'ยอดเงินรายวันเงินโอน', alignment: 'left' },
@@ -444,67 +475,12 @@ if (receipt.receiptList && receipt.receiptList.length > 0) {
   }
 }
 
-onMounted(async () => {
-  try {
-    loading.value = true
-
-    // ดึง dateKey จาก URL params (แก้ไขให้ดึงถูกต้อง)
-    const dateKey = route.params.dateKey || route.query.dateKey
-    console.log('🔍 Loading daily report for:', dateKey)
-    console.log('Route params:', route.params)
-    console.log('Route query:', route.query)
-
-    if (!dateKey) {
-      console.error('❌ dateKey is required')
-      loading.value = false
-      return
-    }
-
-    // โหลดข้อมูลทั้งหมด
-    const receipts = loadReceipts()
-    console.log('📦 Total receipts:', receipts.length)
-
-    // กรองข้อมูลตามวันที่ (แก้ไขการเปรียบเทียบวันที่)
-    const filteredReceipts = receipts.filter(r => {
-      if (!r.createdAt) return false
-      
-      const receiptDate = r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt)
-      const year = receiptDate.getFullYear()
-      const month = String(receiptDate.getMonth() + 1).padStart(2, '0')
-      const day = String(receiptDate.getDate()).padStart(2, '0')
-      const receiptDateKey = `${year}-${month}-${day}`
-      
-      console.log('Comparing:', receiptDateKey, '===', dateKey)
-      return receiptDateKey === dateKey
-    })
-
-    console.log('✅ Found receipts for date:', filteredReceipts.length)
-
-    if (filteredReceipts.length === 0) {
-      console.warn('⚠️ No receipts found for this date')
-      // สร้างข้อมูลเปล่าเพื่อแสดง
-      dailyData.value = {
-        dateKey,
-        items: [],
-        totals: {
-          cash: 0,
-          check: 0,
-          transfer: 0,
-          deposit: 0,
-          grandTotal: 0
-        }
-      }
-    } else {
-      dailyData.value = processReceiptData(filteredReceipts, dateKey)
-    }
-
-    previewPdf()
-    loading.value = false
-  } catch (error) {
-    console.error('❌ Error loading daily report:', error)
-    loading.value = false
-  }
+onMounted(() => {
+  previewPdf()
+  loading.value = false
 })
+
+
 </script>
 
 <style lang="scss" scoped>

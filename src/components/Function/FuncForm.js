@@ -50,12 +50,13 @@ const addRow = () => {
       }
     }
   }
+
+
 const handleTypeChange = (index) => {
   // Optional: แสดง confirmation หรือ feedback
   const type = morelist.value[index].type
   console.log(`รายการที่ ${index + 1} เปลี่ยนเป็น: ${type === 'income' ? 'รายรับ' : 'รายจ่าย'}`)
 }
-  const showModal = ref(null)
   const rowItems = ref([])
 
 const totalAmount = computed(() => {
@@ -85,7 +86,6 @@ const totalAmount = computed(() => {
     formattedTotalAmount,
     totalAmount,
     morelist,
-    showModal,
     rowItems,
     addRow,
     removeRow,

@@ -917,10 +917,10 @@
 
 <!-- 📂 Dialog โหลด Template -->
 <div v-if="showLoadDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-  <div class="glass-panel rounded-2xl p-6 w-full max-w-2xl mx-4 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+  <div class="glass-panel rounded-2xl p-6 w-full max-w-3xl mx-4 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-xl font-bold text-slate-800">โหลด Template</h3>
-      <button @click="showLoadDialog = false; searchTerm = ''" class="text-slate-500 hover:text-slate-700">
+      <button @click="showLoadDialog = false; searchTerm = ''; expandedTemplates = {}" class="text-slate-500 hover:text-slate-700">
         <i class="ph ph-x text-2xl"></i>
       </button>
     </div>
@@ -938,77 +938,222 @@
       </div>
     </div>
     
-    <!-- ✅ รายการ Templates (เพิ่ม overflow-y-auto) -->
+    <!-- ✅ รายการ Templates -->
     <div class="flex-1 overflow-y-auto space-y-3 pr-2">
       <div
         v-for="template in filteredTemplates"
         :key="template.id"
-        class="bg-white/40 rounded-xl p-4 border border-white/50 hover:bg-white/60 transition-all group"
+        class="bg-white/40 rounded-xl border border-white/50 hover:bg-white/60 transition-all group overflow-hidden"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <div class="flex items-center gap-2 mb-2">
-              <h4 class="font-semibold text-slate-800">{{ template.name }}</h4>
-              <!-- ✅ แสดงคณะ -->
-              <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                {{ template.affiliationName || authStore.user?.affiliation }}
-              </span>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
-              <div><span class="font-medium">ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
-              <div><span class="font-medium">เบอร์:</span> {{ template.data.phone || '-' }}</div>
-              <div><span class="font-medium">หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
-              <div><span class="font-medium">กองทุน:</span> {{ template.data.fundName || '-' }}</div>
-              <div class="col-span-2">
-                <span class="font-medium">รายการ:</span> 
-                {{ template.data.receiptItems?.length || 0 }} รายการ
-                <span v-if="template.data.receiptItems?.length > 0" class="text-xs text-gray-500">
-                  ({{ template.data.receiptItems.map(r => r.itemName).join(', ').substring(0, 50) }}...)
+        <!-- Header - แสดงเสมอ -->
+        <div class="p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <h4 class="font-bold text-lg text-slate-800">{{ template.name }}</h4>
+                <span class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                  {{ template.affiliationName || authStore.user?.affiliation }}
                 </span>
+              </div>
+              
+              <!-- ข้อมูลพื้นฐาน -->
+              <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
+                <div><span class="font-medium">👤 ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
+                <div><span class="font-medium">📞 เบอร์:</span> {{ template.data.phone || '-' }}</div>
+                <div><span class="font-medium">🏢 หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
+                <div><span class="font-medium">💰 กองทุน:</span> {{ template.data.fundName || '-' }}</div>
               </div>
             </div>
             
-            <!-- ✅ แสดงใครสร้าง -->
-            <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
-              <span>
-                <i class="ph ph-user"></i> {{ template.userName || authStore.user?.fullName }}
+            <!-- ปุ่มจัดการ -->
+            <div class="flex gap-2 ml-4">
+              <button
+                @click="loadTemplate(template)"
+                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+                title="โหลด Template"
+              >
+                <i class="ph ph-download-simple"></i>
+                <span class="text-sm font-medium">โหลด</span>
+              </button>
+              <button
+                @click="deleteTemplate(template.id)"
+                class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all shadow-md hover:shadow-lg"
+                title="ลบ Template"
+              >
+                <i class="ph ph-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ✅ สรุปข้อมูล - แสดงเสมอ -->
+          <div class="flex flex-wrap gap-2 mb-2">
+            <!-- รายการนำส่งเงิน -->
+            <div v-if="template.data.receiptItems?.length > 0" 
+                 class="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
+              <i class="ph ph-list-bullets text-green-600"></i>
+              <span class="text-sm font-semibold text-green-800">
+                {{ template.data.receiptItems.length }} รายการนำส่ง
               </span>
-              <span>
-                <i class="ph ph-calendar"></i> {{ new Date(template.createdAt).toLocaleDateString('th-TH', { 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }) }}
+            </div>
+
+            <!-- บัญชีธนาคาร -->
+            <div v-if="template.data.bankTransfers?.length > 0" 
+                 class="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+              <i class="ph ph-bank text-blue-600"></i>
+              <span class="text-sm font-semibold text-blue-800">
+                {{ template.data.bankTransfers.length }} บัญชีธนาคาร
+              </span>
+            </div>
+
+            <!-- วิธีการชำระ -->
+            <div v-if="template.data.paymentMethods && Object.keys(template.data.paymentMethods).filter(k => template.data.paymentMethods[k].checked).length > 0" 
+                 class="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200">
+              <i class="ph ph-wallet text-purple-600"></i>
+              <span class="text-sm font-semibold text-purple-800">
+                {{ Object.keys(template.data.paymentMethods).filter(k => template.data.paymentMethods[k].checked).length }} วิธีชำระ
               </span>
             </div>
           </div>
-          
-          <div class="flex gap-2 ml-4">
-            <button
-              @click="loadTemplate(template)"
-              class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
-              title="โหลด Template"
-            >
-              <i class="ph ph-download-simple"></i>
-            </button>
-            <button
-              @click="deleteTemplate(template.id)"
-              class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
-              title="ลบ Template"
-            >
-              <i class="ph ph-trash"></i>
-            </button>
-          </div>
+
+          <!-- ✅ ปุ่ม Show More/Less -->
+          <button
+            @click="toggleTemplateDetails(template.id)"
+            class="w-full mt-2 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center gap-2"
+          >
+            <span>{{ isTemplateExpanded(template.id) ? 'ซ่อนรายละเอียด' : 'ดูรายละเอียด' }}</span>
+            <i :class="isTemplateExpanded(template.id) ? 'ph ph-caret-up' : 'ph ph-caret-down'" class="text-lg"></i>
+          </button>
         </div>
+
+        <!-- ✅ รายละเอียดแบบเต็ม - แสดงเมื่อกด Show More -->
+        <transition
+          enter-active-class="transition-all duration-300 ease-out"
+          leave-active-class="transition-all duration-200 ease-in"
+          enter-from-class="opacity-0 max-h-0"
+          enter-to-class="opacity-100 max-h-[1000px]"
+          leave-from-class="opacity-100 max-h-[1000px]"
+          leave-to-class="opacity-0 max-h-0"
+        >
+          <div v-show="isTemplateExpanded(template.id)" class="border-t border-gray-200 bg-white/20">
+            <div class="p-4 space-y-3">
+              
+              <!-- รายการนำส่งเงิน -->
+              <div v-if="template.data.receiptItems?.length > 0">
+                <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="ph ph-list-bullets text-green-600 text-lg"></i>
+                    <span class="font-bold text-green-800">รายการนำส่งเงิน ({{ template.data.receiptItems.length }} รายการ)</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div 
+                      v-for="(item, idx) in template.data.receiptItems" 
+                      :key="idx"
+                      class="flex items-center gap-2 text-sm bg-white/60 px-3 py-2 rounded border border-green-100"
+                    >
+                      <span class="text-green-600 font-bold min-w-[24px]">{{ idx + 1 }}.</span>
+                      <span class="text-slate-800 font-medium flex-1 truncate" :title="item.itemName">
+                        {{ item.itemName }}
+                      </span>
+                      <span v-if="item.isExpense" class="text-red-600 text-xs font-bold bg-red-50 px-2 py-0.5 rounded">รายจ่าย</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- บัญชีธนาคาร -->
+              <div v-if="template.data.bankTransfers?.length > 0">
+                <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="ph ph-bank text-blue-600 text-lg"></i>
+                    <span class="font-bold text-blue-800">บัญชีธนาคาร ({{ template.data.bankTransfers.length }} บัญชี)</span>
+                  </div>
+                  <div class="space-y-2">
+                    <div 
+                      v-for="(bank, idx) in template.data.bankTransfers" 
+                      :key="idx"
+                      class="flex items-center gap-3 bg-white/60 px-3 py-2.5 rounded border border-blue-100"
+                    >
+                      <span class="text-blue-600 font-bold text-lg min-w-[28px]">{{ idx + 1 }}.</span>
+                      <div class="flex-1">
+                        <div class="font-bold text-slate-800 text-base">{{ bank.accountData.bankName }}</div>
+                        <div class="text-sm text-slate-600 mt-0.5">
+                          <span class="font-semibold">{{ bank.accountData.accountNumber }}</span>
+                          <span class="text-gray-400 mx-2">•</span>
+                          <span class="text-gray-600">{{ bank.accountData.accountName }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- วิธีการชำระเงิน -->
+              <div v-if="template.data.paymentMethods && Object.keys(template.data.paymentMethods).filter(k => template.data.paymentMethods[k].checked).length > 0">
+                <div class="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="ph ph-wallet text-purple-600 text-lg"></i>
+                    <span class="font-bold text-purple-800">วิธีการชำระเงิน</span>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <template v-for="key in Object.keys(template.data.paymentMethods)" :key="key">
+                      <div v-if="template.data.paymentMethods[key].checked" 
+                           class="bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
+                        <div class="flex items-center gap-2">
+                          <span class="font-semibold text-slate-800">
+                            {{ 
+                              key === 'cash' ? '💵 เงินสด' :
+                              key === 'check' ? '🏦 เช็ค' :
+                              key === 'debtor' ? '📝 ลูกหนี้' :
+                              key === 'other' ? `📋 ${template.data.paymentMethods[key].name || 'อื่นๆ'}` :
+                              key
+                            }}
+                          </span>
+                        </div>
+                        <!-- รายละเอียดเช็ค -->
+                        <div v-if="key === 'check'" class="text-xs text-gray-600 mt-1 space-y-0.5">
+                          <div v-if="template.data.paymentMethods[key].bankName">
+                            ธนาคาร: <span class="font-medium">{{ template.data.paymentMethods[key].bankName }}</span>
+                          </div>
+                          <div v-if="template.data.paymentMethods[key].checkNumber">
+                            เลขที่เช็ค: <span class="font-medium">{{ template.data.paymentMethods[key].checkNumber }}</span>
+                          </div>
+                          <div v-if="template.data.paymentMethods[key].NumIncheck">
+                            เลขที่ในเช็ค: <span class="font-medium">{{ template.data.paymentMethods[key].NumIncheck }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer ภายใน Details -->
+              <div class="flex items-center gap-4 pt-2 text-xs text-gray-500 border-t border-gray-200">
+                <span class="flex items-center gap-1">
+                  <i class="ph ph-user"></i> 
+                  <span class="font-medium">{{ template.userName || authStore.user?.fullName }}</span>
+                </span>
+                <span class="flex items-center gap-1">
+                  <i class="ph ph-calendar"></i> 
+                  {{ new Date(template.createdAt).toLocaleDateString('th-TH', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </transition>
       </div>
       
       <!-- แสดงเมื่อไม่มี Template -->
-      <div v-if="filteredTemplates.length === 0" class="text-center py-8 text-gray-500">
-        <i class="ph ph-folder-open text-4xl mb-2"></i>
-        <p>{{ searchTerm ? 'ไม่พบ Template ที่ค้นหา' : 'ยังไม่มี Template' }}</p>
+      <div v-if="filteredTemplates.length === 0" class="text-center py-12 text-gray-500">
+        <i class="ph ph-folder-open text-6xl mb-3 opacity-50"></i>
+        <p class="text-lg font-medium">{{ searchTerm ? 'ไม่พบ Template ที่ค้นหา' : 'ยังไม่มี Template' }}</p>
+        <p class="text-sm mt-1">กดปุ่ม "บันทึก Template" เพื่อเริ่มต้น</p>
       </div>
     </div>
   </div>
@@ -1233,7 +1378,15 @@ const saveTemplate = () => {
       itemName: row.itemName,
       isExpense: row.isExpense || false
     }))
-
+  const savedBankTransfers = bankTransfers.value
+    .filter(bank => bank.accountData.accountNumber && bank.accountData.accountNumber.trim() !== '')
+    .map(bank => ({
+      accountData: {
+        accountNumber: bank.accountData.accountNumber,
+        bankName: bank.accountData.bankName,
+        accountName: bank.accountData.accountName
+      }
+    }))
   const template = {
     id: Date.now(),
     name: templateName.value.trim(),
@@ -1253,7 +1406,8 @@ const saveTemplate = () => {
         itemId: getItemByName(item.itemName)?.id,
         itemName: item.itemName,
         isExpense: item.isExpense
-      }))
+      })),
+      bankTransfers: savedBankTransfers
     },
     userId: authStore.user.id,
     userName: authStore.user.fullName,
@@ -1332,7 +1486,31 @@ const loadTemplate = async (template) => {
     addRow()
     addRow()
   }
-  
+    await nextTick()
+
+      // ✅ ส่วนที่ 3.1: โหลดรายการธนาคาร
+  if (template.data.bankTransfers && template.data.bankTransfers.length > 0) {
+    // ล้างรายการเดิม
+    bankTransfers.value = []
+    await nextTick()
+
+    // โหลดรายการจาก template (โดยไม่มี amount)
+    template.data.bankTransfers.forEach(savedBank => {
+      const newBank = {
+        id: Date.now() + Math.random(),
+        accountData: {
+          accountNumber: savedBank.accountData.accountNumber || '',
+          bankName: savedBank.accountData.bankName || '',
+          accountName: savedBank.accountData.accountName || ''
+        },
+        amount: '' // ไม่โหลด amount
+      }
+      bankTransfers.value.push(newBank)
+    })
+
+    await nextTick()
+    console.log('✅ Loaded bank transfers from template:', bankTransfers.value)
+  }
   showLoadDialog.value = false
   
   Swal.fire({
@@ -1382,6 +1560,15 @@ const filteredTemplates = computed(() => {
   )
 })
 
+const expandedTemplates = ref({})
+
+const toggleTemplateDetails = (templateId) => {
+  expandedTemplates.value[templateId] = !expandedTemplates.value[templateId]
+}
+
+const isTemplateExpanded = (templateId) => {
+  return expandedTemplates.value[templateId] || false
+}
 
 //--------------------------------------------------------------------------------------------
 
@@ -2542,8 +2729,19 @@ watch(
 </script>
 
 <style lang="scss" scoped>
-/* Animated Background Mesh */
-/* Animation สำหรับ Dialog */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ✅ ซ่อน scrollbar ใน transition */
+.max-h-0 {
+  overflow: hidden;
+}
+
+.max-h-\[1000px\] {
+  overflow: visible;
+}
 .fixed {
   animation: fadeIn 0.2s ease-in-out;
 }

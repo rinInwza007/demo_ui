@@ -37,6 +37,7 @@ import { vfs, fonts } from '../../../assets/fonts.js'
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
 
+
 const route = useRoute()
 const router = useRouter()
 
@@ -93,6 +94,11 @@ function convertNumberToThaiText(number: number) {
 function createDocDefinition() {
   const receipt = receiptData.value || {}
 
+  console.log('🎨 Creating PDF with:')
+  console.log('  Receipt data:', receipt)
+  console.log('  Rows count:', rows.length)
+  console.log('  Rows data:', rows)
+
   return {
     pageSize: 'A4',
     pageMargins: [20, 30, 20, 20],
@@ -108,7 +114,7 @@ function createDocDefinition() {
         ],
       },
       {
-        text: 'มหาวิทยาลัยพะเยา \n ใบล้างลูหนี้\n',
+        text: 'มหาวิทยาลัยพะเยา \n ใบนำส่งเงิน\n',
         style: 'header',
         alignment: 'center',
         margin: [0, -20, 0, 0],
@@ -407,6 +413,7 @@ onMounted(() => {
   try {
     loading.value = true
     const referenceId = route.params.id as string
+    console.log('🔍 Looking for referenceId:', referenceId)
 
     const historyData = localStorage.getItem('debtorClearHistory')
     if (!historyData) {
@@ -416,15 +423,21 @@ onMounted(() => {
     }
 
     const history = JSON.parse(historyData)
+    console.log('📚 Total history records:', history.length)
+
     const foundHistory = history.find((h: any) => h.referenceId === referenceId)
 
-    if (!foundHistory) {
+     if (!foundHistory) {
       console.error('❌ History item not found:', referenceId)
+      console.log('Available IDs:', history.map((h: any) => h.referenceId))
       loading.value = false
       return
     }
 
     console.log('✅ Found history item:', foundHistory)
+    console.log('📋 Items array:', foundHistory.items)
+    console.log('📋 Items count:', foundHistory.items?.length)
+    console.log('📋 First item:', foundHistory.items?.[0])
 
     receiptData.value = {
       referenceId: foundHistory.referenceId,
@@ -438,23 +451,58 @@ onMounted(() => {
       payments: foundHistory.payments || []
     }
 
-    const MIN_ROWS = 8
-    rows.splice(0, rows.length)
+// ✅ ลบ MIN_ROWS เพราะไม่ต้องการแถวว่างอีกต่อไป
+rows.splice(0, rows.length)
 
-    if (foundHistory.items && Array.isArray(foundHistory.items)) {
-      foundHistory.items.forEach((item: any) => {
-        rows.push({
-          item: item.itemName || '',
-          amount: item.amount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0.00',
-          ref: item.referenceId || '',
-          note: item.note || '',
-        })
+// ✅ เพิ่มการ debug เพื่อดู structure ของข้อมูล
+console.log('🔍 Full foundHistory:', foundHistory)
+console.log('🔍 foundHistory.items type:', typeof foundHistory.items)
+console.log('🔍 foundHistory.items value:', foundHistory.items)
+
+if (foundHistory.items && Array.isArray(foundHistory.items) && foundHistory.items.length > 0) {
+  console.log('🔄 Processing items:', foundHistory.items.length)
+
+  foundHistory.items.forEach((item: any, index: number) => {
+    console.log(`  Item ${index + 1}:`, {
+      itemName: item.itemName,
+      amount: item.amount,
+      referenceId: item.referenceId,
+      note: item.note
+    })
+
+    rows.push({
+      item: item.itemName || '',
+      amount: item.amount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0.00',
+      ref: item.referenceId || '',
+      note: item.note || '',
+    })
+  })
+
+  console.log('✅ Rows created:', rows.length)
+  console.log('📦 Rows data:', rows)
+} else {
+  console.error('❌ items is not valid array:', foundHistory.items)
+  console.warn('⚠️ Possible reasons:')
+  console.warn('   1. items was saved as string instead of array')
+  console.warn('   2. items array is empty')
+  console.warn('   3. Data structure in localStorage is incorrect')
+
+  // ✅ ลองหาข้อมูลจาก key อื่นๆ ที่อาจมี items
+  if (foundHistory.selectedItems && Array.isArray(foundHistory.selectedItems)) {
+    console.log('✅ Found items in selectedItems field')
+    foundHistory.selectedItems.forEach((item: any) => {
+      rows.push({
+        item: item.itemName || item.name || '',
+        amount: item.amount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0.00',
+        ref: item.referenceId || item.id || '',
+        note: item.note || '',
       })
-    }
+    })
+  }
+}
 
-    while (rows.length < MIN_ROWS) {
-      rows.push({ item: ' ', amount: ' ', ref: ' ', note: ' ' })
-    }
+// ✅ ลบ while loop ที่สร้างแถวว่าง - ให้ตารางขยายตามจำนวนรายการจริง
+console.log('📊 Final rows count:', rows.length)
 
     const total = foundHistory.total || 0
     summary.text = convertNumberToThaiText(total)

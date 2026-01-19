@@ -551,74 +551,54 @@ const clearSelectedDebtors = async () => {
     return
   }
 
-  // 1️⃣ Collect selected items
   const selectedList = rawData.value.filter(i =>
     selectedItems.value.has(i.id)
   )
 
-  // 2️⃣ Group by receipt / project
-  const grouped = selectedList.reduce((acc, item) => {
-    const key =
-      item._originalReceipt?.projectCode ||
-      item.receiptId ||
-      'UNKNOWN'
+  // =========================
+  // 1️⃣ สร้าง Summary Data สำหรับหน้า cleardebtor
+  // =========================
+  const receiptsGrouped = selectedList.reduce((acc, item) => {
+    const receiptId = item._originalReceipt?.projectCode || item.receiptId || 'unknown'
 
-    acc[key] ||= []
-    acc[key].push(item)
-    return acc
-  }, {} as Record<string, any[]>)
-
-  // 3️⃣ Build receipt payloads
-  const receipts = Object.entries(grouped).map(([receiptId, items]) => {
-    const first = items[0]
-    const origin = first._originalReceipt || {}
-
-    const totalDebtorAmount = items.reduce(
-      (sum, i) => sum + Number(i.balanceAmount || i.debtorAmount || 0),
-      0
-    )
-
-    return {
-      receiptId,
-      delNumber: receiptId,
-      projectCode: receiptId,
-      fullName: origin.fullName || first.responsible || 'ไม่ระบุ',
-      phone: origin.phone || '-',
-      department: first.department || origin.mainAffiliationName || 'ไม่ระบุ',
-      subDepartment: first.subDepartment || origin.subAffiliationName1 || '-',
-      fundName: origin.fundName || '-',
-      sendmoney: origin.sendmoney || '-',
-      items: items.map(i => ({
-        id: i.id,
-        itemName: i.itemName,
-        amount: Number(i.balanceAmount || i.debtorAmount || 0),
-        debtorAmount: Number(i.balanceAmount || i.debtorAmount || 0),
-        note: i.note || '',
-        responsible: i.responsible || origin.fullName || '-',
-        isClearedDebt: false,
-        _originalReceipt: origin,
-      })),
-      totalDebtorAmount,
-      createdAt: origin.createdAt || new Date().toISOString(),
+    if (!acc[receiptId]) {
+      acc[receiptId] = {
+        receiptId,
+        projectCode: item._originalReceipt?.projectCode || receiptId,
+        fullName: item._originalReceipt?.fullName || item.responsible || '-',
+        phone: item._originalReceipt?.phone || '-',
+        department: item.department || item._originalReceipt?.mainAffiliationName || '-',
+        subDepartment: item.subDepartment || '-',
+        sendmoney: item._originalReceipt?.sendmoney || 'รายได้',
+        fundName: item._originalReceipt?.fundName || '-',
+        createdAt: item._originalReceipt?.createdAt || new Date().toISOString(),
+        items: []
+      }
     }
-  })
 
-  // 4️⃣ Build summary
-  const summary = {
-    receipts,
-    totalDebtorAmount: receipts.reduce(
-      (sum, r) => sum + r.totalDebtorAmount,
-      0
-    ),
-    totalPaidAmount: 0,
-    totalItems: selectedList.length,
+    acc[receiptId].items.push({
+      ...item,
+      amount: Number(item.balanceAmount || item.debtorAmount || 0),
+      debtorAmount: Number(item.balanceAmount || item.debtorAmount || 0)
+    })
+
+    return acc
+  }, {})
+
+  const summaryData = {
+    receipts: Object.values(receiptsGrouped)
   }
 
-  // 5️⃣ Persist & navigate
-  localStorage.setItem(STORAGE_SUMMARY_KEY, JSON.stringify(summary))
+  // =========================
+  // 2️⃣ บันทึกข้อมูลลง localStorage
+  // =========================
+  localStorage.setItem(STORAGE_SUMMARY_KEY, JSON.stringify(summaryData))
+
+  // =========================
+  // 3️⃣ ไปหน้า cleardebtor (ไม่ใช่ PDF)
+  // =========================
   router.push('/cleardebtor/multi')
 }
-
 /* =========================
  * Actions
  * ========================= */

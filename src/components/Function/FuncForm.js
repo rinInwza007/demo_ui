@@ -4,6 +4,7 @@ export function useRowManager() {
 const morelist = ref([
   {
     id: 1,
+    itemId: null,
     type: 'income', // ✅
     itemName: null,
     referenceNo: '',
@@ -21,6 +22,7 @@ const morelist = ref([
 const addRow = () => {
   morelist.value.push({
     id: morelist.value.length + 1,
+    itemId: null,
     type: 'income', // ✅
     isExpense: false,
     itemName: null,
@@ -48,12 +50,13 @@ const addRow = () => {
       }
     }
   }
+
+
 const handleTypeChange = (index) => {
   // Optional: แสดง confirmation หรือ feedback
   const type = morelist.value[index].type
   console.log(`รายการที่ ${index + 1} เปลี่ยนเป็น: ${type === 'income' ? 'รายรับ' : 'รายจ่าย'}`)
 }
-  const showModal = ref(null)
   const rowItems = ref([])
 
 const totalAmount = computed(() => {
@@ -70,14 +73,19 @@ const totalAmount = computed(() => {
       maximumFractionDigits: 2,
     })
   })
-
+  const updateItemId = (index, itemId) => {
+    if (morelist.value[index]) {
+      morelist.value[index].itemId = itemId
+      console.log(`✅ Updated itemId at index ${index}:`, itemId)
+    }
+  }
   return {
+    updateItemId,
     formatAmount,
     allowOnlyDigits,
     formattedTotalAmount,
     totalAmount,
     morelist,
-    showModal,
     rowItems,
     addRow,
     removeRow,

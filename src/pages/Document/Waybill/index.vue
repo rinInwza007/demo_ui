@@ -14,7 +14,7 @@
               {{ isEditMode ? 'แก้ไขใบนำส่ง' : 'เพิ่มใบนำส่ง' }}
             </h1>
             <p class="text-xs text-slate-800 mt-0.5">
-              {{ isEditMode ? `เลขที่นำส่ง: ${formData.delNumber}` : 'กรอกข้อมูลใบนำส่งเงิน' }}
+              {{ isEditMode ? `เลขที่นำส่ง: ${formData.waybillNumber}` : 'กรอกข้อมูลใบนำส่งเงิน' }}
             </p>
           </div>
           <div class="flex items-center gap-3">
@@ -61,13 +61,13 @@
                     เลขที่นำส่ง <span class="text-red-500">*</span>
                   </label>
                   <InputText
-                    v-model="formData.delNumber"
+                    v-model="formData.waybillNumber"
                     placeholder="เลขที่นำส่ง"
                     class="transition-all duration-200"
                     @keypress="allowOnlyDigits"
                   />
-                  <span v-if="errors.delNumber" class="text-red-600 text-xs">
-                    {{ errors.delNumber }}
+                  <span v-if="errors.waybillNumber" class="text-red-600 text-xs">
+                    {{ errors.waybillNumber }}
                   </span>
                 </div>
 
@@ -109,7 +109,7 @@
                   </label>
                   <Selects
                     v-model="mainCategory"
-                    :options="[...Object.keys(options)]"
+                    :options="mainCategoryOptions"
                     placeholder="เลือกหน่วยงาน"
                     value-type="string"
                   />
@@ -192,7 +192,9 @@
                     </label>
                     <Selects
                       v-model="subCategory"
-                      :options="sub1OptionsArray"
+                      :options="sub1OptionsForSelect"
+                           option-label="label"  
+                      option-value="value"  
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
@@ -267,7 +269,9 @@
                     </label>
                     <Selects
                       v-model="subCategory"
-                      :options="sub1OptionsArray"
+                      :options="sub1OptionsForSelect"
+                          option-label="label"
+    option-value="value"
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
@@ -282,7 +286,9 @@
                     </label>
                     <Selects
                       v-model="subCategory2"
-                      :options="sub2OptionsArray"
+                      :options="sub2OptionsForSelect"
+                          option-label="label"
+    option-value="value"
                       placeholder="เลือกหน่วยงานย่อย"
                       value-type="string"
                     />
@@ -392,7 +398,7 @@
                     <div class="flex flex-col gap-2 mt-[13px]">
 <ItemNameSelect
   v-model="row.itemName"
-  @input="() => clearRowError(index, 'itemName')"
+  @input="(value) => handleItemNameChange(index, value)"
   :input-id="`itemName-${index}`"
   waybill-type="all"
   department="general"
@@ -911,10 +917,10 @@
 
 <!-- 📂 Dialog โหลด Template -->
 <div v-if="showLoadDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-  <div class="glass-panel rounded-2xl p-6 w-full max-w-2xl mx-4 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+  <div class="glass-panel rounded-2xl p-6 w-full max-w-3xl mx-4 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-xl font-bold text-slate-800">โหลด Template</h3>
-      <button @click="showLoadDialog = false; searchTerm = ''" class="text-slate-500 hover:text-slate-700">
+      <button @click="showLoadDialog = false; searchTerm = ''; expandedTemplates = {}" class="text-slate-500 hover:text-slate-700">
         <i class="ph ph-x text-2xl"></i>
       </button>
     </div>
@@ -932,77 +938,222 @@
       </div>
     </div>
     
-    <!-- ✅ รายการ Templates (เพิ่ม overflow-y-auto) -->
+    <!-- ✅ รายการ Templates -->
     <div class="flex-1 overflow-y-auto space-y-3 pr-2">
       <div
         v-for="template in filteredTemplates"
         :key="template.id"
-        class="bg-white/40 rounded-xl p-4 border border-white/50 hover:bg-white/60 transition-all group"
+        class="bg-white/40 rounded-xl border border-white/50 hover:bg-white/60 transition-all group overflow-hidden"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <div class="flex items-center gap-2 mb-2">
-              <h4 class="font-semibold text-slate-800">{{ template.name }}</h4>
-              <!-- ✅ แสดงคณะ -->
-              <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                {{ template.affiliationName || authStore.user?.affiliation }}
-              </span>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
-              <div><span class="font-medium">ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
-              <div><span class="font-medium">เบอร์:</span> {{ template.data.phone || '-' }}</div>
-              <div><span class="font-medium">หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
-              <div><span class="font-medium">กองทุน:</span> {{ template.data.fundName || '-' }}</div>
-              <div class="col-span-2">
-                <span class="font-medium">รายการ:</span> 
-                {{ template.data.receiptItems?.length || 0 }} รายการ
-                <span v-if="template.data.receiptItems?.length > 0" class="text-xs text-gray-500">
-                  ({{ template.data.receiptItems.map(r => r.itemName).join(', ').substring(0, 50) }}...)
+        <!-- Header - แสดงเสมอ -->
+        <div class="p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <h4 class="font-bold text-lg text-slate-800">{{ template.name }}</h4>
+                <span class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                  {{ template.affiliationName || authStore.user?.affiliation }}
                 </span>
+              </div>
+              
+              <!-- ข้อมูลพื้นฐาน -->
+              <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
+                <div><span class="font-medium">👤 ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
+                <div><span class="font-medium">📞 เบอร์:</span> {{ template.data.phone || '-' }}</div>
+                <div><span class="font-medium">🏢 หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
+                <div><span class="font-medium">💰 กองทุน:</span> {{ template.data.fundName || '-' }}</div>
               </div>
             </div>
             
-            <!-- ✅ แสดงใครสร้าง -->
-            <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
-              <span>
-                <i class="ph ph-user"></i> {{ template.userName || authStore.user?.fullName }}
+            <!-- ปุ่มจัดการ -->
+            <div class="flex gap-2 ml-4">
+              <button
+                @click="loadTemplate(template)"
+                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+                title="โหลด Template"
+              >
+                <i class="ph ph-download-simple"></i>
+                <span class="text-sm font-medium">โหลด</span>
+              </button>
+              <button
+                @click="deleteTemplate(template.id)"
+                class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all shadow-md hover:shadow-lg"
+                title="ลบ Template"
+              >
+                <i class="ph ph-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ✅ สรุปข้อมูล - แสดงเสมอ -->
+          <div class="flex flex-wrap gap-2 mb-2">
+            <!-- รายการนำส่งเงิน -->
+            <div v-if="template.data.receiptItems?.length > 0" 
+                 class="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
+              <i class="ph ph-list-bullets text-green-600"></i>
+              <span class="text-sm font-semibold text-green-800">
+                {{ template.data.receiptItems.length }} รายการนำส่ง
               </span>
-              <span>
-                <i class="ph ph-calendar"></i> {{ new Date(template.createdAt).toLocaleDateString('th-TH', { 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }) }}
+            </div>
+
+            <!-- บัญชีธนาคาร -->
+            <div v-if="template.data.bankTransfers?.length > 0" 
+                 class="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+              <i class="ph ph-bank text-blue-600"></i>
+              <span class="text-sm font-semibold text-blue-800">
+                {{ template.data.bankTransfers.length }} บัญชีธนาคาร
+              </span>
+            </div>
+
+            <!-- วิธีการชำระ -->
+            <div v-if="template.data.paymentMethods && Object.keys(template.data.paymentMethods).filter(k => template.data.paymentMethods[k].checked).length > 0" 
+                 class="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200">
+              <i class="ph ph-wallet text-purple-600"></i>
+              <span class="text-sm font-semibold text-purple-800">
+                {{ Object.keys(template.data.paymentMethods).filter(k => template.data.paymentMethods[k].checked).length }} วิธีชำระ
               </span>
             </div>
           </div>
-          
-          <div class="flex gap-2 ml-4">
-            <button
-              @click="loadTemplate(template)"
-              class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
-              title="โหลด Template"
-            >
-              <i class="ph ph-download-simple"></i>
-            </button>
-            <button
-              @click="deleteTemplate(template.id)"
-              class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
-              title="ลบ Template"
-            >
-              <i class="ph ph-trash"></i>
-            </button>
-          </div>
+
+          <!-- ✅ ปุ่ม Show More/Less -->
+          <button
+            @click="toggleTemplateDetails(template.id)"
+            class="w-full mt-2 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center gap-2"
+          >
+            <span>{{ isTemplateExpanded(template.id) ? 'ซ่อนรายละเอียด' : 'ดูรายละเอียด' }}</span>
+            <i :class="isTemplateExpanded(template.id) ? 'ph ph-caret-up' : 'ph ph-caret-down'" class="text-lg"></i>
+          </button>
         </div>
+
+        <!-- ✅ รายละเอียดแบบเต็ม - แสดงเมื่อกด Show More -->
+        <transition
+          enter-active-class="transition-all duration-300 ease-out"
+          leave-active-class="transition-all duration-200 ease-in"
+          enter-from-class="opacity-0 max-h-0"
+          enter-to-class="opacity-100 max-h-[1000px]"
+          leave-from-class="opacity-100 max-h-[1000px]"
+          leave-to-class="opacity-0 max-h-0"
+        >
+          <div v-show="isTemplateExpanded(template.id)" class="border-t border-gray-200 bg-white/20">
+            <div class="p-4 space-y-3">
+              
+              <!-- รายการนำส่งเงิน -->
+              <div v-if="template.data.receiptItems?.length > 0">
+                <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="ph ph-list-bullets text-green-600 text-lg"></i>
+                    <span class="font-bold text-green-800">รายการนำส่งเงิน ({{ template.data.receiptItems.length }} รายการ)</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div 
+                      v-for="(item, idx) in template.data.receiptItems" 
+                      :key="idx"
+                      class="flex items-center gap-2 text-sm bg-white/60 px-3 py-2 rounded border border-green-100"
+                    >
+                      <span class="text-green-600 font-bold min-w-[24px]">{{ idx + 1 }}.</span>
+                      <span class="text-slate-800 font-medium flex-1 truncate" :title="item.itemName">
+                        {{ item.itemName }}
+                      </span>
+                      <span v-if="item.isExpense" class="text-red-600 text-xs font-bold bg-red-50 px-2 py-0.5 rounded">รายจ่าย</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- บัญชีธนาคาร -->
+              <div v-if="template.data.bankTransfers?.length > 0">
+                <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="ph ph-bank text-blue-600 text-lg"></i>
+                    <span class="font-bold text-blue-800">บัญชีธนาคาร ({{ template.data.bankTransfers.length }} บัญชี)</span>
+                  </div>
+                  <div class="space-y-2">
+                    <div 
+                      v-for="(bank, idx) in template.data.bankTransfers" 
+                      :key="idx"
+                      class="flex items-center gap-3 bg-white/60 px-3 py-2.5 rounded border border-blue-100"
+                    >
+                      <span class="text-blue-600 font-bold text-lg min-w-[28px]">{{ idx + 1 }}.</span>
+                      <div class="flex-1">
+                        <div class="font-bold text-slate-800 text-base">{{ bank.accountData.bankName }}</div>
+                        <div class="text-sm text-slate-600 mt-0.5">
+                          <span class="font-semibold">{{ bank.accountData.accountNumber }}</span>
+                          <span class="text-gray-400 mx-2">•</span>
+                          <span class="text-gray-600">{{ bank.accountData.accountName }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- วิธีการชำระเงิน -->
+              <div v-if="template.data.paymentMethods && Object.keys(template.data.paymentMethods).filter(k => template.data.paymentMethods[k].checked).length > 0">
+                <div class="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="ph ph-wallet text-purple-600 text-lg"></i>
+                    <span class="font-bold text-purple-800">วิธีการชำระเงิน</span>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <template v-for="key in Object.keys(template.data.paymentMethods)" :key="key">
+                      <div v-if="template.data.paymentMethods[key].checked" 
+                           class="bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
+                        <div class="flex items-center gap-2">
+                          <span class="font-semibold text-slate-800">
+                            {{ 
+                              key === 'cash' ? '💵 เงินสด' :
+                              key === 'check' ? '🏦 เช็ค' :
+                              key === 'debtor' ? '📝 ลูกหนี้' :
+                              key === 'other' ? `📋 ${template.data.paymentMethods[key].name || 'อื่นๆ'}` :
+                              key
+                            }}
+                          </span>
+                        </div>
+                        <!-- รายละเอียดเช็ค -->
+                        <div v-if="key === 'check'" class="text-xs text-gray-600 mt-1 space-y-0.5">
+                          <div v-if="template.data.paymentMethods[key].bankName">
+                            ธนาคาร: <span class="font-medium">{{ template.data.paymentMethods[key].bankName }}</span>
+                          </div>
+                          <div v-if="template.data.paymentMethods[key].checkNumber">
+                            เลขที่เช็ค: <span class="font-medium">{{ template.data.paymentMethods[key].checkNumber }}</span>
+                          </div>
+                          <div v-if="template.data.paymentMethods[key].NumIncheck">
+                            เลขที่ในเช็ค: <span class="font-medium">{{ template.data.paymentMethods[key].NumIncheck }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer ภายใน Details -->
+              <div class="flex items-center gap-4 pt-2 text-xs text-gray-500 border-t border-gray-200">
+                <span class="flex items-center gap-1">
+                  <i class="ph ph-user"></i> 
+                  <span class="font-medium">{{ template.userName || authStore.user?.fullName }}</span>
+                </span>
+                <span class="flex items-center gap-1">
+                  <i class="ph ph-calendar"></i> 
+                  {{ new Date(template.createdAt).toLocaleDateString('th-TH', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </transition>
       </div>
       
       <!-- แสดงเมื่อไม่มี Template -->
-      <div v-if="filteredTemplates.length === 0" class="text-center py-8 text-gray-500">
-        <i class="ph ph-folder-open text-4xl mb-2"></i>
-        <p>{{ searchTerm ? 'ไม่พบ Template ที่ค้นหา' : 'ยังไม่มี Template' }}</p>
+      <div v-if="filteredTemplates.length === 0" class="text-center py-12 text-gray-500">
+        <i class="ph ph-folder-open text-6xl mb-3 opacity-50"></i>
+        <p class="text-lg font-medium">{{ searchTerm ? 'ไม่พบ Template ที่ค้นหา' : 'ยังไม่มี Template' }}</p>
+        <p class="text-sm mt-1">กดปุ่ม "บันทึก Template" เพื่อเริ่มต้น</p>
       </div>
     </div>
   </div>
@@ -1011,7 +1162,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick ,reactive} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Swal from 'sweetalert2'
@@ -1022,8 +1173,8 @@ import InputText from '@/components/input/inputtext.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import SendMoneySelect from '@/components/TomSelect/SendMoneyTomSelect.vue'
 import sidebar from '@/components/bar/sidebar.vue'
-import { options } from '@/components/data/departments'
-import { getAllOptions , isReceivableItem } from '@/components/data/ItemNameOption'
+import { departmentOptions } from '@/components/data/TSdepartments'
+import { getAllOptions , isReceivableItem ,getItemByName,getItemById } from '@/components/data/ItemNameOption'
 import { useReceiptStore } from '@/stores/recipt'
 import { useRowManager } from '@/components/Function/FuncForm'
 import { useBankTransferManager } from '@/components/Function/FuncBank'
@@ -1040,8 +1191,15 @@ const authStore = useAuthStore()
 const isEditMode = computed(() => !!route.params.id)
 const receiptId = computed(() => route.params.id)
 const isLoading = ref(false)
+const mainCategory = ref('')
+const subCategory = ref('')
+const subCategory2 = ref('')
+const mainCategoryId = ref('')
+const subCategoryId = ref('')
+const subCategoryId2 = ref('')
+const subId = ref('')
 
-const { allowOnlyDigits, morelist, addRow, removeRow, handleTypeChange, formattedTotalAmount } =
+const { allowOnlyDigits, updateItemId, morelist, addRow, removeRow, handleTypeChange, formattedTotalAmount } =
   useRowManager()
 
 const {
@@ -1060,7 +1218,7 @@ const {
 } = useBankTransferManager()
 // Form data
 const formData = ref({
-  delNumber: '',
+  waybillNumber: '',
   fullName: '',
   phone: '',
   mainAffiliationName: '',
@@ -1071,7 +1229,14 @@ const formData = ref({
   sendmoney: '',
   receiptList: '',
 })
-
+const form = reactive({
+  mainId: '',
+  mainName: '',
+  subId: '',
+  subName: '',
+  sub2Id: '',
+  sub2Name: '',
+})
 const bankOptions = [
   { label: 'ธนาคารกรุงไทย', value: 'ธนาคารกรุงไทย' },
   { label: 'ธนาคารกสิกรไทย', value: 'ธนาคารกสิกรไทย' },
@@ -1101,7 +1266,68 @@ const bankAccountOptions = ref([
     accountName: 'มหาวิทยาลัยพะเยา',
   },
 ])
+const sub1OptionsForSelect = computed(() =>
+  sub1OptionsArray.value.map(opt => ({
+    label: opt.name,   // โชว์
+    value: opt.id     // เก็บ
+  }))
+)
+const sub2OptionsForSelect = computed(() => {
+  return sub2OptionsArray.value.map(opt => ({
+    label: opt.name,
+    value: opt.id ?? opt.name,
+  }))
+})
+const mainCategoryOptions = computed(() => {
+  if (!departmentOptions) return []
+  return Object.keys(departmentOptions)
+})
 
+watch(subId, (id) => {
+  const found = sub1OptionsArray.value.find(o => o.id === id)
+  form.subName = found?.name ?? ''
+})
+const handleItemNameChange = (index, itemName) => {
+  morelist.value[index].itemName = itemName
+  
+  // ✅ อัพเดท itemId เมื่อเลือกรายการ
+  const item = getItemByName(itemName)
+  if (item) {
+    updateItemId(index, item.id)
+    console.log(`📝 Item selected: ${item.name} (ID: ${item.id})`)
+  } else {
+    updateItemId(index, null)
+  }
+  
+  clearRowError(index, 'itemName')
+  updateDebtorAmount()
+}
+watch(
+  () => morelist.value.map(row => ({ 
+    id: row.id, 
+    itemId: row.itemId, 
+    itemName: row.itemName 
+  })),
+  (newVal) => {
+    console.log('📋 MoreList State:', newVal)
+  },
+  { deep: true }
+)
+
+watch(
+  () => ({ 
+    mainId: mainCategoryId.value, 
+    mainName: mainCategory.value,
+    subId: subCategoryId.value,
+    subName: subCategory.value,
+    sub2Id: subCategoryId2.value,
+    sub2Name: subCategory2.value
+  }),
+  (newVal) => {
+    console.log('🏢 Categories State:', newVal)
+  },
+  { deep: true }
+)
 //ส่วนของtemplate --------------------------------------------------------------------------
 
 
@@ -1152,20 +1378,36 @@ const saveTemplate = () => {
       itemName: row.itemName,
       isExpense: row.isExpense || false
     }))
-
+  const savedBankTransfers = bankTransfers.value
+    .filter(bank => bank.accountData.accountNumber && bank.accountData.accountNumber.trim() !== '')
+    .map(bank => ({
+      accountData: {
+        accountNumber: bank.accountData.accountNumber,
+        bankName: bank.accountData.bankName,
+        accountName: bank.accountData.accountName
+      }
+    }))
   const template = {
     id: Date.now(),
     name: templateName.value.trim(),
     data: {
       fullName: formData.value.fullName,
       phone: formData.value.phone,
+      mainCategoryId: mainCategoryId.value,
       mainCategory: mainCategory.value,
+      subCategoryId: subCategoryId.value,
       subCategory: subCategory.value,
+      subCategoryId2: subCategoryId2.value,
       subCategory2: subCategory2.value,
       fundName: formData.value.fundName,
       sendmoney: formData.value.sendmoney,
       projectCode: formData.value.projectCode,
-      receiptItems: receiptItems // ✅ เพิ่มรายการ
+            receiptItems: receiptItems.map(item => ({
+        itemId: getItemByName(item.itemName)?.id,
+        itemName: item.itemName,
+        isExpense: item.isExpense
+      })),
+      bankTransfers: savedBankTransfers
     },
     userId: authStore.user.id,
     userName: authStore.user.fullName,
@@ -1202,16 +1444,21 @@ const loadTemplate = async (template) => {
   formData.value.sendmoney = template.data.sendmoney
   formData.value.projectCode = template.data.projectCode
   
-  mainCategory.value = template.data.mainCategory
-  await nextTick()
-  
-  if (template.data.subCategory) {
-    subCategory.value = template.data.subCategory
+  if (template.data.mainCategoryId) {
+    mainCategoryId.value = template.data.mainCategoryId
+    mainCategory.value = template.data.mainCategory
     await nextTick()
   }
   
-  if (template.data.subCategory2) {
-    subCategory2.value = template.data.subCategory2
+  if (template.data.subCategoryId) {
+    subCategoryId.value = template.data.subCategoryId
+    subCategory.value = template.data.subCategoryId
+    await nextTick()
+  }
+  
+  if (template.data.subCategoryId2) {
+    subCategoryId2.value = template.data.subCategoryId2
+    subCategory2.value = template.data.subCategoryId2
     await nextTick()
   }
   
@@ -1221,28 +1468,49 @@ const loadTemplate = async (template) => {
   
   // ✅ โหลดรายการนำส่งเงิน (เฉพาะชื่อรายการ)
   if (template.data.receiptItems && template.data.receiptItems.length > 0) {
-    morelist.value = template.data.receiptItems.map((item, index) => ({
-      id: index + 1,
-      referenceNo: '', // ไม่โหลดเลขที่อ้างอิง
-      itemName: item.itemName,
-      note: '',
-      amount: '', // ไม่โหลดจำนวนเงิน
-      type: item.isExpense ? 'expense' : 'income',
-      isExpense: item.isExpense || false
-    }))
-    
-    await nextTick()
-    
-    // Init TomSelect สำหรับแต่ละแถว
-    morelist.value.forEach((_, i) => {
-      initItemNameTomSelect(i)
+    morelist.value = template.data.receiptItems.map((item, index) => {
+      const itemData = item.itemId ? getItemById(item.itemId) : getItemByName(item.itemName)
+      return {
+        id: index + 1,
+        referenceNo: '',
+        itemName: itemData?.name || item.itemName,
+        itemId: itemData?.id,
+        note: '',
+        amount: '',
+        type: item.isExpense ? 'expense' : 'income',
+        isExpense: item.isExpense || false
+      }
     })
   } else {
     // ✅ ถ้าไม่มีรายการใน template ให้สร้างแถวว่าง 2 แถว (เหมือนตอนเริ่มต้น)
     addRow()
     addRow()
   }
-  
+    await nextTick()
+
+      // ✅ ส่วนที่ 3.1: โหลดรายการธนาคาร
+  if (template.data.bankTransfers && template.data.bankTransfers.length > 0) {
+    // ล้างรายการเดิม
+    bankTransfers.value = []
+    await nextTick()
+
+    // โหลดรายการจาก template (โดยไม่มี amount)
+    template.data.bankTransfers.forEach(savedBank => {
+      const newBank = {
+        id: Date.now() + Math.random(),
+        accountData: {
+          accountNumber: savedBank.accountData.accountNumber || '',
+          bankName: savedBank.accountData.bankName || '',
+          accountName: savedBank.accountData.accountName || ''
+        },
+        amount: '' // ไม่โหลด amount
+      }
+      bankTransfers.value.push(newBank)
+    })
+
+    await nextTick()
+    console.log('✅ Loaded bank transfers from template:', bankTransfers.value)
+  }
   showLoadDialog.value = false
   
   Swal.fire({
@@ -1292,6 +1560,15 @@ const filteredTemplates = computed(() => {
   )
 })
 
+const expandedTemplates = ref({})
+
+const toggleTemplateDetails = (templateId) => {
+  expandedTemplates.value[templateId] = !expandedTemplates.value[templateId]
+}
+
+const isTemplateExpanded = (templateId) => {
+  return expandedTemplates.value[templateId] || false
+}
 
 //--------------------------------------------------------------------------------------------
 
@@ -1357,21 +1634,28 @@ watch(
   { deep: true, flush: 'post' } // ⭐ เพิ่ม flush: 'post'
 )
 onMounted(async () => {
-  if (!isEditMode.value && authStore.user?.affiliationId) {
-    const defaultCategory = mapAffiliationToMainCategory(authStore.user.affiliationId)
-    if (defaultCategory) {
-      mainCategory.value = defaultCategory
-      await nextTick()
+  // ✅ ถ้าเป็น edit mode ให้โหลดข้อมูล
+  if (isEditMode.value) {
+    await loadReceiptData()
+  } else {
+    // ✅ ถ้าเป็นโหมดสร้างใหม่และมี affiliationId
+    if (authStore.user?.affiliationId) {
+      const defaultCategory = mapAffiliationToMainCategory(authStore.user.affiliationId)
+      if (defaultCategory) {
+        mainCategory.value = defaultCategory
+        const categoryData = departmentOptions[defaultCategory]
+        mainCategoryId.value = categoryData?.id || ''
+        await nextTick()
+      }
     }
-  }
-  if (!isEditMode.value) {
+    
+    // ✅ เพิ่มแถวว่าง 2 แถว
     addRow()
     addRow()
   }
 
   // รอให้ DOM สร้างแถวเสร็จก่อน init TomSelect
   await nextTick()
-  
   
   // Init TomSelect สำหรับแถวแรก
   morelist.value.forEach((_, i) => {
@@ -1381,13 +1665,10 @@ onMounted(async () => {
   await nextTick()
   updateDebtorAmount()
 
-  // ✅ ถ้าเป็น edit mode ให้โหลดข้อมูล
-  if (isEditMode.value) {
-    await loadReceiptData()
-  }
-
   loadUserTemplates()
 })
+
+
 const loadUserTemplates = () => {
   const storageKey = getTemplateStorageKey()
   if (!storageKey) return
@@ -1548,51 +1829,36 @@ const clearError = (field) => {
     delete errors.value[field]
   }
 }
-// ✅ เพิ่ม subCategory2
-const mainCategory = ref('')
-const subCategory = ref('')
-const subCategory2 = ref('')
 
 // ✅ Computed Properties
 const sub1OptionsArray = computed(() => {
   if (!mainCategory.value) return []
 
-  const data = options[mainCategory.value]
-  if (!data) return []
+  const data = departmentOptions[mainCategory.value]
 
-  const main = data.main
-
-  if (typeof main === 'string') {
-    return [main]
-  }
-
-  if (Array.isArray(main)) {
-    return [...main]
-  }
-
-  return []
-})
-
-const sub2OptionsArray = computed(() => {
-  if (!mainCategory.value || !subCategory.value) {
+  if (!data || !Array.isArray(data.main)) {
     return []
   }
 
-  const data = options[mainCategory.value]
-  if (!data) return []
+  return data.main
+})
 
-  const subs = data.subs
+const sub2OptionsArray = computed(() => {
+  if (!mainCategory.value || !subCategory.value) return []
 
-  if (Array.isArray(subs)) {
-    return [...subs]
+  const data = departmentOptions[mainCategory.value]
+
+  if (!data || !Array.isArray(data.subs)) {
+    return []
   }
 
-  return []
+  return data.subs
 })
+
 
 const hasAnySub = computed(() => {
   if (!mainCategory.value) return false
-  const data = options[mainCategory.value]
+  const data = departmentOptions[mainCategory.value]
   if (!data) return false
 
   const main = data.main
@@ -1601,21 +1867,43 @@ const hasAnySub = computed(() => {
 
 const hasSub2 = computed(() => {
   if (!mainCategory.value || !subCategory.value) return false
-  const data = options[mainCategory.value]
+  const data = departmentOptions[mainCategory.value]
   if (!data) return false
 
   const subs = data.subs
   return Array.isArray(subs) && subs.length > 0
 })
 
-// ✅ Watchers - Clear sub categories
-watch(mainCategory, () => {
+
+watch(mainCategory, (newVal) => {
+  const data = departmentOptions[newVal]
+  mainCategoryId.value = data?.id || ''
   subCategory.value = ''
+  subCategoryId.value = ''
   subCategory2.value = ''
+  subCategoryId2.value = ''
 })
 
-watch(subCategory, () => {
+watch(subCategory, (newVal) => {
+  if (!newVal) {
+    subCategoryId.value = ''
+    subCategory2.value = ''
+    subCategoryId2.value = ''
+    return
+  }
+  subCategoryId.value = newVal
   subCategory2.value = ''
+  subCategoryId2.value = ''
+  console.log('🏢 subCategory changed:', { id: newVal, name: sub1OptionsArray.value.find(o => o.id === newVal)?.name })
+})
+
+watch(subCategory2, (newVal) => {
+  if (!newVal) {
+    subCategoryId2.value = ''
+    return
+  }
+  subCategoryId2.value = newVal
+  console.log('🏢 subCategory2 changed:', { id: newVal, name: sub2OptionsArray.value.find(o => o.id === newVal)?.name })
 })
 
 const gotomainpage = () => {
@@ -1627,11 +1915,15 @@ const loadReceiptData = async () => {
 
   isLoading.value = true
   try {
-    const response = await axios.get(`/getReceipt/${receiptId.value}`)
-    const list = response.data
-    const data = Array.isArray(list) ? list.find((r) => r.id === receiptId.value) : list
+    // ✅ เปลี่ยนจาก /getReceipt เป็น /findOneReceipt
+    const response = await axios.get(`/findOneReceipt/${receiptId.value}`)
+    
+    // ✅ ข้อมูลจะอยู่ใน response.data โดยตรง (ไม่ใช่ array)
+    const data = response.data
 
     if (!data) throw new Error('Receipt not found')
+
+    console.log('📦 Loaded receipt data:', data)
 
     // 1. ล้างค่าเก่า
     mainCategory.value = ''
@@ -1639,13 +1931,10 @@ const loadReceiptData = async () => {
     subCategory2.value = ''
     formData.value.sendmoney = ''
 
-    // ✅ ล้างค่า paymentMethods อย่างถูกต้อง
+    // ✅ ล้างค่า paymentMethods อย่างถูกต้อง (ย้ายมาไว้ก่อน section อื่น)
     paymentMethods.value = {
-      krungthai1: { checked: false, amount: '' },
-      krungthai2: { checked: false, amount: '' },
-      krungthai3: { checked: false, amount: '' },
       cash: { checked: false, amount: '' },
-      check: { checked: false, amount: '' },
+      check: { checked: false, amount: '', bankName: '', checkNumber: '', NumIncheck: '' },
       debtor: { checked: false, amount: '' },
       other: { checked: false, name: '', amount: '' },
     }
@@ -1654,7 +1943,7 @@ const loadReceiptData = async () => {
     await nextTick()
 
     // 2-5. โหลดข้อมูลพื้นฐาน
-    formData.value.delNumber = data.delNumber || ''
+    formData.value.waybillNumber = data.waybillNumber || ''
     formData.value.fullName = data.fullName || ''
     formData.value.phone = data.phone || ''
     formData.value.fundName = data.fundName || ''
@@ -1662,29 +1951,63 @@ const loadReceiptData = async () => {
     formData.value.sendmoney = data.sendmoney || data.moneyType || ''
 
     // 3-5. โหลด categories
-    if (data.mainAffiliationName) {
+    if (data.mainAffiliationId && data.mainAffiliationName) {
+      mainCategoryId.value = data.mainAffiliationId
       mainCategory.value = data.mainAffiliationName
+      console.log('✅ Load mainCategory:', { id: mainCategoryId.value, name: mainCategory.value })
+      await nextTick()
+    } else if (data.mainAffiliationName) {
+      // fallback: หา id จาก name
+      mainCategory.value = data.mainAffiliationName
+      const categoryData = departmentOptions[data.mainAffiliationName]
+      mainCategoryId.value = categoryData?.id || ''
       await nextTick()
     }
 
-    if (data.subAffiliationName1) {
-      subCategory.value = data.subAffiliationName1
+    if (data.subAffiliationId1) {
+      subCategoryId.value = data.subAffiliationId1
+      subCategory.value = data.subAffiliationId1
+      console.log('✅ Load subCategory:', { id: subCategoryId.value, value: subCategory.value })
+      await nextTick()
+    } else if (data.subAffiliationName1) {
+      const found = sub1OptionsArray.value.find(opt => opt.name === data.subAffiliationName1)
+      if (found) {
+        subCategoryId.value = found.id
+        subCategory.value = found.id
+        console.log('✅ Load subCategory (fallback):', { id: found.id, name: found.name })
+      }
       await nextTick()
     }
 
-    if (data.subAffiliationName2) {
-      subCategory2.value = data.subAffiliationName2
+    if (data.subAffiliationId2) {
+      subCategoryId2.value = data.subAffiliationId2
+      subCategory2.value = data.subAffiliationId2
+      console.log('✅ Load subCategory2:', { id: subCategoryId2.value, value: subCategory2.value })
+      await nextTick()
+    } else if (data.subAffiliationName2) {
+      const found = sub2OptionsArray.value.find(opt => opt.name === data.subAffiliationName2)
+      if (found) {
+        subCategoryId2.value = found.id
+        subCategory2.value = found.id
+        console.log('✅ Load subCategory2 (fallback):', { id: found.id, name: found.name })
+      }
       await nextTick()
     }
 
-    // ✅ 6. โหลด paymentMethods พร้อม debug
+    // ✅ 6. โหลด paymentMethods พร้อม debug (แก้ไขส่วนนี้)
     console.log('📦 Payment Methods from API:', data.paymentMethods)
 
-    if (data.paymentMethods) {
+    if (data.paymentMethods && typeof data.paymentMethods === 'object') {
       Object.keys(data.paymentMethods).forEach((key) => {
         const methodData = data.paymentMethods[key]
 
-        if (!methodData) return
+        // ✅ ตรวจสอบว่า key นี้มีใน paymentMethods.value หรือไม่
+        if (!paymentMethods.value[key]) {
+          console.warn(`⚠️ Unknown payment method: ${key}`)
+          return
+        }
+
+        if (!methodData || typeof methodData !== 'object') return
 
         if (methodData.checked === true) {
           paymentMethods.value[key].checked = true
@@ -1702,12 +2025,14 @@ const loadReceiptData = async () => {
             }
           }
 
+          // ✅ โหลดข้อมูลเฉพาะสำหรับ check
           if (key === 'check') {
             paymentMethods.value[key].bankName = methodData.bankName || ''
             paymentMethods.value[key].checkNumber = methodData.checkNumber || ''
             paymentMethods.value[key].NumIncheck = methodData.NumIncheck || ''
           }
 
+          // ✅ โหลดข้อมูลเฉพาะสำหรับ other
           if (key === 'other' && methodData.name) {
             paymentMethods.value[key].name = methodData.name
           }
@@ -1719,15 +2044,13 @@ const loadReceiptData = async () => {
       await nextTick()
     }
 
-    // ✅ 7. โหลดข้อมูลธนาคาร (ส่วนที่แก้ไข)
+    // ✅ 7. โหลดข้อมูลธนาคาร
     console.log('🏦 Bank Transfers from API:', data.bankTransfers)
     
     if (data.bankTransfers && Array.isArray(data.bankTransfers) && data.bankTransfers.length > 0) {
-      // ล้างข้อมูลเก่าก่อน
       bankTransfers.value = []
       await nextTick()
       
-      // โหลดข้อมูลใหม่
       loadBankTransfers(data.bankTransfers)
       await nextTick()
       
@@ -1736,15 +2059,25 @@ const loadReceiptData = async () => {
 
     // 8. โหลด receiptList
     if (data.receiptList && Array.isArray(data.receiptList) && data.receiptList.length > 0) {
-      morelist.value = data.receiptList.map((item, index) => ({
-        id: index + 1,
-        referenceNo: item.referenceNo || '',
-        itemName: item.itemName || '',
-        note: item.note || '',
-        amount: item.amount || 0,
-        type: item.type || 'income',
-        isExpense: item.type === 'expense',
-      }))
+      morelist.value = data.receiptList.map((item, index) => {
+        let itemData
+        if (item.itemId) {
+          itemData = getItemById(item.itemId)
+        } else if (item.itemName) {
+          itemData = getItemByName(item.itemName)
+        }
+
+        return {
+          id: index + 1,
+          referenceNo: item.referenceNo || '',
+          itemId: itemData?.id || item.itemId,
+          itemName: itemData?.name || item.itemName || '',
+          note: item.note || '',
+          amount: item.amount || 0,
+          type: item.type || 'income',
+          isExpense: item.type === 'expense',
+        }
+      })
 
       await nextTick()
 
@@ -1777,7 +2110,7 @@ const loadReceiptData = async () => {
       sendmoney: formData.value.sendmoney,
       paymentMethods: paymentMethods.value,
       receiptList: morelist.value,
-      bankTransfers: bankTransfers.value, // เพิ่มบรรทัดนี้
+      bankTransfers: bankTransfers.value,
     })
 
     Swal.fire({
@@ -1794,7 +2127,7 @@ const loadReceiptData = async () => {
       text: 'ไม่สามารถโหลดข้อมูลใบนำส่งได้',
       confirmButtonColor: '#DC2626',
     }).then(() => {
-      router.push('/')
+      router.push('/indexwaybill')
     })
   } finally {
     isLoading.value = false
@@ -1870,10 +2203,14 @@ const netTotalAmount = computed(() => {
   })
   return total
 })
+// ✅ แก้ไข Watch ให้ปลอดภัยขึ้น
 Object.keys(paymentMethods.value).forEach((key) => {
   watch(
-    () => paymentMethods.value[key].checked,
+    () => paymentMethods.value[key]?.checked, // ✅ เพิ่ม optional chaining
     (checked) => {
+      // ✅ ตรวจสอบว่า key มีอยู่จริง
+      if (!paymentMethods.value[key]) return
+
       if (!checked) {
         // ล้างค่า amount และ name
         paymentMethods.value[key].amount = ''
@@ -1896,11 +2233,15 @@ Object.keys(paymentMethods.value).forEach((key) => {
     },
   )
 })
+
 watch(
   () => paymentMethods.value,
   (newVal) => {
     Object.keys(newVal).forEach((key) => {
       const method = newVal[key]
+
+      // ✅ ตรวจสอบว่า method มีอยู่จริง
+      if (!method || typeof method !== 'object') return
 
       if (method.checked) {
         // เคลียร์ error amount เมื่อกรอกจำนวนเงิน
@@ -1963,8 +2304,8 @@ const saveData = async () => {
     errors.value.fullName = 'กรุณากรอก "ชื่อ"'
     hasError = true
   }
-  if (!formData.value.delNumber) {
-    errors.value.delNumber = 'กรุณากรอก "เลขที่นำส่ง"'
+  if (!formData.value.waybillNumber) {
+    errors.value.waybillNumber = 'กรุณากรอก "เลขที่นำส่ง"'
     hasError = true
   }
   if (!formData.value.phone) {
@@ -2239,31 +2580,44 @@ const saveData = async () => {
   })
 if (!isEditMode.value) {
   try {
-    const checkResponse = await axios.get(`/checkDelNumber/${formData.value.delNumber}`)
+    const checkResponse = await axios.get(`/checkwaybillNumber/${formData.value.waybillNumber}`)
     if (checkResponse.data.exists) {
       Swal.fire({
         icon: 'error',
         title: 'เลขที่นำส่งซ้ำ',
-        text: `เลขที่นำส่ง "${formData.value.delNumber}" มีอยู่ในระบบแล้ว กรุณาใช้เลขที่อื่น`,
+        text: `เลขที่นำส่ง "${formData.value.waybillNumber}" มีอยู่ในระบบแล้ว กรุณาใช้เลขที่อื่น`,
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#DC2626',
       })
       return
     }
   } catch (err) {
-    console.error('Error checking delNumber:', err)
+    console.error('Error checking waybillNumber:', err)
   }
 }
   const bankTransfersData = getBankTransfersData()
-  
+    const getSubName1 = () => {
+    if (!subCategoryId.value) return ''
+    const found = sub1OptionsArray.value.find(opt => opt.id === subCategoryId.value)
+    return found?.name || ''
+  }
+
+  const getSubName2 = () => {
+    if (!subCategoryId2.value) return ''
+    const found = sub2OptionsArray.value.find(opt => opt.id === subCategoryId2.value)
+    return found?.name || ''
+  }
   const payload = {
-    delNumber: formData.value.delNumber,
+    waybillNumber: formData.value.waybillNumber,
     fullName: formData.value.fullName,
     moneyTypeNote: 'Waybill',
     phone: formData.value.phone,
+    mainAffiliationId: mainCategoryId.value,
     mainAffiliationName: mainCategory.value,
-    subAffiliationName1: subCategory.value || '',
-    subAffiliationName2: subCategory2.value || '',
+    subAffiliationId1: subCategoryId.value,
+    subAffiliationName1: getSubName1(),
+    subAffiliationId2: subCategoryId2.value,
+    subAffiliationName2: getSubName2(),
     fundName: formData.value.fundName,
     moneyType: formData.value.sendmoney,
     projectCode: formData.value.projectCode,
@@ -2271,17 +2625,23 @@ if (!isEditMode.value) {
     netTotalAmount: totalSection2,
     paymentMethods: paymentMethodsData,
     totalPaymentAmount: totalSection3,
-    receiptList: validRows,
+        receiptList: validRows.map(row => {
+      const item = getItemByName(row.itemName)
+      return {
+        ...row,
+        itemId: item?.id
+      }
+    }),
     affiliationId: authStore.user?.affiliationId || '',
     affiliationName: authStore.user?.affiliation || mainCategory.value,
     bankTransfers: bankTransfersData,
   }
 
   if (isEditMode.value) {
-    payload.id = formData.value.delNumber  // ✅ ใช้ delNumber แทน
+    payload.id = formData.value.waybillNumber // ✅ ใช้ waybillNumber แทน
     payload.updatedAt = currentDateTime
   } else {
-    payload.id = formData.value.delNumber  // ✅ ใช้ delNumber แทน
+    payload.id = formData.value.waybillNumber  // ✅ ใช้ waybillNumber แทน
     payload.createdAt = currentDateTime
     payload.updatedAt = currentDateTime
   }
@@ -2305,7 +2665,7 @@ if (!isEditMode.value) {
 await Swal.fire({
   icon: 'success',
   title: isEditMode.value ? 'อัพเดตสำเร็จ!' : 'บันทึกสำเร็จ!',
-  text: `${isEditMode.value ? 'อัพเดต' : 'บันทึก'}ใบนำส่งเงินเลขที่ ${formData.value.delNumber} เรียบร้อยแล้ว`,
+  text: `${isEditMode.value ? 'อัพเดต' : 'บันทึก'}ใบนำส่งเงินเลขที่ ${formData.value.waybillNumber} เรียบร้อยแล้ว`,
   confirmButtonText: 'ตกลง',
   confirmButtonColor: '#7E22CE',
   timer: 2000,
@@ -2369,8 +2729,19 @@ watch(
 </script>
 
 <style lang="scss" scoped>
-/* Animated Background Mesh */
-/* Animation สำหรับ Dialog */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ✅ ซ่อน scrollbar ใน transition */
+.max-h-0 {
+  overflow: hidden;
+}
+
+.max-h-\[1000px\] {
+  overflow: visible;
+}
 .fixed {
   animation: fadeIn 0.2s ease-in-out;
 }

@@ -24,7 +24,7 @@ type SummaryEvent = {
   sub2?: string
   fundName?: string
   fullName?: string
-  delNumber?: string
+  waybillNumber?: string
 }
 
 /** -------------------------
@@ -52,12 +52,12 @@ const guessAffIdFromName = (name: string) => {
 }
 
 /** ✅ ค้นหา receipt จาก delNumber หรือ id */
-const findReceiptByDelNumber = (db: any[], searchId: string) => {
+const findReceiptByWaybillNumber = (db: any[], searchId: string) => {
   const decoded = decodeURIComponent(searchId).trim()
 
   return db.find(
     (r: any) =>
-      String(r.delNumber || '').trim() === decoded ||
+      String(r.waybillNumber || '').trim() === decoded ||
       String(r.id || '').trim() === decoded
   )
 }
@@ -84,7 +84,7 @@ const saveToBothStorages = (receipt: any) => {
 
   // 1. บันทึก storage หลัก
   const mainDb = loadReceipts()
-  const existingIndex = mainDb.findIndex(r => r.delNumber === receipt.delNumber)
+  const existingIndex = mainDb.findIndex(r => r.waybillNumber === receipt.waybillNumber)
 
   if (existingIndex >= 0) {
     mainDb[existingIndex] = receipt
@@ -93,12 +93,12 @@ const saveToBothStorages = (receipt: any) => {
   }
 
   saveReceipts(mainDb)
-  console.log('✅ [1/2] Main Storage saved:', receipt.delNumber)
+  console.log('✅ [1/2] Main Storage saved:', receipt.waybillNumber)
   console.log('   📦 Main Storage count:', mainDb.length)
 
   // 2. บันทึก summary storage
   const summaryDb = loadSummaryStorage()
-  const summaryIndex = summaryDb.findIndex((r: any) => r.delNumber === receipt.delNumber)
+  const summaryIndex = summaryDb.findIndex((r: any) => r.waybillNumber === receipt.waybillNumber)
 
   if (summaryIndex >= 0) {
     summaryDb[summaryIndex] = receipt
@@ -107,7 +107,7 @@ const saveToBothStorages = (receipt: any) => {
   }
 
   saveSummaryStorage(summaryDb)
-  console.log('✅ [2/2] Summary Storage saved:', receipt.delNumber)
+  console.log('✅ [2/2] Summary Storage saved:', receipt.waybillNumber)
   console.log('   📦 Summary Storage count:', summaryDb.length)
 
   // Verify sync
@@ -122,14 +122,14 @@ const saveToBothStorages = (receipt: any) => {
 }
 
 /** ✅ ลบจากทั้ง 2 storage พร้อมกัน */
-const deleteFromBothStorages = (delNumber: string) => {
+const deleteFromBothStorages = (waybillNumber: string) => {
   console.log('🗑️ Starting dual storage delete...')
-  console.log('   Deleting:', delNumber)
+  console.log('   Deleting:', waybillNumber)
 
   // 1. ลบจาก storage หลัก
   const mainDb = loadReceipts()
   const beforeMain = mainDb.length
-  const filteredMain = mainDb.filter(r => r.delNumber !== delNumber)
+  const filteredMain = mainDb.filter(r => r.waybillNumber !== waybillNumber)
   saveReceipts(filteredMain)
   console.log('✅ [1/2] Main Storage deleted')
   console.log('   📦 Before:', beforeMain, '→ After:', filteredMain.length)
@@ -137,7 +137,7 @@ const deleteFromBothStorages = (delNumber: string) => {
   // 2. ลบจาก summary storage
   const summaryDb = loadSummaryStorage()
   const beforeSummary = summaryDb.length
-  const filteredSummary = summaryDb.filter((r: any) => r.delNumber !== delNumber)
+  const filteredSummary = summaryDb.filter((r: any) => r.waybillNumber !== waybillNumber)
   saveSummaryStorage(filteredSummary)
   console.log('✅ [2/2] Summary Storage deleted')
   console.log('   📦 Before:', beforeSummary, '→ After:', filteredSummary.length)
@@ -186,8 +186,8 @@ const ensureReceiptFields = (r: any): any => {
     moneyTypeNote: r?.moneyTypeNote ?? 'Waybill',
     isLocked: r?.isLocked ?? false,
     moneyType: r?.moneyType || r?.sendmoney || 'transfer',
-    delNumber: r?.delNumber || r?.id || '',
-    id: r?.delNumber || r?.id || '', // ✅ id = delNumber
+    waybillNumber: r?.waybillNumber || r?.id || '',
+    id: r?.waybillNumber || r?.id || '', // ✅ id = waybillNumber
     createdAt,
     updatedAt,
   }
@@ -345,7 +345,7 @@ const receiptToSummaryEvent = (r: any): SummaryEvent | null => {
     sub2: r.subAffiliationName2 || '',
     fundName: r.fundName || r.moneyTypeNote || '',
     fullName: r.fullName || '',
-    delNumber: r.delNumber || r.id || '',
+    waybillNumber: r.waybillNumber || r.id || '',
   }
 }
 
@@ -353,7 +353,7 @@ const dispatchUpdateEvents = (payload: {
   action: 'create' | 'update' | 'delete' | 'bulk-update'
   data?: any
   id?: string
-  delNumber?: string
+  waybillNumber?: string
   list?: any[]
 }) => {
   const ts = Date.now().toString()
@@ -396,15 +396,15 @@ export function setupAxiosMock() {
   const mock = new AxiosMockAdapter(axios, { delayResponse: 300 })
 
   /** ✅ GET /checkDelNumber/:delNumber - ตรวจสอบเลขซ้ำ */
-  mock.onGet(/\/checkDelNumber\/([^/]+)$/).reply((config) => {
-    const delNumber = config.url?.match(/\/checkDelNumber\/([^/]+)$/)?.[1]
-    if (!delNumber) return [400, { exists: false }]
+  mock.onGet(/\/checkwaybillNumber\/([^/]+)$/).reply((config) => {
+    const waybillNumber = config.url?.match(/\/checkwaybillNumber\/([^/]+)$/)?.[1]
+    if (!waybillNumber) return [400, { exists: false }]
 
-    const decoded = decodeURIComponent(delNumber)
+    const decoded = decodeURIComponent(waybillNumber)
     const db = loadReceipts().map(ensureReceiptFields)
-    const exists = db.some(r => r.delNumber === decoded)
+    const exists = db.some(r => r.waybillNumber === decoded)
 
-    return [200, { exists, delNumber: decoded }]
+    return [200, { exists, waybillNumber: decoded }]
   })
 
   /** GET /findOneReceipt/:id */
@@ -417,18 +417,18 @@ export function setupAxiosMock() {
 
     const decoded = decodeURIComponent(id)
     const db = loadReceipts().map(ensureReceiptFields)
-    const found = findReceiptByDelNumber(db, decoded)
+    const found = findReceiptByWaybillNumber(db, decoded)
 
     if (!found) {
       console.warn('❌ findOneReceipt - Not found:', decoded)
       return [404, {
         message: 'Receipt not found',
         searchedId: decoded,
-        availableDelNumbers: db.map(r => r.delNumber).filter(Boolean)
+        availableWaybillNumbers: db.map(r => r.waybillNumber).filter(Boolean)
       }]
     }
 
-    console.log('✅ findOneReceipt - Found:', found.delNumber)
+    console.log('✅ findOneReceipt - Found:', found.waybillNumber)
     return [200, serializeReceipt(normalizeBoth(found))]
   })
 
@@ -436,16 +436,16 @@ export function setupAxiosMock() {
   mock.onGet(/\/getReceipt\/([^?]+)$/).reply((config) => {
     const url = config.url || ''
     const match = url.match(/\/getReceipt\/([^?]+)$/)
-    const delNumber = match?.[1]
+    const waybillNumber = match?.[1]
 
-    if (!delNumber) {
-      console.error('❌ getReceipt - No delNumber provided')
-      return [400, { message: 'delNumber required' }]
+    if (!waybillNumber) {
+      console.error('❌ getReceipt - No waybillNumber provided')
+      return [400, { message: 'waybillNumber required' }]
     }
 
-    const decoded = decodeURIComponent(delNumber)
+    const decoded = decodeURIComponent(waybillNumber)
     const db = loadReceipts().map(ensureReceiptFields)
-    const found = findReceiptByDelNumber(db, decoded)
+    const found = findReceiptByWaybillNumber(db, decoded)
 
     if (!found) {
       console.warn('❌ getReceipt - Not found:', decoded)
@@ -453,13 +453,13 @@ export function setupAxiosMock() {
         404,
         {
           message: 'Receipt not found',
-          requestedDelNumber: decoded,
-          availableDelNumbers: db.map(r => r.delNumber).filter(Boolean),
+          requestedWaybillNumber: decoded,
+          availableWaybillNumbers: db.map(r => r.waybillNumber).filter(Boolean),
         },
       ]
     }
 
-    console.log('✅ getReceipt - Found:', found.delNumber)
+    console.log('✅ getReceipt - Found:', found.waybillNumber)
     return [200, serializeReceipt(normalizeBoth(found))]
   })
 
@@ -469,7 +469,7 @@ export function setupAxiosMock() {
 
     const url = new URL(config.url!, window.location.origin)
     const fullName = url.searchParams.get('fullName')
-    const delNumber = url.searchParams.get('delNumber')
+    const waybillNumber = url.searchParams.get('waybillNumber')
     const affiliationId = url.searchParams.get('affiliationId')
     const q = url.searchParams.get('q')
 
@@ -481,8 +481,8 @@ export function setupAxiosMock() {
       )
     }
 
-    if (delNumber) {
-      list = list.filter((r) => r.delNumber === delNumber)
+    if (waybillNumber) {
+      list = list.filter((r) => r.waybillNumber === waybillNumber)
     }
 
     if (affiliationId) {
@@ -494,7 +494,7 @@ export function setupAxiosMock() {
       list = list.filter(
         (r) =>
           (r.fullName || '').toLowerCase().includes(s) ||
-          (r.delNumber || '').toLowerCase().includes(s) ||
+          (r.waybillNumber || '').toLowerCase().includes(s) ||
           (r.affiliationName || '').toLowerCase().includes(s) ||
           (r.mainAffiliationName || '').toLowerCase().includes(s)
       )
@@ -510,24 +510,24 @@ export function setupAxiosMock() {
 
     const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-    if (!incoming.delNumber) {
-      console.error('❌ No delNumber')
-      return [400, { message: 'delNumber is required' }]
+    if (!incoming.waybillNumber) {
+      console.error('❌ No waybillNumber')
+      return [400, { message: 'waybillNumber is required' }]
     }
 
     const db = loadReceipts().map(ensureReceiptFields)
 
-    const existing = findReceiptByDelNumber(db, incoming.delNumber)
+    const existing = findReceiptByWaybillNumber(db, incoming.waybillNumber)
     if (existing) {
-      console.error('❌ Duplicate delNumber:', incoming.delNumber)
-      return [409, { message: 'Duplicate delNumber', delNumber: incoming.delNumber }]
+      console.error('❌ Duplicate waybillNumber:', incoming.waybillNumber)
+      return [409, { message: 'Duplicate waybillNumber', waybillNumber: incoming.waybillNumber }]
     }
 
     const normalized = normalizeBoth(incoming)
     const now = new Date()
     normalized.createdAt = normalized.createdAt ?? now
     normalized.updatedAt = now
-    normalized.id = normalized.delNumber // ✅ ให้ id = delNumber
+    normalized.id = normalized.waybillNumber // ✅ ให้ id = waybillNumber
 
     const sanitized = sanitizeReceipt(normalized)
 
@@ -539,11 +539,11 @@ export function setupAxiosMock() {
     dispatchUpdateEvents({
       action: 'create',
       data: sanitized,
-      delNumber: sanitized.delNumber,
+      waybillNumber: sanitized.waybillNumber,
       list: next,
     })
 
-    console.log('✅ Receipt saved to both storages:', sanitized.delNumber)
+    console.log('✅ Receipt saved to both storages:', sanitized.waybillNumber)
     return [201, serializeReceipt(sanitized)]
   })
 
@@ -557,26 +557,26 @@ mock.onPost('/updateReceipt').reply(async (config) => {
     return [400, { message: 'receipt object is required' }]
   }
 
-  const oldDelNumber = receipt.id || receipt.delNumber
-  if (!oldDelNumber) {
-    console.error('❌ No delNumber in receipt')
-    return [400, { message: 'receipt.delNumber is required' }]
+  const oldWaybillNumber = receipt.id || receipt.waybillNumber
+  if (!oldWaybillNumber) {
+    console.error('❌ No waybillNumber in receipt')
+    return [400, { message: 'receipt.waybillNumber is required' }]
   }
 
   const db = loadReceipts().map(ensureReceiptFields)
   const found = findReceiptByDelNumber(db, oldDelNumber)
 
   if (!found) {
-    console.error('❌ Receipt not found:', oldDelNumber)
-    return [404, { message: 'Receipt not found', delNumber: oldDelNumber }]
+    console.error('❌ Receipt not found:', oldWaybillNumber)
+    return [404, { message: 'Receipt not found', waybillNumber: oldWaybillNumber }]
   }
 
   // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ให้ตรวจสอบว่าเลขใหม่ซ้ำหรือไม่
-  const newDelNumber = receipt.delNumber
-  if (newDelNumber && newDelNumber !== oldDelNumber) {
-    const duplicate = db.find(r => r.delNumber === newDelNumber && r.delNumber !== oldDelNumber)
+  const newWaybillNumber = receipt.waybillNumber
+  if (newWaybillNumber && newWaybillNumber !== oldWaybillNumber) {
+    const duplicate = db.find(r => r.waybillNumber === newWaybillNumber && r.waybillNumber !== oldWaybillNumber)
     if (duplicate) {
-      return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', delNumber: newDelNumber }]
+      return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', waybillNumber: newWaybillNumber }]
     }
   }
 
@@ -586,14 +586,14 @@ mock.onPost('/updateReceipt').reply(async (config) => {
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,
-    delNumber: newDelNumber || db[idx].delNumber, // ✅ ใช้เลขใหม่ถ้ามี
-    id: newDelNumber || db[idx].delNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    waybillNumber: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    id: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
     updatedAt: new Date(),
   })
 
   // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ต้องลบ record เก่าออกก่อน
-  if (newDelNumber && newDelNumber !== oldDelNumber) {
-    deleteFromBothStorages(oldDelNumber)
+  if (newWaybillNumber && newWaybillNumber !== oldWaybillNumber) {
+    deleteFromBothStorages(oldWaybillNumber)
   }
 
   // ✅ บันทึกด้วยเลขใหม่
@@ -604,17 +604,17 @@ mock.onPost('/updateReceipt').reply(async (config) => {
   dispatchUpdateEvents({
     action: 'bulk-update',
     data: updated,
-    delNumber: updated.delNumber,
+    waybillNumber: updated.waybillNumber,
     list: db,
   })
 
-  console.log('✅ Bulk updated in both storages:', updated.delNumber)
+  console.log('✅ Bulk updated in both storages:', updated.waybillNumber)
   return [200, { success: true, data: serializeReceipt(updated) }]
 })
 
-/** ✅ PUT /updateReceipt/:delNumber - อัพเดททั้ง 2 storage */
+/** ✅ PUT /updateReceipt/:waybillNumber - อัพเดททั้ง 2 storage */
 mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
-  console.log('🔧 PUT /updateReceipt/:delNumber called')
+  console.log('🔧 PUT /updateReceipt/:waybillNumber called')
 
   const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
   const oldDelNumber = matches ? decodeURIComponent(matches[1]) : ''
@@ -630,16 +630,16 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
   const found = findReceiptByDelNumber(db, oldDelNumber)
 
   if (!found) {
-    console.error('❌ Receipt not found:', oldDelNumber)
-    return [404, { message: 'Receipt not found', delNumber: oldDelNumber }]
+    console.error('❌ Receipt not found:', oldWaybillNumber)
+    return [404, { message: 'Receipt not found', waybillNumber: oldWaybillNumber }]
   }
 
   // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ให้ตรวจสอบว่าเลขใหม่ซ้ำหรือไม่
-  const newDelNumber = incoming.delNumber
-  if (newDelNumber && newDelNumber !== oldDelNumber) {
-    const duplicate = db.find(r => r.delNumber === newDelNumber && r.delNumber !== oldDelNumber)
+  const newWaybillNumber = incoming.waybillNumber
+  if (newWaybillNumber && newWaybillNumber !== oldWaybillNumber) {
+    const duplicate = db.find(r => r.waybillNumber === newWaybillNumber && r.waybillNumber !== oldWaybillNumber)
     if (duplicate) {
-      return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', delNumber: newDelNumber }]
+      return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', waybillNumber: newWaybillNumber }]
     }
   }
 
@@ -649,15 +649,15 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,
-    delNumber: newDelNumber || db[idx].delNumber, // ✅ ใช้เลขใหม่ถ้ามี
-    id: newDelNumber || db[idx].delNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    waybillNumber: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    id: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
     createdAt: db[idx].createdAt,
     updatedAt: new Date(),
   })
 
   // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ต้องลบ record เก่าออกก่อน
-  if (newDelNumber && newDelNumber !== oldDelNumber) {
-    deleteFromBothStorages(oldDelNumber)
+  if (newWaybillNumber && newWaybillNumber !== oldWaybillNumber) {
+    deleteFromBothStorages(oldWaybillNumber)
   }
 
   // ✅ บันทึกด้วยเลขใหม่
@@ -668,11 +668,11 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
   dispatchUpdateEvents({
     action: 'update',
     data: updated,
-    delNumber: updated.delNumber,
+    waybillNumber: updated.waybillNumber,
     list: db,
   })
 
-  console.log('✅ Updated in both storages:', updated.delNumber)
+  console.log('✅ Updated in both storages:', updated.waybillNumber)
   return [200, serializeReceipt(updated)]
 })
 
@@ -688,15 +688,15 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
 
     const decoded = decodeURIComponent(id)
     const db = loadReceipts().map(ensureReceiptFields)
-    const found = findReceiptByDelNumber(db, decoded)
+    const found = findReceiptByWaybillNumber(db, decoded)
 
     if (found) {
       // ✅ ลบจากทั้ง 2 storage
-      deleteFromBothStorages(found.delNumber)
+      deleteFromBothStorages(found.waybillNumber)
     }
 
     const next = db.filter((r: any) => {
-      const match = findReceiptByDelNumber([r], decoded)
+      const match = findReceiptByWaybillNumber([r], decoded)
       return !match
     })
 
@@ -730,7 +730,7 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
       list = list.filter(
         (r: any) =>
           (r.fullName || '').toLowerCase().includes(s) ||
-          (r.delNumber || '').toLowerCase().includes(s)
+          (r.waybillNumber || '').toLowerCase().includes(s)
       )
     }
 
@@ -773,7 +773,7 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
           (it.sub2 || '').toLowerCase().includes(search) ||
           (it.fundName || '').toLowerCase().includes(search) ||
           (it.fullName || '').toLowerCase().includes(search) ||
-          (it.delNumber || '').toLowerCase().includes(search)
+          (it.waybillNumber || '').toLowerCase().includes(search)
       )
     }
 
@@ -782,6 +782,6 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
     return [200, { items }]
   })
 
-  console.log('✅ Axios Mock Setup Complete - Using delNumber as primary + Dual Storage')
+  console.log('✅ Axios Mock Setup Complete - Using waybillNumber as primary + Dual Storage')
   return mock
 }

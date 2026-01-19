@@ -762,7 +762,7 @@ async function clearAllDebts() {
 
     // ✅ แปลงเป็น payments format
     const newPayments = bankData.map(bank => ({
-      type: 'ฝากเข้าบัญชี',
+      type: 'transfer',
       bankName: bank.accountData.bankName,
       accountName: bank.accountData.accountName,
       accountNumber: bank.accountData.accountNumber,
@@ -771,42 +771,47 @@ async function clearAllDebts() {
     console.log('💰 New payments:', newPayments)
 
     // ✅ สร้างประวัติ
-    const historyRecord = {
-      id: Date.now().toString(),
-      date: new Date().toLocaleString('th-TH', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      items: `${receipts.value.length} หน่วยงาน (${allItems.value.length} รายการ)`,
-      total: totalDebt.value,
-      paid: totalPaid.value,
-      referenceId: `CLEAR-${Date.now()}`,
-      receipts: receipts.value.map(r => ({
-        department: r.department,
-        subDepartment: r.subDepartment,
-        projectCode: r.projectCode,
-        delNumber: r.delNumber,
-        totalAmount: r.totalDebtorAmount,
-        items: r.items.map(i => ({
-          itemName: i.itemName,
-          amount: i.debtorAmount,
-          note: i.note,
-          referenceId: r.projectCode,
-        }))
-      })),
-      payments: [...paymentHistory.value, ...newPayments],
-      fullName: receipts.value[0]?.fullName,
-      phone: receipts.value[0]?.phone,
-      department: receipts.value[0]?.department,
-      mainAffiliationName: receipts.value[0]?.mainAffiliationName,
-      sendmoney: receipts.value[0]?.sendmoney,
-      fundName: receipts.value[0]?.fundName,
-      receiptId: receipts.value[0]?.receiptId || receipts.value[0]?.projectCode,
-      projectCode: receipts.value[0]?.projectCode,
-    }
+// ✅ สร้างประวัติ
+const historyRecord = {
+  id: Date.now().toString(),
+  referenceId: `CLEAR-${Date.now()}`,
+  date: new Date().toLocaleString('th-TH'),
+
+  // ✅ สำหรับ PDF ตาราง - รายการที่มียอดชำระ
+  items: allItems.value
+    .filter(i => {
+      const val = String(i.paymentInput || '0').replace(/,/g, '')
+      return parseFloat(val) > 0
+    })
+    .map(i => ({
+      itemName: i.itemName,
+      amount: Number(String(i.paymentInput).replace(/,/g, '')),
+      note: i.note || '',
+      referenceId: i.receiptNumber || i._originalReceipt?.projectCode || i.receiptId || ''
+    })),
+
+  // ✅ payment จริงจากธนาคาร (แปลงเป็น format ที่ PDF รู้จัก)
+  payments: newPayments.map(p => ({
+    type: 'transfer',  // ✅ สำคัญมาก!
+    bankName: p.bankName,
+    accountName: p.accountName,
+    accountNumber: p.accountNumber,
+    amount: p.amount
+  })),
+
+  total: totalPaymentInput.value,
+
+  // ✅ header PDF
+  fullName: receipts.value[0]?.fullName || '-',
+  phone: receipts.value[0]?.phone || '-',
+  department: receipts.value[0]?.department || '-',
+  sendmoney: receipts.value[0]?.sendmoney || '-',
+  fundName: receipts.value[0]?.fundName || '-',
+  receiptId:
+    receipts.value[0]?.receiptId ||
+    receipts.value[0]?.projectCode ||
+    `CLEAR-${Date.now()}`
+}
 
     // ✅ บันทึกประวัติ
     const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
@@ -946,6 +951,7 @@ async function clearAllDebts() {
     })
   }
 }
+
 </script>
 
 <style scoped>

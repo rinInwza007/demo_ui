@@ -564,8 +564,8 @@ mock.onPost('/updateReceipt').reply(async (config) => {
   }
 
   const db = loadReceipts().map(ensureReceiptFields)
-  const found = findReceiptByWaybillNumber(db, oldWaybillNumber)
-  
+  const found = findReceiptByDelNumber(db, oldDelNumber)
+
   if (!found) {
     console.error('❌ Receipt not found:', oldWaybillNumber)
     return [404, { message: 'Receipt not found', waybillNumber: oldWaybillNumber }]
@@ -582,7 +582,7 @@ mock.onPost('/updateReceipt').reply(async (config) => {
 
   const idx = db.indexOf(found)
   const normalized = normalizeBoth(ensureReceiptFields(receipt))
-  
+
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,
@@ -617,18 +617,18 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
   console.log('🔧 PUT /updateReceipt/:waybillNumber called')
 
   const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
-  const oldWaybillNumber = matches ? decodeURIComponent(matches[1]) : ''
-  
-  if (!oldWaybillNumber) {
-    console.error('❌ No waybillNumber in URL')
-    return [400, { message: 'waybillNumber is required' }]
+  const oldDelNumber = matches ? decodeURIComponent(matches[1]) : ''
+
+  if (!oldDelNumber) {
+    console.error('❌ No delNumber in URL')
+    return [400, { message: 'delNumber is required' }]
   }
 
   const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
   const db = loadReceipts().map(ensureReceiptFields)
-  const found = findReceiptByWaybillNumber(db, oldWaybillNumber)
-  
+  const found = findReceiptByDelNumber(db, oldDelNumber)
+
   if (!found) {
     console.error('❌ Receipt not found:', oldWaybillNumber)
     return [404, { message: 'Receipt not found', waybillNumber: oldWaybillNumber }]
@@ -645,7 +645,7 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
 
   const idx = db.indexOf(found)
   const normalized = normalizeBoth(incoming)
-  
+
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,

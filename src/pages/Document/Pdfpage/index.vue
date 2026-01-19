@@ -197,7 +197,7 @@ const bankTransfers = receipt.bankTransfers || []
       {
         stack: [
           {
-            text: `${receipt.delNumber || ''}`,
+            text: `${receipt.waybillNumber || ''}`,
             absolutePosition: { x: 530, y: 15 },
             fontSize: 13,
           },
@@ -680,21 +680,21 @@ function previewPdf() {
 onMounted(() => {
   try {
     loading.value = true
-const delNumber = route.params.id
-console.log('🔍 Loading receipt with delNumber:', delNumber)
+const waybillNumber = route.params.id
+console.log('🔍 Loading receipt with waybillNumber:', waybillNumber)
 
     // ✅ โหลดข้อมูลทั้งหมด
     const receipts = loadReceipts()
     console.log('📦 Total receipts:', receipts.length)
-const foundReceipt = receipts.find((r) => r.delNumber === delNumber)
+const foundReceipt = receipts.find((r) => r.waybillNumber === waybillNumber)
 
     if (!foundReceipt) {
-      console.error('❌ Receipt not found for delNumber:', delNumber)
+      console.error('❌ Receipt not found for waybillNumber:', waybillNumber)
       loading.value = false
       return
     }
 
-    console.log('✅ Found receipt:', foundReceipt.delNumber, foundReceipt.fullName)
+    console.log('✅ Found receipt:', foundReceipt.waybillNumber, foundReceipt.fullName)
     receiptData.value = foundReceipt
 
     // ✅ สร้าง rows จากข้อมูล receiptList

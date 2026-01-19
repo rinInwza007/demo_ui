@@ -14,10 +14,11 @@
       >
         <option
           v-for="option in group.options"
-          :key="option.value"
-          :value="option.value"
+          :key="option.id"
+          :value="option.name"
+          :data-item-id="option.id"
         >
-          {{ option.label }}
+          {{ option.name }}
         </option>
       </optgroup>
     </select>
@@ -61,7 +62,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'input'])
+const emit = defineEmits(['update:modelValue', 'input', 'item-selected'])
 
 const localValue = ref(props.modelValue)
 let tomSelectInstance = null
@@ -69,6 +70,8 @@ let tomSelectInstance = null
 // ✅ แบ่งกลุ่ม options ตาม type: income และ receivable
 const groupedOptions = computed(() => {
   const rawOptions = getOptionsForUser(auth, props.waybillType)
+  
+  console.log('📦 Raw Options from getOptionsForUser:', rawOptions)
   
   // สร้างโครงสร้างกลุ่ม
   const groups = {
@@ -84,11 +87,13 @@ const groupedOptions = computed(() => {
     }
   }
 
-  // จัดกลุ่มตาม type
+  // ✅ จัดกลุ่มตาม type และเก็บ id, name
   rawOptions.forEach(opt => {
     const mapped = {
-      value: opt.value,
-      label: opt.value
+      id: opt.id,           // ✅ เพิ่ม id
+      name: opt.name,       // ✅ ใช้ name แทน value
+      type: opt.type,
+      affiliationId: opt.affiliationId
     }
 
     if (opt.type === 'income') {
@@ -97,6 +102,8 @@ const groupedOptions = computed(() => {
       groups.receivable.options.push(mapped)
     }
   })
+
+  console.log('📋 Grouped Options:', groups)
 
   // ส่งคืนเฉพาะกลุ่มที่มี options และเรียงตาม order
   return Object.values(groups)
@@ -114,6 +121,20 @@ watch(() => props.modelValue, (newVal) => {
 watch(localValue, (newVal) => {
   emit('update:modelValue', newVal)
   emit('input', newVal)
+  
+  // ✅ ค้นหา item ที่เลือกและส่ง id กลับไป
+  const allOptions = groupedOptions.value.flatMap(g => g.options)
+  const selectedItem = allOptions.find(opt => opt.name === newVal)
+  
+  if (selectedItem) {
+    console.log('✅ Item Selected:', selectedItem)
+    emit('item-selected', {
+      id: selectedItem.id,
+      name: selectedItem.name,
+      type: selectedItem.type,
+      affiliationId: selectedItem.affiliationId
+    })
+  }
 })
 
 onMounted(() => {
@@ -124,9 +145,10 @@ onMounted(() => {
       create: props.allowCreate,
       placeholder: props.placeholder,
       allowEmptyOption: true,
-      lockOptgroupOrder: true, // ✅ ล็อคลำดับกลุ่ม
+      lockOptgroupOrder: true,
       onChange(value) {
         localValue.value = value
+        console.log('📝 TomSelect onChange:', value)
       }
     })
 
@@ -166,6 +188,7 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
 
 <style>
 .ts-dropdown {

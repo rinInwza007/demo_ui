@@ -369,7 +369,7 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
   const locked = r.isLocked ?? false
 
   return {
-    id: r.delNumber,
+    id: r.waybillNumber,
     status: locked ? 'success' : 'pending',
     department: r.mainAffiliationName || r.affiliationName || '-',
     subDepartment: r.subAffiliationName1 || '-',
@@ -506,7 +506,14 @@ onMounted(async () => {
 })
 
 const view = (item: TableRow) => router.push(`/pdfpage/${item.id}`)
-const edit = (item: TableRow) => router.push(`/waybill/edit/${item.id}`)
+const edit = (item: TableRow) => {
+  const waybillNumber = item._raw.waybillNumber 
+  if (!waybillNumber) {
+    Swal.fire('ข้อผิดพลาด', 'ไม่พบเลขที่นำส่ง', 'error')
+    return
+  }
+  router.push(`/waybill/edit/${waybillNumber}`)
+}
 
 const gotowaybil = () => {
   if (!canCreateWaybill.value) {
@@ -535,7 +542,7 @@ const approveItem = async (row: TableRow) => {
 
   if (!result.isConfirmed) return
 
-  const target = rawData.value.find((r) => r.delNumber === row.id)
+  const target = rawData.value.find((r) => r.waybillNumber === row.id)
 
   if (!target) return
 

@@ -1,3 +1,5 @@
+// src/components/data/departments.js
+
 export const options = {
   "คณะเกษตรศาสตร์และทรัพยากรธรรมชาติ": {
   main: [

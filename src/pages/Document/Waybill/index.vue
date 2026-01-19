@@ -14,7 +14,7 @@
               {{ isEditMode ? 'แก้ไขใบนำส่ง' : 'เพิ่มใบนำส่ง' }}
             </h1>
             <p class="text-xs text-slate-800 mt-0.5">
-              {{ isEditMode ? `เลขที่นำส่ง: ${formData.delNumber}` : 'กรอกข้อมูลใบนำส่งเงิน' }}
+              {{ isEditMode ? `เลขที่นำส่ง: ${formData.waybillNumber}` : 'กรอกข้อมูลใบนำส่งเงิน' }}
             </p>
           </div>
           <div class="flex items-center gap-3">
@@ -61,13 +61,13 @@
                     เลขที่นำส่ง <span class="text-red-500">*</span>
                   </label>
                   <InputText
-                    v-model="formData.delNumber"
+                    v-model="formData.waybillNumber"
                     placeholder="เลขที่นำส่ง"
                     class="transition-all duration-200"
                     @keypress="allowOnlyDigits"
                   />
-                  <span v-if="errors.delNumber" class="text-red-600 text-xs">
-                    {{ errors.delNumber }}
+                  <span v-if="errors.waybillNumber" class="text-red-600 text-xs">
+                    {{ errors.waybillNumber }}
                   </span>
                 </div>
 
@@ -109,7 +109,7 @@
                   </label>
                   <Selects
                     v-model="mainCategory"
-                    :options="[...Object.keys(options)]"
+                    :options="mainCategoryOptions"
                     placeholder="เลือกหน่วยงาน"
                     value-type="string"
                   />
@@ -192,7 +192,9 @@
                     </label>
                     <Selects
                       v-model="subCategory"
-                      :options="sub1OptionsArray"
+                      :options="sub1OptionsForSelect"
+                           option-label="label"  
+                      option-value="value"  
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
@@ -267,7 +269,9 @@
                     </label>
                     <Selects
                       v-model="subCategory"
-                      :options="sub1OptionsArray"
+                      :options="sub1OptionsForSelect"
+                          option-label="label"
+    option-value="value"
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
@@ -282,7 +286,9 @@
                     </label>
                     <Selects
                       v-model="subCategory2"
-                      :options="sub2OptionsArray"
+                      :options="sub2OptionsForSelect"
+                          option-label="label"
+    option-value="value"
                       placeholder="เลือกหน่วยงานย่อย"
                       value-type="string"
                     />
@@ -392,7 +398,7 @@
                     <div class="flex flex-col gap-2 mt-[13px]">
 <ItemNameSelect
   v-model="row.itemName"
-  @input="() => clearRowError(index, 'itemName')"
+  @input="(value) => handleItemNameChange(index, value)"
   :input-id="`itemName-${index}`"
   waybill-type="all"
   department="general"
@@ -1011,7 +1017,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick ,reactive} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Swal from 'sweetalert2'
@@ -1022,8 +1028,8 @@ import InputText from '@/components/input/inputtext.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import SendMoneySelect from '@/components/TomSelect/SendMoneyTomSelect.vue'
 import sidebar from '@/components/bar/sidebar.vue'
-import { options } from '@/components/data/departments'
-import { getAllOptions , isReceivableItem } from '@/components/data/ItemNameOption'
+import { departmentOptions } from '@/components/data/TSdepartments'
+import { getAllOptions , isReceivableItem ,getItemByName,getItemById } from '@/components/data/ItemNameOption'
 import { useReceiptStore } from '@/stores/recipt'
 import { useRowManager } from '@/components/Function/FuncForm'
 import { useBankTransferManager } from '@/components/Function/FuncBank'
@@ -1040,8 +1046,15 @@ const authStore = useAuthStore()
 const isEditMode = computed(() => !!route.params.id)
 const receiptId = computed(() => route.params.id)
 const isLoading = ref(false)
+const mainCategory = ref('')
+const subCategory = ref('')
+const subCategory2 = ref('')
+const mainCategoryId = ref('')
+const subCategoryId = ref('')
+const subCategoryId2 = ref('')
+const subId = ref('')
 
-const { allowOnlyDigits, morelist, addRow, removeRow, handleTypeChange, formattedTotalAmount } =
+const { allowOnlyDigits, updateItemId, morelist, addRow, removeRow, handleTypeChange, formattedTotalAmount } =
   useRowManager()
 
 const {
@@ -1060,7 +1073,7 @@ const {
 } = useBankTransferManager()
 // Form data
 const formData = ref({
-  delNumber: '',
+  waybillNumber: '',
   fullName: '',
   phone: '',
   mainAffiliationName: '',
@@ -1071,7 +1084,14 @@ const formData = ref({
   sendmoney: '',
   receiptList: '',
 })
-
+const form = reactive({
+  mainId: '',
+  mainName: '',
+  subId: '',
+  subName: '',
+  sub2Id: '',
+  sub2Name: '',
+})
 const bankOptions = [
   { label: 'ธนาคารกรุงไทย', value: 'ธนาคารกรุงไทย' },
   { label: 'ธนาคารกสิกรไทย', value: 'ธนาคารกสิกรไทย' },
@@ -1101,7 +1121,68 @@ const bankAccountOptions = ref([
     accountName: 'มหาวิทยาลัยพะเยา',
   },
 ])
+const sub1OptionsForSelect = computed(() =>
+  sub1OptionsArray.value.map(opt => ({
+    label: opt.name,   // โชว์
+    value: opt.id     // เก็บ
+  }))
+)
+const sub2OptionsForSelect = computed(() => {
+  return sub2OptionsArray.value.map(opt => ({
+    label: opt.name,
+    value: opt.id ?? opt.name,
+  }))
+})
+const mainCategoryOptions = computed(() => {
+  if (!departmentOptions) return []
+  return Object.keys(departmentOptions)
+})
 
+watch(subId, (id) => {
+  const found = sub1OptionsArray.value.find(o => o.id === id)
+  form.subName = found?.name ?? ''
+})
+const handleItemNameChange = (index, itemName) => {
+  morelist.value[index].itemName = itemName
+  
+  // ✅ อัพเดท itemId เมื่อเลือกรายการ
+  const item = getItemByName(itemName)
+  if (item) {
+    updateItemId(index, item.id)
+    console.log(`📝 Item selected: ${item.name} (ID: ${item.id})`)
+  } else {
+    updateItemId(index, null)
+  }
+  
+  clearRowError(index, 'itemName')
+  updateDebtorAmount()
+}
+watch(
+  () => morelist.value.map(row => ({ 
+    id: row.id, 
+    itemId: row.itemId, 
+    itemName: row.itemName 
+  })),
+  (newVal) => {
+    console.log('📋 MoreList State:', newVal)
+  },
+  { deep: true }
+)
+
+watch(
+  () => ({ 
+    mainId: mainCategoryId.value, 
+    mainName: mainCategory.value,
+    subId: subCategoryId.value,
+    subName: subCategory.value,
+    sub2Id: subCategoryId2.value,
+    sub2Name: subCategory2.value
+  }),
+  (newVal) => {
+    console.log('🏢 Categories State:', newVal)
+  },
+  { deep: true }
+)
 //ส่วนของtemplate --------------------------------------------------------------------------
 
 
@@ -1159,13 +1240,20 @@ const saveTemplate = () => {
     data: {
       fullName: formData.value.fullName,
       phone: formData.value.phone,
+      mainCategoryId: mainCategoryId.value,
       mainCategory: mainCategory.value,
+      subCategoryId: subCategoryId.value,
       subCategory: subCategory.value,
+      subCategoryId2: subCategoryId2.value,
       subCategory2: subCategory2.value,
       fundName: formData.value.fundName,
       sendmoney: formData.value.sendmoney,
       projectCode: formData.value.projectCode,
-      receiptItems: receiptItems // ✅ เพิ่มรายการ
+            receiptItems: receiptItems.map(item => ({
+        itemId: getItemByName(item.itemName)?.id,
+        itemName: item.itemName,
+        isExpense: item.isExpense
+      }))
     },
     userId: authStore.user.id,
     userName: authStore.user.fullName,
@@ -1202,16 +1290,21 @@ const loadTemplate = async (template) => {
   formData.value.sendmoney = template.data.sendmoney
   formData.value.projectCode = template.data.projectCode
   
-  mainCategory.value = template.data.mainCategory
-  await nextTick()
-  
-  if (template.data.subCategory) {
-    subCategory.value = template.data.subCategory
+  if (template.data.mainCategoryId) {
+    mainCategoryId.value = template.data.mainCategoryId
+    mainCategory.value = template.data.mainCategory
     await nextTick()
   }
   
-  if (template.data.subCategory2) {
-    subCategory2.value = template.data.subCategory2
+  if (template.data.subCategoryId) {
+    subCategoryId.value = template.data.subCategoryId
+    subCategory.value = template.data.subCategoryId
+    await nextTick()
+  }
+  
+  if (template.data.subCategoryId2) {
+    subCategoryId2.value = template.data.subCategoryId2
+    subCategory2.value = template.data.subCategoryId2
     await nextTick()
   }
   
@@ -1221,21 +1314,18 @@ const loadTemplate = async (template) => {
   
   // ✅ โหลดรายการนำส่งเงิน (เฉพาะชื่อรายการ)
   if (template.data.receiptItems && template.data.receiptItems.length > 0) {
-    morelist.value = template.data.receiptItems.map((item, index) => ({
-      id: index + 1,
-      referenceNo: '', // ไม่โหลดเลขที่อ้างอิง
-      itemName: item.itemName,
-      note: '',
-      amount: '', // ไม่โหลดจำนวนเงิน
-      type: item.isExpense ? 'expense' : 'income',
-      isExpense: item.isExpense || false
-    }))
-    
-    await nextTick()
-    
-    // Init TomSelect สำหรับแต่ละแถว
-    morelist.value.forEach((_, i) => {
-      initItemNameTomSelect(i)
+    morelist.value = template.data.receiptItems.map((item, index) => {
+      const itemData = item.itemId ? getItemById(item.itemId) : getItemByName(item.itemName)
+      return {
+        id: index + 1,
+        referenceNo: '',
+        itemName: itemData?.name || item.itemName,
+        itemId: itemData?.id,
+        note: '',
+        amount: '',
+        type: item.isExpense ? 'expense' : 'income',
+        isExpense: item.isExpense || false
+      }
     })
   } else {
     // ✅ ถ้าไม่มีรายการใน template ให้สร้างแถวว่าง 2 แถว (เหมือนตอนเริ่มต้น)
@@ -1357,21 +1447,28 @@ watch(
   { deep: true, flush: 'post' } // ⭐ เพิ่ม flush: 'post'
 )
 onMounted(async () => {
-  if (!isEditMode.value && authStore.user?.affiliationId) {
-    const defaultCategory = mapAffiliationToMainCategory(authStore.user.affiliationId)
-    if (defaultCategory) {
-      mainCategory.value = defaultCategory
-      await nextTick()
+  // ✅ ถ้าเป็น edit mode ให้โหลดข้อมูล
+  if (isEditMode.value) {
+    await loadReceiptData()
+  } else {
+    // ✅ ถ้าเป็นโหมดสร้างใหม่และมี affiliationId
+    if (authStore.user?.affiliationId) {
+      const defaultCategory = mapAffiliationToMainCategory(authStore.user.affiliationId)
+      if (defaultCategory) {
+        mainCategory.value = defaultCategory
+        const categoryData = departmentOptions[defaultCategory]
+        mainCategoryId.value = categoryData?.id || ''
+        await nextTick()
+      }
     }
-  }
-  if (!isEditMode.value) {
+    
+    // ✅ เพิ่มแถวว่าง 2 แถว
     addRow()
     addRow()
   }
 
   // รอให้ DOM สร้างแถวเสร็จก่อน init TomSelect
   await nextTick()
-  
   
   // Init TomSelect สำหรับแถวแรก
   morelist.value.forEach((_, i) => {
@@ -1381,13 +1478,10 @@ onMounted(async () => {
   await nextTick()
   updateDebtorAmount()
 
-  // ✅ ถ้าเป็น edit mode ให้โหลดข้อมูล
-  if (isEditMode.value) {
-    await loadReceiptData()
-  }
-
   loadUserTemplates()
 })
+
+
 const loadUserTemplates = () => {
   const storageKey = getTemplateStorageKey()
   if (!storageKey) return
@@ -1548,51 +1642,36 @@ const clearError = (field) => {
     delete errors.value[field]
   }
 }
-// ✅ เพิ่ม subCategory2
-const mainCategory = ref('')
-const subCategory = ref('')
-const subCategory2 = ref('')
 
 // ✅ Computed Properties
 const sub1OptionsArray = computed(() => {
   if (!mainCategory.value) return []
 
-  const data = options[mainCategory.value]
-  if (!data) return []
+  const data = departmentOptions[mainCategory.value]
 
-  const main = data.main
-
-  if (typeof main === 'string') {
-    return [main]
-  }
-
-  if (Array.isArray(main)) {
-    return [...main]
-  }
-
-  return []
-})
-
-const sub2OptionsArray = computed(() => {
-  if (!mainCategory.value || !subCategory.value) {
+  if (!data || !Array.isArray(data.main)) {
     return []
   }
 
-  const data = options[mainCategory.value]
-  if (!data) return []
+  return data.main
+})
 
-  const subs = data.subs
+const sub2OptionsArray = computed(() => {
+  if (!mainCategory.value || !subCategory.value) return []
 
-  if (Array.isArray(subs)) {
-    return [...subs]
+  const data = departmentOptions[mainCategory.value]
+
+  if (!data || !Array.isArray(data.subs)) {
+    return []
   }
 
-  return []
+  return data.subs
 })
+
 
 const hasAnySub = computed(() => {
   if (!mainCategory.value) return false
-  const data = options[mainCategory.value]
+  const data = departmentOptions[mainCategory.value]
   if (!data) return false
 
   const main = data.main
@@ -1601,21 +1680,43 @@ const hasAnySub = computed(() => {
 
 const hasSub2 = computed(() => {
   if (!mainCategory.value || !subCategory.value) return false
-  const data = options[mainCategory.value]
+  const data = departmentOptions[mainCategory.value]
   if (!data) return false
 
   const subs = data.subs
   return Array.isArray(subs) && subs.length > 0
 })
 
-// ✅ Watchers - Clear sub categories
-watch(mainCategory, () => {
+
+watch(mainCategory, (newVal) => {
+  const data = departmentOptions[newVal]
+  mainCategoryId.value = data?.id || ''
   subCategory.value = ''
+  subCategoryId.value = ''
   subCategory2.value = ''
+  subCategoryId2.value = ''
 })
 
-watch(subCategory, () => {
+watch(subCategory, (newVal) => {
+  if (!newVal) {
+    subCategoryId.value = ''
+    subCategory2.value = ''
+    subCategoryId2.value = ''
+    return
+  }
+  subCategoryId.value = newVal
   subCategory2.value = ''
+  subCategoryId2.value = ''
+  console.log('🏢 subCategory changed:', { id: newVal, name: sub1OptionsArray.value.find(o => o.id === newVal)?.name })
+})
+
+watch(subCategory2, (newVal) => {
+  if (!newVal) {
+    subCategoryId2.value = ''
+    return
+  }
+  subCategoryId2.value = newVal
+  console.log('🏢 subCategory2 changed:', { id: newVal, name: sub2OptionsArray.value.find(o => o.id === newVal)?.name })
 })
 
 const gotomainpage = () => {
@@ -1627,11 +1728,15 @@ const loadReceiptData = async () => {
 
   isLoading.value = true
   try {
-    const response = await axios.get(`/getReceipt/${receiptId.value}`)
-    const list = response.data
-    const data = Array.isArray(list) ? list.find((r) => r.id === receiptId.value) : list
+    // ✅ เปลี่ยนจาก /getReceipt เป็น /findOneReceipt
+    const response = await axios.get(`/findOneReceipt/${receiptId.value}`)
+    
+    // ✅ ข้อมูลจะอยู่ใน response.data โดยตรง (ไม่ใช่ array)
+    const data = response.data
 
     if (!data) throw new Error('Receipt not found')
+
+    console.log('📦 Loaded receipt data:', data)
 
     // 1. ล้างค่าเก่า
     mainCategory.value = ''
@@ -1639,13 +1744,10 @@ const loadReceiptData = async () => {
     subCategory2.value = ''
     formData.value.sendmoney = ''
 
-    // ✅ ล้างค่า paymentMethods อย่างถูกต้อง
+    // ✅ ล้างค่า paymentMethods อย่างถูกต้อง (ย้ายมาไว้ก่อน section อื่น)
     paymentMethods.value = {
-      krungthai1: { checked: false, amount: '' },
-      krungthai2: { checked: false, amount: '' },
-      krungthai3: { checked: false, amount: '' },
       cash: { checked: false, amount: '' },
-      check: { checked: false, amount: '' },
+      check: { checked: false, amount: '', bankName: '', checkNumber: '', NumIncheck: '' },
       debtor: { checked: false, amount: '' },
       other: { checked: false, name: '', amount: '' },
     }
@@ -1654,7 +1756,7 @@ const loadReceiptData = async () => {
     await nextTick()
 
     // 2-5. โหลดข้อมูลพื้นฐาน
-    formData.value.delNumber = data.delNumber || ''
+    formData.value.waybillNumber = data.waybillNumber || ''
     formData.value.fullName = data.fullName || ''
     formData.value.phone = data.phone || ''
     formData.value.fundName = data.fundName || ''
@@ -1662,29 +1764,63 @@ const loadReceiptData = async () => {
     formData.value.sendmoney = data.sendmoney || data.moneyType || ''
 
     // 3-5. โหลด categories
-    if (data.mainAffiliationName) {
+    if (data.mainAffiliationId && data.mainAffiliationName) {
+      mainCategoryId.value = data.mainAffiliationId
       mainCategory.value = data.mainAffiliationName
+      console.log('✅ Load mainCategory:', { id: mainCategoryId.value, name: mainCategory.value })
+      await nextTick()
+    } else if (data.mainAffiliationName) {
+      // fallback: หา id จาก name
+      mainCategory.value = data.mainAffiliationName
+      const categoryData = departmentOptions[data.mainAffiliationName]
+      mainCategoryId.value = categoryData?.id || ''
       await nextTick()
     }
 
-    if (data.subAffiliationName1) {
-      subCategory.value = data.subAffiliationName1
+    if (data.subAffiliationId1) {
+      subCategoryId.value = data.subAffiliationId1
+      subCategory.value = data.subAffiliationId1
+      console.log('✅ Load subCategory:', { id: subCategoryId.value, value: subCategory.value })
+      await nextTick()
+    } else if (data.subAffiliationName1) {
+      const found = sub1OptionsArray.value.find(opt => opt.name === data.subAffiliationName1)
+      if (found) {
+        subCategoryId.value = found.id
+        subCategory.value = found.id
+        console.log('✅ Load subCategory (fallback):', { id: found.id, name: found.name })
+      }
       await nextTick()
     }
 
-    if (data.subAffiliationName2) {
-      subCategory2.value = data.subAffiliationName2
+    if (data.subAffiliationId2) {
+      subCategoryId2.value = data.subAffiliationId2
+      subCategory2.value = data.subAffiliationId2
+      console.log('✅ Load subCategory2:', { id: subCategoryId2.value, value: subCategory2.value })
+      await nextTick()
+    } else if (data.subAffiliationName2) {
+      const found = sub2OptionsArray.value.find(opt => opt.name === data.subAffiliationName2)
+      if (found) {
+        subCategoryId2.value = found.id
+        subCategory2.value = found.id
+        console.log('✅ Load subCategory2 (fallback):', { id: found.id, name: found.name })
+      }
       await nextTick()
     }
 
-    // ✅ 6. โหลด paymentMethods พร้อม debug
+    // ✅ 6. โหลด paymentMethods พร้อม debug (แก้ไขส่วนนี้)
     console.log('📦 Payment Methods from API:', data.paymentMethods)
 
-    if (data.paymentMethods) {
+    if (data.paymentMethods && typeof data.paymentMethods === 'object') {
       Object.keys(data.paymentMethods).forEach((key) => {
         const methodData = data.paymentMethods[key]
 
-        if (!methodData) return
+        // ✅ ตรวจสอบว่า key นี้มีใน paymentMethods.value หรือไม่
+        if (!paymentMethods.value[key]) {
+          console.warn(`⚠️ Unknown payment method: ${key}`)
+          return
+        }
+
+        if (!methodData || typeof methodData !== 'object') return
 
         if (methodData.checked === true) {
           paymentMethods.value[key].checked = true
@@ -1702,12 +1838,14 @@ const loadReceiptData = async () => {
             }
           }
 
+          // ✅ โหลดข้อมูลเฉพาะสำหรับ check
           if (key === 'check') {
             paymentMethods.value[key].bankName = methodData.bankName || ''
             paymentMethods.value[key].checkNumber = methodData.checkNumber || ''
             paymentMethods.value[key].NumIncheck = methodData.NumIncheck || ''
           }
 
+          // ✅ โหลดข้อมูลเฉพาะสำหรับ other
           if (key === 'other' && methodData.name) {
             paymentMethods.value[key].name = methodData.name
           }
@@ -1719,15 +1857,13 @@ const loadReceiptData = async () => {
       await nextTick()
     }
 
-    // ✅ 7. โหลดข้อมูลธนาคาร (ส่วนที่แก้ไข)
+    // ✅ 7. โหลดข้อมูลธนาคาร
     console.log('🏦 Bank Transfers from API:', data.bankTransfers)
     
     if (data.bankTransfers && Array.isArray(data.bankTransfers) && data.bankTransfers.length > 0) {
-      // ล้างข้อมูลเก่าก่อน
       bankTransfers.value = []
       await nextTick()
       
-      // โหลดข้อมูลใหม่
       loadBankTransfers(data.bankTransfers)
       await nextTick()
       
@@ -1736,15 +1872,25 @@ const loadReceiptData = async () => {
 
     // 8. โหลด receiptList
     if (data.receiptList && Array.isArray(data.receiptList) && data.receiptList.length > 0) {
-      morelist.value = data.receiptList.map((item, index) => ({
-        id: index + 1,
-        referenceNo: item.referenceNo || '',
-        itemName: item.itemName || '',
-        note: item.note || '',
-        amount: item.amount || 0,
-        type: item.type || 'income',
-        isExpense: item.type === 'expense',
-      }))
+      morelist.value = data.receiptList.map((item, index) => {
+        let itemData
+        if (item.itemId) {
+          itemData = getItemById(item.itemId)
+        } else if (item.itemName) {
+          itemData = getItemByName(item.itemName)
+        }
+
+        return {
+          id: index + 1,
+          referenceNo: item.referenceNo || '',
+          itemId: itemData?.id || item.itemId,
+          itemName: itemData?.name || item.itemName || '',
+          note: item.note || '',
+          amount: item.amount || 0,
+          type: item.type || 'income',
+          isExpense: item.type === 'expense',
+        }
+      })
 
       await nextTick()
 
@@ -1777,7 +1923,7 @@ const loadReceiptData = async () => {
       sendmoney: formData.value.sendmoney,
       paymentMethods: paymentMethods.value,
       receiptList: morelist.value,
-      bankTransfers: bankTransfers.value, // เพิ่มบรรทัดนี้
+      bankTransfers: bankTransfers.value,
     })
 
     Swal.fire({
@@ -1794,7 +1940,7 @@ const loadReceiptData = async () => {
       text: 'ไม่สามารถโหลดข้อมูลใบนำส่งได้',
       confirmButtonColor: '#DC2626',
     }).then(() => {
-      router.push('/')
+      router.push('/indexwaybill')
     })
   } finally {
     isLoading.value = false
@@ -1870,10 +2016,14 @@ const netTotalAmount = computed(() => {
   })
   return total
 })
+// ✅ แก้ไข Watch ให้ปลอดภัยขึ้น
 Object.keys(paymentMethods.value).forEach((key) => {
   watch(
-    () => paymentMethods.value[key].checked,
+    () => paymentMethods.value[key]?.checked, // ✅ เพิ่ม optional chaining
     (checked) => {
+      // ✅ ตรวจสอบว่า key มีอยู่จริง
+      if (!paymentMethods.value[key]) return
+
       if (!checked) {
         // ล้างค่า amount และ name
         paymentMethods.value[key].amount = ''
@@ -1896,11 +2046,15 @@ Object.keys(paymentMethods.value).forEach((key) => {
     },
   )
 })
+
 watch(
   () => paymentMethods.value,
   (newVal) => {
     Object.keys(newVal).forEach((key) => {
       const method = newVal[key]
+
+      // ✅ ตรวจสอบว่า method มีอยู่จริง
+      if (!method || typeof method !== 'object') return
 
       if (method.checked) {
         // เคลียร์ error amount เมื่อกรอกจำนวนเงิน
@@ -1963,8 +2117,8 @@ const saveData = async () => {
     errors.value.fullName = 'กรุณากรอก "ชื่อ"'
     hasError = true
   }
-  if (!formData.value.delNumber) {
-    errors.value.delNumber = 'กรุณากรอก "เลขที่นำส่ง"'
+  if (!formData.value.waybillNumber) {
+    errors.value.waybillNumber = 'กรุณากรอก "เลขที่นำส่ง"'
     hasError = true
   }
   if (!formData.value.phone) {
@@ -2239,31 +2393,44 @@ const saveData = async () => {
   })
 if (!isEditMode.value) {
   try {
-    const checkResponse = await axios.get(`/checkDelNumber/${formData.value.delNumber}`)
+    const checkResponse = await axios.get(`/checkwaybillNumber/${formData.value.waybillNumber}`)
     if (checkResponse.data.exists) {
       Swal.fire({
         icon: 'error',
         title: 'เลขที่นำส่งซ้ำ',
-        text: `เลขที่นำส่ง "${formData.value.delNumber}" มีอยู่ในระบบแล้ว กรุณาใช้เลขที่อื่น`,
+        text: `เลขที่นำส่ง "${formData.value.waybillNumber}" มีอยู่ในระบบแล้ว กรุณาใช้เลขที่อื่น`,
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#DC2626',
       })
       return
     }
   } catch (err) {
-    console.error('Error checking delNumber:', err)
+    console.error('Error checking waybillNumber:', err)
   }
 }
   const bankTransfersData = getBankTransfersData()
-  
+    const getSubName1 = () => {
+    if (!subCategoryId.value) return ''
+    const found = sub1OptionsArray.value.find(opt => opt.id === subCategoryId.value)
+    return found?.name || ''
+  }
+
+  const getSubName2 = () => {
+    if (!subCategoryId2.value) return ''
+    const found = sub2OptionsArray.value.find(opt => opt.id === subCategoryId2.value)
+    return found?.name || ''
+  }
   const payload = {
-    delNumber: formData.value.delNumber,
+    waybillNumber: formData.value.waybillNumber,
     fullName: formData.value.fullName,
     moneyTypeNote: 'Waybill',
     phone: formData.value.phone,
+    mainAffiliationId: mainCategoryId.value,
     mainAffiliationName: mainCategory.value,
-    subAffiliationName1: subCategory.value || '',
-    subAffiliationName2: subCategory2.value || '',
+    subAffiliationId1: subCategoryId.value,
+    subAffiliationName1: getSubName1(),
+    subAffiliationId2: subCategoryId2.value,
+    subAffiliationName2: getSubName2(),
     fundName: formData.value.fundName,
     moneyType: formData.value.sendmoney,
     projectCode: formData.value.projectCode,
@@ -2271,17 +2438,23 @@ if (!isEditMode.value) {
     netTotalAmount: totalSection2,
     paymentMethods: paymentMethodsData,
     totalPaymentAmount: totalSection3,
-    receiptList: validRows,
+        receiptList: validRows.map(row => {
+      const item = getItemByName(row.itemName)
+      return {
+        ...row,
+        itemId: item?.id
+      }
+    }),
     affiliationId: authStore.user?.affiliationId || '',
     affiliationName: authStore.user?.affiliation || mainCategory.value,
     bankTransfers: bankTransfersData,
   }
 
   if (isEditMode.value) {
-    payload.id = formData.value.delNumber  // ✅ ใช้ delNumber แทน
+    payload.id = formData.value.waybillNumber // ✅ ใช้ waybillNumber แทน
     payload.updatedAt = currentDateTime
   } else {
-    payload.id = formData.value.delNumber  // ✅ ใช้ delNumber แทน
+    payload.id = formData.value.waybillNumber  // ✅ ใช้ waybillNumber แทน
     payload.createdAt = currentDateTime
     payload.updatedAt = currentDateTime
   }
@@ -2305,7 +2478,7 @@ if (!isEditMode.value) {
 await Swal.fire({
   icon: 'success',
   title: isEditMode.value ? 'อัพเดตสำเร็จ!' : 'บันทึกสำเร็จ!',
-  text: `${isEditMode.value ? 'อัพเดต' : 'บันทึก'}ใบนำส่งเงินเลขที่ ${formData.value.delNumber} เรียบร้อยแล้ว`,
+  text: `${isEditMode.value ? 'อัพเดต' : 'บันทึก'}ใบนำส่งเงินเลขที่ ${formData.value.waybillNumber} เรียบร้อยแล้ว`,
   confirmButtonText: 'ตกลง',
   confirmButtonColor: '#7E22CE',
   timer: 2000,

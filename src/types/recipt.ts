@@ -1,3 +1,4 @@
+// src/types/recipt.ts
 import {User} from './user';
 import { Affiliation } from './affiliation';
 
@@ -7,17 +8,10 @@ export type moneySource = 'นำส่ง' | 'ลูกหนี้' | 'วิ�
 export type nagativeMoneyType = 'add' | 'other';
 
 export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other';
-export type ItemType =  'นำส่ง' | 'ลูกหนี้' | 'วิจัย';
+export type ItemType =  'income' | 'receivable' | 'research';
+export type ReceiptItemType = 'income' | 'expense';
 
-export interface  Item {
-  id: number;
-  name: string;
-  type: ItemType;
-  Affiliation: Affiliation;
-  crerateAt: Date;
-  updateAt: Date;
 
-}
 
 
 export interface indexsavedebtor {
@@ -25,119 +19,88 @@ export interface indexsavedebtor {
   item: Item;
   beginningOFTheYear:number;
   totalOftheYear:number;
-  crerateAt: Date;
+  createAt: Date;
   updateAt: Date;
 
 
 }
-
+export interface Item {
+  id: number
+  name: string
+  type: ItemType
+  affiliationId: string  
+  createdAt: Date
+  updatedAt: Date
+}
 
 export interface ReceiptItem {
-  /** Item name */
-  itemName: Item;
-
-  /** Reference number */
-  referenceNo: string;
-  delNumber: string;
-  /** Amount */
-  amount: number;
-  debtorAmount?: number
-  depositSubtotal?: number
-  depositNetAmount?: number
-  /** Type of money*/
-  moneyType: MoneyType;
-
-  moneyTypeNote?: string;
-
- /** internal or external */
-  moneySource: moneySource;
-  nagativeMoneyType: nagativeMoneyType;
-  note?: string;
-  fee?: number; // 👈 fee อยู่ตรงนี้
-  keyword?: string[];
-  subtotal?: number;
-  netAmount?: number;
-
-  crerateAt: Date;
-  updateAt: Date;
-  paymentDetails: paymentDetails[]
+  itemId?: number
+  itemName: string
+  note?: string
+  referenceNo?: string
+  amount: number
+  subtotal?: number
+  type: ReceiptItemType
 }
 
+export interface PaymentMethod {
+  checked: boolean
+  amount: number | string
+  bankName?: string
+  checkNumber?: string
+  NumIncheck?: string
+}
 
- export interface paymentDetails {
-    moneyType: string
-    amount: number
-    referenceNo?: string
-    checkNumber?: string | null
-    accountNumber?: string | null
-    accountName?: string | null
-    bankName?: string | null
-  }
+export interface PaymentMethods {
+  cash?: PaymentMethod
+  check?: PaymentMethod
+  transfer?: PaymentMethod
+}
+
+export interface BankAccountData {
+  accountNumber: string
+  bankName: string
+  accountName: string
+}
+
+export interface BankTransfer {
+  id: number
+  accountData: BankAccountData
+  amount: number
+}
+
 export interface Receipt {
-  /** Full name */
-  fullName: string;
+  id: string
+  waybillNumber: string
 
-  /** Phone number */
-  phone: string;
-isLocked?: boolean;
- moneyType: string;
-  /** Affiliation ID */
-  affiliationId: string;
-  mainAffiliationName?: string;
-  subAffiliationName1?: string;
-  subAffiliationName2?: string;
-  /** Affiliation name */
-  affiliationName: string;
-sendmoney?: string;
-  moneyTypeNote?: string;
+  fullName: string
+  phone: string
 
-  /** Net total amount */
-  netTotalAmount: number;
-  totalDebtorAmount?: number;
-  totalDepositAmount?: number;
-  totalFee?: number;
-  /** Fund ID */
-  fundId: string;
+  fundName: string
+  projectCode: string | null
+  mainAffiliationId?: string
+  mainAffiliationName?: string
+  subAffiliationId1?: string
+  subAffiliationName1?: string
+  subAffiliationId2?: string
+  subAffiliationName2?: string
+  affiliationId: string
+  affiliationName: string
 
-  /** Fund name */
-  fundName: string;
+  moneyType: string
+  sendmoney?: string
+  moneyTypeNote?: string
 
-  /** Project code */
-  projectCode: string;
+  netTotalAmount: number
+  totalPaymentAmount: number
 
-  /** List of receipt items */
-  receiptList: ReceiptItem[];
+  receiptList: ReceiptItem[]
 
-  /** Creation date */
-  createdAt: Date;
-  /** update date */
-  updatedAt: Date;
-  /** Created by user ID */
-  createdBy: User;
-  /** Affiliation  */
-  affiliation: Affiliation;
+  paymentMethods?: PaymentMethods
+  bankTransfers?: BankTransfer[]
 
+  isLocked?: boolean
+  createdAt: string
+  updatedAt: string
 }
 
-export interface debtorList {
-  itemName: string;
-  debtornote: string;
-  amount: number;
-}
-
-export interface depositList {
-  itemName: string;
-  depositnote: string;
-  subtotal: number;
-  fee: number;
-  netAmount: number;
-  paymentDetails: {
-    moneyType: string
-    amount: number
-    referenceNo?: string
-    checkNumber?: string | null
-    accountNumber?: string | null
-    accountName?: string | null
-    bankName?: string | null
-  }[]
-}

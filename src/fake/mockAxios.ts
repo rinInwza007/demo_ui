@@ -565,7 +565,7 @@ mock.onPost('/updateReceipt').reply(async (config) => {
 
   const db = loadReceipts().map(ensureReceiptFields)
   const found = findReceiptByDelNumber(db, oldDelNumber)
-  
+
   if (!found) {
     console.error('❌ Receipt not found:', oldDelNumber)
     return [404, { message: 'Receipt not found', delNumber: oldDelNumber }]
@@ -582,7 +582,7 @@ mock.onPost('/updateReceipt').reply(async (config) => {
 
   const idx = db.indexOf(found)
   const normalized = normalizeBoth(ensureReceiptFields(receipt))
-  
+
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,
@@ -618,7 +618,7 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
 
   const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
   const oldDelNumber = matches ? decodeURIComponent(matches[1]) : ''
-  
+
   if (!oldDelNumber) {
     console.error('❌ No delNumber in URL')
     return [400, { message: 'delNumber is required' }]
@@ -628,7 +628,7 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
 
   const db = loadReceipts().map(ensureReceiptFields)
   const found = findReceiptByDelNumber(db, oldDelNumber)
-  
+
   if (!found) {
     console.error('❌ Receipt not found:', oldDelNumber)
     return [404, { message: 'Receipt not found', delNumber: oldDelNumber }]
@@ -645,7 +645,7 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
 
   const idx = db.indexOf(found)
   const normalized = normalizeBoth(incoming)
-  
+
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,

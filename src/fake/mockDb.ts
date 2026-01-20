@@ -54,7 +54,6 @@ function defaultSeed(): Receipt[] {
           note: "รอบไตรมาสสุดท้าย",
           referenceNo: "INV-001",
           amount: 4500,
-          subtotal: 4500,
           type: "income"
         }
       ],
@@ -69,7 +68,6 @@ export function sanitizeItem(it: any): ReceiptItem {
     itemId: it.itemId ?? undefined,
     note: (it.note ?? '').trim(),
     referenceNo: (it.referenceNo ?? '').trim(),
-    subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
     amount: Number.isFinite(it.amount) ? it.amount : 0,
     type: it.type || 'income',
   }
@@ -118,6 +116,16 @@ export function sanitizeReceipt(r: any): Receipt {
         checkNumber: r.paymentMethods.check.checkNumber || '',
         NumIncheck: r.paymentMethods.check.NumIncheck || ''
       } : undefined,
+      debtor: r.paymentMethods.debtor ? {
+        checked: r.paymentMethods.debtor.checked || false,
+        amount: r.paymentMethods.debtor.amount || 0,
+      } : undefined,
+      other: r.paymentMethods.other ? {
+        checked: r.paymentMethods.other.checked || false,
+        amount: r.paymentMethods.other.amount || 0,
+        name: r.paymentMethods.other.name || '',
+      } : undefined,
+      
     } : {},
 
     bankTransfers: Array.isArray(r.bankTransfers)

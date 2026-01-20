@@ -49,12 +49,14 @@ export interface PaymentMethod {
   bankName?: string
   checkNumber?: string
   NumIncheck?: string
+  name?: string 
 }
 
 export interface PaymentMethods {
   cash?: PaymentMethod
   check?: PaymentMethod
-  transfer?: PaymentMethod
+  debtor?: PaymentMethod
+  other?: PaymentMethod 
 }
 
 export interface BankAccountData {

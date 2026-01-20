@@ -508,7 +508,7 @@ function createDocDefinition() {
   ])
 
   const totalRow = [
-    { text: 'รวมทั้งสิ้น', colSpan: 2, alignment: 'center', bold: true, fontSize: 12 },
+    { text: '', colSpan: 2, alignment: 'center', bold: true, fontSize: 12 },
     {},
     {
       text: formatCurrency(data.totals.debtorIncrease),

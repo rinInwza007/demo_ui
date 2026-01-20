@@ -2391,7 +2391,6 @@ const saveData = async () => {
         referenceNo: row.referenceNo || '',
         amount: cleanAmount,
         type: row.type || 'income',
-        subtotal: cleanAmount,
       })
     }
   })

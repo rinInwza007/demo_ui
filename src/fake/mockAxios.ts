@@ -564,7 +564,7 @@ mock.onPost('/updateReceipt').reply(async (config) => {
   }
 
   const db = loadReceipts().map(ensureReceiptFields)
-  const found = findReceiptByDelNumber(db, oldDelNumber)
+  const found = findReceiptByWaybillNumber(db, oldWaybillNumber)
 
   if (!found) {
     console.error('❌ Receipt not found:', oldWaybillNumber)
@@ -617,27 +617,27 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
   console.log('🔧 PUT /updateReceipt/:waybillNumber called')
 
   const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
-  const oldDelNumber = matches ? decodeURIComponent(matches[1]) : ''
+  const oldwaybillNumber = matches ? decodeURIComponent(matches[1]) : ''
 
-  if (!oldDelNumber) {
-    console.error('❌ No delNumber in URL')
-    return [400, { message: 'delNumber is required' }]
+  if (!oldwaybillNumber) {
+    console.error('❌ No waybillNumber in URL')
+    return [400, { message: 'waybillNumber is required' }]
   }
 
   const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
   const db = loadReceipts().map(ensureReceiptFields)
-  const found = findReceiptByDelNumber(db, oldDelNumber)
+  const found = findReceiptByWaybillNumber(db, oldwaybillNumber)
 
   if (!found) {
-    console.error('❌ Receipt not found:', oldWaybillNumber)
-    return [404, { message: 'Receipt not found', waybillNumber: oldWaybillNumber }]
+    console.error('❌ Receipt not found:', oldwaybillNumber)
+    return [404, { message: 'Receipt not found', waybillNumber: oldwaybillNumber }]
   }
 
   // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ให้ตรวจสอบว่าเลขใหม่ซ้ำหรือไม่
   const newWaybillNumber = incoming.waybillNumber
-  if (newWaybillNumber && newWaybillNumber !== oldWaybillNumber) {
-    const duplicate = db.find(r => r.waybillNumber === newWaybillNumber && r.waybillNumber !== oldWaybillNumber)
+  if (newWaybillNumber && newWaybillNumber !== oldwaybillNumber) {
+    const duplicate = db.find(r => r.waybillNumber === newWaybillNumber && r.waybillNumber !== oldwaybillNumber)
     if (duplicate) {
       return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', waybillNumber: newWaybillNumber }]
     }
@@ -656,8 +656,8 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
   })
 
   // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ต้องลบ record เก่าออกก่อน
-  if (newWaybillNumber && newWaybillNumber !== oldWaybillNumber) {
-    deleteFromBothStorages(oldWaybillNumber)
+  if (newWaybillNumber && newWaybillNumber !== oldwaybillNumber) {
+    deleteFromBothStorages(oldwaybillNumber)
   }
 
   // ✅ บันทึกด้วยเลขใหม่

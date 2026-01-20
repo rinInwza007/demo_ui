@@ -334,7 +334,6 @@ const bankTransfers = receipt.bankTransfers || []
           {
             text: `นำฝากบัญชี ${bank.accountData.bankName} เลขที่ ${bank.accountData.accountNumber}`,
             margin: [110, 10, 0, 0],
-            bold: true,
           },
         ],
       },
@@ -517,7 +516,6 @@ const bankTransfers = receipt.bankTransfers || []
                 { ...createCheckbox(), margin: [100, 2, 0, 0] },
                 {
                   text: 'ลูกหนี้',
-                  bold: true,
                   fontSize: 13,
                   margin: [110, 0, 0, 0],
                 },

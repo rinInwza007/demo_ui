@@ -95,15 +95,12 @@ export function sanitizeReceipt(r: any): Receipt {
     
     affiliationId: String(r.affiliationId || '').trim(),
     affiliationName: String(r.affiliationName || '').trim(),
-    
-    // ✅ เพิ่มส่วนนี้
     mainAffiliationId: String(r.mainAffiliationId || '').trim(),
     mainAffiliationName: String(r.mainAffiliationName || '').trim(),
     subAffiliationId1: String(r.subAffiliationId1 || '').trim(),
     subAffiliationName1: String(r.subAffiliationName1 || '').trim(),
     subAffiliationId2: String(r.subAffiliationId2 || '').trim(),
     subAffiliationName2: String(r.subAffiliationName2 || '').trim(),
-    
     paymentMethods: r.paymentMethods ? {
       cash: r.paymentMethods.cash ? {
         checked: r.paymentMethods.cash.checked || false,
@@ -125,9 +122,7 @@ export function sanitizeReceipt(r: any): Receipt {
         amount: r.paymentMethods.other.amount || 0,
         name: r.paymentMethods.other.name || '',
       } : undefined,
-      
     } : {},
-
     bankTransfers: Array.isArray(r.bankTransfers)
       ? r.bankTransfers.map((bank: any) => ({
           id: bank.id || Date.now(),
@@ -139,7 +134,6 @@ export function sanitizeReceipt(r: any): Receipt {
           amount: Number(bank.amount) || 0,
         }))
       : [],
-
     isLocked: r.isLocked ?? false,
   }
 }

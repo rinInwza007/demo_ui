@@ -392,6 +392,8 @@ import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
 import { useSummaryStore } from '@/stores/summary'
 import { storeToRefs } from 'pinia'
+import { mapPendingDebtsToClearSummary }from '@/mappers/clearDebtor.mapper'
+
 
 /* =========================
  * Constants
@@ -417,7 +419,9 @@ const auth = useAuthStore()
  * Stores
  * ========================= */
 const summaryStore = useSummaryStore()
-const { ledger, totals } = storeToRefs(summaryStore)
+const ledgers = computed(() =>
+  Object.values(summaryStore.ledgerByDoc).flat()
+)
 
 /* =========================
  * State
@@ -453,6 +457,8 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
+
+
 /* =========================
  * Load Receipt Data (Pending Debts)
  * ========================= */
@@ -474,17 +480,17 @@ const loadReceiptData = async () => {
 
     // 2️⃣ Rebuild summary store
     summaryStore.ingestMany(receipts)
-    debug('📊 Ledger entries:', ledger.value.length)
+    debug('📊 Ledger entries:', ledgers.value.length)
 
     // 3️⃣ Get pending debts
-    let pendingItems = summaryStore.pendingDebts
+    let pendingItems = summaryStore.pendingDebts ?? []
 
     // 4️⃣ Permission filter (user role)
     if (auth.role === 'user' && auth.user?.affiliationId) {
-      pendingItems = pendingItems.filter(
-        item => item.affiliationId === auth.user!.affiliationId
-      )
-    }
+    pendingItems = pendingItems.filter(
+    item => item.affiliationId === auth.user!.affiliationId
+  )
+}
 
     rawData.value = pendingItems
     debug('✅ Pending debts:', rawData.value.length)
@@ -555,50 +561,20 @@ const clearSelectedDebtors = async () => {
     selectedItems.value.has(i.id)
   )
 
-  // =========================
-  // 1️⃣ สร้าง Summary Data สำหรับหน้า cleardebtor
-  // =========================
-  const receiptsGrouped = selectedList.reduce((acc, item) => {
-    const receiptId = item._originalReceipt?.projectCode || item.receiptId || 'unknown'
+  // 🧠 ใช้ mapper
+  const summaryData =
+    mapPendingDebtsToClearSummary(selectedList)
 
-    if (!acc[receiptId]) {
-      acc[receiptId] = {
-        receiptId,
-        projectCode: item._originalReceipt?.projectCode || receiptId,
-        fullName: item._originalReceipt?.fullName || item.responsible || '-',
-        phone: item._originalReceipt?.phone || '-',
-        department: item.department || item._originalReceipt?.mainAffiliationName || '-',
-        subDepartment: item.subDepartment || '-',
-        sendmoney: item._originalReceipt?.sendmoney || 'รายได้',
-        fundName: item._originalReceipt?.fundName || '-',
-        createdAt: item._originalReceipt?.createdAt || new Date().toISOString(),
-        items: []
-      }
-    }
+  // 💾 save
+  localStorage.setItem(
+    STORAGE_SUMMARY_KEY,
+    JSON.stringify(summaryData)
+  )
 
-    acc[receiptId].items.push({
-      ...item,
-      amount: Number(item.balanceAmount || item.debtorAmount || 0),
-      debtorAmount: Number(item.balanceAmount || item.debtorAmount || 0)
-    })
-
-    return acc
-  }, {})
-
-  const summaryData = {
-    receipts: Object.values(receiptsGrouped)
-  }
-
-  // =========================
-  // 2️⃣ บันทึกข้อมูลลง localStorage
-  // =========================
-  localStorage.setItem(STORAGE_SUMMARY_KEY, JSON.stringify(summaryData))
-
-  // =========================
-  // 3️⃣ ไปหน้า cleardebtor (ไม่ใช่ PDF)
-  // =========================
+  // ➡️ navigate
   router.push('/cleardebtor/multi')
 }
+
 /* =========================
  * Actions
  * ========================= */
@@ -676,9 +652,9 @@ watch(
  * ========================= */
 if (DEBUG && typeof window !== 'undefined') {
   ;(window as any).debugClearDebtor = {
-    ledger,
+
     rawData,
-    totals,
+
     loadReceiptData,
   }
 }

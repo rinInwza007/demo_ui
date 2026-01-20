@@ -43,7 +43,7 @@ export const defaultAffiliation: Affiliation [] = [
   },
 
 
-  
+
   {
     id: 'ENE',
     name: 'คณะพลังงานและสิ่งแวดล้อม',

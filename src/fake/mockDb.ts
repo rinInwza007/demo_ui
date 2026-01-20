@@ -66,6 +66,7 @@ function defaultSeed(): Receipt[] {
 export function sanitizeItem(it: any): ReceiptItem {
   return {
     itemName: (it.itemName ?? '').trim(),
+    itemId: it.itemId ?? undefined,
     note: (it.note ?? '').trim(),
     referenceNo: (it.referenceNo ?? '').trim(),
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,

@@ -2386,6 +2386,7 @@ const saveData = async () => {
     } else {
       validRows.push({
         itemName: row.itemName || '',
+        itemId: row.itemId || '',
         note: row.note || '',
         referenceNo: row.referenceNo || '',
         amount: cleanAmount,

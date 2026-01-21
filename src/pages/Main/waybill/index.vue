@@ -141,7 +141,7 @@
                 v-model:modelValueMain="selectedMain"
                 v-model:modelValueSub1="selectedSub1"
                 v-model:modelValueSub2="selectedSub2"
-                :options="options"
+                :options="departmentOptions"
               />
 
               <div class="relative flex-1 md:w-64">
@@ -166,97 +166,109 @@
             <!-- ✅ ตัด "ปีงบฯ" และ "รูปแบบ" ออก + ปรับ span ใหม่ -->
             <div
               class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/40 bg-white/20 text-xs font-semibold uppercase tracking-wider flex-shrink-0"
-            >
+              >
+              <div class="col-span-2 text-center">เวลา</div>
               <div class="col-span-1 text-center">สถานะ</div>
               <div class="col-span-2 text-center">สังกัด</div>
-              <div class="col-span-2 text-center mr-5">รายได้/โครงการ</div>
+              <div class="col-span-2 text-center">รายได้/โครงการ</div>
               <div class="col-span-2 text-center">ผู้รับผิดชอบ</div>
-              <div class="col-span-2 text-center">เวลา</div>
               <div class="col-span-1 text-center">ยอดเงิน</div>
               <div class="col-span-2 text-center">จัดการ</div>
             </div>
 
             <!-- Table Body (Scrollable) -->
-            <div class="overflow-y-auto overflow-x-hidden flex-1 p-2 min-h-0">
-              <div
-                v-for="(item, index) in items"
-                :key="item.id ?? index"
-                class="group grid grid-cols-12 gap-4 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm"
-              >
-                <!-- Status -->
-                <div class="col-span-1 flex justify-center">
+<!-- Table Body (Scrollable) -->
+<div class="flex-1 overflow-y-auto px-2">
   <div
-    class="px-3 py-1 rounded-lg border text-xs font-semibold flex items-center justify-center min-w-[90px]"
-    :class="{
-      'bg-yellow-50 text-yellow-700 border-yellow-300': item.status === 'pending',
-      'bg-green-50 text-green-700 border-green-300': item.status === 'success'
-    }"
+    v-for="(row, index) in items"
+    :key="row.id ?? index"
+    class="group grid grid-cols-12 gap-3 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm"
   >
-    <span v-if="item.status === 'pending'">รอดำเนินการ</span>
-    <span v-else>อนุมัติแล้ว</span>
+    <div class="col-span-2 text-center">
+    <div class="text-xs font-medium text-slate-700 font-mono">
+      {{ row.time }}
+    </div>
+  </div>
+    <div class="col-span-1 flex justify-center">
+      <div
+        class="px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-center min-w-[100px] transition-all duration-300"
+        :class="{
+          'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-yellow-300 shadow-sm animate-pulse': 
+            row.status === 'pending',
+          'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-300 shadow-md': 
+            row.status === 'approved',
+          'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-300 shadow-sm': 
+            row.status === 'rejected'
+        }"
+      >
+        <i 
+          class="mr-1.5 text-sm" 
+          :class="{
+            'ph ph-clock text-yellow-600': row.status === 'pending',
+            'ph ph-check-circle text-green-600': row.status === 'approved',
+            'ph ph-x-circle text-red-600': row.status === 'rejected'
+          }"
+        ></i>
+        <span v-if="row.status === 'pending'">รอดำเนินการ</span>
+        <span v-else-if="row.status === 'approved'">อนุมัติแล้ว</span>
+        <span v-else>ไม่อนุมัติ</span>
+      </div>
+    </div>
+
+    <!-- Department -->
+    <div class="col-span-2 items-center justify-center flex flex-col">
+      <div class="font-medium text-center text-slate-800">{{ row.department }}</div>
+      <div class="text-[11px] text-slate-700 mt-0.5  flex items-center gap-1">
+        <i class="ph ph-buildings text-xs"></i>
+        <span class="truncate">{{ row.subDepartment }}</span>
+      </div>
+    </div>
+
+    <!-- Project -->
+    <div class="col-span-2  items-center justify-center flex">
+      <span
+        class="bg-blue-50/50 text-blue-700 text-xs px-2.5 py-1 rounded-lg border border-blue-100 font-medium"
+      >
+        {{ row.project }}
+      </span>
+    </div>
+
+    <!-- Responsible -->
+    <div class="col-span-2 flex items-center gap-2 ml-10">
+      <div
+        class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm"
+      >
+        {{ row.responsible?.charAt(0) }}
+      </div>
+      <span class="text-sm text-slate-700 truncate">{{ row.responsible }}</span>
+    </div>
+
+    <!-- Amount -->
+    <div class="col-span-1 text-right mr-4">
+      <div class="font-bold text-slate-800 font-mono text-sm">
+        {{ formatCurrency(row.amount) }}
+      </div>
+      <div class="text-[10px] text-slate-400">บาท</div>
+    </div>
+
+    <!-- Actions -->
+    <div class="col-span-2 flex justify-center">
+      <ActionButtons
+        :item="row"
+        :permissions="rowPermissions(row)"
+        @view="view"
+        @edit="edit"
+        @delete="removeItem"
+        @approve="approveItem"
+      />
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div v-if="items.length === 0" class="p-8 text-center text-sm text-slate-500">
+    ไม่พบรายการตามเงื่อนไขที่เลือก
   </div>
 </div>
-                <!-- Department -->
-                <div class="col-span-2 ml-12">
-                  <div class="font-medium text-slate-800">{{ item.department }}</div>
-                  <div class="text-[11px] text-slate-700 mt-0.5  flex items-center gap-1">
-                    <i class="ph ph-buildings text-xs"></i>
-                    <span class="truncate">{{ item.subDepartment }}</span>
-                  </div>
-                </div>
-
-                <!-- Project -->
-                <div class="col-span-2 ml-20">
-                  <span
-                    class="bg-blue-50/50 text-blue-700 text-xs px-2.5 py-1 rounded-lg border border-blue-100 font-medium"
-                  >
-                    {{ item.project }}
-                  </span>
-                </div>
-
-                <!-- Responsible -->
-                <div class="col-span-2 flex items-center gap-2">
-                  <div
-                    class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm"
-                  >
-                    {{ item.responsible?.charAt(0) }}
-                  </div>
-                  <span class="text-sm text-slate-700 truncate">{{ item.responsible }}</span>
-                </div>
-
-                <!-- Time (ล่าสุดก่อน) -->
-                <div class="col-span-2 text-center">
-                  <div class="text-xs font-medium text-slate-700 font-mono">
-                    {{ item.time }}
-                  </div>
-                </div>
-
-                <!-- Amount -->
-                <div class="col-span-1 text-right mr-4">
-                  <div class="font-bold text-slate-800 font-mono text-sm">
-                    {{ formatCurrency(item.amount) }}
-                  </div>
-                  <div class="text-[10px] text-slate-400">บาท</div>
-                </div>
-
-                <!-- Actions -->
-                <div class="col-span-2 flex justify-center">
-                  <ActionButtons
-                    :item="item"
-                    :permissions="rowPermissions(item)"
-                    @view="view"
-                    @edit="edit"
-                    @delete="removeItem"
-                    @approve="approveItem"
-                  />
-                </div>
-              </div>
-
-              <!-- Empty state -->
-              <div v-if="items.length === 0" class="p-8 text-center text-sm text-slate-500">
-                ไม่พบรายการตามเงื่อนไขที่เลือก
-              </div>
-            </div>
 
             <!-- Footer Pagination (mock) -->
             <div
@@ -272,21 +284,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 
 import type { Receipt } from '@/types/receipt'
 import { useAuthStore } from '@/stores/auth'
-
+import { ApprovalStatus } from '@/types/recipt'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import { options } from '@/components/data/departments'
 
 import ActionButtons from '@/components/Actionbutton/ActionButtons.vue'
 import sidebar from '@/components/bar/sidebar.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
-
+import { departmentOptions } from '@/components/data/TSdepartments'
 setupAxiosMock()
 
 const router = useRouter()
@@ -299,10 +311,7 @@ const selectedMain = ref('')
 const selectedSub1 = ref('')
 const selectedSub2 = ref('')
 
-/** ✅ user เท่านั้นที่สร้างใบนำส่ง */
 const canCreateWaybill = computed(() => auth.isRole('user'))
-
-/** ✅ treasury เท่านั้นที่อนุมัติ */
 const canApprove = computed(() => auth.isRole('treasury'))
 
 type ActionKey = 'view' | 'edit' | 'delete' | 'approve' | 'lock' | 'cleardebtor'
@@ -336,7 +345,7 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
-type TableStatus = 'pending' | 'success'
+type TableStatus = ApprovalStatus
 
 type TableRow = {
   id: string
@@ -366,11 +375,12 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
   const lastDate = getLastDate(createdDate, updatedDate)
   const lastTimeMs = lastDate?.getTime() ?? 0
 
-  const locked = r.isLocked ?? false
+  const isLocked = r.isLocked ?? false
+  const approvalStatus = r.approvalStatus || 'pending'
 
   return {
     id: r.waybillNumber,
-    status: locked ? 'success' : 'pending',
+    status: approvalStatus,
     department: r.mainAffiliationName || r.affiliationName || '-',
     subDepartment: r.subAffiliationName1 || '-',
     time: formatThaiDateTime(lastDate),
@@ -380,7 +390,7 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
     amount: r.netTotalAmount ? Number(String(r.netTotalAmount).replace(/,/g, '')) : 0,
     createdAt: createdDate,
     updatedAt: updatedDate,
-    isLocked: locked,
+    isLocked,
     _raw: r,
   }
 }
@@ -395,6 +405,7 @@ const loadData = async () => {
         createdAt: r.createdAt ? new Date(r.createdAt as any) : new Date(),
         updatedAt: r.updatedAt ? new Date(r.updatedAt as any) : new Date(),
         isLocked: r.isLocked ?? false,
+        approvalStatus: r.approvalStatus ?? 'pending',
       }))
   } catch (error) {
     console.error('❌ Error loading data:', error)
@@ -402,21 +413,14 @@ const loadData = async () => {
   }
 }
 
-/**
- * ✅ ITEMS (สำคัญ)
- * - user: เห็นเฉพาะ affiliation ตัวเอง
- * - ทุก role: เรียง "เวลาล่าสุด" มาก่อน (updatedAt > createdAt)
- */
 const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
   if (!auth.user) return []
 
-  // ✅ user เห็นเฉพาะหน่วยงานตัวเอง
   if (auth.user.role === 'user') {
     filtered = filtered.filter((r) => r.affiliationId === auth.user!.affiliationId)
   }
 
-  // ✅ filters เดิม
   if (selectedMain.value) {
     filtered = filtered.filter((r) => {
       const main = (r.mainAffiliationName || r.affiliationName || '').trim()
@@ -441,38 +445,35 @@ const items = computed<TableRow[]>(() => {
 
   const rows = filtered.map(mapReceiptToRow)
 
-  // ✅ SORT ใหม่:
-  // 1) pending ขึ้นบน
-  // 2) success ลงล่าง
-  // 3) pending: ล่าสุดก่อน (desc)
-  // 4) success: ล่าสุดไปท้าย (asc) => เพิ่ง approve จะลงล่างสุด
-  const rank = (s: TableStatus) => (s === 'pending' ? 0 : 1)
+  const rank = (s: TableStatus) => {
+    if (s === 'pending') return 0
+    if (s === 'approved') return 1
+    return 2
+  }
 
   rows.sort((a, b) => {
     const byStatus = rank(a.status) - rank(b.status)
     if (byStatus !== 0) return byStatus
 
     if (a.status === 'pending') {
-      return (b.lastTimeMs ?? 0) - (a.lastTimeMs ?? 0) // ใหม่ -> เก่า
+      return (b.lastTimeMs ?? 0) - (a.lastTimeMs ?? 0)
     }
 
-    return (a.lastTimeMs ?? 0) - (b.lastTimeMs ?? 0) // เก่า -> ใหม่ (ใหม่สุดไปท้าย)
+    return (a.lastTimeMs ?? 0) - (b.lastTimeMs ?? 0)
   })
 
   return rows
 })
 
-/** ✅ Header stats: คำนวณจาก items ที่ถูกกรองแล้ว */
 const headerStats = computed(() => {
   const rows = items.value
   const total = rows.length
   const pending = rows.filter((r) => r.status === 'pending').length
-  const success = rows.filter((r) => r.status === 'success').length
+  const approved = rows.filter((r) => r.status === 'approved').length
   const totalAmount = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
-  return { total, pending, success, totalAmount }
+  return { total, pending, success: approved, totalAmount }
 })
 
-/** ✅ Active filter text */
 const activeFiltersText = computed(() => {
   const parts: string[] = []
   if (selectedMain.value) parts.push(selectedMain.value)
@@ -482,11 +483,10 @@ const activeFiltersText = computed(() => {
   return parts.length ? `กำลังกรอง: ${parts.join(' · ')}` : ''
 })
 
-/** ✅ สิทธิ action ต่อแถว */
 const rowPermissions = (row: TableRow): ActionKey[] => {
   const perms: ActionKey[] = ['view']
 
-  if (auth.isRole('user') && row.status === 'pending') {
+  if (auth.isRole('user') && row.status === 'pending' && !row.isLocked) {
     perms.push('edit', 'delete')
   }
 
@@ -497,17 +497,46 @@ const rowPermissions = (row: TableRow): ActionKey[] => {
   return perms
 }
 
+const handleStorageChange = (e: StorageEvent) => {
+  if (e.key === 'fakeApi.receipts' || e.key === 'receipts_last_update') {
+    console.log('🔄 Storage changed, reloading data...')
+    loadData()
+  }
+}
+
+const handleReceiptsUpdate = (event?: CustomEvent) => {
+  console.log('🔄 Receipts updated event:', event?.detail)
+  
+  // ✅ ถ้าเป็น update action ไม่ต้อง reload (เพราะเราอัปเดต local แล้ว)
+  if (event?.detail?.action === 'update') {
+    console.log('   ⏭️ Skip reload for update action')
+    return
+  }
+  
+  console.log('   🔄 Reloading data...')
+  loadData()
+}
+
 onMounted(async () => {
   if (!auth.isLoggedIn) {
     router.push({ name: 'login' })
     return
   }
   await loadData()
+
+  window.addEventListener('storage', handleStorageChange)
+  window.addEventListener('receipts-updated', handleReceiptsUpdate)
 })
 
-const view = (item: TableRow) => router.push(`/pdfpage/${item.id}`)
-const edit = (item: TableRow) => {
-  const waybillNumber = item._raw.waybillNumber 
+onUnmounted(() => {
+  window.removeEventListener('storage', handleStorageChange)
+  window.removeEventListener('receipts-updated', handleReceiptsUpdate)
+})
+
+const view = (row: TableRow) => router.push(`/pdfpage/${row.id}`)
+
+const edit = (row: TableRow) => {
+  const waybillNumber = row._raw.waybillNumber
   if (!waybillNumber) {
     Swal.fire('ข้อผิดพลาด', 'ไม่พบเลขที่นำส่ง', 'error')
     return
@@ -523,45 +552,87 @@ const gotowaybil = () => {
   router.push('/waybill')
 }
 
-/** ✅ Approve: ตั้ง isLocked + อัปเดต updatedAt เพื่อให้ "ล่าสุด" ถูกต้อง */
 const approveItem = async (row: TableRow) => {
   if (!canApprove.value) {
     Swal.fire('ไม่มีสิทธิ์', 'เฉพาะกองคลัง (treasury) เท่านั้นที่อนุมัติได้', 'warning')
     return
   }
-  if (row.status !== 'pending') return
+  if (row.status !== 'pending') {
+    Swal.fire('ไม่สามารถอนุมัติได้', 'รายการนี้ได้รับการอนุมัติแล้ว', 'info')
+    return
+  }
 
   const result = await Swal.fire({
-    title: 'อนุมัติรายการนี้?',
-    text: `โครงการ: ${row.project}`,
+    title: 'ยืนยันการอนุมัติ?',
+    html: `
+      <div class="text-left">
+        <p class="mb-2"><strong>โครงการ:</strong> ${row.project}</p>
+        <p class="mb-2"><strong>หน่วยงาน:</strong> ${row.department}</p>
+        <p class="mb-2"><strong>จำนวนเงิน:</strong> ${formatCurrency(row.amount)} บาท</p>
+      </div>
+    `,
     icon: 'question',
     showCancelButton: true,
-    confirmButtonText: 'อนุมัติ',
+    confirmButtonText: '✓ อนุมัติ',
+    confirmButtonColor: '#10b981',
     cancelButtonText: 'ยกเลิก',
   })
 
   if (!result.isConfirmed) return
 
-  const target = rawData.value.find((r) => r.waybillNumber === row.id)
+  try {
+    // ✅ หา index ของรายการใน rawData
+    const targetIndex = rawData.value.findIndex((r) => r.waybillNumber === row.id)
+    if (targetIndex === -1) {
+      throw new Error('ไม่พบรายการที่ต้องการอนุมัติ')
+    }
 
-  if (!target) return
+    const target = rawData.value[targetIndex]
 
-  target.isLocked = true
-  target.updatedAt = new Date() as any // ✅ ทำให้เวลาล่าสุดเป็นตอน approve
+    console.log('📝 Approving receipt:', {
+      waybillNumber: target.waybillNumber,
+      oldStatus: target.approvalStatus,
+      newStatus: 'approved'
+    })
 
-  Swal.fire({
-    position: 'top-end',
-    icon: 'success',
-    title: 'อนุมัติแล้ว (Success)',
-    showConfirmButton: false,
-    timer: 1200,
-  })
+    // ✅ สร้าง object ใหม่ที่มีการเปลี่ยนแปลง
+    const updatedReceipt = {
+      ...target,
+      approvalStatus: 'approved' as ApprovalStatus,
+      updatedAt: new Date()
+    }
+
+    // ✅ ส่งไป backend
+    await axios.post('/updateReceipt', { receipt: updatedReceipt })
+
+    // ✅ อัปเดต rawData โดยตรงแทนการ reload
+    rawData.value[targetIndex] = updatedReceipt
+
+    console.log('✅ Approval complete, local data updated')
+    console.log('   Status now:', rawData.value[targetIndex].approvalStatus)
+
+    Swal.fire({
+      position: 'top-end',
+      icon: 'success',
+      title: 'อนุมัติสำเร็จ',
+      text: 'สถานะเปลี่ยนเป็น "อนุมัติแล้ว"',
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+    })
+
+  } catch (error) {
+    console.error('❌ Approve error:', error)
+    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอนุมัติได้ กรุณาลองใหม่อีกครั้ง', 'error')
+    // ✅ กรณี error ให้ reload
+    await loadData()
+  }
 }
 
-const removeItem = async (item: TableRow) => {
+const removeItem = async (row: TableRow) => {
   const result = await Swal.fire({
     title: 'ต้องการลบ?',
-    text: `${item.project}`,
+    text: `${row.project}`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'ยืนยัน',
@@ -570,7 +641,7 @@ const removeItem = async (item: TableRow) => {
 
   if (!result.isConfirmed) return
 
-  await axios.delete(`/deleteReceipt/${item.id}`)
+  await axios.delete(`/deleteReceipt/${row.id}`)
   await loadData()
   Swal.fire('ลบแล้ว', '', 'success')
 }

@@ -184,6 +184,7 @@ const ensureReceiptFields = (r: any): any => {
     subAffiliationName1: r?.subAffiliationName1 ?? r?.subAffiliationName ?? '',
     subAffiliationName2: r?.subAffiliationName2 ?? '',
     moneyTypeNote: r?.moneyTypeNote ?? 'Waybill',
+    approvalStatus: r?.approvalStatus ?? 'pending',
     isLocked: r?.isLocked ?? false,
     moneyType: r?.moneyType || r?.sendmoney || 'transfer',
     waybillNumber: r?.waybillNumber || r?.id || '',
@@ -522,60 +523,126 @@ export function setupAxiosMock() {
     return [201, serializeReceipt(sanitized)]
   })
 
+/** ✅ POST /updateReceipt - อัพเดททั้ง 2 storage */
+mock.onPost('/updateReceipt').reply((config) => {
+  console.log('🔧 POST /updateReceipt called')
 
-/** ✅ PUT /updateReceipt/:waybillNumber - อัพเดททั้ง 2 storage */
-mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
-  console.log('🔧 PUT /updateReceipt/:waybillNumber called')
-
-  const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
-  const oldwaybillNumber = matches ? decodeURIComponent(matches[1]) : ''
-
-  if (!oldwaybillNumber) {
-    console.error('❌ No waybillNumber in URL')
-    return [400, { message: 'waybillNumber is required' }]
+  const { receipt } = JSON.parse(config.data || '{}')
+  if (!receipt) {
+    console.error('❌ No receipt in request body')
+    return [400, { message: 'receipt object is required' }]
   }
 
-  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
+  const waybillNumber = receipt.waybillNumber || receipt.id
+  if (!waybillNumber) {
+    console.error('❌ No waybillNumber in receipt')
+    return [400, { message: 'receipt.waybillNumber is required' }]
+  }
 
+  // ✅ โหลดข้อมูลล่าสุดจาก storage
   const db = loadReceipts().map(ensureReceiptFields)
-  const found = findReceiptByWaybillNumber(db, oldwaybillNumber)
+  const found = findReceiptByWaybillNumber(db, waybillNumber)
 
   if (!found) {
-    console.error('❌ Receipt not found:', oldwaybillNumber)
-    return [404, { message: 'Receipt not found', waybillNumber: oldwaybillNumber }]
-  }
-
-  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ให้ตรวจสอบว่าเลขใหม่ซ้ำหรือไม่
-  const newWaybillNumber = incoming.waybillNumber
-  if (newWaybillNumber && newWaybillNumber !== oldwaybillNumber) {
-    const duplicate = db.find(r => r.waybillNumber === newWaybillNumber && r.waybillNumber !== oldwaybillNumber)
-    if (duplicate) {
-      return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', waybillNumber: newWaybillNumber }]
-    }
+    console.error('❌ Receipt not found:', waybillNumber)
+    return [404, { message: 'Receipt not found', waybillNumber }]
   }
 
   const idx = db.indexOf(found)
-  const normalized = normalizeBoth(incoming)
+  const normalized = normalizeBoth(ensureReceiptFields(receipt))
 
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,
-    waybillNumber: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
-    id: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    waybillNumber: db[idx].waybillNumber,
+    id: db[idx].waybillNumber,
     createdAt: db[idx].createdAt,
     updatedAt: new Date(),
   })
 
-  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ต้องลบ record เก่าออกก่อน
-  if (newWaybillNumber && newWaybillNumber !== oldwaybillNumber) {
-    deleteFromBothStorages(oldwaybillNumber)
-  }
+  console.log('📝 Updating receipt:', {
+    waybillNumber: updated.waybillNumber,
+    oldStatus: db[idx].approvalStatus,
+    newStatus: updated.approvalStatus,
+  })
 
-  // ✅ บันทึกด้วยเลขใหม่
-  saveToBothStorages(updated)
-
+  // ✅ อัปเดตใน db array ก่อน
   db[idx] = updated
 
+  // ✅ บันทึกทั้ง 2 storage
+  saveToBothStorages(updated)
+
+  // ✅ Dispatch event พร้อมข้อมูลที่อัปเดตแล้ว
+  dispatchUpdateEvents({
+    action: 'update',
+    data: updated,
+    waybillNumber: updated.waybillNumber,
+    list: db, // ✅ ส่ง db ที่อัปเดตแล้ว
+  })
+
+  console.log('✅ Updated in both storages:', updated.waybillNumber, '| Status:', updated.approvalStatus)
+  return [200, { success: true, data: serializeReceipt(updated) }]
+})
+
+
+/** ✅ POST /updateReceipt - อัพเดททั้ง 2 storage */
+mock.onPost('/updateReceipt').reply((config) => {
+  console.log('🔧 POST /updateReceipt called')
+
+  const { receipt } = JSON.parse(config.data || '{}')
+  if (!receipt) {
+    console.error('❌ No receipt in request body')
+    return [400, { message: 'receipt object is required' }]
+  }
+
+  const waybillNumber = receipt.waybillNumber || receipt.id
+  if (!waybillNumber) {
+    console.error('❌ No waybillNumber in receipt')
+    return [400, { message: 'receipt.waybillNumber is required' }]
+  }
+
+  // ✅ โหลดข้อมูลล่าสุดจาก storage
+  const db = loadReceipts().map(ensureReceiptFields)
+  const found = findReceiptByWaybillNumber(db, waybillNumber)
+
+  if (!found) {
+    console.error('❌ Receipt not found:', waybillNumber)
+    return [404, { message: 'Receipt not found', waybillNumber }]
+  }
+
+  const idx = db.indexOf(found)
+  const normalized = normalizeBoth(ensureReceiptFields(receipt))
+
+  // ✅ Log ก่อน merge เพื่อ debug
+  console.log('🔍 Before merge:', {
+    foundStatus: db[idx].approvalStatus,
+    incomingStatus: receipt.approvalStatus,
+    normalizedStatus: normalized.approvalStatus
+  })
+
+  const updated = sanitizeReceipt({
+    ...db[idx],
+    ...normalized,
+    approvalStatus: receipt.approvalStatus || normalized.approvalStatus || db[idx].approvalStatus, // ✅ Force รักษา status
+    waybillNumber: db[idx].waybillNumber,
+    id: db[idx].waybillNumber,
+    createdAt: db[idx].createdAt,
+    updatedAt: new Date(),
+  })
+
+  console.log('📝 Updating receipt:', {
+    waybillNumber: updated.waybillNumber,
+    oldStatus: db[idx].approvalStatus,
+    newStatus: updated.approvalStatus,
+  })
+
+  // ✅ อัปเดตใน db array ก่อน
+  db[idx] = updated
+
+  // ✅ บันทึกทั้ง 2 storage
+  saveToBothStorages(updated)
+
+  // ✅ Dispatch event พร้อมข้อมูลที่อัปเดตแล้ว
   dispatchUpdateEvents({
     action: 'update',
     data: updated,
@@ -583,8 +650,8 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
     list: db,
   })
 
-  console.log('✅ Updated in both storages:', updated.waybillNumber)
-  return [200, serializeReceipt(updated)]
+  console.log('✅ Updated in both storages:', updated.waybillNumber, '| Status:', updated.approvalStatus)
+  return [200, { success: true, data: serializeReceipt(updated) }]
 })
 
   /** ✅ DELETE /deleteReceipt/:id - ลบจากทั้ง 2 storage */

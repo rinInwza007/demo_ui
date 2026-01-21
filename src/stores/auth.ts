@@ -42,7 +42,7 @@ const MOCK_USERS: Array<User & { password: string }> = [
     phone: '0999999999',
     password: '1234',
   },
-    {
+  {
     id: 'u-002',
     fullName: 'User Demo',
     affiliation: 'คณะพยาบาลศาสตร์',
@@ -55,20 +55,30 @@ const MOCK_USERS: Array<User & { password: string }> = [
   {
     id: 'u-003',
     fullName: 'User Demo',
-    affiliation: 'โรงพยาบาลทันตกรรมมหาวิทยาลัยพะเยา',
+    affiliation: 'คณะทันตแพทยศาสตร์', // ✅ แก้ให้ตรงกับ defaultAffiliation
     affiliationId: 'DEN',
     role: 'user',
     email: 'user03@up.ac.th',
     phone: '0999999999',
     password: '1234',
   },
-    {
+  {
     id: 'u-004',
     fullName: 'User Demo',
-    affiliation: 'โรงพยาบาลมหาวิทยาลัยพะเยา',
+    affiliation: 'คณะแพทยศาสตร์', // ✅ แก้ให้ตรงกับ defaultAffiliation
     affiliationId: 'MED',
     role: 'user',
     email: 'user@up.ac.th',
+    phone: '0999999999',
+    password: '1234',
+  },
+  {
+    id: 'u-005',
+    fullName: 'User Demo',
+    affiliation: 'คณะพลังงานและสิ่งแวดล้อม', // ✅ ตรงกับ defaultAffiliation แล้ว
+    affiliationId: 'ENE',
+    role: 'user',
+    email: 'user04@up.ac.th',
     phone: '0999999999',
     password: '1234',
   },
@@ -167,7 +177,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * ✅ helper สำหรับ “กรองข้อมูลตาม affiliationId”
+     * ✅ helper สำหรับ "กรองข้อมูลตาม affiliationId"
      * - superadmin เห็นทั้งหมด
      * - คนอื่นเห็นเฉพาะของตัวเอง
      */

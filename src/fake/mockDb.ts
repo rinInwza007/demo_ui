@@ -21,7 +21,9 @@ function defaultSeed(): Receipt[] {
       affiliationId: "DEN",
       affiliationName: "คณะทันตแพทยศาสตร์",
       
-      // ✅ เพิ่มส่วนนี้
+      // ✅ เพิ่มบรรทัดนี้
+      approvalStatus: "pending",
+      
       mainAffiliationId: "DEN",
       mainAffiliationName: "คณะทันตแพทยศาสตร์",
       subAffiliationId1: "",
@@ -88,7 +90,7 @@ export function sanitizeReceipt(r: any): Receipt {
     totalPaymentAmount: Number(r.totalPaymentAmount) || 0,
     createdAt: r.createdAt ?? new Date().toISOString(),
     updatedAt: r.updatedAt ?? new Date().toISOString(),
-    
+    approvalStatus: r.approvalStatus ?? 'pending',
     receiptList: Array.isArray(r.receiptList)
       ? r.receiptList.map(sanitizeItem)
       : [],

@@ -28,30 +28,57 @@
 
         <div class="px-8 py-4 flex-shrink-0">
           <div class="glass-panel p-4 rounded-2xl flex items-center justify-between shadow-sm">
-            <button
-              type="button"
-              :disabled="isTodayClosed"
-              class="px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm border border-white/40 transition text-slate-700"
-              :class="isTodayClosed ? 'bg-white/10 opacity-60 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20'"
-              @click="closeDaily"
-            >
-              <i class="ph ph-lock-key mr-2"></i>
-              ปิดยอดประจำวัน
-            </button>
+            <!-- ✅ ปุ่มปิดยอด -->
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                :disabled="dailyClose.isTodayClosed"
+                class="px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm border border-white/40 transition text-slate-700"
+                :class="dailyClose.isTodayClosed ? 'bg-white/10 opacity-60 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20'"
+                @click="closeDaily"
+              >
+                <i class="ph ph-lock-key mr-2"></i>
+                ปิดยอดประจำวัน
+              </button>
+
+              <!-- ✅ ปุ่มยกเลิกการปิดยอด (เฉพาะ superadmin) -->
+              <button
+                v-if="auth.isRole('superadmin') && dailyClose.isTodayClosed"
+                type="button"
+                class="px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 transition"
+                @click="reopenDaily"
+              >
+                <i class="ph ph-lock-key-open mr-2"></i>
+                ยกเลิกการปิดยอด
+              </button>
+
+              <!-- ✅ แสดงข้อมูลการปิดยอด -->
+              <div
+                v-if="dailyClose.todayRecord"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-50 border border-green-200 text-xs"
+              >
+                <i class="ph ph-check-circle text-green-600"></i>
+                <span class="text-green-700">
+                  ปิดยอดโดย: <strong>{{ dailyClose.todayRecord.closedByName }}</strong>
+                </span>
+                <span class="text-green-600">•</span>
+                <span class="text-green-700">
+                  เวลา: <strong>{{ formatCloseTime(dailyClose.todayRecord.closedAt) }}</strong>
+                </span>
+              </div>
+            </div>
 
             <div class="flex flex-col items-end gap-1">
               <button
                 class="glass-button-primary px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm"
                 @click="manualRefresh"
-                :disabled="isTodayClosed"
-                :class="isTodayClosed ? 'opacity-60 cursor-not-allowed' : ''"
               >
                 <i class="ph ph-arrows-clockwise mr-2"></i> รีเฟรช
               </button>
 
               <div class="text-xs text-slate-500 flex items-center gap-2 px-1">
                 <i class="ph ph-clock"></i>
-                <template v-if="isTodayClosed">
+                <template v-if="dailyClose.isTodayClosed">
                    หยุดอัปเดตอัตโนมัติ • ล่าสุด:
                   <span class="font-semibold text-slate-600">{{ lastUpdatedText }}</span>
                 </template>
@@ -78,6 +105,23 @@
 
             <div class="overflow-y-auto overflow-x-hidden flex-1 p-3 min-h-0 space-y-3">
               <div
+                v-if="isLoading"
+                class="p-10 text-center text-slate-500"
+              >
+                <i class="ph ph-spinner text-2xl animate-spin"></i>
+                <div class="mt-2">กำลังโหลดข้อมูล...</div>
+              </div>
+
+              <div
+                v-else-if="dailyItems.length === 0"
+                class="p-10 text-center text-slate-500"
+              >
+                <i class="ph ph-info text-2xl"></i>
+                <div class="mt-2">ไม่พบข้อมูล</div>
+              </div>
+
+              <div
+                v-else
                 v-for="day in dailyItems"
                 :key="day.dateKey"
                 class="rounded-2xl border border-white/40 bg-white/10 p-5"
@@ -108,6 +152,13 @@
                         <span class="font-semibold" :class="day.total.net >= 0 ? 'text-green-600' : 'text-red-600'">
                           {{ formatCurrency(day.total.net) }}
                         </span>
+                      </div>
+
+                      <!-- ✅ แสดงข้อมูลการปิดยอด -->
+                      <div v-if="day.isClosed && day.closedAt" class="text-[10px] text-slate-400 mt-1">
+                        <i class="ph ph-clock"></i>
+                        ปิดยอด: {{ formatCloseTime(day.closedAt) }}
+                        <span v-if="day.closedByName"> โดย {{ day.closedByName }}</span>
                       </div>
                     </div>
                   </div>
@@ -211,11 +262,6 @@
                   </div>
                 </div>
               </div>
-
-              <div v-if="dailyItems.length === 0" class="p-10 text-center text-slate-500">
-                <i class="ph ph-info text-2xl"></i>
-                <div class="mt-2">ไม่พบข้อมูล</div>
-              </div>
             </div>
           </div>
         </div>
@@ -228,10 +274,14 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import sidebar from '@/components/bar/sidebar.vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useDailyCloseStore } from '@/stores/DailyClose'
 import Swal from 'sweetalert2'
 import axios from 'axios'
 
 const router = useRouter()
+const auth = useAuthStore()
+const dailyClose = useDailyCloseStore()
 
 const gotoReportpage = (dateKey: string) => {
   console.log('🚀 Navigating to:', `/daily_report/${dateKey}`)
@@ -261,6 +311,7 @@ type DailySummary = {
   expanded: boolean
   isClosed: boolean
   closedAt?: string
+  closedByName?: string
   total: {
     countWaybill: number; sumWaybill: number
     countDebtor: number;  sumDebtor: number
@@ -271,11 +322,9 @@ type DailySummary = {
 }
 
 const eventsFromApi = ref<SummaryEvent[]>([])
-
-type CloseState = { isClosed: boolean; closedAt?: string }
-const closedMap = ref<Record<string, CloseState>>({})
-
 const expandedMap = ref<Record<string, boolean>>({})
+const isLoading = ref(true)
+let refreshInterval: number | null = null
 
 const dateKeyOf = (iso: string) => {
   const d = new Date(iso)
@@ -285,25 +334,38 @@ const dateKeyOf = (iso: string) => {
   return `${y}-${m}-${day}`
 }
 
-const getTodayDateKey = () => dateKeyOf(new Date().toISOString())
-const isDateClosed = (dateKey: string) => !!closedMap.value[dateKey]?.isClosed
-const isTodayClosed = computed(() => isDateClosed(getTodayDateKey()))
-
 const lastUpdatedAt = ref<Date | null>(null)
 const lastUpdatedText = computed(() => {
   if (!lastUpdatedAt.value) return '-'
   return lastUpdatedAt.value.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
 })
 
-const fetchClosedMap = async () => {
-  const res = await axios.get('/daily/closed-map')
-  closedMap.value = res.data?.map || {}
+const fetchEvents = async () => {
+  try {
+    const res = await axios.get('/summary/events')
+    eventsFromApi.value = res.data?.items || []
+    lastUpdatedAt.value = new Date()
+  } catch (error) {
+    console.error('Failed to fetch events:', error)
+    await Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+      confirmButtonText: 'รับทราบ',
+    })
+  }
 }
 
-const fetchEvents = async () => {
-  const res = await axios.get('/summary/events')
-  eventsFromApi.value = res.data?.items || []
-  lastUpdatedAt.value = new Date()
+const startAutoRefresh = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
+  
+  if (!dailyClose.isTodayClosed) {
+    refreshInterval = window.setInterval(async () => {
+      await fetchEvents()
+    }, 60000)
+  }
 }
 
 const manualRefresh = async () => {
@@ -311,13 +373,11 @@ const manualRefresh = async () => {
 }
 
 const closeDaily = async () => {
-  const todayKey = getTodayDateKey()
-
-  if (isDateClosed(todayKey)) {
+  if (dailyClose.isTodayClosed) {
     await Swal.fire({
       icon: 'info',
       title: 'ปิดยอดแล้ว',
-      text: `วันนี้ปิดยอดแล้ว`,
+      text: 'วันนี้ปิดยอดแล้ว',
       confirmButtonText: 'รับทราบ',
     })
     return
@@ -326,20 +386,93 @@ const closeDaily = async () => {
   const result = await Swal.fire({
     icon: 'warning',
     title: 'ยืนยันปิดยอดประจำวัน',
+    html: `
+      <div class="text-left">
+        <p class="mb-2">เมื่อปิดยอดแล้ว จะไม่สามารถ:</p>
+        <ul class="list-disc list-inside text-sm text-gray-600">
+          <li>สร้างใบนำส่งใหม่</li>
+          <li>แก้ไขใบนำส่ง</li>
+          <li>ลบใบนำส่ง</li>
+        </ul>
+        <p class="mt-3 text-sm text-gray-500">
+          (สามารถดูใบนำส่งได้ตามปกติ)
+        </p>
+      </div>
+    `,
     showCancelButton: true,
-    confirmButtonText: 'ใช่, ปิดยอด',
+    confirmButtonText: '✓ ยืนยันปิดยอด',
     cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#10b981',
   })
 
   if (!result.isConfirmed) return
 
-  await axios.post('/daily/close', { dateKey: todayKey })
-  await fetchClosedMap()
+  try {
+    if (!auth.user) throw new Error('ไม่พบข้อมูลผู้ใช้')
+    
+    dailyClose.closeDaily(auth.user.id, auth.user.fullName)
 
-  await Swal.fire({
-    icon: 'success',
-    title: 'ปิดยอดสำเร็จ',
+    await Swal.fire({
+      icon: 'success',
+      title: 'ปิดยอดสำเร็จ',
+      text: 'ระบบได้ทำการปิดยอดประจำวันแล้ว',
+      timer: 2000,
+      showConfirmButton: false,
+    })
+  } catch (error: any) {
+    console.error('❌ Close daily error:', error)
+    Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถปิดยอดได้', 'error')
+  }
+}
+
+const reopenDaily = async () => {
+  if (!auth.isRole('superadmin')) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'ไม่มีสิทธิ์',
+      text: 'เฉพาะ Super Admin เท่านั้นที่สามารถยกเลิกการปิดยอดได้',
+      confirmButtonText: 'รับทราบ',
+    })
+    return
+  }
+
+  const result = await Swal.fire({
+    icon: 'warning',
+    title: 'ยืนยันยกเลิกการปิดยอด?',
+    html: `
+      <div class="text-left">
+        <p class="mb-2 text-red-600 font-semibold">⚠️ คำเตือน</p>
+        <p class="mb-2">การยกเลิกการปิดยอดจะทำให้:</p>
+        <ul class="list-disc list-inside text-sm text-gray-600">
+          <li>สามารถสร้างใบนำส่งใหม่ได้อีกครั้ง</li>
+          <li>สามารถแก้ไขและลบใบนำส่งได้</li>
+          <li>ข้อมูลการปิดยอดจะถูกลบออก</li>
+        </ul>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: '✓ ยืนยันยกเลิก',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#ef4444',
   })
+
+  if (!result.isConfirmed) return
+
+  try {
+    const today = dateKeyOf(new Date().toISOString())
+    dailyClose.reopenDaily(today)
+
+    await Swal.fire({
+      icon: 'success',
+      title: 'ยกเลิกการปิดยอดสำเร็จ',
+      text: 'สามารถสร้าง/แก้ไข/ลบใบนำส่งได้ตามปกติแล้ว',
+      timer: 2000,
+      showConfirmButton: false,
+    })
+  } catch (error: any) {
+    console.error('❌ Reopen daily error:', error)
+    Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถยกเลิกการปิดยอดได้', 'error')
+  }
 }
 
 const toggleDay = (dateKey: string) => {
@@ -388,9 +521,13 @@ const buildDaily = (events: SummaryEvent[]): DailySummary[] => {
     day.faculties = Array.from(day.facMap.values())
     delete day.facMap
     day.expanded = !!expandedMap.value[day.dateKey]
-    const closeState = closedMap.value[day.dateKey]
-    day.isClosed = closeState?.isClosed ?? false
-    day.closedAt = closeState?.closedAt
+    
+    // ✅ ดึงข้อมูลการปิดยอดจาก store
+    const closeRecord = dailyClose.getRecord(day.dateKey)
+    day.isClosed = closeRecord?.isClosed ?? false
+    day.closedAt = closeRecord?.closedAt
+    day.closedByName = closeRecord?.closedByName
+    
     return day as DailySummary
   })
 
@@ -408,8 +545,44 @@ const formatThaiDate = (dateKey: string) => {
   return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
+const formatCloseTime = (isoTime?: string) => {
+  if (!isoTime) return '-'
+  const d = new Date(isoTime)
+  return d.toLocaleString('th-TH', { 
+    year: 'numeric',
+    month: 'short', 
+    day: 'numeric',
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })
+}
+
+watch(() => dailyClose.isTodayClosed, (newVal) => {
+  if (newVal) {
+    if (refreshInterval) {
+      clearInterval(refreshInterval)
+      refreshInterval = null
+    }
+  } else {
+    startAutoRefresh()
+  }
+})
+
 onMounted(async () => {
-  await fetchClosedMap()
-  await fetchEvents()
+  isLoading.value = true
+  try {
+    await fetchEvents()
+    startAutoRefresh()
+  } catch (error) {
+    console.error('Initial load failed:', error)
+  } finally {
+    isLoading.value = false
+  }
+})
+
+onBeforeUnmount(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
 })
 </script>

@@ -1916,7 +1916,7 @@ const loadReceiptData = async () => {
   isLoading.value = true
   try {
     // ✅ เปลี่ยนจาก /getReceipt เป็น /findOneReceipt
-    const response = await axios.get(`/findOneReceipt/${receiptId.value}`)
+    const response = await axios.get(`/getReceipt/${receiptId.value}`)
     
     // ✅ ข้อมูลจะอยู่ใน response.data โดยตรง (ไม่ใช่ array)
     const data = response.data

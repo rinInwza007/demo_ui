@@ -407,31 +407,6 @@ export function setupAxiosMock() {
     return [200, { exists, waybillNumber: decoded }]
   })
 
-  /** GET /findOneReceipt/:id */
-  mock.onGet(/\/findOneReceipt\/([^/]+)$/).reply((config) => {
-    const id = config.url?.match(/\/findOneReceipt\/([^/]+)$/)?.[1]
-    if (!id) {
-      console.error('❌ findOneReceipt - No ID provided')
-      return [400, { message: 'id required' }]
-    }
-
-    const decoded = decodeURIComponent(id)
-    const db = loadReceipts().map(ensureReceiptFields)
-    const found = findReceiptByWaybillNumber(db, decoded)
-
-    if (!found) {
-      console.warn('❌ findOneReceipt - Not found:', decoded)
-      return [404, {
-        message: 'Receipt not found',
-        searchedId: decoded,
-        availableWaybillNumbers: db.map(r => r.waybillNumber).filter(Boolean)
-      }]
-    }
-
-    console.log('✅ findOneReceipt - Found:', found.waybillNumber)
-    return [200, serializeReceipt(normalizeBoth(found))]
-  })
-
   /** GET /getReceipt/:delNumber */
   mock.onGet(/\/getReceipt\/([^?]+)$/).reply((config) => {
     const url = config.url || ''
@@ -547,70 +522,6 @@ export function setupAxiosMock() {
     return [201, serializeReceipt(sanitized)]
   })
 
-/** ✅ POST /updateReceipt - อัพเดททั้ง 2 storage */
-mock.onPost('/updateReceipt').reply(async (config) => {
-  console.log('🔧 POST /updateReceipt called')
-
-  const { receipt } = JSON.parse(config.data || '{}')
-  if (!receipt) {
-    console.error('❌ No receipt in request body')
-    return [400, { message: 'receipt object is required' }]
-  }
-
-  const oldWaybillNumber = receipt.id || receipt.waybillNumber
-  if (!oldWaybillNumber) {
-    console.error('❌ No waybillNumber in receipt')
-    return [400, { message: 'receipt.waybillNumber is required' }]
-  }
-
-  const db = loadReceipts().map(ensureReceiptFields)
-  const found = findReceiptByWaybillNumber(db, oldWaybillNumber)
-
-  if (!found) {
-    console.error('❌ Receipt not found:', oldWaybillNumber)
-    return [404, { message: 'Receipt not found', waybillNumber: oldWaybillNumber }]
-  }
-
-  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ให้ตรวจสอบว่าเลขใหม่ซ้ำหรือไม่
-  const newWaybillNumber = receipt.waybillNumber
-  if (newWaybillNumber && newWaybillNumber !== oldWaybillNumber) {
-    const duplicate = db.find(r => r.waybillNumber === newWaybillNumber && r.waybillNumber !== oldWaybillNumber)
-    if (duplicate) {
-      return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', waybillNumber: newWaybillNumber }]
-    }
-  }
-
-  const idx = db.indexOf(found)
-  const normalized = normalizeBoth(ensureReceiptFields(receipt))
-
-  const updated = sanitizeReceipt({
-    ...db[idx],
-    ...normalized,
-    waybillNumber: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
-    id: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
-    updatedAt: new Date(),
-  })
-
-  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ต้องลบ record เก่าออกก่อน
-  if (newWaybillNumber && newWaybillNumber !== oldWaybillNumber) {
-    deleteFromBothStorages(oldWaybillNumber)
-  }
-
-  // ✅ บันทึกด้วยเลขใหม่
-  saveToBothStorages(updated)
-
-  db[idx] = updated
-
-  dispatchUpdateEvents({
-    action: 'bulk-update',
-    data: updated,
-    waybillNumber: updated.waybillNumber,
-    list: db,
-  })
-
-  console.log('✅ Bulk updated in both storages:', updated.waybillNumber)
-  return [200, { success: true, data: serializeReceipt(updated) }]
-})
 
 /** ✅ PUT /updateReceipt/:waybillNumber - อัพเดททั้ง 2 storage */
 mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {

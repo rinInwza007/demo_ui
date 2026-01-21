@@ -585,64 +585,59 @@ mock.onPost('/updateReceipt').reply((config) => {
 })
 
 
-/** ✅ POST /updateReceipt - อัพเดททั้ง 2 storage */
-mock.onPost('/updateReceipt').reply((config) => {
-  console.log('🔧 POST /updateReceipt called')
+/** ✅ PUT /updateReceipt/:waybillNumber - อัพเดททั้ง 2 storage */
+mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
+  console.log('🔧 PUT /updateReceipt/:waybillNumber called')
 
-  const { receipt } = JSON.parse(config.data || '{}')
-  if (!receipt) {
-    console.error('❌ No receipt in request body')
-    return [400, { message: 'receipt object is required' }]
+  const matches = config.url?.match(/\/updateReceipt\/(.+)$/)
+  const oldwaybillNumber = matches ? decodeURIComponent(matches[1]) : ''
+
+  if (!oldwaybillNumber) {
+    console.error('❌ No waybillNumber in URL')
+    return [400, { message: 'waybillNumber is required' }]
   }
 
-  const waybillNumber = receipt.waybillNumber || receipt.id
-  if (!waybillNumber) {
-    console.error('❌ No waybillNumber in receipt')
-    return [400, { message: 'receipt.waybillNumber is required' }]
-  }
+  const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
 
-  // ✅ โหลดข้อมูลล่าสุดจาก storage
   const db = loadReceipts().map(ensureReceiptFields)
-  const found = findReceiptByWaybillNumber(db, waybillNumber)
+  const found = findReceiptByWaybillNumber(db, oldwaybillNumber)
 
   if (!found) {
-    console.error('❌ Receipt not found:', waybillNumber)
-    return [404, { message: 'Receipt not found', waybillNumber }]
+    console.error('❌ Receipt not found:', oldwaybillNumber)
+    return [404, { message: 'Receipt not found', waybillNumber: oldwaybillNumber }]
+  }
+
+  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ให้ตรวจสอบว่าเลขใหม่ซ้ำหรือไม่
+  const newWaybillNumber = incoming.waybillNumber
+  if (newWaybillNumber && newWaybillNumber !== oldwaybillNumber) {
+    const duplicate = db.find(r => r.waybillNumber === newWaybillNumber && r.waybillNumber !== oldwaybillNumber)
+    if (duplicate) {
+      return [409, { message: 'เลขนำส่งใหม่มีอยู่ในระบบแล้ว', waybillNumber: newWaybillNumber }]
+    }
   }
 
   const idx = db.indexOf(found)
-  const normalized = normalizeBoth(ensureReceiptFields(receipt))
-
-  // ✅ Log ก่อน merge เพื่อ debug
-  console.log('🔍 Before merge:', {
-    foundStatus: db[idx].approvalStatus,
-    incomingStatus: receipt.approvalStatus,
-    normalizedStatus: normalized.approvalStatus
-  })
+  const normalized = normalizeBoth(incoming)
 
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,
-    approvalStatus: receipt.approvalStatus || normalized.approvalStatus || db[idx].approvalStatus, // ✅ Force รักษา status
-    waybillNumber: db[idx].waybillNumber,
-    id: db[idx].waybillNumber,
+    waybillNumber: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
+    id: newWaybillNumber || db[idx].waybillNumber, // ✅ ใช้เลขใหม่ถ้ามี
     createdAt: db[idx].createdAt,
     updatedAt: new Date(),
   })
 
-  console.log('📝 Updating receipt:', {
-    waybillNumber: updated.waybillNumber,
-    oldStatus: db[idx].approvalStatus,
-    newStatus: updated.approvalStatus,
-  })
+  // ✅ ถ้ามีการเปลี่ยนเลขนำส่ง ต้องลบ record เก่าออกก่อน
+  if (newWaybillNumber && newWaybillNumber !== oldwaybillNumber) {
+    deleteFromBothStorages(oldwaybillNumber)
+  }
 
-  // ✅ อัปเดตใน db array ก่อน
-  db[idx] = updated
-
-  // ✅ บันทึกทั้ง 2 storage
+  // ✅ บันทึกด้วยเลขใหม่
   saveToBothStorages(updated)
 
-  // ✅ Dispatch event พร้อมข้อมูลที่อัปเดตแล้ว
+  db[idx] = updated
+
   dispatchUpdateEvents({
     action: 'update',
     data: updated,
@@ -650,9 +645,11 @@ mock.onPost('/updateReceipt').reply((config) => {
     list: db,
   })
 
-  console.log('✅ Updated in both storages:', updated.waybillNumber, '| Status:', updated.approvalStatus)
-  return [200, { success: true, data: serializeReceipt(updated) }]
+  console.log('✅ Updated in both storages:', updated.waybillNumber)
+  return [200, serializeReceipt(updated)]
 })
+
+
 
   /** ✅ DELETE /deleteReceipt/:id - ลบจากทั้ง 2 storage */
   mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {

@@ -958,10 +958,10 @@
               
               <!-- ข้อมูลพื้นฐาน -->
               <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
-                <div><span class="font-medium">👤 ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
-                <div><span class="font-medium">📞 เบอร์:</span> {{ template.data.phone || '-' }}</div>
-                <div><span class="font-medium">🏢 หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
-                <div><span class="font-medium">💰 กองทุน:</span> {{ template.data.fundName || '-' }}</div>
+                <div><span class="font-medium">ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
+                <div><span class="font-medium">เบอร์:</span> {{ template.data.phone || '-' }}</div>
+                <div><span class="font-medium">หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
+                <div><span class="font-medium">กองทุน:</span> {{ template.data.fundName || '-' }}</div>
               </div>
             </div>
             

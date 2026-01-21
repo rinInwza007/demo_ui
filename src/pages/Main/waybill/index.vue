@@ -23,7 +23,7 @@
                 <!-- ✅ Daily Close Status Banner -->
                 <div
                   v-if="dailyClose.isTodayClosed"
-                  class="text-[11px] text-red-700 px-3 py-1 rounded-full bg-red-50 border border-red-200 backdrop-blur flex items-center gap-1.5 animate-pulse"
+                  class="text-[11px] text-red-700 px-3 py-1 rounded-full bg-red-50 border border-red-200 backdrop-blur flex items-center gap-1.5"
                 >
                   <i class="ph ph-lock text-xs"></i>
                   <span class="font-semibold">ปิดยอดแล้ว - ไม่สามารถสร้าง/แก้ไข/ลบได้</span>
@@ -224,6 +224,7 @@
                   <ActionButtons
                     :item="row"
                     :permissions="rowPermissions(row)"
+                    :force-disabled="row.isLocked || dailyClose.isTodayClosed"
                     @view="view"
                     @edit="edit"
                     @delete="removeItem"
@@ -525,13 +526,22 @@ const view = (row: TableRow) => {
 }
 
 const edit = (row: TableRow) => {
-  // ✅ เช็คการปิดยอดก่อนแก้ไข
-  if (row.isLocked) {
+  // ✅ เช็คการปิดยอดก่อนแก้ไข (Double Check)
+  if (row.isLocked || dailyClose.isTodayClosed) {
     Swal.fire({
       icon: 'warning',
       title: 'ไม่สามารถแก้ไขได้',
-      text: 'วันนี้ปิดยอดแล้ว ไม่สามารถแก้ไขใบนำส่งได้',
+      html: `
+        <div class="text-left">
+          <p class="mb-2">ไม่สามารถแก้ไขใบนำส่งได้ เนื่องจาก:</p>
+          <ul class="list-disc pl-5 space-y-1">
+            ${row.isLocked ? '<li>วันที่สร้างใบนำส่งนี้ปิดยอดแล้ว</li>' : ''}
+            ${dailyClose.isTodayClosed ? '<li>วันนี้ปิดยอดรายวันแล้ว</li>' : ''}
+          </ul>
+        </div>
+      `,
       confirmButtonText: 'รับทราบ',
+      confirmButtonColor: '#EF4444'
     })
     return
   }
@@ -541,6 +551,8 @@ const edit = (row: TableRow) => {
     Swal.fire('ข้อผิดพลาด', 'ไม่พบเลขที่นำส่ง', 'error')
     return
   }
+  
+  console.log('✅ Opening edit for:', waybillNumber, 'isLocked:', row.isLocked)
   router.push(`/waybill/edit/${waybillNumber}`)
 }
 
@@ -644,32 +656,56 @@ const approveItem = async (row: TableRow) => {
 }
 
 const removeItem = async (row: TableRow) => {
-  // ✅ เช็คการปิดยอดก่อนลบ
-  if (row.isLocked) {
+  // ✅ เช็คการปิดยอดก่อนลบ (Double Check)
+  if (row.isLocked || dailyClose.isTodayClosed) {
     Swal.fire({
       icon: 'warning',
       title: 'ไม่สามารถลบได้',
-      text: 'วันนี้ปิดยอดแล้ว ไม่สามารถลบใบนำส่งได้',
+      html: `
+        <div class="text-left">
+          <p class="mb-2">ไม่สามารถลบใบนำส่งได้ เนื่องจาก:</p>
+          <ul class="list-disc pl-5 space-y-1">
+            ${row.isLocked ? '<li>วันที่สร้างใบนำส่งนี้ปิดยอดแล้ว</li>' : ''}
+            ${dailyClose.isTodayClosed ? '<li>วันนี้ปิดยอดรายวันแล้ว</li>' : ''}
+          </ul>
+        </div>
+      `,
       confirmButtonText: 'รับทราบ',
+      confirmButtonColor: '#EF4444'
     })
     return
   }
 
   const result = await Swal.fire({
     title: 'ต้องการลบ?',
-    text: `${row.project}`,
+    html: `
+      <div class="text-left">
+        <p class="mb-2"><strong>โครงการ:</strong> ${row.project}</p>
+        <p class="mb-2"><strong>หน่วยงาน:</strong> ${row.department}</p>
+        <p class="mb-2"><strong>จำนวนเงิน:</strong> ${formatCurrency(row.amount)} บาท</p>
+      </div>
+    `,
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'ยืนยัน',
+    confirmButtonText: 'ยืนยันการลบ',
+    confirmButtonColor: '#EF4444',
     cancelButtonText: 'ยกเลิก',
   })
 
   if (!result.isConfirmed) return
 
   try {
+    console.log('🗑️ Deleting receipt:', row.id)
     await axios.delete(`/deleteReceipt/${row.id}`)
     await loadData()
-    Swal.fire('ลบแล้ว', '', 'success')
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'ลบสำเร็จ',
+      text: 'ลบใบนำส่งเรียบร้อยแล้ว',
+      timer: 2000,
+      showConfirmButton: false
+    })
   } catch (error) {
     console.error('❌ Delete error:', error)
     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถลบได้ กรุณาลองใหม่อีกครั้ง', 'error')
@@ -683,6 +719,10 @@ body {
   margin: 0;
   padding: 0;
 }
+
+
+
+
 
 /* ✅ header divider */
 .header-divider {

@@ -399,8 +399,7 @@ import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
 import { useSummaryStore } from '@/stores/summary'
 import { storeToRefs } from 'pinia'
-import { mapPendingDebtsToClearSummary }from '@/mappers/clearDebtor.mapper'
-
+import { filterDebtorsByPermission } from '@/components/ีutils/filterdebtor'
 
 /* =========================
  * Constants
@@ -426,9 +425,7 @@ const auth = useAuthStore()
  * Stores
  * ========================= */
 const summaryStore = useSummaryStore()
-const ledgers = computed(() =>
-  Object.values(summaryStore.ledgerByDoc).flat()
-)
+const { ledger, totals } = storeToRefs(summaryStore)
 
 /* =========================
  * State
@@ -464,8 +461,14 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
+// ในส่วน setup หรือ methods
+const loadDebtorItems = () => {
+  const itemIds = [201, 202, 203, 301, 401] // รายการที่ต้องการ
+  const allowedItems = filterDebtorsByPermission(itemIds, auth)
 
-
+  // ถ้าผู้ใช้เป็นคณะแพทย์ จะได้เฉพาะ 201, 202, 203
+  // ถ้าเป็น Admin จะได้ทุกรายการ
+}
 /* =========================
  * Load Receipt Data (Pending Debts)
  * ========================= */
@@ -493,17 +496,34 @@ const loadReceiptData = async () => {
 
     // 2️⃣ Rebuild summary store
     summaryStore.ingestMany(receipts)
-    debug('📊 Ledger entries:', ledgers.value.length)
+    console.log('📊 Ledger entries:', ledger.value.length)
 
     // 3️⃣ Get pending debts
-    let pendingItems = summaryStore.pendingDebts ?? []
+    let pendingItems = summaryStore.pendingDebts
+    console.log('⏳ Pending debts (before filter):', pendingItems.length)
+
+    // 🔍 Debug: ดูว่ามี item ไหน isClearedDebt = true แต่ยังอยู่ใน pending
+    const shouldBeClearedButStillPending = pendingItems.filter(
+      i => i.isClearedDebt === true
+    )
+    if (shouldBeClearedButStillPending.length > 0) {
+      console.warn('⚠️ These items should be cleared but still showing:',
+        shouldBeClearedButStillPending.map(i => ({
+          id: i.id,
+          name: i.itemName,
+          isClearedDebt: i.isClearedDebt
+        }))
+      )
+    }
 
     // 4️⃣ Permission filter
     if (auth.role === 'user' && auth.user?.affiliationId) {
-    pendingItems = pendingItems.filter(
-    item => item.affiliationId === auth.user!.affiliationId
-  )
-}
+      const beforeFilter = pendingItems.length
+      pendingItems = pendingItems.filter(
+        item => item.affiliationId === auth.user!.affiliationId
+      )
+      console.log(`🔒 Permission filter: ${beforeFilter} → ${pendingItems.length}`)
+    }
 
     rawData.value = pendingItems
     console.log('✅ Final pending debts:', rawData.value.length)
@@ -578,20 +598,50 @@ const clearSelectedDebtors = async () => {
     selectedItems.value.has(i.id)
   )
 
-  // 🧠 ใช้ mapper
-  const summaryData =
-    mapPendingDebtsToClearSummary(selectedList)
+  // =========================
+  // 1️⃣ สร้าง Summary Data สำหรับหน้า cleardebtor
+  // =========================
+  const receiptsGrouped = selectedList.reduce((acc, item) => {
+    const receiptId = item._originalReceipt?.projectCode || item.receiptId || 'unknown'
 
-  // 💾 save
-  localStorage.setItem(
-    STORAGE_SUMMARY_KEY,
-    JSON.stringify(summaryData)
-  )
+    if (!acc[receiptId]) {
+      acc[receiptId] = {
+        receiptId,
+        projectCode: item._originalReceipt?.projectCode || receiptId,
+        fullName: item._originalReceipt?.fullName || item.responsible || '-',
+        phone: item._originalReceipt?.phone || '-',
+        department: item.department || item._originalReceipt?.mainAffiliationName || '-',
+        subDepartment: item.subDepartment || '-',
+        sendmoney: item._originalReceipt?.sendmoney || 'รายได้',
+        fundName: item._originalReceipt?.fundName || '-',
+        createdAt: item._originalReceipt?.createdAt || new Date().toISOString(),
+        items: []
+      }
+    }
 
-  // ➡️ navigate
+    acc[receiptId].items.push({
+      ...item,
+      amount: Number(item.balanceAmount || item.debtorAmount || 0),
+      debtorAmount: Number(item.balanceAmount || item.debtorAmount || 0)
+    })
+
+    return acc
+  }, {})
+
+  const summaryData = {
+    receipts: Object.values(receiptsGrouped)
+  }
+
+  // =========================
+  // 2️⃣ บันทึกข้อมูลลง localStorage
+  // =========================
+  localStorage.setItem(STORAGE_SUMMARY_KEY, JSON.stringify(summaryData))
+
+  // =========================
+  // 3️⃣ ไปหน้า cleardebtor (ไม่ใช่ PDF)
+  // =========================
   router.push('/cleardebtor/multi')
 }
-
 /* =========================
  * Actions
  * ========================= */
@@ -669,9 +719,9 @@ watch(
  * ========================= */
 if (DEBUG && typeof window !== 'undefined') {
   ;(window as any).debugClearDebtor = {
-
+    ledger,
     rawData,
-
+    totals,
     loadReceiptData,
   }
 }

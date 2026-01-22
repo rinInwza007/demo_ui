@@ -6,14 +6,25 @@ export const departmentOptions: Record<string, any> = {}
 // ✅ สร้าง mapping จาก Affiliation
 defaultAffiliation.forEach(aff => {
   if (!aff.parentId) {
-    // คณะหลัก
-    const children = defaultAffiliation.filter(child => child.parentId === aff.id && !defaultAffiliation.some(grandchild => grandchild.parentId === child.id))
-    const grandchildren = defaultAffiliation.filter(child => child.parentId && defaultAffiliation.some(parent => parent.id === child.parentId && parent.parentId === aff.id))
+    // ✅ หาหน่วยงานรอง (ลูกโดยตรงของคณะ)
+    const directChildren = defaultAffiliation.filter(child => child.parentId === aff.id)
+    
+    // ✅ หาหน่วยงานย่อย (หลานของคณะ - ลูกของหน่วยงานรอง)
+    const grandchildren = defaultAffiliation.filter(child => {
+      // ตรวจสอบว่า parent ของ child เป็นลูกของ aff หรือไม่
+      return child.parentId && directChildren.some(dc => dc.id === child.parentId)
+    })
 
     departmentOptions[aff.name] = {
-      id: aff.id,  // ✅ เพิ่ม id
-      main: children.length > 0 ? children.map(c => ({ id: c.id, name: c.name })) : null,
-      subs: grandchildren.length > 0 ? grandchildren.map(gc => ({ id: gc.id, name: gc.name })) : []
+      id: aff.id,
+      main: directChildren.length > 0 
+        ? directChildren.map(c => ({ id: c.id, name: c.name })) 
+        : null,
+      subs: grandchildren.length > 0 
+        ? grandchildren.map(gc => ({ id: gc.id, name: gc.name })) 
+        : []
     }
   }
 })
+
+console.log('📋 Generated departmentOptions:', departmentOptions) 

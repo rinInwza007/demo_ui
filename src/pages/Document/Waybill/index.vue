@@ -958,10 +958,10 @@
               
               <!-- ข้อมูลพื้นฐาน -->
               <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
-                <div><span class="font-medium">👤 ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
-                <div><span class="font-medium">📞 เบอร์:</span> {{ template.data.phone || '-' }}</div>
-                <div><span class="font-medium">🏢 หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
-                <div><span class="font-medium">💰 กองทุน:</span> {{ template.data.fundName || '-' }}</div>
+                <div><span class="font-medium">ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
+                <div><span class="font-medium">เบอร์:</span> {{ template.data.phone || '-' }}</div>
+                <div><span class="font-medium">หน่วยงาน:</span> {{ template.data.mainCategory || '-' }}</div>
+                <div><span class="font-medium">กองทุน:</span> {{ template.data.fundName || '-' }}</div>
               </div>
             </div>
             
@@ -1602,6 +1602,7 @@ const mapAffiliationToMainCategory = (affiliationId) => {
     HOS: 'โรงพยาบาลมหาวิทยาลัยพะเยา',
     MED: 'คณะแพทยศาสตร์',
     PHA: 'คณะเภสัชศาสตร์',
+    ENE: 'คณะพลังงานและสิ่งแวดล้อม',
     FIN: '', // กองคลัง ไม่ต้องเลือกให้
     UP: '', // มหาวิทยาลัย ไม่ต้องเลือกให้
   }
@@ -1916,7 +1917,7 @@ const loadReceiptData = async () => {
   isLoading.value = true
   try {
     // ✅ เปลี่ยนจาก /getReceipt เป็น /findOneReceipt
-    const response = await axios.get(`/findOneReceipt/${receiptId.value}`)
+    const response = await axios.get(`/getReceipt/${receiptId.value}`)
     
     // ✅ ข้อมูลจะอยู่ใน response.data โดยตรง (ไม่ใช่ array)
     const data = response.data
@@ -2386,11 +2387,11 @@ const saveData = async () => {
     } else {
       validRows.push({
         itemName: row.itemName || '',
+        itemId: row.itemId || '',
         note: row.note || '',
         referenceNo: row.referenceNo || '',
         amount: cleanAmount,
         type: row.type || 'income',
-        subtotal: cleanAmount,
       })
     }
   })

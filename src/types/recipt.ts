@@ -10,6 +10,7 @@ export type nagativeMoneyType = 'add' | 'other';
 export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other';
 export type ItemType =  'income' | 'receivable' | 'research';
 export type ReceiptItemType = 'income' | 'expense';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 
 
@@ -49,12 +50,14 @@ export interface PaymentMethod {
   bankName?: string
   checkNumber?: string
   NumIncheck?: string
+  name?: string 
 }
 
 export interface PaymentMethods {
   cash?: PaymentMethod
   check?: PaymentMethod
-  transfer?: PaymentMethod
+  debtor?: PaymentMethod
+  other?: PaymentMethod 
 }
 
 export interface BankAccountData {
@@ -86,7 +89,7 @@ export interface Receipt {
   subAffiliationName2?: string
   affiliationId: string
   affiliationName: string
-
+approvalStatus?: ApprovalStatus
   moneyType: string
   sendmoney?: string
   moneyTypeNote?: string

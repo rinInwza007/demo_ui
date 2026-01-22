@@ -14,6 +14,7 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 
 
+
 export interface indexsavedebtor {
   id:number;
   item: Item;
@@ -49,12 +50,14 @@ export interface PaymentMethod {
   bankName?: string
   checkNumber?: string
   NumIncheck?: string
+  name?: string 
 }
 
 export interface PaymentMethods {
   cash?: PaymentMethod
   check?: PaymentMethod
-  transfer?: PaymentMethod
+  debtor?: PaymentMethod
+  other?: PaymentMethod 
 }
 
 export interface BankAccountData {
@@ -86,7 +89,7 @@ export interface Receipt {
   subAffiliationName2?: string
   affiliationId: string
   affiliationName: string
-
+approvalStatus?: ApprovalStatus
   moneyType: string
   sendmoney?: string
   moneyTypeNote?: string

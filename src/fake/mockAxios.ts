@@ -184,6 +184,7 @@ const ensureReceiptFields = (r: any): any => {
     subAffiliationName1: r?.subAffiliationName1 ?? r?.subAffiliationName ?? '',
     subAffiliationName2: r?.subAffiliationName2 ?? '',
     moneyTypeNote: r?.moneyTypeNote ?? 'Waybill',
+    approvalStatus: r?.approvalStatus ?? 'pending',
     isLocked: r?.isLocked ?? false,
     moneyType: r?.moneyType || r?.sendmoney || 'transfer',
     waybillNumber: r?.waybillNumber || r?.id || '',
@@ -522,7 +523,8 @@ export function setupAxiosMock() {
     return [201, serializeReceipt(sanitized)]
   })
 
-  mock.onPost('/updateReceipt').reply((config) => {
+/** ✅ POST /updateReceipt - อัพเดททั้ง 2 storage */
+mock.onPost('/updateReceipt').reply((config) => {
   console.log('🔧 POST /updateReceipt called')
 
   const { receipt } = JSON.parse(config.data || '{}')
@@ -559,7 +561,6 @@ export function setupAxiosMock() {
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,
-    approvalStatus: receipt.approvalStatus || normalized.approvalStatus || db[idx].approvalStatus, // ✅ Force รักษา status
     waybillNumber: db[idx].waybillNumber,
     id: db[idx].waybillNumber,
     createdAt: db[idx].createdAt,
@@ -583,12 +584,13 @@ export function setupAxiosMock() {
     action: 'update',
     data: updated,
     waybillNumber: updated.waybillNumber,
-    list: db,
+    list: db, // ✅ ส่ง db ที่อัปเดตแล้ว
   })
 
   console.log('✅ Updated in both storages:', updated.waybillNumber, '| Status:', updated.approvalStatus)
   return [200, { success: true, data: serializeReceipt(updated) }]
 })
+
 
 /** ✅ PUT /updateReceipt/:waybillNumber - อัพเดททั้ง 2 storage */
 mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
@@ -653,6 +655,8 @@ mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
   console.log('✅ Updated in both storages:', updated.waybillNumber)
   return [200, serializeReceipt(updated)]
 })
+
+
 
   /** ✅ DELETE /deleteReceipt/:id - ลบจากทั้ง 2 storage */
   mock.onDelete(/\/deleteReceipt\/([^/]+)$/).reply((config) => {

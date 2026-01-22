@@ -5,10 +5,10 @@
       {{ label }}
     </label>
 
-    <!-- เปลี่ยนจาก flex เป็น grid -->
-    <div class="grid grid-cols-1 gap-4">
+    <!-- ✅ เปลี่ยนเป็น flex แนวนอน -->
+    <div class="flex flex-row gap-3">
       <!-- MAIN: เลือกคณะ -->
-      <div>
+      <div class="flex-1 min-w-[200px]">
         <Select
           v-model="mainValue"
           :options="[ALL_OPTION, ...Object.keys(options)]"
@@ -18,7 +18,7 @@
       </div>
 
       <!-- SUB1: เลือกหัวข้อรอง -->
-      <div v-if="sub1Options.length > 0">
+      <div v-if="sub1Options.length > 0" class="flex-1 min-w-[200px]">
         <Select
           v-model="sub1Value"
           :options="sub1Options"
@@ -28,7 +28,7 @@
       </div>
 
       <!-- SUB2: เลือกหัวข้อย่อย -->
-      <div v-if="sub2Options.length > 0">
+      <div v-if="sub2Options.length > 0" class="flex-1 min-w-[200px]">
         <Select
           v-model="sub2Value"
           :options="sub2Options"
@@ -48,9 +48,9 @@ import Select from "@/components/input/select/select.vue";
       PROPS
 =========================== */
 const props = defineProps({
-  modelValueMain: { type: String, default: "" },   // คณะที่เลือก
-  modelValueSub1: { type: String, default: "" },   // รองที่เลือก
-  modelValueSub2: { type: String, default: "" },   // ย่อยที่เลือก
+  modelValueMain: { type: String, default: "" },
+  modelValueSub1: { type: String, default: "" },
+  modelValueSub2: { type: String, default: "" },
 
   options: { type: Object, required: true },
 
@@ -85,46 +85,45 @@ const sub1Options = computed(() => {
   if (!mainValue.value || mainValue.value === ALL_OPTION) return [];
 
   const data = props.options[mainValue.value];
-  if (!data) return [];
+  if (!data || !data.main) return [];
 
   const main = data.main;
 
+  // ✅ ถ้าเป็น array of objects { id, name }
+  if (Array.isArray(main)) {
+    return [ALL_OPTION, ...main.map(item => item.name)];
+  }
+
+  // ✅ ถ้าเป็น string (backward compatibility)
   if (typeof main === "string") {
     return [ALL_OPTION, main];
   }
 
-  if (Array.isArray(main)) {
-    return [ALL_OPTION, ...main];
-  }
-
   return [];
 });
-
 
 // Level 3 options (SUB2)
 const sub2Options = computed(() => {
   if (
     !mainValue.value ||
     mainValue.value === ALL_OPTION ||
+    !sub1Value.value ||
     sub1Value.value === ALL_OPTION
   )
     return [];
 
   const data = props.options[mainValue.value];
-  if (!data) return [];
+  if (!data || !data.subs) return [];
 
-  const main = data.main;
   const subs = data.subs;
 
-  if (Array.isArray(main)) return [];
-
-  if (Array.isArray(subs)) {
-    return [ALL_OPTION, ...subs];
+  // ✅ ถ้าเป็น array of objects { id, name }
+  if (Array.isArray(subs) && subs.length > 0) {
+    return [ALL_OPTION, ...subs.map(item => item.name)];
   }
 
   return [];
 });
-
 
 /* ===========================
       WATCHERS
@@ -147,7 +146,6 @@ watch(mainValue, (val) => {
   emit("update:modelValueSub2", "");
 });
 
-
 watch(sub1Value, (val) => {
   if (val === ALL_OPTION) {
     emit("update:modelValueSub1", "");
@@ -160,6 +158,7 @@ watch(sub1Value, (val) => {
   sub2Value.value = "";
   emit("update:modelValueSub2", "");
 });
+
 watch(sub2Value, (val) => {
   if (val === ALL_OPTION) {
     emit("update:modelValueSub2", "");
@@ -168,5 +167,4 @@ watch(sub2Value, (val) => {
 
   emit("update:modelValueSub2", val);
 });
-
 </script>

@@ -198,7 +198,7 @@ const bankTransfers = receipt.bankTransfers || []
         stack: [
           {
             text: `${receipt.waybillNumber || ''}`,
-            absolutePosition: { x: 530, y: 15 },
+            absolutePosition: { x: 530, y: 13 },
             fontSize: 13,
           },
           {
@@ -334,7 +334,6 @@ const bankTransfers = receipt.bankTransfers || []
           {
             text: `นำฝากบัญชี ${bank.accountData.bankName} เลขที่ ${bank.accountData.accountNumber}`,
             margin: [110, 10, 0, 0],
-            bold: true,
           },
         ],
       },
@@ -431,7 +430,7 @@ const bankTransfers = receipt.bankTransfers || []
                 {
                   text: `ธนาคาร${pm.check.bankName ?? ''}`,
                   style: 'form',
-                  margin: [10, 5, 0, 0],
+                  margin: [5, 5, 0, 0],
                 },
               ],
             },
@@ -445,6 +444,7 @@ const bankTransfers = receipt.bankTransfers || []
                   style: 'form',
                   alignment: 'left',
                   noWrap: true,
+                  margin: [-10, 0, 0, 0],
                 },
                 {
                   columns: [
@@ -460,20 +460,20 @@ const bankTransfers = receipt.bankTransfers || []
                       alignment: 'right',
                       width: 'auto',
                       noWrap: true,
-                      margin: [18.5, 5, 0, 0],
+                      margin: [18.5, 0, 0, 0],
                     },
                     {
                       text: 'บาท',
                       noWrap: true,
                       width: 'auto',
-                      margin: [16.5, 5, 0, 0],
+                      margin: [16.5, 0, 0, 0],
                     },
                   ],
                   alignment: 'right',
                   width: 'auto',
                 },
               ],
-              margin: [130, 7, 92.5, 0],
+              margin: [130, 0, 92.5, 0],
             },
           ]
         : []),
@@ -485,22 +485,22 @@ const bankTransfers = receipt.bankTransfers || []
               columns: [
                 { ...createCheckbox(), margin: [100, 11.5, 0, 0] },
                 {
-                  text: `อื่นๆ ${otherName}`,
+                  text: `${otherName}`,
                   style: 'form',
                   alignment: 'left',
                   noWrap: false,
-                  margin: [110, 10, 0, 0],
+                  margin: [110, 10, 5, 0],
                 },
                 {
                   text:
-                    'จำนวน       ' +
+                    ' จำนวน       ' +
                     otherAmt.toLocaleString('th-TH', {
                       minimumFractionDigits: 2,
                     }) +
                     '      บาท',
                   alignment: 'right',
                   noWrap: true,
-                  margin: [0, 10, 90, 0],
+                  margin: [0, 10, 92.5, 0],
                 },
               ],
             },
@@ -516,7 +516,6 @@ const bankTransfers = receipt.bankTransfers || []
                 { ...createCheckbox(), margin: [100, 2, 0, 0] },
                 {
                   text: 'ลูกหนี้',
-                  bold: true,
                   fontSize: 13,
                   margin: [110, 0, 0, 0],
                 },

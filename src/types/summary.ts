@@ -26,8 +26,8 @@ export type LedgerEntry = {
   fundName: string
   fullName: string
 
-  createdAt: string
-  updatedAt: string
+  createdAt: Date;
+  updatedAt: Date;
 
   isClearedDebt?: boolean
 }

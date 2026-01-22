@@ -1,11 +1,10 @@
-<!-- src/components/Actionbutton/ActionButtons.vue -->
 <template>
   <div class="flex gap-2">
     <!-- ดูข้อมูล -->
     <button
       v-if="canShow('view')"
       @click="emitSafe('view')"
-      v-tippy="'ดูข้อมูล'"
+      v-tippy="getTooltip('view')"
       class="hvr-bob"
     >
       <i class="material-symbols-outlined text-blue-500">visibility</i>
@@ -16,7 +15,7 @@
       v-if="canShow('edit')"
       :disabled="isDisabled('edit')"
       @click="emitSafe('edit')"
-      v-tippy="isDisabled('edit') ? 'รายการถูกล็อก' : 'แก้ไข'"
+      v-tippy="getTooltip('edit')"
       class="hvr-bob disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <i class="material-symbols-outlined text-indigo-500">edit</i>
@@ -27,7 +26,7 @@
       v-if="canShow('lock')"
       :disabled="isDisabled('lock')"
       @click="emitSafe('lock')"
-      v-tippy="'ล็อก/ปลดล็อก'"
+      v-tippy="getTooltip('lock')"
       class="hvr-bob disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <i
@@ -43,7 +42,7 @@
       v-if="canShow('delete')"
       :disabled="isDisabled('delete')"
       @click="emitSafe('delete')"
-      v-tippy="isDisabled('delete') ? 'รายการถูกล็อก' : 'ลบ'"
+      v-tippy="getTooltip('delete')"
       class="hvr-bob disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <i class="material-symbols-outlined text-red-500">delete</i>
@@ -54,7 +53,7 @@
       v-if="canShow('cleardebtor')"
       :disabled="isDisabled('cleardebtor')"
       @click="emitSafe('cleardebtor')"
-      v-tippy="'ล้างลูกหนี้'"
+      v-tippy="getTooltip('cleardebtor')"
       class="hvr-bob disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <i class="material-symbols-outlined text-red-500">credit_card</i>
@@ -65,13 +64,11 @@
       v-if="canShow('approve')"
       :disabled="isDisabled('approve')"
       @click="emitSafe('approve')"
-      v-tippy="'อนุมัติ'"
-      class="hvr-bob"
+      v-tippy="getTooltip('approve')"
+      class="hvr-bob disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <i class="material-symbols-outlined text-emerald-600">check_circle</i>
     </button>
-
-
   </div>
 </template>
 
@@ -79,10 +76,6 @@
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
-/**
- * ✅ ปุ่มที่รองรับใน component นี้
- * - ใช้เป็นทั้งชื่อ permission และชื่อ event ที่ emit
- */
 export type ActionKey =
   | 'view'
   | 'edit'
@@ -91,11 +84,6 @@ export type ActionKey =
   | 'cleardebtor'
   | 'approve'
 
-
-/**
- * ✅ โครง item ขั้นต่ำที่ component ต้องใช้
- * (ของจริงคุณส่ง TableRow/Receipt มาได้เลย)
- */
 type ItemBase = {
   isLocked?: boolean
 }
@@ -103,17 +91,12 @@ type ItemBase = {
 const props = withDefaults(
   defineProps<{
     item: ItemBase
-
-    /**
-     * ✅ Declarative permissions
-     * - ถ้าไม่ส่งมา: fallback ไปใช้ show* แบบเดิมให้ (เพื่อไม่พัง)
-     */
     permissions?: ActionKey[]
-
-    /**
-     * ✅ backward compatible props (ของเดิม)
-     * - ใช้เมื่อไม่ได้ส่ง permissions
-     */
+    
+    // ✅ เพิ่ม prop นี้เพื่อบังคับ disable จากภายนอก
+    forceDisabled?: boolean
+    
+    // backward compatible
     showView?: boolean
     showEdit?: boolean
     showLock?: boolean
@@ -122,6 +105,7 @@ const props = withDefaults(
   }>(),
   {
     permissions: undefined,
+    forceDisabled: false, // ✅ default เป็น false
     showView: false,
     showEdit: false,
     showLock: false,
@@ -136,10 +120,6 @@ const emit = defineEmits<{
 
 const auth = useAuthStore()
 
-/**
- * ✅ map จาก ActionKey -> permission key ใน auth.can()
- * - ถ้าคุณใช้ชื่อ permission ใน store ตรงกันอยู่แล้ว ก็ใช้ชื่อเดียวกันได้เลย
- */
 const actionToPermission: Record<ActionKey, string> = {
   view: 'view',
   edit: 'edit',
@@ -147,33 +127,19 @@ const actionToPermission: Record<ActionKey, string> = {
   delete: 'delete',
   cleardebtor: 'cleardebtor',
   approve: 'approve',
-
 }
 
-/**
- * ✅ โหมด declarative?
- * - ถ้า parent ส่ง permissions มา จะใช้โหมดนี้
- */
 const isDeclarative = computed(() => Array.isArray(props.permissions) && props.permissions.length > 0)
 
-/**
- * ✅ โหมดเดิม: show* (เพื่อ compatibility)
- */
 function legacyShow(action: ActionKey) {
   if (action === 'view') return props.showView
   if (action === 'edit') return props.showEdit
   if (action === 'lock') return props.showLock
   if (action === 'delete') return props.showDelete
   if (action === 'cleardebtor') return props.showCleardedtor
-  // approve / notapprove ไม่มี show* เดิม → ซ่อน
   return false
 }
 
-/**
- * ✅ ตัดสินใจ “แสดงปุ่ม”:
- * - ถ้าเป็น declarative: ต้องอยู่ใน props.permissions และ auth.can(permission) ต้องผ่าน
- * - ถ้าเป็น legacy: ใช้ show* และยังเช็ค auth.can() เพื่อกันการหลุดสิทธิ
- */
 function canShow(action: ActionKey) {
   const perm = actionToPermission[action]
   const allowedByAuth = typeof (auth as any).can === 'function' ? (auth as any).can(perm) : true
@@ -186,21 +152,49 @@ function canShow(action: ActionKey) {
 }
 
 /**
- * ✅ Disabled rules (ปรับได้ตาม policy)
- * - edit/delete: ถ้าถูกล็อก → ปิด
- * - อื่นๆ: ไม่ปิด (ยกเว้นอยากเพิ่ม)
+ * ✅ ปรับปรุง isDisabled: รวมเช็คทั้ง item.isLocked และ forceDisabled
  */
 function isDisabled(action: ActionKey) {
+  // ✅ ถ้า forceDisabled = true → ปิดทุกอย่างยกเว้น view
+  if (props.forceDisabled && action !== 'view') {
+    return true
+  }
+  
+  // ✅ กรณี item ถูกล็อก
   const locked = props.item?.isLocked === true
-  if ((action === 'edit' || action === 'delete') && locked) return true
+  if ((action === 'edit' || action === 'delete' || action === 'approve') && locked) {
+    return true
+  }
+  
   return false
 }
 
 /**
- * ✅ Safe emit:
- * - กัน emit หากไม่แสดง/ไม่มีสิทธิ
- * - กัน emit หาก disabled
+ * ✅ ปรับปรุง tooltip message
  */
+function getTooltip(action: ActionKey) {
+  if (isDisabled(action)) {
+    if (props.forceDisabled) {
+      return 'ปิดยอดแล้ว - ไม่สามารถดำเนินการได้'
+    }
+    if (props.item?.isLocked) {
+      return 'รายการถูกล็อก'
+    }
+  }
+  
+  // Default tooltips
+  const defaultTooltips: Record<ActionKey, string> = {
+    view: 'ดูข้อมูล',
+    edit: 'แก้ไข',
+    lock: 'ล็อก/ปลดล็อก',
+    delete: 'ลบ',
+    cleardebtor: 'ล้างลูกหนี้',
+    approve: 'อนุมัติ',
+  }
+  
+  return defaultTooltips[action] || ''
+}
+
 function emitSafe(action: ActionKey) {
   if (!canShow(action)) return
   if (isDisabled(action)) return

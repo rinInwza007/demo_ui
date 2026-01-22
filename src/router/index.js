@@ -3,7 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import indexwaybill from '@/pages/Main/waybill/index.vue'
 import Waybill from '@/pages/Document/Waybill/index.vue'
-import WaybillDebtor from '@/pages/Document/WaybillDebtor/index.vue'
 import WaybillResearch from '@/pages/Document/WaybillResearch/index.vue'
 import Report_submit from "@/pages/Main/Report_submit/index.vue"
 import pdfpage from "@/pages/Document/Pdfpage/index.vue"
@@ -31,12 +30,6 @@ const routes = [
     name: 'waybill-edit',
     component: Waybill
   },
-
-
-  { path: '/waybilldebtor', name: 'waybilldebtor', component: WaybillDebtor },
-  { path: '/waybilldebtor/edit/:id', name: 'waybilldebtor-edit', component: WaybillDebtor },
-
-
   { path: '/waybillresearch', name: 'waybillresearch', component: WaybillResearch },
   { path: '/Report_submit', name: 'Report_submit', component: Report_submit },
   { path: '/pdfpage/:id?', name: 'pdfpage', component: pdfpage },

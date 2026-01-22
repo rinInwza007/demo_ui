@@ -20,8 +20,10 @@ function defaultSeed(): Receipt[] {
       totalPaymentAmount: 4500,
       affiliationId: "DEN",
       affiliationName: "คณะทันตแพทยศาสตร์",
-
-      // ✅ เพิ่มส่วนนี้
+      
+      // ✅ เพิ่มบรรทัดนี้
+      approvalStatus: "pending",
+      
       mainAffiliationId: "DEN",
       mainAffiliationName: "คณะทันตแพทยศาสตร์",
       subAffiliationId1: "",
@@ -54,7 +56,6 @@ function defaultSeed(): Receipt[] {
           note: "รอบไตรมาสสุดท้าย",
           referenceNo: "INV-001",
           amount: 4500,
-          subtotal: 4500,
           type: "income"
         }
       ],
@@ -69,7 +70,6 @@ export function sanitizeItem(it: any): ReceiptItem {
     itemId: it.itemId ?? undefined,
     note: (it.note ?? '').trim(),
     referenceNo: (it.referenceNo ?? '').trim(),
-    subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
     amount: Number.isFinite(it.amount) ? it.amount : 0,
     type: it.type || 'income',
   }
@@ -90,22 +90,19 @@ export function sanitizeReceipt(r: any): Receipt {
     totalPaymentAmount: Number(r.totalPaymentAmount) || 0,
     createdAt: r.createdAt ?? new Date().toISOString(),
     updatedAt: r.updatedAt ?? new Date().toISOString(),
-
+    approvalStatus: r.approvalStatus ?? 'pending',
     receiptList: Array.isArray(r.receiptList)
       ? r.receiptList.map(sanitizeItem)
       : [],
 
     affiliationId: String(r.affiliationId || '').trim(),
     affiliationName: String(r.affiliationName || '').trim(),
-
-    // ✅ เพิ่มส่วนนี้
     mainAffiliationId: String(r.mainAffiliationId || '').trim(),
     mainAffiliationName: String(r.mainAffiliationName || '').trim(),
     subAffiliationId1: String(r.subAffiliationId1 || '').trim(),
     subAffiliationName1: String(r.subAffiliationName1 || '').trim(),
     subAffiliationId2: String(r.subAffiliationId2 || '').trim(),
     subAffiliationName2: String(r.subAffiliationName2 || '').trim(),
-
     paymentMethods: r.paymentMethods ? {
       cash: r.paymentMethods.cash ? {
         checked: r.paymentMethods.cash.checked || false,
@@ -118,8 +115,16 @@ export function sanitizeReceipt(r: any): Receipt {
         checkNumber: r.paymentMethods.check.checkNumber || '',
         NumIncheck: r.paymentMethods.check.NumIncheck || ''
       } : undefined,
+      debtor: r.paymentMethods.debtor ? {
+        checked: r.paymentMethods.debtor.checked || false,
+        amount: r.paymentMethods.debtor.amount || 0,
+      } : undefined,
+      other: r.paymentMethods.other ? {
+        checked: r.paymentMethods.other.checked || false,
+        amount: r.paymentMethods.other.amount || 0,
+        name: r.paymentMethods.other.name || '',
+      } : undefined,
     } : {},
-
     bankTransfers: Array.isArray(r.bankTransfers)
       ? r.bankTransfers.map((bank: any) => ({
           id: bank.id || Date.now(),
@@ -131,7 +136,6 @@ export function sanitizeReceipt(r: any): Receipt {
           amount: Number(bank.amount) || 0,
         }))
       : [],
-
     isLocked: r.isLocked ?? false,
   }
 }

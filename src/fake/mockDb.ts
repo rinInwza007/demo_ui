@@ -20,7 +20,7 @@ function defaultSeed(): Receipt[] {
       totalPaymentAmount: 4500,
       affiliationId: "DEN",
       affiliationName: "คณะทันตแพทยศาสตร์",
-      
+
       // ✅ เพิ่มส่วนนี้
       mainAffiliationId: "DEN",
       mainAffiliationName: "คณะทันตแพทยศาสตร์",
@@ -66,6 +66,7 @@ function defaultSeed(): Receipt[] {
 export function sanitizeItem(it: any): ReceiptItem {
   return {
     itemName: (it.itemName ?? '').trim(),
+    itemId: it.itemId ?? undefined,
     note: (it.note ?? '').trim(),
     referenceNo: (it.referenceNo ?? '').trim(),
     subtotal: Number.isFinite(it.subtotal) ? it.subtotal : 0,
@@ -89,14 +90,14 @@ export function sanitizeReceipt(r: any): Receipt {
     totalPaymentAmount: Number(r.totalPaymentAmount) || 0,
     createdAt: r.createdAt ?? new Date().toISOString(),
     updatedAt: r.updatedAt ?? new Date().toISOString(),
-    
+
     receiptList: Array.isArray(r.receiptList)
       ? r.receiptList.map(sanitizeItem)
       : [],
-    
+
     affiliationId: String(r.affiliationId || '').trim(),
     affiliationName: String(r.affiliationName || '').trim(),
-    
+
     // ✅ เพิ่มส่วนนี้
     mainAffiliationId: String(r.mainAffiliationId || '').trim(),
     mainAffiliationName: String(r.mainAffiliationName || '').trim(),
@@ -104,7 +105,7 @@ export function sanitizeReceipt(r: any): Receipt {
     subAffiliationName1: String(r.subAffiliationName1 || '').trim(),
     subAffiliationId2: String(r.subAffiliationId2 || '').trim(),
     subAffiliationName2: String(r.subAffiliationName2 || '').trim(),
-    
+
     paymentMethods: r.paymentMethods ? {
       cash: r.paymentMethods.cash ? {
         checked: r.paymentMethods.cash.checked || false,

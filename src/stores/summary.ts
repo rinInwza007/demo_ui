@@ -6,9 +6,8 @@ import type {
   UnitAgg,
   DashboardTotals,
 } from '@/types/summary'
-import { getItemType } from '@/components/data/ItemNameOption'
-
-import { ReceiptMode} from "@/types/summary"
+import { getItemType, getItemByName, getItemById } from '@/components/data/ItemNameOption'
+import { ReceiptMode } from "@/types/summary"
 
 /* =========================
  * Utils
@@ -51,8 +50,11 @@ const receiptToLedgers = (
   const ledgers: LedgerEntry[] = []
 
   const delNumber =
-    safeStr((receipt as any).delNumber) ||
-    safeStr((receipt as any).id)
+  safeStr(receipt.waybillNumber) ||
+  safeStr((receipt as any).delNumber) ||
+  safeStr((receipt as any).id)
+
+  console.log('🔍 Processing receipt:', { waybillNumber: receipt.waybillNumber, delNumber, hasReceiptList: !!receipt.receiptList })
 
   if (!delNumber) return ledgers
   if (!Array.isArray(receipt.receiptList)) return ledgers
@@ -72,7 +74,12 @@ const receiptToLedgers = (
     if (amount <= 0) return
 
     const itemName = safeStr(item.itemName)
-    const itemType = getItemType(itemName)
+    const itemId = item.itemId || null
+
+    // ✅ ถ้าไม่มี itemId ให้หาจาก itemName
+    const resolvedItemId = itemId || getItemByName(itemName)?.id || null
+
+    const itemType = getItemType(resolvedItemId || itemName)
     const isClearedDebt = item.isClearedDebt === true
 
     /* =========================
@@ -96,12 +103,15 @@ const receiptToLedgers = (
 
         affiliationId,
         fundName: itemName,
+        itemId: resolvedItemId,
         fullName,
 
         createdAt,
         updatedAt,
 
         isClearedDebt,
+
+        _originalReceipt: receipt,
       })
     }
 
@@ -126,12 +136,15 @@ const receiptToLedgers = (
 
         affiliationId,
         fundName: itemName,
+        itemId: resolvedItemId,
         fullName,
 
         createdAt,
         updatedAt,
 
         isClearedDebt: true,
+
+        _originalReceipt: receipt,
       })
     }
 
@@ -156,17 +169,19 @@ const receiptToLedgers = (
 
         affiliationId,
         fundName: itemName,
+        itemId: resolvedItemId,
         fullName,
 
         createdAt,
         updatedAt,
+
+        _originalReceipt: receipt,
       })
     }
   })
 
   return ledgers
 }
-
 
 /* =========================
  * Store
@@ -176,19 +191,77 @@ export const useSummaryStore = defineStore('Summary', {
     totals: emptyTotals(),
     unitsByKey: {} as Record<string, UnitAgg>,
 
-    // 🔑 cache ledger ต่อ receipt
     ledgerByDoc: {} as Record<string, LedgerEntry[]>,
+
+    receiptsByDoc: {} as Record<string, Receipt>,
   }),
 
   getters: {
     units: (s) => Object.values(s.unitsByKey),
+
+    ledger: (s) => {
+      const all: LedgerEntry[] = []
+      Object.values(s.ledgerByDoc).forEach(entries => {
+        all.push(...entries)
+      })
+      return all
+    },
+
+    // ✅ รวมรายการลูกหนี้ตาม itemId
+    pendingDebts: (s) => {
+      const groupedByItemId: Record<string, any> = {}
+
+      Object.values(s.ledgerByDoc).forEach(ledgers => {
+        ledgers.forEach(ledger => {
+          if (ledger.direction === 'DEBT_NEW' && !ledger.isClearedDebt) {
+            // ✅ ใช้ itemId เป็น key หลัก (ถ้าไม่มีให้ใช้ fundName)
+            const itemId = ledger.itemId || ledger.fundName
+            const key = `item-${itemId}`
+
+            if (!groupedByItemId[key]) {
+              // ✅ ดึงข้อมูล Item จาก itemId
+              const itemData = ledger.itemId ? getItemById(ledger.itemId) : null
+
+              groupedByItemId[key] = {
+                id: key,
+                itemId: ledger.itemId,
+                itemName: ledger.fundName,
+                department: ledger.faculty,
+                subDepartment: ledger.sub1 || ledger.sub2 || '-',
+
+                // ✅ ยอดเงิน
+                depositNetAmount: 0, // ยอดยกยอดจากต้นปี (ถ้ามี)
+                debtorAmount: 0, // ยอดที่ล้างสะสมในปีนี้ (0 เพราะยังไม่ได้ล้าง)
+                balanceAmount: 0, // ยอดคงเหลือสุทธิ (จะบวกทีละรายการ)
+
+                affiliationId: ledger.affiliationId,
+
+                // ✅ เก็บรายการต้นฉบับทั้งหมด
+                _receipts: [],
+                _originalReceipt: ledger._originalReceipt,
+              }
+            }
+
+            // ✅ บวกยอดเงิน
+            groupedByItemId[key].balanceAmount += ledger.amount
+
+            // ✅ เก็บข้อมูลรายการย่อย
+            groupedByItemId[key]._receipts.push({
+              receiptId: ledger.delNumber,
+              amount: ledger.amount,
+              responsible: ledger.fullName,
+              createdAt: ledger.createdAt,
+              docKey: ledger.docKey,
+            })
+          }
+        })
+      })
+
+      return Object.values(groupedByItemId)
+    }
   },
 
   actions: {
-    /* =========================
-     * core ledger ops
-     * ========================= */
-
     applyLedger(e: LedgerEntry) {
       if (!this.unitsByKey[e.unitKey]) {
         this.unitsByKey[e.unitKey] = initUnitAgg(e)
@@ -231,10 +304,6 @@ export const useSummaryStore = defineStore('Summary', {
       if (u.docs <= 0) delete this.unitsByKey[e.unitKey]
     },
 
-    /* =========================
-     * public APIs (Step 3)
-     * ========================= */
-
     ingestUpsert(
       receipt: Receipt,
       mode: 'create' | 'update' | 'clear'
@@ -244,16 +313,16 @@ export const useSummaryStore = defineStore('Summary', {
       )
       if (!docKey) return
 
-      // ♻️ rollback old
       if (mode !== 'create' && this.ledgerByDoc[docKey]) {
         this.ledgerByDoc[docKey].forEach((e) => this.rollbackLedger(e))
       }
 
-      // 🔄 apply new
       const ledgers = receiptToLedgers(receipt, mode)
       ledgers.forEach((e) => this.applyLedger(e))
 
       this.ledgerByDoc[docKey] = ledgers
+
+      this.receiptsByDoc[docKey] = receipt
     },
 
     ingestDelete(docKey: string) {
@@ -263,6 +332,7 @@ export const useSummaryStore = defineStore('Summary', {
 
       ledgers.forEach((e) => this.rollbackLedger(e))
       delete this.ledgerByDoc[key]
+      delete this.receiptsByDoc[key]
     },
 
     ingestMany(receipts: Receipt[]) {
@@ -274,6 +344,16 @@ export const useSummaryStore = defineStore('Summary', {
       this.totals = emptyTotals()
       this.unitsByKey = {}
       this.ledgerByDoc = {}
+      this.receiptsByDoc = {}
     },
   },
 })
+
+function getAffiliationId(faculty: string): string {
+  const mapping: Record<string, string> = {
+    'คณะแพทยศาสตร์': 'MED',
+    'คณะพยาบาลศาสตร์': 'NUR',
+    'คณะทันตแพทยศาสตร์': 'DEN',
+  }
+  return mapping[faculty] || ''
+}

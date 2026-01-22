@@ -681,7 +681,21 @@ async function clearAllDebts() {
 
   // ✅ ตรวจสอบว่ายอด 2 ช่องเท่ากันหรือไม่
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
+     const itemIdsToMark = new Set()
 
+    receipts.value.forEach(receipt => {
+      receipt.items.forEach(item => {
+        // ใช้ unique ID ของ item แทน
+        if (item.id) {
+          itemIdsToMark.add(item.id)
+        }
+      })
+    })
+    console.log('🎯 Item IDs to mark:', Array.from(itemIdsToMark))
+   // ✅ โหลดข้อมูล receipts
+    const storedReceipts = JSON.parse(localStorage.getItem('fakeApi.receipts') || '[]')
+    console.log('📦 Total receipts:', storedReceipts.length)
+    let markedCount = 0
   if (paymentDifference > 0.01) {
     await Swal.fire({
       icon: 'error',
@@ -770,58 +784,43 @@ async function clearAllDebts() {
     }))
     console.log('💰 New payments:', newPayments)
 
-    // ✅ สร้างประวัติ
-// ✅ สร้างประวัติ
-const historyRecord = {
-  id: Date.now().toString(),
-  referenceId: `CLEAR-${Date.now()}`,
-  date: new Date().toLocaleString('th-TH'),
 
-  // ✅ สำหรับ PDF ตาราง - รายการที่มียอดชำระ
-  items: allItems.value
-    .filter(i => {
-      const val = String(i.paymentInput || '0').replace(/,/g, '')
-      return parseFloat(val) > 0
-    })
-    .map(i => ({
-      itemName: i.itemName,
-      amount: Number(String(i.paymentInput).replace(/,/g, '')),
-      note: i.note || '',
-      referenceId: i.receiptNumber || i._originalReceipt?.projectCode || i.receiptId || ''
-    })),
-
-  // ✅ payment จริงจากธนาคาร (แปลงเป็น format ที่ PDF รู้จัก)
-  payments: newPayments.map(p => ({
-    type: 'transfer',  // ✅ สำคัญมาก!
-    bankName: p.bankName,
-    accountName: p.accountName,
-    accountNumber: p.accountNumber,
-    amount: p.amount
-  })),
-
-  total: totalPaymentInput.value,
-
-  // ✅ header PDF
-  fullName: receipts.value[0]?.fullName || '-',
-  phone: receipts.value[0]?.phone || '-',
-  department: receipts.value[0]?.department || '-',
-  sendmoney: receipts.value[0]?.sendmoney || '-',
-  fundName: receipts.value[0]?.fundName || '-',
-  receiptId:
-    receipts.value[0]?.receiptId ||
-    receipts.value[0]?.projectCode ||
-    `CLEAR-${Date.now()}`
-}
+ // ✅ 6. บันทึกประวัติ
+    const historyRecord = {
+      id: Date.now().toString(),
+      referenceId: `CLEAR-${Date.now()}`,
+      date: new Date().toLocaleString('th-TH'),
+      items: allItems.value
+        .filter(i => {
+          const val = String(i.paymentInput || '0').replace(/,/g, '')
+          return parseFloat(val) > 0
+        })
+        .map(i => ({
+          itemName: i.itemName,
+          amount: Number(String(i.paymentInput).replace(/,/g, '')),
+          note: i.note || '',
+          referenceId: i.receiptNumber || i._originalReceipt?.projectCode || i.receiptId || ''
+        })),
+      payments: getBankTransfersData().map(p => ({
+        type: 'transfer',
+        bankName: p.accountData.bankName,
+        accountName: p.accountData.accountName,
+        accountNumber: p.accountData.accountNumber,
+        amount: p.amount
+      })),
+      total: totalPaymentInput.value,
+      fullName: receipts.value[0]?.fullName || '-',
+      phone: receipts.value[0]?.phone || '-',
+      department: receipts.value[0]?.department || '-',
+      sendmoney: receipts.value[0]?.sendmoney || '-',
+      fundName: receipts.value[0]?.fundName || '-',
+      receiptId: receipts.value[0]?.receiptId || receipts.value[0]?.projectCode || `CLEAR-${Date.now()}`
+    }
 
     // ✅ บันทึกประวัติ
-    const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
+  const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
     existingHistory.unshift(historyRecord)
     localStorage.setItem('debtorClearHistory', JSON.stringify(existingHistory))
-    console.log('✅ History saved')
-
-    // ✅ โหลดข้อมูล receipts
-    const storedReceipts = JSON.parse(localStorage.getItem('fakeApi.receipts') || '[]')
-    console.log('📦 Total receipts:', storedReceipts.length)
 
     // ✅ สร้าง Map ของรายการที่ต้องล้าง
     const itemsToMark = new Map()
@@ -841,48 +840,42 @@ const historyRecord = {
 
     console.log(`🎯 Items to mark: ${itemsToMark.size}`)
 
-    let markedCount = 0
 
-    // ✅ ทำเครื่องหมาย isClearedDebt = true
-    const updatedReceipts = storedReceipts.map(receipt => {
-      const delNumber = receipt.delNumber
 
-      console.log(`\n📋 Processing receipt: ${delNumber}`)
-
-      // ตรวจสอบว่ามีรายการที่ต้องล้างหรือไม่
-      const hasItemsToMark = Array.from(itemsToMark.values()).some(
-        item => item.delNumber === delNumber
-      )
-
-      if (!hasItemsToMark) {
-        console.log(`   ⏭️ Skip - no items to mark`)
+ const updatedReceipts = storedReceipts.map(receipt => {
+      if (!Array.isArray(receipt.receiptList)) {
         return receipt
       }
 
-      console.log(`   ✅ Has items to mark`)
-
-      // ✅ ทำเครื่องหมายใน receiptList
-      if (Array.isArray(receipt.receiptList)) {
-        const newReceiptList = receipt.receiptList.map(item => {
-          const key = `${delNumber}:${item.itemName}`
-
-          if (itemsToMark.has(key)) {
-            console.log(`      ✅ MARKING: ${item.itemName}`)
-            markedCount++
-            return { ...item, isClearedDebt: true }
-          }
-
-          return item
-        })
-
-        return {
-          ...receipt,
-          receiptList: newReceiptList
+      const newReceiptList = receipt.receiptList.map(item => {
+        // ตรวจสอบจาก item.id โดยตรง
+        if (itemIdsToMark.has(item.id)) {
+          console.log(`✅ MARKING: ${item.itemName} (ID: ${item.id})`)
+          markedCount++
+          return { ...item, isClearedDebt: true }
         }
-      }
+        return item
+      })
 
-      return receipt
+      return {
+        ...receipt,
+        receiptList: newReceiptList
+      }
     })
+     // ตรวจสอบว่าทำเครื่องหมายครบหรือไม่
+    if (markedCount !== itemIdsToMark.size) {
+      console.warn('⚠️ Warning: Not all items were marked!')
+      console.log('Expected:', itemIdsToMark.size, 'Actual:', markedCount)
+    }
+
+    // ✅ 4. บันทึกกลับ localStorage
+    localStorage.setItem('fakeApi.receipts', JSON.stringify(updatedReceipts))
+
+    // ✅ 5. Trigger update events
+    const updateTime = Date.now().toString()
+    localStorage.setItem('receipts_last_update', updateTime)
+
+    console.log(`📊 Items marked: ${markedCount}/${itemIdsToMark.size}`)
 
     console.log(`\n📊 ========== SUMMARY ==========`)
     console.log(`   Total receipts: ${updatedReceipts.length}`)
@@ -891,10 +884,20 @@ const historyRecord = {
     // ✅ บันทึกข้อมูลที่อัปเดตกลับเข้า localStorage
     localStorage.setItem('fakeApi.receipts', JSON.stringify(updatedReceipts))
     console.log('💾 Updated receipts saved to localStorage')
+     window.dispatchEvent(new StorageEvent('storage', {
+      key: 'fakeApi.receipts',
+      newValue: JSON.stringify(updatedReceipts),
+      url: window.location.href
+    }))
 
-    // ✅ ส่งสัญญาณอัพเดต
-    const updateTime = Date.now().toString()
-    localStorage.setItem('receipts_last_update', updateTime)
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: {
+        timestamp: updateTime,
+        action: 'clear-debts',
+        marked: markedCount
+      }
+    }))
+
 
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'fakeApi.receipts',
@@ -922,14 +925,13 @@ const historyRecord = {
     localStorage.removeItem('clearDebtorSummary')
     console.log('🗑️ Cleared summary data')
 
-    // ✅ แสดงข้อความสำเร็จ
-    await Swal.fire({
+await Swal.fire({
       title: 'ล้างหนี้สำเร็จ!',
       html: `
         <div class="text-left space-y-2">
-          <p class="text-gray-700">✅ ล้างหนี้รายการ: <span class="font-bold">${markedCount} รายการ</span></p>
-          <p class="text-gray-700">💰 ยอดเงินรวม: <span class="font-bold text-green-600">${formatNumber(totalDebt.value)} บาท</span></p>
-          <p class="text-gray-700">🔖 เลขที่อ้างอิง: <span class="font-mono text-sm">${historyRecord.referenceId}</span></p>
+          <p>✅ ล้างหนี้รายการ: <span class="font-bold">${markedCount} รายการ</span></p>
+          <p>💰 ยอดเงินรวม: <span class="font-bold text-green-600">${formatNumber(totalDebt.value)} บาท</span></p>
+          <p>🔖 เลขที่อ้างอิง: <span class="font-mono text-sm">${historyRecord.referenceId}</span></p>
         </div>
       `,
       icon: 'success',
@@ -937,8 +939,6 @@ const historyRecord = {
       confirmButtonColor: '#10B981'
     })
 
-    // ✅ นำทางกลับหน้า indexsavedebtor
-    console.log('🚀 Navigating back to /indexsavedebtor')
     router.push('/indexsavedebtor')
 
   } catch (error) {
@@ -951,7 +951,6 @@ const historyRecord = {
     })
   }
 }
-
 </script>
 
 <style scoped>

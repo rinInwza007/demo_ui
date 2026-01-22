@@ -10,7 +10,7 @@ export type nagativeMoneyType = 'add' | 'other';
 export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other';
 export type ItemType =  'income' | 'receivable' | 'research';
 export type ReceiptItemType = 'income' | 'expense';
-
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 
 
@@ -28,7 +28,7 @@ export interface Item {
   id: number
   name: string
   type: ItemType
-  affiliationId: string  
+  affiliationId: string
   createdAt: Date
   updatedAt: Date
 }
@@ -90,7 +90,7 @@ export interface Receipt {
   moneyType: string
   sendmoney?: string
   moneyTypeNote?: string
-
+approvalStatus?: ApprovalStatus
   netTotalAmount: number
   totalPaymentAmount: number
 

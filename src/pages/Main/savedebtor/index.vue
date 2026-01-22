@@ -102,6 +102,13 @@
                       <p class="font-bold text-slate-800 text-sm truncate">
                         {{ item.itemName }}
                       </p>
+                       <!-- ✅ แสดงจำนวนรายการที่รวม -->
+      <span
+        v-if="item._count && item._count > 1"
+        class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold"
+      >
+        {{ item._count }} รายการ
+      </span>
                       <p class="text-xs text-slate-500 truncate">
                         {{ item.department }} • {{ item.subDepartment }}
                       </p>
@@ -392,6 +399,7 @@ import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
 import { useSummaryStore } from '@/stores/summary'
 import { storeToRefs } from 'pinia'
+import { filterDebtorsByPermission } from '@/components/ีutils/filterdebtor'
 
 /* =========================
  * Constants
@@ -453,11 +461,19 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
+// ในส่วน setup หรือ methods
+const loadDebtorItems = () => {
+  const itemIds = [201, 202, 203, 301, 401] // รายการที่ต้องการ
+  const allowedItems = filterDebtorsByPermission(itemIds, auth)
+
+  // ถ้าผู้ใช้เป็นคณะแพทย์ จะได้เฉพาะ 201, 202, 203
+  // ถ้าเป็น Admin จะได้ทุกรายการ
+}
 /* =========================
  * Load Receipt Data (Pending Debts)
  * ========================= */
 const loadReceiptData = async () => {
-  debug('📥 Load debtor from Summary Store')
+  console.log('📥 Load debtor from Summary Store')
 
   isLoading.value = true
   try {
@@ -470,24 +486,51 @@ const loadReceiptData = async () => {
     const res = await axios.get('/getReceipt')
     const receipts = res.data || []
 
-    debug('📦 Receipts loaded:', receipts.length)
+    console.log('📦 Total receipts loaded:', receipts.length)
+
+    // 🔍 Debug: ดูว่ามีรายการที่ isClearedDebt = true หรือไม่
+    const clearedCount = receipts.reduce((count, r) => {
+      return count + (r.receiptList || []).filter(i => i.isClearedDebt).length
+    }, 0)
+    console.log('✅ Already cleared items:', clearedCount)
 
     // 2️⃣ Rebuild summary store
     summaryStore.ingestMany(receipts)
-    debug('📊 Ledger entries:', ledger.value.length)
+    console.log('📊 Ledger entries:', ledger.value.length)
 
     // 3️⃣ Get pending debts
     let pendingItems = summaryStore.pendingDebts
+    console.log('⏳ Pending debts (before filter):', pendingItems.length)
 
-    // 4️⃣ Permission filter (user role)
-    if (auth.role === 'user' && auth.user?.affiliationId) {
-      pendingItems = pendingItems.filter(
-        item => item.affiliationId === auth.user!.affiliationId
+    // 🔍 Debug: ดูว่ามี item ไหน isClearedDebt = true แต่ยังอยู่ใน pending
+    const shouldBeClearedButStillPending = pendingItems.filter(
+      i => i.isClearedDebt === true
+    )
+    if (shouldBeClearedButStillPending.length > 0) {
+      console.warn('⚠️ These items should be cleared but still showing:',
+        shouldBeClearedButStillPending.map(i => ({
+          id: i.id,
+          name: i.itemName,
+          isClearedDebt: i.isClearedDebt
+        }))
       )
     }
 
+    // 4️⃣ Permission filter
+    if (auth.role === 'user' && auth.user?.affiliationId) {
+      const beforeFilter = pendingItems.length
+      pendingItems = pendingItems.filter(
+        item => item.affiliationId === auth.user!.affiliationId
+      )
+      console.log(`🔒 Permission filter: ${beforeFilter} → ${pendingItems.length}`)
+    }
+
     rawData.value = pendingItems
-    debug('✅ Pending debts:', rawData.value.length)
+    console.log('✅ Final pending debts:', rawData.value.length)
+
+    // 🔍 Debug: แสดง ID ของรายการที่แสดง
+    console.log('Item IDs shown:', rawData.value.map(i => i.id))
+
   } catch (err) {
     console.error('❌ Load error:', err)
     rawData.value = []
@@ -513,7 +556,7 @@ const loadHistory = () => {
  * ========================= */
 
 // placeholder for future filters
-const filteredItems = computed(() => rawData.value)
+
 
 // --- New Tab Pagination ---
 const totalPagesNew = computed(() =>
@@ -682,6 +725,58 @@ if (DEBUG && typeof window !== 'undefined') {
     loadReceiptData,
   }
 }
+// ✅ เก็บแค่ส่วนนี้
+const groupedItems = computed(() => {
+  const grouped = new Map<number, any>()
+
+  for (const item of rawData.value) {
+    const itemId = item.itemId
+
+    if (grouped.has(itemId)) {
+      // ✅ รวมยอดเงิน
+      const existing = grouped.get(itemId)!
+      existing.depositNetAmount = (existing.depositNetAmount || 0) + (item.depositNetAmount || 0)
+      existing.debtorAmount = (existing.debtorAmount || 0) + (item.debtorAmount || 0)
+      existing.balanceAmount = (existing.balanceAmount || 0) + (item.balanceAmount || 0)
+
+      // ✅ นับจำนวน
+      existing._count++
+
+      // ✅ รวม receipts
+      if (item._receipts) {
+        existing._receipts.push(...item._receipts)
+      }
+
+      // ✅ รวมผู้รับผิดชอบ
+      if (item.responsible) {
+        existing._responsibles.add(item.responsible)
+      }
+
+    } else {
+      // ✅ สร้างรายการใหม่
+      grouped.set(itemId, {
+        ...item,
+        _count: 1,
+        _receipts: item._receipts || [],
+        _responsibles: new Set(item.responsible ? [item.responsible] : [])
+      })
+    }
+  }
+
+  // ✅ แปลง Set เป็น string และสร้าง note
+  return Array.from(grouped.values()).map(item => ({
+    ...item,
+    responsible: Array.from(item._responsibles).join(', ') || '-',
+    note: item._count > 1 ? `รวม ${item._count} รายการ` : item.note || '',
+    _responsibles: undefined, // ลบ Set ออก
+  }))
+})
+
+// ✅ ใช้ groupedItems แทน
+const filteredItems = computed(() => groupedItems.value)
+
+// --- New Tab Pagination ---
+
 </script>
 
 

@@ -193,8 +193,8 @@
                     <Selects
                       v-model="subCategory"
                       :options="sub1OptionsForSelect"
-                           option-label="label"  
-                      option-value="value"  
+                           option-label="label"
+                      option-value="value"
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
@@ -863,7 +863,7 @@
         <i class="ph ph-x text-2xl"></i>
       </button>
     </div>
-    
+
     <div class="space-y-4">
       <!-- ✅ แสดงข้อมูล User -->
       <div class="bg-purple-50 rounded-lg p-3 text-sm">
@@ -871,7 +871,7 @@
         <p class="text-purple-800">{{ authStore.user?.fullName }}</p>
         <p class="text-purple-700 text-xs">{{ authStore.user?.affiliation }}</p>
       </div>
-      
+
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อ Template</label>
         <InputText
@@ -881,7 +881,7 @@
           @keyup.enter="saveTemplate"
         />
       </div>
-      
+
       <!-- แสดงข้อมูลที่จะบันทึก -->
       <div class="bg-blue-50 rounded-lg p-3 text-sm">
         <p class="font-semibold text-blue-900 mb-2">📋 ข้อมูลที่จะบันทึก:</p>
@@ -895,7 +895,7 @@
             <li>✓ รายการนำส่งเงิน ({{ morelist.filter(r => r.itemName).length }} รายการ)</li>
         </ul>
       </div>
-      
+
       <div class="flex gap-3">
         <button
           @click="showSaveDialog = false; templateName = ''"
@@ -924,7 +924,7 @@
         <i class="ph ph-x text-2xl"></i>
       </button>
     </div>
-    
+
     <!-- ช่องค้นหา -->
     <div class="mb-4">
       <div class="relative">
@@ -937,7 +937,7 @@
         />
       </div>
     </div>
-    
+
     <!-- ✅ รายการ Templates -->
     <div class="flex-1 overflow-y-auto space-y-3 pr-2">
       <div
@@ -955,7 +955,7 @@
                   {{ template.affiliationName || authStore.user?.affiliation }}
                 </span>
               </div>
-              
+
               <!-- ข้อมูลพื้นฐาน -->
               <div class="grid grid-cols-2 gap-2 text-sm text-slate-600">
                 <div><span class="font-medium">👤 ชื่อ:</span> {{ template.data.fullName || '-' }}</div>
@@ -964,7 +964,7 @@
                 <div><span class="font-medium">💰 กองทุน:</span> {{ template.data.fundName || '-' }}</div>
               </div>
             </div>
-            
+
             <!-- ปุ่มจัดการ -->
             <div class="flex gap-2 ml-4">
               <button
@@ -988,7 +988,7 @@
           <!-- ✅ สรุปข้อมูล - แสดงเสมอ -->
           <div class="flex flex-wrap gap-2 mb-2">
             <!-- รายการนำส่งเงิน -->
-            <div v-if="template.data.receiptItems?.length > 0" 
+            <div v-if="template.data.receiptItems?.length > 0"
                  class="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
               <i class="ph ph-list-bullets text-green-600"></i>
               <span class="text-sm font-semibold text-green-800">
@@ -997,7 +997,7 @@
             </div>
 
             <!-- บัญชีธนาคาร -->
-            <div v-if="template.data.bankTransfers?.length > 0" 
+            <div v-if="template.data.bankTransfers?.length > 0"
                  class="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
               <i class="ph ph-bank text-blue-600"></i>
               <span class="text-sm font-semibold text-blue-800">
@@ -1006,7 +1006,7 @@
             </div>
 
             <!-- วิธีการชำระ -->
-            <div v-if="template.data.paymentMethods && Object.keys(template.data.paymentMethods).filter(k => template.data.paymentMethods[k].checked).length > 0" 
+            <div v-if="template.data.paymentMethods && Object.keys(template.data.paymentMethods).filter(k => template.data.paymentMethods[k].checked).length > 0"
                  class="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200">
               <i class="ph ph-wallet text-purple-600"></i>
               <span class="text-sm font-semibold text-purple-800">
@@ -1036,7 +1036,7 @@
         >
           <div v-show="isTemplateExpanded(template.id)" class="border-t border-gray-200 bg-white/20">
             <div class="p-4 space-y-3">
-              
+
               <!-- รายการนำส่งเงิน -->
               <div v-if="template.data.receiptItems?.length > 0">
                 <div class="bg-green-50 rounded-lg p-3 border border-green-200">
@@ -1045,8 +1045,8 @@
                     <span class="font-bold text-green-800">รายการนำส่งเงิน ({{ template.data.receiptItems.length }} รายการ)</span>
                   </div>
                   <div class="grid grid-cols-2 gap-2">
-                    <div 
-                      v-for="(item, idx) in template.data.receiptItems" 
+                    <div
+                      v-for="(item, idx) in template.data.receiptItems"
                       :key="idx"
                       class="flex items-center gap-2 text-sm bg-white/60 px-3 py-2 rounded border border-green-100"
                     >
@@ -1068,8 +1068,8 @@
                     <span class="font-bold text-blue-800">บัญชีธนาคาร ({{ template.data.bankTransfers.length }} บัญชี)</span>
                   </div>
                   <div class="space-y-2">
-                    <div 
-                      v-for="(bank, idx) in template.data.bankTransfers" 
+                    <div
+                      v-for="(bank, idx) in template.data.bankTransfers"
                       :key="idx"
                       class="flex items-center gap-3 bg-white/60 px-3 py-2.5 rounded border border-blue-100"
                     >
@@ -1096,11 +1096,11 @@
                   </div>
                   <div class="flex flex-wrap gap-2">
                     <template v-for="key in Object.keys(template.data.paymentMethods)" :key="key">
-                      <div v-if="template.data.paymentMethods[key].checked" 
+                      <div v-if="template.data.paymentMethods[key].checked"
                            class="bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
                         <div class="flex items-center gap-2">
                           <span class="font-semibold text-slate-800">
-                            {{ 
+                            {{
                               key === 'cash' ? '💵 เงินสด' :
                               key === 'check' ? '🏦 เช็ค' :
                               key === 'debtor' ? '📝 ลูกหนี้' :
@@ -1130,14 +1130,14 @@
               <!-- Footer ภายใน Details -->
               <div class="flex items-center gap-4 pt-2 text-xs text-gray-500 border-t border-gray-200">
                 <span class="flex items-center gap-1">
-                  <i class="ph ph-user"></i> 
+                  <i class="ph ph-user"></i>
                   <span class="font-medium">{{ template.userName || authStore.user?.fullName }}</span>
                 </span>
                 <span class="flex items-center gap-1">
-                  <i class="ph ph-calendar"></i> 
-                  {{ new Date(template.createdAt).toLocaleDateString('th-TH', { 
-                    year: 'numeric', 
-                    month: 'short', 
+                  <i class="ph ph-calendar"></i>
+                  {{ new Date(template.createdAt).toLocaleDateString('th-TH', {
+                    year: 'numeric',
+                    month: 'short',
                     day: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
@@ -1148,7 +1148,7 @@
           </div>
         </transition>
       </div>
-      
+
       <!-- แสดงเมื่อไม่มี Template -->
       <div v-if="filteredTemplates.length === 0" class="text-center py-12 text-gray-500">
         <i class="ph ph-folder-open text-6xl mb-3 opacity-50"></i>
@@ -1237,6 +1237,7 @@ const form = reactive({
   sub2Id: '',
   sub2Name: '',
 })
+
 const bankOptions = [
   { label: 'ธนาคารกรุงไทย', value: 'ธนาคารกรุงไทย' },
   { label: 'ธนาคารกสิกรไทย', value: 'ธนาคารกสิกรไทย' },
@@ -1244,6 +1245,7 @@ const bankOptions = [
   { label: 'ธนาคารกรุงเทพ', value: 'ธนาคารกรุงเทพ' },
   { label: 'ธนาคารทหารไทยธนชาต', value: 'ธนาคารทหารไทยธนชาต' },
 ]
+
 const bankAccountOptions = ref([
   {
     accountNumber: '671-2-90667-9',
@@ -1266,6 +1268,7 @@ const bankAccountOptions = ref([
     accountName: 'มหาวิทยาลัยพะเยา',
   },
 ])
+
 const sub1OptionsForSelect = computed(() =>
   sub1OptionsArray.value.map(opt => ({
     label: opt.name,   // โชว์
@@ -1289,7 +1292,7 @@ watch(subId, (id) => {
 })
 const handleItemNameChange = (index, itemName) => {
   morelist.value[index].itemName = itemName
-  
+
   // ✅ อัพเดท itemId เมื่อเลือกรายการ
   const item = getItemByName(itemName)
   if (item) {
@@ -1298,15 +1301,15 @@ const handleItemNameChange = (index, itemName) => {
   } else {
     updateItemId(index, null)
   }
-  
+
   clearRowError(index, 'itemName')
   updateDebtorAmount()
 }
 watch(
-  () => morelist.value.map(row => ({ 
-    id: row.id, 
-    itemId: row.itemId, 
-    itemName: row.itemName 
+  () => morelist.value.map(row => ({
+    id: row.id,
+    itemId: row.itemId,
+    itemName: row.itemName
   })),
   (newVal) => {
     console.log('📋 MoreList State:', newVal)
@@ -1315,8 +1318,8 @@ watch(
 )
 
 watch(
-  () => ({ 
-    mainId: mainCategoryId.value, 
+  () => ({
+    mainId: mainCategoryId.value,
     mainName: mainCategory.value,
     subId: subCategoryId.value,
     subName: subCategory.value,
@@ -1417,16 +1420,16 @@ const saveTemplate = () => {
   }
 
   templates.value.push(template)
-  
+
   // ✅ บันทึกลง localStorage ของ User นี้
   const storageKey = getTemplateStorageKey()
   if (storageKey) {
     localStorage.setItem(storageKey, JSON.stringify(templates.value))
   }
-  
+
   templateName.value = ''
   showSaveDialog.value = false
-  
+
   Swal.fire({
     icon: 'success',
     title: 'บันทึก Template สำเร็จ!',
@@ -1443,29 +1446,29 @@ const loadTemplate = async (template) => {
   formData.value.fundName = template.data.fundName
   formData.value.sendmoney = template.data.sendmoney
   formData.value.projectCode = template.data.projectCode
-  
+
   if (template.data.mainCategoryId) {
     mainCategoryId.value = template.data.mainCategoryId
     mainCategory.value = template.data.mainCategory
     await nextTick()
   }
-  
+
   if (template.data.subCategoryId) {
     subCategoryId.value = template.data.subCategoryId
     subCategory.value = template.data.subCategoryId
     await nextTick()
   }
-  
+
   if (template.data.subCategoryId2) {
     subCategoryId2.value = template.data.subCategoryId2
     subCategory2.value = template.data.subCategoryId2
     await nextTick()
   }
-  
+
   // ✅ ล้าง morelist เก่าทิ้งก่อน
   morelist.value = []
   await nextTick()
-  
+
   // ✅ โหลดรายการนำส่งเงิน (เฉพาะชื่อรายการ)
   if (template.data.receiptItems && template.data.receiptItems.length > 0) {
     morelist.value = template.data.receiptItems.map((item, index) => {
@@ -1512,7 +1515,7 @@ const loadTemplate = async (template) => {
     console.log('✅ Loaded bank transfers from template:', bankTransfers.value)
   }
   showLoadDialog.value = false
-  
+
   Swal.fire({
     icon: 'success',
     title: 'โหลด Template สำเร็จ!',
@@ -1535,13 +1538,13 @@ const deleteTemplate = (id) => {
   }).then((result) => {
     if (result.isConfirmed) {
       templates.value = templates.value.filter(t => t.id !== id)
-      
+
       // ✅ อัพเดท localStorage ของ User นี้
       const storageKey = getTemplateStorageKey()
       if (storageKey) {
         localStorage.setItem(storageKey, JSON.stringify(templates.value))
       }
-      
+
       Swal.fire({
         icon: 'success',
         title: 'ลบ Template สำเร็จ!',
@@ -1555,7 +1558,7 @@ const deleteTemplate = (id) => {
 // ✅ กรอง Template
 const filteredTemplates = computed(() => {
   if (!searchTerm.value) return templates.value
-  return templates.value.filter(t => 
+  return templates.value.filter(t =>
     t.name.toLowerCase().includes(searchTerm.value.toLowerCase())
   )
 })
@@ -1610,16 +1613,16 @@ const mapAffiliationToMainCategory = (affiliationId) => {
 }
 const updateDebtorAmount = () => {
   if (!morelist.value?.length || !paymentMethods.value?.debtor) return
-  
+
   const totalDebtor = morelist.value
     .filter(row => row?.itemName && isReceivableItem(row.itemName))
     .reduce((sum, row) => {
       const amount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
       return sum + (isNaN(amount) ? 0 : amount)
     }, 0)
-  
+
   paymentMethods.value.debtor.checked = totalDebtor > 0
-  paymentMethods.value.debtor.amount = totalDebtor > 0 ? 
+  paymentMethods.value.debtor.amount = totalDebtor > 0 ?
     totalDebtor.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''
 }
 
@@ -1648,7 +1651,7 @@ onMounted(async () => {
         await nextTick()
       }
     }
-    
+
     // ✅ เพิ่มแถวว่าง 2 แถว
     addRow()
     addRow()
@@ -1656,7 +1659,7 @@ onMounted(async () => {
 
   // รอให้ DOM สร้างแถวเสร็จก่อน init TomSelect
   await nextTick()
-  
+
   // Init TomSelect สำหรับแถวแรก
   morelist.value.forEach((_, i) => {
     initItemNameTomSelect(i)
@@ -1916,8 +1919,8 @@ const loadReceiptData = async () => {
   isLoading.value = true
   try {
     // ✅ เปลี่ยนจาก /getReceipt เป็น /findOneReceipt
-    const response = await axios.get(`/findOneReceipt/${receiptId.value}`)
-    
+    const response = await axios.get(`/getReceipt/${receiptId.value}`)
+
     // ✅ ข้อมูลจะอยู่ใน response.data โดยตรง (ไม่ใช่ array)
     const data = response.data
 
@@ -2046,14 +2049,14 @@ const loadReceiptData = async () => {
 
     // ✅ 7. โหลดข้อมูลธนาคาร
     console.log('🏦 Bank Transfers from API:', data.bankTransfers)
-    
+
     if (data.bankTransfers && Array.isArray(data.bankTransfers) && data.bankTransfers.length > 0) {
       bankTransfers.value = []
       await nextTick()
-      
+
       loadBankTransfers(data.bankTransfers)
       await nextTick()
-      
+
       console.log('✅ Bank transfers loaded:', bankTransfers.value)
     }
 
@@ -2340,9 +2343,9 @@ const saveData = async () => {
   errors.value.bankTransfers = {}
 
   bankTransfers.value.forEach((bank, index) => {
-    const hasAnyData = bank.accountData.accountNumber || 
-                       bank.accountData.bankName || 
-                       bank.accountData.accountName || 
+    const hasAnyData = bank.accountData.accountNumber ||
+                       bank.accountData.bankName ||
+                       bank.accountData.accountName ||
                        bank.amount
 
     if (hasAnyData) {
@@ -2351,7 +2354,7 @@ const saveData = async () => {
         errors.value.bankTransfers[index].accountNumber = 'กรุณาเลือกเลขบัญชี'
         hasError = true
       }
-      
+
       const cleanAmount = bank.amount ? parseFloat(String(bank.amount).replace(/,/g, '')) : 0
       if (!bank.amount || cleanAmount <= 0) {
         if (!errors.value.bankTransfers[index]) errors.value.bankTransfers[index] = {}
@@ -2386,6 +2389,7 @@ const saveData = async () => {
     } else {
       validRows.push({
         itemName: row.itemName || '',
+        itemId: row.itemId || '',
         note: row.note || '',
         referenceNo: row.referenceNo || '',
         amount: cleanAmount,
@@ -2409,7 +2413,7 @@ const saveData = async () => {
   // ========== ✅ Payment Methods Validation ==========
   const totalSection2 = netTotalAmount.value
   let totalSection3 = 0
-  
+
   bankTransfers.value.forEach((bank) => {
     if (bank.amount) {
       const cleanAmount = parseFloat(String(bank.amount).replace(/,/g, ''))
@@ -2419,8 +2423,8 @@ const saveData = async () => {
     }
   })
 
-  const hasAnyPaymentMethod = 
-    bankTransfers.value.some(bank => bank.accountData.accountNumber && bank.amount) || 
+  const hasAnyPaymentMethod =
+    bankTransfers.value.some(bank => bank.accountData.accountNumber && bank.amount) ||
     Object.keys(paymentMethods.value).some((key) => paymentMethods.value[key].checked)
 
   Object.keys(paymentMethods.value).forEach((key) => {
@@ -2661,7 +2665,7 @@ if (!isEditMode.value) {
         detail: { action: isEditMode.value ? 'update' : 'create' },
       }),
     )
-    
+
 await Swal.fire({
   icon: 'success',
   title: isEditMode.value ? 'อัพเดตสำเร็จ!' : 'บันทึกสำเร็จ!',

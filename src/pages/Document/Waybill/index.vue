@@ -8,7 +8,7 @@
       <div class="orb orb-3"></div>
       <sidebar />
       <main class="flex-1 flex flex-col relative z-10">
-        <header class="h-16 flex items-center justify-between px-8 pt-4 pb-2">
+        <header class="h-auto lg:h-16 flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 lg:px-8 pt-4 pb-2 gap-3">
           <div>
             <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
               <i class="ph ph-file-plus"></i>
@@ -56,7 +56,7 @@
     </div>
     </div>
               <!-- แถวที่ 1: เลขที่นำส่ง | ชื่อ (แสดงเสมอ) -->
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 <div class="flex flex-col gap-2">
                   <label class="text-sm font-medium text-gray-700">
                     เลขที่นำส่ง <span class="text-red-500">*</span>
@@ -88,7 +88,7 @@
               </div>
 
               <!-- แถวที่ 2: เบอร์โทรศัพท์ | หน่วยงาน (แสดงเสมอ) -->
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 <div class="flex flex-col gap-2">
                   <label class="text-sm font-medium text-gray-700">
                     เบอร์โทรติดต่อ <span class="text-red-500">*</span>
@@ -125,7 +125,7 @@
               <!-- =========================== -->
               <template v-if="!hasAnySub">
                 <!-- แถวที่ 3: กองทุน | ขอนำส่งเงิน -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   <div class="flex flex-col gap-2">
                     <label class="text-sm font-medium text-gray-700">
                       กองทุน <span class="text-red-500">*</span>
@@ -166,7 +166,7 @@
                 </div>
 
                 <!-- แถวที่ 4: รหัสโครงการ | ว่าง -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   <div class="flex flex-col gap-2">
                     <label class="text-sm font-medium text-gray-700">
                       รหัสโครงงาน <span class="text-red-500">*</span>
@@ -186,7 +186,7 @@
               <!-- =========================== -->
               <template v-if="hasAnySub && !hasSub2">
                 <!-- แถวที่ 3: หน่วยงานรอง | กองทุน -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   <div class="flex flex-col gap-2">
                     <label class="text-sm font-medium text-gray-700">
                       หน่วยงานรอง <span class="text-red-500">*</span>
@@ -221,7 +221,7 @@
                 </div>
 
                 <!-- แถวที่ 4: ขอนำส่งเงิน | รหัสโครงการ -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   <div class="flex flex-col gap-2">
                     <label class="text-sm font-medium text-gray-700">
                       ขอนำส่งเงิน <span class="text-red-500">*</span>
@@ -263,7 +263,7 @@
               <!-- =========================== -->
               <template v-if="hasSub2">
                 <!-- แถวที่ 3: หน่วยงานรอง | หน่วยงานย่อย -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   <div class="flex flex-col gap-2">
                     <label class="text-sm font-medium text-gray-700">
                       หน่วยงานรอง <span class="text-red-500">*</span>
@@ -300,7 +300,7 @@
                 </div>
 
                 <!-- แถวที่ 4: กองทุน | ขอนำส่งเงิน -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   <div class="flex flex-col gap-2">
                     <label class="text-sm font-medium text-gray-700">
                       กองทุน <span class="text-red-500">*</span>
@@ -339,7 +339,7 @@
                     </span>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                   <div class="flex flex-col gap-2">
                     <label class="text-sm font-medium text-gray-700">
                       รหัสโครงงาน <span class="text-red-500">*</span>
@@ -512,14 +512,14 @@
   >
     <!-- เลขบัญชี -->
     <div class="flex flex-col gap-1.5">
-      <BankAccountSelect
-      placeholder="กรอกเลขบัญชี"
-        v-model="bank.accountData"
-        :input-id="`bank-account-${bank.id}`"
-        :error-message="errors.bankTransfers?.[index]?.accountNumber"
-        :bank-account-options="bankAccountOptions"
-        @change="() => clearBankError(index, 'accountNumber', errors)"
-      />
+<BankAccountSelect
+  placeholder="กรอกเลขบัญชี"
+  v-model="bank.accountData"
+  :input-id="`bank-account-${bank.id}`"
+  :error-message="errors.bankTransfers?.[bank.id]?.accountNumber"
+  @change="() => clearBankError(bank.id, 'accountNumber', errors)"
+/>
+
     </div>
 
     <!-- จำนวนเงิน -->

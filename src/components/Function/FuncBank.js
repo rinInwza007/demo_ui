@@ -82,29 +82,19 @@ export function useBankTransferManager() {
     return formattedInteger
   }
 
-  // ✅ แก้ไข: Clear error สำหรับ bank transfer (ป้องกัน undefined)
-  const clearBankError = (index, field, errors) => {
-    // ตรวจสอบว่า errors object มีอยู่จริง
-    if (!errors || !errors.value) {
-      console.warn('⚠️ errors object is not defined')
-      return
-    }
+const clearBankError = (key, field, errors) => {
+  if (!errors?.value?.bankTransfers) return
 
-    // สร้าง bankTransfers object ถ้ายังไม่มี
-    if (!errors.value.bankTransfers) {
-      errors.value.bankTransfers = {}
-    }
 
-    // ลบ error ถ้ามี
-    if (errors.value.bankTransfers[index]?.[field]) {
-      delete errors.value.bankTransfers[index][field]
-      
-      // ลบ index ถ้าไม่มี error เหลือ
-      if (Object.keys(errors.value.bankTransfers[index]).length === 0) {
-        delete errors.value.bankTransfers[index]
-      }
+  if (errors.value.bankTransfers[key]?.[field]) {
+    delete errors.value.bankTransfers[key][field]
+
+    if (Object.keys(errors.value.bankTransfers[key]).length === 0) {
+      delete errors.value.bankTransfers[key]
     }
   }
+}
+
 
   // ตรวจสอบว่าเลขบัญชีมาจาก predefined options
   const isFromPredefinedOption = (accountNumber, bankAccountOptions = []) => {

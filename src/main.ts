@@ -8,7 +8,7 @@ import { VueDatePicker } from "@vuepic/vue-datepicker";
 import '@vuepic/vue-datepicker/dist/main.css'
 import "hover.css";
 import VueApexCharts from "vue3-apexcharts";
-
+import '@/fake/mockAxios'
 const app = createApp(App)
 const pinia = createPinia()
 
@@ -21,7 +21,6 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(VueApexCharts);
 app.component('VueDatePicker', VueDatePicker)
-app.use(createPinia())
 app.use(router)
 app.directive('tippy', tippyDirective)
 app.mount('#app')

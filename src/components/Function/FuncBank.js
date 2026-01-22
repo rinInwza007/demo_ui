@@ -1,3 +1,4 @@
+// src/components/Function/FuncBank.js
 import { ref, computed } from 'vue'
 
 export function useBankTransferManager() {
@@ -17,7 +18,7 @@ export function useBankTransferManager() {
   // เพิ่มรายการธนาคาร
   const addBankTransfer = () => {
     bankTransfers.value.push({
-      id: Date.now(),
+      id: Date.now() + Math.random(), // ✅ เพิ่ม random เพื่อไม่ให้ id ซ้ำ
       accountData: {
         accountNumber: '',
         bankName: '',
@@ -81,11 +82,24 @@ export function useBankTransferManager() {
     return formattedInteger
   }
 
-  // Clear error สำหรับ bank transfer
+  // ✅ แก้ไข: Clear error สำหรับ bank transfer (ป้องกัน undefined)
   const clearBankError = (index, field, errors) => {
-    if (errors.value.bankTransfers?.[index]?.[field]) {
+    // ตรวจสอบว่า errors object มีอยู่จริง
+    if (!errors || !errors.value) {
+      console.warn('⚠️ errors object is not defined')
+      return
+    }
+
+    // สร้าง bankTransfers object ถ้ายังไม่มี
+    if (!errors.value.bankTransfers) {
+      errors.value.bankTransfers = {}
+    }
+
+    // ลบ error ถ้ามี
+    if (errors.value.bankTransfers[index]?.[field]) {
       delete errors.value.bankTransfers[index][field]
       
+      // ลบ index ถ้าไม่มี error เหลือ
       if (Object.keys(errors.value.bankTransfers[index]).length === 0) {
         delete errors.value.bankTransfers[index]
       }
@@ -114,23 +128,22 @@ export function useBankTransferManager() {
     bankTransfers.value = []
   }
 
-  // ✅ แก้ไข: โหลดข้อมูลจาก API
+  // ✅ โหลดข้อมูลจาก API
   const loadBankTransfers = (data) => {
     console.log('🔄 Loading bank transfers from data:', data)
     
     if (!data || !Array.isArray(data) || data.length === 0) {
       console.log('⚠️ No bank data to load')
-      resetAllBankTransfers()
+      // ไม่ต้อง reset เพราะอาจจะมีข้อมูลที่กำลังกรอกอยู่
       return
     }
 
-    bankTransfers.value = data.map((item) => {
-      console.log('Processing item:', item)
+    bankTransfers.value = data.map((item, idx) => {
+      console.log(`📝 Processing item ${idx}:`, item)
       
       return {
-        id: item.id || Date.now() + Math.random(),
+        id: item.id || (Date.now() + idx), // ✅ ใช้ idx แทน random
         accountData: {
-          // ✅ แก้ไขตรงนี้ - ดึงจาก item.accountData
           accountNumber: item.accountData?.accountNumber || '',
           bankName: item.accountData?.bankName || '',
           accountName: item.accountData?.accountName || '',
@@ -148,9 +161,10 @@ export function useBankTransferManager() {
     console.log('✅ Bank transfers loaded:', bankTransfers.value)
   }
 
+  // ✅ Format เมื่อ blur (แยกจาก formatBankAmount)
   const formatBankAmountOnBlur = (index) => {
     const bank = bankTransfers.value[index]
-    if (!bank.amount) return
+    if (!bank || !bank.amount) return
 
     const cleanValue = bank.amount.toString().replace(/,/g, '')
     const numValue = parseFloat(cleanValue)
@@ -166,19 +180,17 @@ export function useBankTransferManager() {
     })
   }
 
-  // ✅ แก้ไข: เตรียมข้อมูลสำหรับบันทึก
+  // ✅ เตรียมข้อมูลสำหรับบันทึก
   const getBankTransfersData = () => {
     console.log('📤 Preparing bank transfers data from:', bankTransfers.value)
     
     const result = bankTransfers.value
       .filter(bank => {
         // กรองเฉพาะที่มีข้อมูลครบถ้วน
-        const hasAccountData = bank.accountData?.accountNumber && 
-                               bank.accountData?.bankName && 
-                               bank.accountData?.accountName
+        const hasAccountNumber = bank.accountData?.accountNumber?.trim()
         const hasAmount = bank.amount && parseFloat(String(bank.amount).replace(/,/g, '')) > 0
         
-        return hasAccountData && hasAmount
+        return hasAccountNumber && hasAmount
       })
       .map(bank => ({
         id: bank.id,
@@ -216,21 +228,26 @@ export function useBankTransferManager() {
     return bankTransfers.value.length > 0
   })
 
-  // จำนวนรายการธนาคารทั้งหมด
+  // ✅ นับเฉพาะรายการที่มีข้อมูล
   const bankTransferCount = computed(() => {
-    return bankTransfers.value.length
+    return bankTransfers.value.filter(bank => {
+      const hasAccountNumber = bank.accountData?.accountNumber?.trim()
+      const hasAmount = bank.amount && parseFloat(String(bank.amount).replace(/,/g, '')) > 0
+      return hasAccountNumber && hasAmount
+    }).length
   })
 
   return {
     // States
     bankTransfers,
-    formatBankAmountOnBlur,
+    
     // Actions
     addBankTransfer,
     removeBankTransfer,
     formatBankAmount,
     handleBankAmountInput,
     formatDisplayBankAmount,
+    formatBankAmountOnBlur,
     resetBankTransfer,
     resetAllBankTransfers,
     loadBankTransfers,

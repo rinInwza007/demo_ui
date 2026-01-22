@@ -1,3 +1,4 @@
+// src/pages/Document/Waybill/index.vue
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full flex h-screen overflow-hidden">
@@ -1161,7 +1162,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup >
 import { ref, computed, onMounted, watch, nextTick ,reactive} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
@@ -1181,6 +1182,7 @@ import { useBankTransferManager } from '@/components/Function/FuncBank'
 import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
 import BankAccountSelect from '@/components/TomSelect/BankAccountSelect.vue'
+import { bankOptions, bankAccountOptions } from '@/components/utils/bankHelpers'
 // Initialize
 const route = useRoute()
 const router = useRouter()
@@ -1238,36 +1240,7 @@ const form = reactive({
   sub2Name: '',
 })
 
-const bankOptions = [
-  { label: 'ธนาคารกรุงไทย', value: 'ธนาคารกรุงไทย' },
-  { label: 'ธนาคารกสิกรไทย', value: 'ธนาคารกสิกรไทย' },
-  { label: 'ธนาคารไทยพาณิชย์', value: 'ธนาคารไทยพาณิชย์' },
-  { label: 'ธนาคารกรุงเทพ', value: 'ธนาคารกรุงเทพ' },
-  { label: 'ธนาคารทหารไทยธนชาต', value: 'ธนาคารทหารไทยธนชาต' },
-]
 
-const bankAccountOptions = ref([
-  {
-    accountNumber: '671-2-90667-9',
-    bankName: 'ธนาคารกรุงไทย',
-    accountName: 'โรงพยาบาลมหาวิทยาลัยพะเยา',
-  },
-  {
-    accountNumber: '671-2-90668-9',
-    bankName: 'ธนาคารกรุงไทย',
-    accountName: 'มหาวิทยาลัยพะเยา (กองทุนทั่วไป)',
-  },
-  {
-    accountNumber: '662-0-96023-5',
-    bankName: 'ธนาคารกรุงไทย',
-    accountName: 'กองทุนเพื่อการจัดตั้งธนาคารเลือด',
-  },
-  {
-    accountNumber: '123-4-56789-0',
-    bankName: 'ธนาคารไทยพาณิชย์',
-    accountName: 'มหาวิทยาลัยพะเยา',
-  },
-])
 
 const sub1OptionsForSelect = computed(() =>
   sub1OptionsArray.value.map(opt => ({

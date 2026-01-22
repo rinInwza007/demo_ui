@@ -88,7 +88,12 @@ const updatedAt = receipt.updatedAt
     if (amount <= 0) return
 
     const itemName = safeStr(item.itemName)
-    const itemType = getItemType(itemName)
+    const itemId = item.itemId || null
+
+    // ✅ ถ้าไม่มี itemId ให้หาจาก itemName
+    const resolvedItemId = itemId || getItemByName(itemName)?.id || null
+
+    const itemType = getItemType(resolvedItemId || itemName)
     const isClearedDebt = item.isClearedDebt === true
 
     /* =========================
@@ -112,12 +117,15 @@ const updatedAt = receipt.updatedAt
 
         affiliationId,
         fundName: itemName,
+        itemId: resolvedItemId,
         fullName,
 
         createdAt,
         updatedAt,
 
         isClearedDebt,
+
+        _originalReceipt: receipt,
       })
     }
 
@@ -142,12 +150,15 @@ const updatedAt = receipt.updatedAt
 
         affiliationId,
         fundName: itemName,
+        itemId: resolvedItemId,
         fullName,
 
         createdAt,
         updatedAt,
 
         isClearedDebt: true,
+
+        _originalReceipt: receipt,
       })
     }
 
@@ -172,10 +183,13 @@ const updatedAt = receipt.updatedAt
 
         affiliationId,
         fundName: itemName,
+        itemId: resolvedItemId,
         fullName,
 
         createdAt,
         updatedAt,
+
+        _originalReceipt: receipt,
       })
     }
   })
@@ -192,8 +206,9 @@ export const useSummaryStore = defineStore('summary', {
     totals: emptyTotals(),
     unitsByKey: {} as Record<string, UnitAgg>,
 
-    // 🔑 cache ledger ต่อ receipt
     ledgerByDoc: {} as Record<string, LedgerEntry[]>,
+
+    receiptsByDoc: {} as Record<string, Receipt>,
   }),
 
   getters: {
@@ -318,6 +333,8 @@ export const useSummaryStore = defineStore('summary', {
       ledgers.forEach(e => this.applyLedger(e))
 
       this.ledgerByDoc[docKey] = ledgers
+
+      this.receiptsByDoc[docKey] = receipt
     },
 
     ingestDelete(docKey: string) {
@@ -327,6 +344,7 @@ export const useSummaryStore = defineStore('summary', {
 
       ledgers.forEach(e => this.rollbackLedger(e))
       delete this.ledgerByDoc[key]
+      delete this.receiptsByDoc[key]
     },
 
     ingestMany(receipts: Receipt[]) {
@@ -340,6 +358,16 @@ export const useSummaryStore = defineStore('summary', {
       this.totals = emptyTotals()
       this.unitsByKey = {}
       this.ledgerByDoc = {}
+      this.receiptsByDoc = {}
     },
   },
 })
+
+function getAffiliationId(faculty: string): string {
+  const mapping: Record<string, string> = {
+    'คณะแพทยศาสตร์': 'MED',
+    'คณะพยาบาลศาสตร์': 'NUR',
+    'คณะทันตแพทยศาสตร์': 'DEN',
+  }
+  return mapping[faculty] || ''
+}

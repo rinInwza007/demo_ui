@@ -94,7 +94,7 @@ export function sanitizeReceipt(r: any): Receipt {
     receiptList: Array.isArray(r.receiptList)
       ? r.receiptList.map(sanitizeItem)
       : [],
-    
+
     affiliationId: String(r.affiliationId || '').trim(),
     affiliationName: String(r.affiliationName || '').trim(),
     mainAffiliationId: String(r.mainAffiliationId || '').trim(),

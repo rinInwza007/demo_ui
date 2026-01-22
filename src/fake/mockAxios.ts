@@ -551,6 +551,13 @@ mock.onPost('/updateReceipt').reply((config) => {
   const idx = db.indexOf(found)
   const normalized = normalizeBoth(ensureReceiptFields(receipt))
 
+  // ✅ Log ก่อน merge เพื่อ debug
+  console.log('🔍 Before merge:', {
+    foundStatus: db[idx].approvalStatus,
+    incomingStatus: receipt.approvalStatus,
+    normalizedStatus: normalized.approvalStatus
+  })
+
   const updated = sanitizeReceipt({
     ...db[idx],
     ...normalized,

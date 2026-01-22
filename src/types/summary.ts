@@ -1,6 +1,7 @@
 // types/summary.ts
 
 export type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
+
 export type Direction = 'INCOME' | 'DEBT_NEW' | 'DEBT_CLEAR'
 
 export type ReceiptMode = 'create' | 'update' | 'clear'

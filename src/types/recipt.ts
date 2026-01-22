@@ -93,7 +93,7 @@ approvalStatus?: ApprovalStatus
   moneyType: string
   sendmoney?: string
   moneyTypeNote?: string
-
+approvalStatus?: ApprovalStatus
   netTotalAmount: number
   totalPaymentAmount: number
 

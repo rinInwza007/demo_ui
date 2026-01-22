@@ -37,6 +37,13 @@ export const bankAccountOptions: BankAccount[] = [
     accountName: 'มหาวิทยาลัยพะเยา (กองทุนทั่วไป)',
     isActive: true,
   },
+    {
+    id: 'ACC_KBANK_002',
+    accountNumber: '987-6-54321-0',
+    bankName: 'ธนาคารกสิกรไทย',
+    accountName: 'มหาวิทยาลัยพะเยา2 (กองทุนทั่วไป)',
+    isActive: true,
+  },
   {
     id: 'ACC_KTB_002',
     accountNumber: '662-0-96023-5',

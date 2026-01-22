@@ -41,6 +41,9 @@ export const defaultAffiliation: Affiliation [] = [
     type: 'ศูนย์',
     parentId: 'NUR',
   },
+
+
+
   {
     id: 'ENE',
     name: 'คณะพลังงานและสิ่งแวดล้อม',

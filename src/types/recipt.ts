@@ -29,7 +29,7 @@ export interface Item {
   id: number
   name: string
   type: ItemType
-  affiliationId: string  
+  affiliationId: string
   createdAt: Date
   updatedAt: Date
 }

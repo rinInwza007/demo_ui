@@ -73,7 +73,7 @@ interface Props {
   disabled?: boolean
   placeholder?: string
   errorMessage?: string
-  bankAccountOptions?: BankAccount[] // เก็บไว้เพื่อ backward compatibility
+  bankAccountOptions?: BankAccount[]
 }
 
 // ==================== Props & Emits ====================
@@ -95,7 +95,7 @@ const emit = defineEmits<{
 }>()
 
 // ==================== State ====================
-const localAccountNumber = ref<string>(props.modelValue?.accountNumber || '')
+const localAccountNumber = ref<string>('')
 const localBankName = ref<string>(props.modelValue?.bankName || '')
 const localAccountName = ref<string>(props.modelValue?.accountName || '')
 const syncingFromParent = ref<boolean>(false)
@@ -103,29 +103,18 @@ const syncingFromParent = ref<boolean>(false)
 let tomSelectInstance: TomSelect | null = null
 
 // ==================== Computed ====================
-/**
- * ดึงรายการบัญชีที่ active (ใช้จาก TypeScript utilities)
- */
 const activeAccounts = computed<BankAccount[]>(() => {
-  // ✅ ถ้ามี prop bankAccountOptions ให้ใช้ตัวนั้น (backward compatibility)
   if (props.bankAccountOptions && props.bankAccountOptions.length > 0) {
     return props.bankAccountOptions
   }
-  // ✅ ไม่งั้นใช้จาก utils (ดึง ID มาให้อัตโนมัติ)
   return getActiveAccounts()
 })
 
-/**
- * ตรวจสอบว่าเลขบัญชีมาจาก predefined options หรือไม่
- */
 const isFromPredefinedOption = computed<boolean>(() => {
   if (!localAccountNumber.value) return false
   return isValidAccountNumber(localAccountNumber.value)
 })
 
-/**
- * สร้าง CSS classes สำหรับ input fields
- */
 const inputClasses = computed<string[]>(() => {
   const baseClasses = [
     'w-full', 'px-3', 'py-2.5', 'text-sm', 'rounded-xl', 'border', 'transition-all'
@@ -150,9 +139,6 @@ const inputClasses = computed<string[]>(() => {
 })
 
 // ==================== Methods ====================
-/**
- * Emit ข้อมูลไปยัง parent
- */
 const emitChange = (): void => {
   const data: BankAccountData = {
     accountNumber: localAccountNumber.value,
@@ -163,24 +149,18 @@ const emitChange = (): void => {
   emit('change', data)
 }
 
-/**
- * จัดการเมื่อเปลี่ยนเลขบัญชี
- */
 const handleAccountNumberChange = (accountNumber: string): void => {
   if (syncingFromParent.value) return
 
   localAccountNumber.value = accountNumber
 
-  // ✅ ค้นหาข้อมูลจาก TypeScript utilities (ดึง ID มาให้อัตโนมัติ)
   const foundAccount = getBankAccountByNumber(accountNumber)
 
   if (foundAccount) {
-    // พบในระบบ - ใช้ข้อมูลที่กำหนดไว้ (มี ID แล้ว)
     localBankName.value = foundAccount.bankName
     localAccountName.value = foundAccount.accountName
-    console.log('✅ Selected Account ID:', foundAccount.id) // Debug
+    console.log('✅ Selected Account ID:', foundAccount.id)
   } else {
-    // ไม่พบ - ให้ user กรอกเอง (ไม่มี ID)
     localBankName.value = ''
     localAccountName.value = ''
     console.log('⚠️ Custom account (no ID)')
@@ -189,42 +169,27 @@ const handleAccountNumberChange = (accountNumber: string): void => {
   emitChange()
 }
 
-/**
- * Initialize TomSelect
- */
 const initTomSelect = (): void => {
   const el = document.getElementById(props.inputId) as HTMLSelectElement | null
-
   if (!el || (el as any).tomselect) return
 
   tomSelectInstance = new TomSelect(el, {
     create: true,
-    placeholder: props.placeholder,
     allowEmptyOption: true,
     createOnBlur: true,
-    createFilter: (input: string) => input.length > 0,
     onChange: (value: string) => handleAccountNumberChange(value),
   })
 
-  // Apply custom styles
-  applyTomSelectStyles()
+  tomSelectInstance.clear(true)
 
-  // ✅ โหลดค่าเริ่มต้น
-  if (props.modelValue?.accountNumber) {
-    syncingFromParent.value = true
-    tomSelectInstance.setValue(props.modelValue.accountNumber, true)
-    localAccountNumber.value = props.modelValue.accountNumber
-    localBankName.value = props.modelValue.bankName || ''
-    localAccountName.value = props.modelValue.accountName || ''
-    setTimeout(() => {
-      syncingFromParent.value = false
-    }, 100)
+  const input = tomSelectInstance.control_input
+  if (input) {
+    input.placeholder = props.placeholder || 'กรอกเลขบัญชี'
   }
+
+  applyTomSelectStyles()
 }
 
-/**
- * Apply custom styles to TomSelect
- */
 const applyTomSelectStyles = (): void => {
   if (!tomSelectInstance) return
 
@@ -257,9 +222,6 @@ const applyTomSelectStyles = (): void => {
 }
 
 // ==================== Watchers ====================
-/**
- * Watch เมื่อเลขบัญชีเปลี่ยน
- */
 watch(localAccountNumber, (newValue) => {
   if (!newValue) {
     localBankName.value = ''
@@ -267,18 +229,13 @@ watch(localAccountNumber, (newValue) => {
   }
 })
 
-/**
- * Watch เมื่อ bankName หรือ accountName เปลี่ยน (กรณีสร้างใหม่)
- */
 watch([localBankName, localAccountName], () => {
   if (!isFromPredefinedOption.value && localAccountNumber.value) {
     emitChange()
   }
 })
 
-/**
- * Watch modelValue จากภายนอก
- */
+// ✅ แก้ไข Watch modelValue ให้รองรับทั้ง Edit และ Template
 watch(
   () => props.modelValue,
   (newVal) => {
@@ -286,27 +243,47 @@ watch(
 
     syncingFromParent.value = true
 
+    // ✅ ตั้งค่า local state ก่อน (ไม่ว่าจะมีค่าหรือไม่)
     localAccountNumber.value = newVal.accountNumber || ''
     localBankName.value = newVal.bankName || ''
     localAccountName.value = newVal.accountName || ''
 
+    // ✅ อัพเดท TomSelect
     if (tomSelectInstance) {
-      const currentValue = tomSelectInstance.getValue()
-      if (currentValue !== newVal.accountNumber) {
-        tomSelectInstance.setValue(newVal.accountNumber || '', true)
+      if (newVal.accountNumber) {
+        // มีเลขบัญชี -> set ค่า
+        tomSelectInstance.setValue(newVal.accountNumber, true)
+      } else {
+        // ไม่มีเลขบัญชี -> clear
+        tomSelectInstance.clear(true)
       }
     }
 
     setTimeout(() => {
       syncingFromParent.value = false
-    }, 100)
+    }, 50)
+
+    console.log('🔄 BankAccountSelect updated:', {
+      accountNumber: localAccountNumber.value,
+      bankName: localBankName.value,
+      accountName: localAccountName.value
+    })
   },
-  { deep: true, immediate: true }
+  { deep: true, immediate: true }  // ✅ เพิ่ม immediate: true
 )
 
 // ==================== Lifecycle ====================
 onMounted(() => {
   initTomSelect()
+  
+  // ✅ ถ้ามีค่าตั้งต้น ให้ set ทันที
+  if (props.modelValue?.accountNumber) {
+    setTimeout(() => {
+      if (tomSelectInstance) {
+        tomSelectInstance.setValue(props.modelValue.accountNumber, true)
+      }
+    }, 100)
+  }
 })
 
 onBeforeUnmount(() => {

@@ -227,7 +227,7 @@
                           <i class="ph-fill ph-check text-xl"></i>
                         </div>
                         <div>
-                          <p class="font-bold text-slate-800">{{ item.items }}</p>
+                          <p class="font-bold text-slate-800">{{ item.itemsDisplay || 'ไม่ระบุรายการ' }}</p>
                           <p class="text-xs text-slate-500">{{ item.date }}</p>
                         </div>
                       </div>
@@ -399,7 +399,7 @@ import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
 import { useSummaryStore } from '@/stores/summary'
 import { storeToRefs } from 'pinia'
-import { filterDebtorsByPermission } from '@/components/ีutils/filterdebtor'
+import { filterDebtorsByPermission } from '@/components/utils/filterdebtor'
 
 /* =========================
  * Constants

@@ -28,7 +28,6 @@
   </div>
 </template>
 
-<!-- ✅ เพิ่ม lang="ts" -->
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -36,7 +35,6 @@ import pdfMake from 'pdfmake/build/pdfmake'
 import { vfs, fonts } from '../../../assets/fonts.js'
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-
 
 const route = useRoute()
 const router = useRouter()
@@ -47,11 +45,6 @@ const gotomainpage = () => {
 
 pdfMake.vfs = vfs
 pdfMake.fonts = fonts
-
-// ✅ ลบฟังก์ชัน viewPdf ออกเพราะไม่ได้ใช้ในไฟล์นี้
-// const viewPdf = (id: string) => {
-//   router.push(`/pdfclear/${id}`)
-// }
 
 const pdfUrl = ref<string | null>(null)
 const receiptData = ref<any>(null)
@@ -427,7 +420,7 @@ onMounted(() => {
 
     const foundHistory = history.find((h: any) => h.referenceId === referenceId)
 
-     if (!foundHistory) {
+    if (!foundHistory) {
       console.error('❌ History item not found:', referenceId)
       console.log('Available IDs:', history.map((h: any) => h.referenceId))
       loading.value = false
@@ -435,9 +428,9 @@ onMounted(() => {
     }
 
     console.log('✅ Found history item:', foundHistory)
-    console.log('📋 Items array:', foundHistory.items)
-    console.log('📋 Items count:', foundHistory.items?.length)
-    console.log('📋 First item:', foundHistory.items?.[0])
+    console.log('📋 Items:', foundHistory.items)
+    console.log('📋 Items type:', typeof foundHistory.items)
+    console.log('📋 Is Array?:', Array.isArray(foundHistory.items))
 
     receiptData.value = {
       referenceId: foundHistory.referenceId,
@@ -451,58 +444,31 @@ onMounted(() => {
       payments: foundHistory.payments || []
     }
 
-// ✅ ลบ MIN_ROWS เพราะไม่ต้องการแถวว่างอีกต่อไป
-rows.splice(0, rows.length)
+    // ✅ ล้าง rows ก่อน
+    rows.splice(0, rows.length)
 
-// ✅ เพิ่มการ debug เพื่อดู structure ของข้อมูล
-console.log('🔍 Full foundHistory:', foundHistory)
-console.log('🔍 foundHistory.items type:', typeof foundHistory.items)
-console.log('🔍 foundHistory.items value:', foundHistory.items)
+    // ✅ ตรวจสอบและเพิ่มข้อมูลลง rows
+    if (foundHistory.items && Array.isArray(foundHistory.items) && foundHistory.items.length > 0) {
+      console.log('🔄 Processing', foundHistory.items.length, 'items')
 
-if (foundHistory.items && Array.isArray(foundHistory.items) && foundHistory.items.length > 0) {
-  console.log('🔄 Processing items:', foundHistory.items.length)
+      foundHistory.items.forEach((item: any, index: number) => {
+        console.log(`  Item ${index + 1}:`, item)
 
-  foundHistory.items.forEach((item: any, index: number) => {
-    console.log(`  Item ${index + 1}:`, {
-      itemName: item.itemName,
-      amount: item.amount,
-      referenceId: item.referenceId,
-      note: item.note
-    })
-
-    rows.push({
-      item: item.itemName || '',
-      amount: item.amount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0.00',
-      ref: item.referenceId || '',
-      note: item.note || '',
-    })
-  })
-
-  console.log('✅ Rows created:', rows.length)
-  console.log('📦 Rows data:', rows)
-} else {
-  console.error('❌ items is not valid array:', foundHistory.items)
-  console.warn('⚠️ Possible reasons:')
-  console.warn('   1. items was saved as string instead of array')
-  console.warn('   2. items array is empty')
-  console.warn('   3. Data structure in localStorage is incorrect')
-
-  // ✅ ลองหาข้อมูลจาก key อื่นๆ ที่อาจมี items
-  if (foundHistory.selectedItems && Array.isArray(foundHistory.selectedItems)) {
-    console.log('✅ Found items in selectedItems field')
-    foundHistory.selectedItems.forEach((item: any) => {
-      rows.push({
-        item: item.itemName || item.name || '',
-        amount: item.amount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0.00',
-        ref: item.referenceId || item.id || '',
-        note: item.note || '',
+        rows.push({
+          item: item.itemName || '',
+          amount: item.amount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0.00',
+          ref: item.referenceId || '',
+          note: item.note || '',
+        })
       })
-    })
-  }
-}
 
-// ✅ ลบ while loop ที่สร้างแถวว่าง - ให้ตารางขยายตามจำนวนรายการจริง
-console.log('📊 Final rows count:', rows.length)
+      console.log('✅ Rows created:', rows.length)
+    } else {
+      console.error('❌ Items is not a valid array')
+      console.warn('⚠️ Items value:', foundHistory.items)
+    }
+
+    console.log('📊 Final rows:', rows)
 
     const total = foundHistory.total || 0
     summary.text = convertNumberToThaiText(total)

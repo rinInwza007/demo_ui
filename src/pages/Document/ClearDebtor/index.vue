@@ -677,25 +677,10 @@ async function clearAllDebts() {
   // ✅ คำนวณยอดรวมที่จะจ่าย
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
-  const combinedPayment = totalPaymentInputValue + totalBankValue
 
   // ✅ ตรวจสอบว่ายอด 2 ช่องเท่ากันหรือไม่
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
-     const itemIdsToMark = new Set()
 
-    receipts.value.forEach(receipt => {
-      receipt.items.forEach(item => {
-        // ใช้ unique ID ของ item แทน
-        if (item.id) {
-          itemIdsToMark.add(item.id)
-        }
-      })
-    })
-    console.log('🎯 Item IDs to mark:', Array.from(itemIdsToMark))
-   // ✅ โหลดข้อมูล receipts
-    const storedReceipts = JSON.parse(localStorage.getItem('fakeApi.receipts') || '[]')
-    console.log('📦 Total receipts:', storedReceipts.length)
-    let markedCount = 0
   if (paymentDifference > 0.01) {
     await Swal.fire({
       icon: 'error',
@@ -717,7 +702,6 @@ async function clearAllDebts() {
             <span class="font-bold text-red-600">✗ ส่วนต่าง:</span>
             <span class="float-right font-bold">${formatNumber(paymentDifference)} บาท</span>
           </p>
-          <p class="text-sm text-gray-500 mt-2">กรุณากรอกจำนวนเงินให้เท่ากันในทั้ง 2 ส่วน</p>
         </div>
       `,
       confirmButtonText: 'รับทราบ',
@@ -730,7 +714,7 @@ async function clearAllDebts() {
   // ✅ คำนวณส่วนต่างกับยอดหนี้ทั้งหมด
   const debtDifference = totalDebt.value - totalPaymentInputValue
 
-  // ✅ แสดงข้อความยืนยัน พร้อมส่วนต่าง (ถ้ามี)
+  // ✅ แสดงข้อความยืนยัน
   const confirmMessage = debtDifference > 0.01
     ? `
       <div class="text-left space-y-2">
@@ -743,14 +727,12 @@ async function clearAllDebts() {
         </p>
         <hr class="my-2">
         <p class="text-gray-700">จำนวนรายการ: <span class="font-bold">${allItems.value.length} รายการ</span></p>
-        <p class="text-gray-700">จำนวนธนาคาร: <span class="font-bold">${bankTransfers.length} รายการ</span></p>
       </div>
     `
     : `
       <div class="text-left space-y-2">
         <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold">${formatNumber(totalDebt.value)} บาท</span></p>
         <p class="text-gray-700">จำนวนรายการ: <span class="font-bold">${allItems.value.length} รายการ</span></p>
-        <p class="text-gray-700">จำนวนธนาคาร: <span class="font-bold">${bankTransfers.length} รายการ</span></p>
       </div>
     `
 
@@ -770,22 +752,32 @@ async function clearAllDebts() {
   try {
     console.log('🧹 Starting debt clearing process...')
 
-    // ✅ ดึงข้อมูลธนาคาร
-    const bankData = getBankTransfersData()
-    console.log('🏦 Bank transfers:', bankData)
+    // ✅ 1. สร้าง Set ของ item IDs ที่ต้องทำเครื่องหมาย
+    const itemIdsToMark = new Set()
 
-    // ✅ แปลงเป็น payments format
-    const newPayments = bankData.map(bank => ({
-      type: 'transfer',
-      bankName: bank.accountData.bankName,
-      accountName: bank.accountData.accountName,
-      accountNumber: bank.accountData.accountNumber,
-      amount: bank.amount
-    }))
-    console.log('💰 New payments:', newPayments)
+  allItems.value.forEach(item => {
+  const val = String(item.paymentInput || '0').replace(/,/g, '')
+  if (parseFloat(val) > 0) {
+    // ✅ ใช้ itemId แทน id
+    if (item.itemId) {
+      itemIdsToMark.add(item.itemId)
+    }
+  }
+})
 
+    console.log(`🎯 Item IDs to mark (${itemIdsToMark.size}):`, Array.from(itemIdsToMark))
 
- // ✅ 6. บันทึกประวัติ
+   if (itemIdsToMark.size === 0) {
+  await Swal.fire({
+    icon: 'warning',
+    title: 'ไม่มีรายการที่จะล้าง',
+    text: 'กรุณากรอกจำนวนเงินในช่อง "จำนวนเงินที่ชำระ"',
+    confirmButtonColor: '#DC2626'
+  })
+  return
+}
+
+    // ✅ 2. บันทึกประวัติ
     const historyRecord = {
       id: Date.now().toString(),
       referenceId: `CLEAR-${Date.now()}`,
@@ -798,9 +790,16 @@ async function clearAllDebts() {
         .map(i => ({
           itemName: i.itemName,
           amount: Number(String(i.paymentInput).replace(/,/g, '')),
-          note: i.note || '',
-          referenceId: i.receiptNumber || i._originalReceipt?.projectCode || i.receiptId || ''
+          referenceId: i.receiptNumber || i._originalReceipt?.projectCode || i.receiptId || '',
+          note: i.note || ''
         })),
+      itemsDisplay: allItems.value
+        .filter(i => {
+          const val = String(i.paymentInput || '0').replace(/,/g, '')
+          return parseFloat(val) > 0
+        })
+        .map(i => i.itemName)
+        .join(', '),
       payments: getBankTransfersData().map(p => ({
         type: 'transfer',
         bankName: p.accountData.bankName,
@@ -817,52 +816,46 @@ async function clearAllDebts() {
       receiptId: receipts.value[0]?.receiptId || receipts.value[0]?.projectCode || `CLEAR-${Date.now()}`
     }
 
-    // ✅ บันทึกประวัติ
-  const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
+    const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
     existingHistory.unshift(historyRecord)
     localStorage.setItem('debtorClearHistory', JSON.stringify(existingHistory))
 
-    // ✅ สร้าง Map ของรายการที่ต้องล้าง
-    const itemsToMark = new Map()
-    receipts.value.forEach(receipt => {
-      const delNumber = receipt.delNumber || receipt.projectCode || receipt.receiptId
-      console.log(`   🔍 Mapping items for: ${delNumber}`)
+    // ✅ 3. โหลดและอัพเดท receipts
+    const storedReceipts = JSON.parse(localStorage.getItem('fakeApi.receipts') || '[]')
+    console.log('📦 Total receipts:', storedReceipts.length)
 
-      receipt.items.forEach(item => {
-        const key = `${delNumber}:${item.itemName}`
-        itemsToMark.set(key, {
-          delNumber,
-          itemName: item.itemName,
-          debtorAmount: item.debtorAmount
-        })
-      })
-    })
+    let markedCount = 0
 
-    console.log(`🎯 Items to mark: ${itemsToMark.size}`)
-
-
-
- const updatedReceipts = storedReceipts.map(receipt => {
+    const updatedReceipts = storedReceipts.map(receipt => {
       if (!Array.isArray(receipt.receiptList)) {
         return receipt
       }
 
-      const newReceiptList = receipt.receiptList.map(item => {
-        // ตรวจสอบจาก item.id โดยตรง
-        if (itemIdsToMark.has(item.id)) {
-          console.log(`✅ MARKING: ${item.itemName} (ID: ${item.id})`)
-          markedCount++
-          return { ...item, isClearedDebt: true }
-        }
-        return item
-      })
+    const newReceiptList = receipt.receiptList.map(item => {
+    // ✅ เช็คจาก itemId แทน
+    if (item.itemId && itemIdsToMark.has(item.itemId)) {
+      console.log(`✅ MARKING: ${item.itemName} (itemId: ${item.itemId})`)
+      markedCount++
+      return { ...item, isClearedDebt: true }
+    }
+    return item
+  })
 
-      return {
-        ...receipt,
-        receiptList: newReceiptList
-      }
-    })
-     // ตรวจสอบว่าทำเครื่องหมายครบหรือไม่
+  return {
+    ...receipt,
+    receiptList: newReceiptList
+  }
+})
+  // ✅ Debug: แสดงว่ารายการไหนไม่ถูกทำเครื่องหมาย
+  console.log('Looking for itemIds:', Array.from(itemIdsToMark))
+  storedReceipts.forEach(r => {
+    if (r.receiptList) {
+      r.receiptList.forEach(item => {
+        console.log(`  Receipt item: ${item.itemName}, itemId: ${item.itemId}`)
+      })
+    }
+  })
+
     if (markedCount !== itemIdsToMark.size) {
       console.warn('⚠️ Warning: Not all items were marked!')
       console.log('Expected:', itemIdsToMark.size, 'Actual:', markedCount)
@@ -871,20 +864,11 @@ async function clearAllDebts() {
     // ✅ 4. บันทึกกลับ localStorage
     localStorage.setItem('fakeApi.receipts', JSON.stringify(updatedReceipts))
 
-    // ✅ 5. Trigger update events
+    // ✅ 5. Trigger events
     const updateTime = Date.now().toString()
     localStorage.setItem('receipts_last_update', updateTime)
 
-    console.log(`📊 Items marked: ${markedCount}/${itemIdsToMark.size}`)
-
-    console.log(`\n📊 ========== SUMMARY ==========`)
-    console.log(`   Total receipts: ${updatedReceipts.length}`)
-    console.log(`   Items marked: ${markedCount}`)
-
-    // ✅ บันทึกข้อมูลที่อัปเดตกลับเข้า localStorage
-    localStorage.setItem('fakeApi.receipts', JSON.stringify(updatedReceipts))
-    console.log('💾 Updated receipts saved to localStorage')
-     window.dispatchEvent(new StorageEvent('storage', {
+    window.dispatchEvent(new StorageEvent('storage', {
       key: 'fakeApi.receipts',
       newValue: JSON.stringify(updatedReceipts),
       url: window.location.href
@@ -898,34 +882,13 @@ async function clearAllDebts() {
       }
     }))
 
-
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'fakeApi.receipts',
-      newValue: JSON.stringify(updatedReceipts),
-      url: window.location.href
-    }))
-
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'receipts_last_update',
-      newValue: updateTime,
-      url: window.location.href
-    }))
-
-    window.dispatchEvent(new CustomEvent('receipts-updated', {
-      detail: {
-        timestamp: updateTime,
-        action: 'clear-debts',
-        marked: markedCount
-      }
-    }))
-
-    console.log('🔔 Update signals sent')
-
-    // ✅ ลบข้อมูล summary ที่ใช้งานแล้ว
+    // ✅ 6. ลบข้อมูล summary
     localStorage.removeItem('clearDebtorSummary')
-    console.log('🗑️ Cleared summary data')
 
-await Swal.fire({
+    console.log(`📊 Items marked: ${markedCount}/${itemIdsToMark.size}`)
+    console.log('✅ Debt clearing completed successfully')
+
+    await Swal.fire({
       title: 'ล้างหนี้สำเร็จ!',
       html: `
         <div class="text-left space-y-2">

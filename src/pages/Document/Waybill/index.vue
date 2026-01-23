@@ -1179,15 +1179,14 @@ import { getAllOptions , isReceivableItem ,getItemByName,getItemById } from '@/c
 import { useReceiptStore } from '@/stores/recipt'
 import { useRowManager } from '@/components/Function/FuncForm'
 import { useBankTransferManager } from '@/components/Function/FuncBank'
-import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
 import BankAccountSelect from '@/components/TomSelect/BankAccountSelect.vue'
 import { bankOptions, bankAccountOptions } from '@/components/utils/bankHelpers'
+import { reciptService } from '@/services/ReciptService'
 // Initialize
 const route = useRoute()
 const router = useRouter()
 const reciptStore = useReceiptStore()
-setupAxiosMock()
 const authStore = useAuthStore()
 // Check if edit mode
 const isEditMode = computed(() => !!route.params.id)
@@ -1892,11 +1891,8 @@ const loadReceiptData = async () => {
 
   isLoading.value = true
   try {
-    // ✅ เปลี่ยนจาก /getReceipt เป็น /findOneReceipt
-    const response = await axios.get(`/getReceipt/${receiptId.value}`)
-    
-    // ✅ ข้อมูลจะอยู่ใน response.data โดยตรง (ไม่ใช่ array)
-    const data = response.data
+    // ⭐ ใช้ reciptService แทน axios โดยตรง
+    const data = await reciptService.getById(receiptId.value)
 
     if (!data) throw new Error('Receipt not found')
 
@@ -1908,7 +1904,6 @@ const loadReceiptData = async () => {
     subCategory2.value = ''
     formData.value.sendmoney = ''
 
-    // ✅ ล้างค่า paymentMethods อย่างถูกต้อง (ย้ายมาไว้ก่อน section อื่น)
     paymentMethods.value = {
       cash: { checked: false, amount: '' },
       check: { checked: false, amount: '', bankName: '', checkNumber: '', NumIncheck: '' },
@@ -1931,107 +1926,62 @@ const loadReceiptData = async () => {
     if (data.mainAffiliationId && data.mainAffiliationName) {
       mainCategoryId.value = data.mainAffiliationId
       mainCategory.value = data.mainAffiliationName
-      console.log('✅ Load mainCategory:', { id: mainCategoryId.value, name: mainCategory.value })
-      await nextTick()
-    } else if (data.mainAffiliationName) {
-      // fallback: หา id จาก name
-      mainCategory.value = data.mainAffiliationName
-      const categoryData = departmentOptions[data.mainAffiliationName]
-      mainCategoryId.value = categoryData?.id || ''
       await nextTick()
     }
 
     if (data.subAffiliationId1) {
       subCategoryId.value = data.subAffiliationId1
       subCategory.value = data.subAffiliationId1
-      console.log('✅ Load subCategory:', { id: subCategoryId.value, value: subCategory.value })
-      await nextTick()
-    } else if (data.subAffiliationName1) {
-      const found = sub1OptionsArray.value.find(opt => opt.name === data.subAffiliationName1)
-      if (found) {
-        subCategoryId.value = found.id
-        subCategory.value = found.id
-        console.log('✅ Load subCategory (fallback):', { id: found.id, name: found.name })
-      }
       await nextTick()
     }
 
     if (data.subAffiliationId2) {
       subCategoryId2.value = data.subAffiliationId2
       subCategory2.value = data.subAffiliationId2
-      console.log('✅ Load subCategory2:', { id: subCategoryId2.value, value: subCategory2.value })
-      await nextTick()
-    } else if (data.subAffiliationName2) {
-      const found = sub2OptionsArray.value.find(opt => opt.name === data.subAffiliationName2)
-      if (found) {
-        subCategoryId2.value = found.id
-        subCategory2.value = found.id
-        console.log('✅ Load subCategory2 (fallback):', { id: found.id, name: found.name })
-      }
       await nextTick()
     }
 
-    // ✅ 6. โหลด paymentMethods พร้อม debug (แก้ไขส่วนนี้)
-    console.log('📦 Payment Methods from API:', data.paymentMethods)
-
+    // 6. โหลด paymentMethods
     if (data.paymentMethods && typeof data.paymentMethods === 'object') {
       Object.keys(data.paymentMethods).forEach((key) => {
         const methodData = data.paymentMethods[key]
+        if (!paymentMethods.value[key] || !methodData?.checked) return
 
-        // ✅ ตรวจสอบว่า key นี้มีใน paymentMethods.value หรือไม่
-        if (!paymentMethods.value[key]) {
-          console.warn(`⚠️ Unknown payment method: ${key}`)
-          return
+        paymentMethods.value[key].checked = true
+
+        const amount = methodData.amount || 0
+        if (amount > 0) {
+          const numAmount = typeof amount === 'string' 
+            ? parseFloat(amount.replace(/,/g, '')) 
+            : Number(amount)
+
+          if (!isNaN(numAmount)) {
+            paymentMethods.value[key].amount = numAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          }
         }
 
-        if (!methodData || typeof methodData !== 'object') return
+        if (key === 'check') {
+          paymentMethods.value[key].bankName = methodData.bankName || ''
+          paymentMethods.value[key].checkNumber = methodData.checkNumber || ''
+          paymentMethods.value[key].NumIncheck = methodData.NumIncheck || ''
+        }
 
-        if (methodData.checked === true) {
-          paymentMethods.value[key].checked = true
-
-          const amount = methodData.amount || 0
-          if (amount > 0) {
-            const numAmount =
-              typeof amount === 'string' ? parseFloat(amount.replace(/,/g, '')) : Number(amount)
-
-            if (!isNaN(numAmount)) {
-              paymentMethods.value[key].amount = numAmount.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })
-            }
-          }
-
-          // ✅ โหลดข้อมูลเฉพาะสำหรับ check
-          if (key === 'check') {
-            paymentMethods.value[key].bankName = methodData.bankName || ''
-            paymentMethods.value[key].checkNumber = methodData.checkNumber || ''
-            paymentMethods.value[key].NumIncheck = methodData.NumIncheck || ''
-          }
-
-          // ✅ โหลดข้อมูลเฉพาะสำหรับ other
-          if (key === 'other' && methodData.name) {
-            paymentMethods.value[key].name = methodData.name
-          }
-
-          console.log(`✅ Loaded ${key}:`, paymentMethods.value[key])
+        if (key === 'other' && methodData.name) {
+          paymentMethods.value[key].name = methodData.name
         }
       })
-
       await nextTick()
     }
 
-    // ✅ 7. โหลดข้อมูลธนาคาร
-    console.log('🏦 Bank Transfers from API:', data.bankTransfers)
-
+    // 7. โหลด bankTransfers
     if (data.bankTransfers && Array.isArray(data.bankTransfers) && data.bankTransfers.length > 0) {
       bankTransfers.value = []
       await nextTick()
-
       loadBankTransfers(data.bankTransfers)
       await nextTick()
-
-      console.log('✅ Bank transfers loaded:', bankTransfers.value)
     }
 
     // 8. โหลด receiptList
@@ -2060,10 +2010,9 @@ const loadReceiptData = async () => {
 
       morelist.value.forEach((row) => {
         if (row.amount && row.amount > 0) {
-          const numAmount =
-            typeof row.amount === 'string'
-              ? parseFloat(row.amount.toString().replace(/,/g, ''))
-              : Number(row.amount)
+          const numAmount = typeof row.amount === 'string'
+            ? parseFloat(row.amount.toString().replace(/,/g, ''))
+            : Number(row.amount)
 
           row.amount = numAmount.toLocaleString('en-US', {
             minimumFractionDigits: 2,
@@ -2080,16 +2029,6 @@ const loadReceiptData = async () => {
       addRow()
     }
 
-    console.log('✅ Load complete:', {
-      mainCategory: mainCategory.value,
-      subCategory: subCategory.value,
-      subCategory2: subCategory2.value,
-      sendmoney: formData.value.sendmoney,
-      paymentMethods: paymentMethods.value,
-      receiptList: morelist.value,
-      bankTransfers: bankTransfers.value,
-    })
-
     Swal.fire({
       icon: 'success',
       title: 'โหลดข้อมูลสำเร็จ',
@@ -2101,7 +2040,7 @@ const loadReceiptData = async () => {
     Swal.fire({
       icon: 'error',
       title: 'ไม่พบข้อมูล',
-      text: 'ไม่สามารถโหลดข้อมูลใบนำส่งได้',
+      text: err.message || 'ไม่สามารถโหลดข้อมูลใบนำส่งได้',
       confirmButtonColor: '#DC2626',
     }).then(() => {
       router.push('/indexwaybill')
@@ -2557,8 +2496,8 @@ const saveData = async () => {
   })
 if (!isEditMode.value) {
   try {
-    const checkResponse = await axios.get(`/checkwaybillNumber/${formData.value.waybillNumber}`)
-    if (checkResponse.data.exists) {
+    const exists = await reciptService.checkWaybillNumber(formData.value.waybillNumber)
+    if (exists) {
       Swal.fire({
         icon: 'error',
         title: 'เลขที่นำส่งซ้ำ',
@@ -2623,13 +2562,10 @@ if (!isEditMode.value) {
     payload.updatedAt = currentDateTime
   }
 
-  try {
-    let response
-    if (isEditMode.value) {
-      response = await axios.put(`/updateReceipt/${receiptId.value}`, payload)
-    } else {
-      response = await axios.post('/saveReceipt', payload)
-    }
+try {
+  const result = isEditMode.value
+    ? await reciptService.update(receiptId.value, payload)
+    : await reciptService.create(payload)
 
     await nextTick()
     localStorage.setItem('receipts_last_update', Date.now().toString())

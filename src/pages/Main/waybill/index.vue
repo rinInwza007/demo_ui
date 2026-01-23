@@ -253,19 +253,15 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
-
-import type { Receipt } from '@/types/receipt'
 import { useAuthStore } from '@/stores/auth'
 import { useDailyCloseStore } from '@/stores/DailyClose'
-import { ApprovalStatus } from '@/types/recipt'
-import { setupAxiosMock } from '@/fake/mockAxios'
-
+import { ApprovalStatus,Receipt } from '@/types/recipt'
 import ActionButtons from '@/components/Actionbutton/ActionButtons.vue'
 import sidebar from '@/components/bar/sidebar.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 import { departmentOptions } from '@/components/data/TSdepartments'
+import { reciptService } from '@/services/ReciptService'
 
-setupAxiosMock()
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -366,8 +362,9 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
 
 const loadData = async () => {
   try {
-    const res = await axios.get<Receipt[]>('/getReceipt')
-    rawData.value = (res.data || [])
+    const receipts = await reciptService.getAll()
+    
+    rawData.value = receipts
       .filter((r) => r.moneyTypeNote === 'Waybill')
       .map((r) => ({
         ...r,
@@ -378,7 +375,7 @@ const loadData = async () => {
       }))
   } catch (error) {
     console.error('❌ Error loading data:', error)
-    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error')
+    Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถโหลดข้อมูลได้', 'error')
   }
 }
 
@@ -438,12 +435,15 @@ const items = computed<TableRow[]>(() => {
 })
 
 const headerStats = computed(() => {
-  const rows = items.value
-  const total = rows.length
-  const pending = rows.filter((r) => r.status === 'pending').length
-  const approved = rows.filter((r) => r.status === 'approved').length
-  const totalAmount = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
-  return { total, pending, success: approved, totalAmount }
+  const receipts = items.value.map(r => r._raw)
+  const stats = reciptService.calculateStats(receipts)
+  
+  return {
+    total: stats.total,
+    pending: stats.pending,
+    success: stats.approved,
+    totalAmount: stats.totalAmount
+  }
 })
 
 const activeFiltersText = computed(() => {
@@ -579,7 +579,6 @@ const approveItem = async (row: TableRow) => {
     return
   }
   
-  // ✅ เพิ่มส่วนนี้: เช็คการปิดยอดก่อนอนุมัติ
   if (row.isLocked) {
     Swal.fire({
       icon: 'warning',
@@ -614,31 +613,12 @@ const approveItem = async (row: TableRow) => {
   if (!result.isConfirmed) return
 
   try {
-    const targetIndex = rawData.value.findIndex((r) => r.waybillNumber === row.id)
-    if (targetIndex === -1) {
-      throw new Error('ไม่พบรายการที่ต้องการอนุมัติ')
-    }
+    // ⭐ ใช้ reciptService.approve()
+    const approverName = auth.user?.fullName || 'เจ้าหน้าที่การเงิน'
+    await reciptService.approve(row.id, approverName)
 
-    const target = rawData.value[targetIndex]
-
-    console.log('📝 Approving receipt:', {
-      waybillNumber: target.waybillNumber,
-      oldStatus: target.approvalStatus,
-      newStatus: 'approved'
-    })
-
-    const updatedReceipt = {
-      ...target,
-      approvalStatus: 'approved' as ApprovalStatus,
-      approverName: auth.user?.fullName || 'เจ้าหน้าที่การเงิน', // ✅ เพิ่มชื่อผู้อนุมัติ
-      approvedAt: new Date(), // ✅ เพิ่มวันที่อนุมัติ
-      updatedAt: new Date()
-    }
-
-    await axios.post('/updateReceipt', { receipt: updatedReceipt })
-    rawData.value[targetIndex] = updatedReceipt
-
-    console.log('✅ Approval complete, local data updated')
+    // อัปเดต local data
+    await loadData()
 
     Swal.fire({
       position: 'top-end',
@@ -652,13 +632,15 @@ const approveItem = async (row: TableRow) => {
 
   } catch (error) {
     console.error('❌ Approve error:', error)
-    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอนุมัติได้ กรุณาลองใหม่อีกครั้ง', 'error')
+    Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถอนุมัติได้', 'error')
     await loadData()
   }
 }
 
+/**
+ * ⭐ ลบใบนำส่ง (ใช้ Service)
+ */
 const removeItem = async (row: TableRow) => {
-  // ✅ เช็คการปิดยอดก่อนลบ (Double Check)
   if (row.isLocked || dailyClose.isTodayClosed) {
     Swal.fire({
       icon: 'warning',
@@ -697,8 +679,8 @@ const removeItem = async (row: TableRow) => {
   if (!result.isConfirmed) return
 
   try {
-    console.log('🗑️ Deleting receipt:', row.id)
-    await axios.delete(`/deleteReceipt/${row.id}`)
+    // ⭐ ใช้ reciptService.delete()
+    await reciptService.delete(row.id)
     await loadData()
     
     Swal.fire({
@@ -710,9 +692,10 @@ const removeItem = async (row: TableRow) => {
     })
   } catch (error) {
     console.error('❌ Delete error:', error)
-    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถลบได้ กรุณาลองใหม่อีกครั้ง', 'error')
+    Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถลบได้', 'error')
   }
 }
+
 </script>
 
 <style>
@@ -721,10 +704,6 @@ body {
   margin: 0;
   padding: 0;
 }
-
-
-
-
 
 /* ✅ header divider */
 .header-divider {

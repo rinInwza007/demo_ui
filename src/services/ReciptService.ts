@@ -1,30 +1,383 @@
-import axios, { type AxiosResponse } from 'axios';
+// services/ReciptService.ts
+import axios from 'axios'
+import type { AxiosResponse } from 'axios'
+import type { ApprovalStatus,Receipt } from '@/types/recipt'
+/**
+ * DTO สำหรับการสร้าง/อัปเดตใบนำส่ง
+ */
+export interface ReciptPayload {
+  waybillNumber: string
+  fullName: string
+  moneyTypeNote: string
+  phone: string
+  mainAffiliationId: string
+  mainAffiliationName: string
+  subAffiliationId1?: string
+  subAffiliationName1?: string
+  subAffiliationId2?: string
+  subAffiliationName2?: string
+  fundName: string
+  moneyType: string
+  projectCode?: string
+  sendmoney: string
+  netTotalAmount: number
+  paymentMethods: Record<string, any>
+  totalPaymentAmount: number
+  receiptList: Array<{
+    itemName: string
+    itemId?: string
+    referenceNo?: string
+    note?: string
+    amount: number
+    type: 'income' | 'expense'
+  }>
+  affiliationId: string
+  affiliationName: string
+  bankTransfers?: Array<{
+    accountData: {
+      accountNumber: string
+      bankName: string
+      accountName: string
+    }
+    amount: string | number
+  }>
+  id?: string
+  createdAt?: string
+  updatedAt?: string
+  approvalStatus?: ApprovalStatus
+  approverName?: string
+  approvedAt?: Date | string
+  isLocked?: boolean
+}
 
-import {BaseURL} from '@/services/config'
-import type { Receipt, ReceiptItem  } from '@/types/recipt';
+/**
+ * Response จากการตรวจสอบเลขที่นำส่งซ้ำ
+ */
+export interface CheckWaybillNumberResponse {
+  exists: boolean
+}
 
-export const findOneReceipt = async ( id:any, headers:any): Promise<Receipt> => {
-    const response: AxiosResponse<Receipt> = await axios.get(`${BaseURL}/findOneReceipt/${id}`, { headers: headers }  );
-    return response.data; // Assuming the response contains the token
-};
+/**
+ * Service สำหรับจัดการใบนำส่งเงิน (Waybill/Receipt)
+ */
+class ReciptService {
 
-export const getReceipt = async ( params:any, headers:any): Promise<Receipt[]> => {
-    const response: AxiosResponse<Receipt[]> = await axios.get(`${BaseURL}/getReceipt`,{params:params, headers: headers }  );
-    return response.data; // Assuming the response contains the token
-};
+  /**
+   * 📋 ดึงข้อมูลใบนำส่งทั้งหมด
+   */
+async getAll(): Promise<Receipt[]> {
+    
+  try {
+    const res = await axios.get('/getReceipt')
 
-export const saveReceipt = async ( param:Receipt, headers:any): Promise<Receipt>  => {
-    const response: AxiosResponse<Receipt> = await axios.post(`${BaseURL}/saveReceipt`,param, { headers: headers }   );
-    return response.data; // Assuming the response contains the token
-};
+    const data = res.data
 
-export const updateReceipt = async ( param:Receipt, headers:any): Promise<Receipt>  => {
-    const response: AxiosResponse<Receipt> = await axios.put(`${BaseURL}/updateReceipt`,param, { headers: headers }   );
-    return response.data; // Assuming the response contains the token
-};
+    // กันทุก format
+    if (Array.isArray(data)) {
+      return data
+    }
 
-export const deleteReceipt = async ( idOrParam:any, headers:any): Promise<{ success: boolean }>  => {
-    const id = typeof idOrParam === 'object' ? idOrParam.id : idOrParam;
-    const response: AxiosResponse<{ success: boolean }> = await axios.delete(`${BaseURL}/deleteReceipt${id}`,{ headers: headers } );
-    return response.data; // Assuming the response contains the token
-};
+    if (Array.isArray(data?.data)) {
+      return data.data
+    }
+
+    if (Array.isArray(data?.receipts)) {
+      return data.receipts
+    }
+
+    console.warn('⚠️ Unexpected API format:', data)
+    return []
+
+  } catch (error) {
+    console.error('❌ Error fetching receipts:', error)
+    throw new Error('ไม่สามารถโหลดข้อมูลใบนำส่งได้')
+  }
+}
+
+
+  /**
+   * 🔍 ดึงข้อมูลใบนำส่งตาม ID (waybillNumber)
+   */
+  async getById(waybillNumber: string): Promise<Receipt> {
+    try {
+      const response: AxiosResponse<Receipt> = await axios.get(
+        `/getReceipt/${waybillNumber}`
+      )
+      
+      if (!response.data) {
+        throw new Error('ไม่พบข้อมูลใบนำส่ง')
+      }
+      
+      return response.data
+    } catch (error) {
+      console.error(`❌ Error fetching receipt ${waybillNumber}:`, error)
+      throw new Error('ไม่สามารถโหลดข้อมูลใบนำส่งได้')
+    }
+  }
+
+  /**
+   * ✅ ตรวจสอบว่าเลขที่นำส่งซ้ำหรือไม่
+   */
+  async checkWaybillNumber(waybillNumber: string): Promise<boolean> {
+    try {
+      const response: AxiosResponse<CheckWaybillNumberResponse> = await axios.get(
+        `/checkwaybillNumber/${waybillNumber}`
+      )
+      return response.data.exists
+    } catch (error) {
+      console.error('❌ Error checking waybill number:', error)
+      return false
+    }
+  }
+
+  /**
+   * ➕ สร้างใบนำส่งใหม่
+   */
+  async create(payload: ReciptPayload): Promise<Receipt> {
+    try {
+      // ✅ ตรวจสอบเลขที่นำส่งซ้ำก่อน
+      const exists = await this.checkWaybillNumber(payload.waybillNumber)
+      if (exists) {
+        throw new Error(`เลขที่นำส่ง "${payload.waybillNumber}" มีอยู่ในระบบแล้ว`)
+      }
+
+      const response: AxiosResponse<Receipt> = await axios.post(
+        `/saveReceipt`,
+        {
+          ...payload,
+          id: payload.waybillNumber,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          approvalStatus: 'pending' as ApprovalStatus,
+        }
+      )
+
+      // ✅ แจ้งเตือนการอัปเดต
+      this.notifyUpdate('create')
+
+      return response.data
+    } catch (error: any) {
+      console.error('❌ Error creating receipt:', error)
+      
+      if (error.response?.status === 409) {
+        throw new Error('เลขที่นำส่งนี้มีอยู่ในระบบแล้ว')
+      }
+      
+      throw new Error(error.message || 'ไม่สามารถบันทึกใบนำส่งได้')
+    }
+  }
+
+  /**
+   * ✏️ แก้ไขใบนำส่ง
+   */
+  async update(waybillNumber: string, payload: ReciptPayload): Promise<Receipt> {
+    try {
+      const response: AxiosResponse<Receipt> = await axios.put(
+        `/updateReceipt/${waybillNumber}`,
+        {
+          ...payload,
+          id: waybillNumber,
+          updatedAt: new Date().toISOString(),
+        }
+      )
+
+      // ✅ แจ้งเตือนการอัปเดต
+      this.notifyUpdate('update')
+
+      return response.data
+    } catch (error: any) {
+      console.error('❌ Error updating receipt:', error)
+      throw new Error(error.response?.data?.message || 'ไม่สามารถอัปเดตใบนำส่งได้')
+    }
+  }
+
+  /**
+   * 🗑️ ลบใบนำส่ง
+   */
+  async delete(waybillNumber: string): Promise<void> {
+    try {
+      await axios.delete(`/deleteReceipt/${waybillNumber}`)
+      
+      // ✅ แจ้งเตือนการอัปเดต
+      this.notifyUpdate('delete')
+    } catch (error) {
+      console.error('❌ Error deleting receipt:', error)
+      throw new Error('ไม่สามารถลบใบนำส่งได้')
+    }
+  }
+
+  /**
+   * ✅ อนุมัติใบนำส่ง (สำหรับกองคลัง)
+   */
+  async approve(
+    waybillNumber: string,
+    approverName: string
+  ): Promise<Receipt> {
+    try {
+      // 1. ดึงข้อมูลปัจจุบัน
+      const current = await this.getById(waybillNumber)
+
+      // 2. ตรวจสอบสถานะ
+      if (current.approvalStatus === 'approved') {
+        throw new Error('ใบนำส่งนี้ได้รับการอนุมัติแล้ว')
+      }
+
+      if (current.isLocked) {
+        throw new Error('ไม่สามารถอนุมัติได้ เนื่องจากวันนี้ปิดยอดแล้ว')
+      }
+
+      // 3. อัปเดตสถานะ
+      const response: AxiosResponse<Receipt> = await axios.post(
+        `/updateReceipt`,
+        {
+          receipt: {
+            ...current,
+            approvalStatus: 'approved' as ApprovalStatus,
+            approverName,
+            approvedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        }
+      )
+
+      // ✅ แจ้งเตือนการอัปเดต
+      this.notifyUpdate('approve')
+
+      return response.data
+    } catch (error: any) {
+      console.error('❌ Error approving receipt:', error)
+      throw new Error(error.message || 'ไม่สามารถอนุมัติใบนำส่งได้')
+    }
+  }
+
+  /**
+   * ❌ ปฏิเสธใบนำส่ง (สำหรับกองคลัง)
+   */
+  async reject(
+    waybillNumber: string,
+    approverName: string,
+    reason?: string
+  ): Promise<Receipt> {
+    try {
+      const current = await this.getById(waybillNumber)
+
+      if (current.isLocked) {
+        throw new Error('ไม่สามารถปฏิเสธได้ เนื่องจากวันนี้ปิดยอดแล้ว')
+      }
+
+      const response: AxiosResponse<Receipt> = await axios.post(
+        `/updateReceipt`,
+        {
+          receipt: {
+            ...current,
+            approvalStatus: 'rejected' as ApprovalStatus,
+            approverName,
+            rejectedAt: new Date().toISOString(),
+            rejectionReason: reason,
+            updatedAt: new Date().toISOString(),
+          }
+        }
+      )
+
+      this.notifyUpdate('reject')
+
+      return response.data
+    } catch (error: any) {
+      console.error('❌ Error rejecting receipt:', error)
+      throw new Error(error.message || 'ไม่สามารถปฏิเสธใบนำส่งได้')
+    }
+  }
+
+  /**
+   * 🔒 ตรวจสอบว่าใบนำส่งถูกล็อก (ปิดยอด) หรือไม่
+   */
+  isReceiptLocked(receipt: Receipt): boolean {
+    if (receipt.isLocked) return true
+    
+    // ตรวจสอบจาก createdAt
+    if (!receipt.createdAt) return false
+    
+    const createdDate = new Date(receipt.createdAt as any)
+    const today = new Date()
+    
+    // ถ้าสร้างก่อนวันนี้ถือว่าถูกล็อก (ตาม business logic ของคุณ)
+    return createdDate.toDateString() !== today.toDateString()
+  }
+
+  /**
+   * 📊 กรองใบนำส่งตามสถานะ
+   */
+  filterByStatus(receipts: Receipt[], status: ApprovalStatus): Receipt[] {
+    return receipts.filter(r => r.approvalStatus === status)
+  }
+
+  /**
+   * 📊 กรองใบนำส่งตามสังกัด
+   */
+  filterByAffiliation(receipts: Receipt[], affiliationId: string): Receipt[] {
+    return receipts.filter(r => r.affiliationId === affiliationId)
+  }
+
+  /**
+   * 📊 คำนวณสถิติ
+   */
+  calculateStats(receipts: Receipt[]): {
+    total: number
+    pending: number
+    approved: number
+    rejected: number
+    totalAmount: number
+    pendingAmount: number
+    approvedAmount: number
+  } {
+    return {
+      total: receipts.length,
+      pending: this.filterByStatus(receipts, 'pending').length,
+      approved: this.filterByStatus(receipts, 'approved').length,
+      rejected: this.filterByStatus(receipts, 'rejected').length,
+      totalAmount: receipts.reduce((sum, r) => sum + (Number(r.netTotalAmount) || 0), 0),
+      pendingAmount: this.filterByStatus(receipts, 'pending')
+        .reduce((sum, r) => sum + (Number(r.netTotalAmount) || 0), 0),
+      approvedAmount: this.filterByStatus(receipts, 'approved')
+        .reduce((sum, r) => sum + (Number(r.netTotalAmount) || 0), 0),
+    }
+  }
+
+  /**
+   * 🔔 แจ้งเตือนการอัปเดตข้อมูล (สำหรับ sync ระหว่างหน้า)
+   */
+  private notifyUpdate(action: 'create' | 'update' | 'delete' | 'approve' | 'reject'): void {
+    // อัปเดต localStorage timestamp
+    localStorage.setItem('receipts_last_update', Date.now().toString())
+    
+    // Dispatch custom event
+    window.dispatchEvent(
+      new CustomEvent('receipts-updated', {
+        detail: { action }
+      })
+    )
+  }
+
+  /**
+   * 🔄 รอการอัปเดตข้อมูล
+   */
+  onUpdate(callback: (action: string) => void): () => void {
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent
+      callback(customEvent.detail?.action || 'unknown')
+    }
+
+    window.addEventListener('receipts-updated', handler)
+
+    // Return cleanup function
+    return () => {
+      window.removeEventListener('receipts-updated', handler)
+    }
+  }
+}
+
+// ✅ Export singleton instance
+export const reciptService = new ReciptService()
+
+// ✅ Export class สำหรับ testing
+export default ReciptService

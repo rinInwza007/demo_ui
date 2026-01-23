@@ -165,21 +165,21 @@
                     {{ row.time }}
                   </div>
                 </div>
-                
+
                 <div class="col-span-1 flex justify-center">
                   <div
                     class="px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-center min-w-[100px] transition-all duration-300"
                     :class="{
-                      'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-yellow-300 shadow-sm animate-pulse': 
+                      'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-yellow-300 shadow-sm animate-pulse':
                         row.status === 'pending',
-                      'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-300 shadow-md': 
+                      'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-300 shadow-md':
                         row.status === 'approved',
-                      'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-300 shadow-sm': 
+                      'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-300 shadow-sm':
                         row.status === 'rejected'
                     }"
                   >
-                    <i 
-                      class="mr-1.5 text-sm" 
+                    <i
+                      class="mr-1.5 text-sm"
                       :class="{
                         'ph ph-clock text-yellow-600': row.status === 'pending',
                         'ph ph-check-circle text-green-600': row.status === 'approved',
@@ -265,7 +265,7 @@ import sidebar from '@/components/bar/sidebar.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 import { departmentOptions } from '@/components/data/TSdepartments'
 
-setupAxiosMock()
+// setupAxiosMock()
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -327,13 +327,13 @@ const getLastDate = (createdAt: Date | null, updatedAt: Date | null) => {
  */
 const isReceiptClosed = (receipt: Receipt) => {
   if (!receipt.createdAt) return false
-  
+
   const d = new Date(receipt.createdAt as any)
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   const dateKey = `${y}-${m}-${day}`
-  
+
   return dailyClose.isDateClosed(dateKey)
 }
 
@@ -342,7 +342,7 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
   const updatedDate = r.updatedAt ? new Date(r.updatedAt as any) : null
   const lastDate = getLastDate(createdDate, updatedDate)
   const lastTimeMs = lastDate?.getTime() ?? 0
-  
+
   // ✅ ใช้การปิดยอดเป็นหลักในการ lock
   const isLocked = r.isLocked ?? isReceiptClosed(r)
   const approvalStatus = r.approvalStatus || 'pending'
@@ -404,7 +404,7 @@ const items = computed<TableRow[]>(() => {
   if (selectedSub2.value) {
     filtered = filtered.filter((r) => (r.subAffiliationName2 || '').trim() === selectedSub2.value.trim())
   }
-  
+
   // ✅ Filter by search text
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
@@ -551,7 +551,7 @@ const edit = (row: TableRow) => {
     Swal.fire('ข้อผิดพลาด', 'ไม่พบเลขที่นำส่ง', 'error')
     return
   }
-  
+
   console.log('✅ Opening edit for:', waybillNumber, 'isLocked:', row.isLocked)
   router.push(`/waybill/edit/${waybillNumber}`)
 }
@@ -578,7 +578,7 @@ const approveItem = async (row: TableRow) => {
     Swal.fire('ไม่มีสิทธิ์', 'เฉพาะกองคลัง (treasury) เท่านั้นที่อนุมัติได้', 'warning')
     return
   }
-  
+
   // ✅ เพิ่มส่วนนี้: เช็คการปิดยอดก่อนอนุมัติ
   if (row.isLocked) {
     Swal.fire({
@@ -589,7 +589,7 @@ const approveItem = async (row: TableRow) => {
     })
     return
   }
-  
+
   if (row.status !== 'pending') {
     Swal.fire('ไม่สามารถอนุมัติได้', 'รายการนี้ได้รับการอนุมัติแล้ว', 'info')
     return
@@ -698,7 +698,7 @@ const removeItem = async (row: TableRow) => {
     console.log('🗑️ Deleting receipt:', row.id)
     await axios.delete(`/deleteReceipt/${row.id}`)
     await loadData()
-    
+
     Swal.fire({
       icon: 'success',
       title: 'ลบสำเร็จ',

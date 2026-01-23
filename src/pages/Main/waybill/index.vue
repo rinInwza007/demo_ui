@@ -630,6 +630,8 @@ const approveItem = async (row: TableRow) => {
     const updatedReceipt = {
       ...target,
       approvalStatus: 'approved' as ApprovalStatus,
+      approverName: auth.user?.fullName || 'เจ้าหน้าที่การเงิน', // ✅ เพิ่มชื่อผู้อนุมัติ
+      approvedAt: new Date(), // ✅ เพิ่มวันที่อนุมัติ
       updatedAt: new Date()
     }
 

@@ -278,7 +278,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useDailyCloseStore } from '@/stores/DailyClose'
 import Swal from 'sweetalert2'
 import axios from 'axios'
-
+import { fetchSummaryEvents } from '@/services/dashboard'
 const router = useRouter()
 const auth = useAuthStore()
 const dailyClose = useDailyCloseStore()
@@ -321,9 +321,10 @@ type DailySummary = {
   faculties: FacultySummary[]
 }
 
-const eventsFromApi = ref<SummaryEvent[]>([])
+const eventsFromApi = ref([] as SummaryEvent[])
 const expandedMap = ref<Record<string, boolean>>({})
 const isLoading = ref(true)
+const isFetching = ref(false)
 let refreshInterval: number | null = null
 
 const dateKeyOf = (iso: string) => {
@@ -341,21 +342,56 @@ const lastUpdatedText = computed(() => {
 })
 
 const fetchEvents = async () => {
+  if (isFetching.value) {
+    console.log('⏳ Already fetching, skipping...')
+    return
+  }
+  
+  isFetching.value = true
+  
   try {
+    console.log('🔄 Fetching events...')
     const res = await axios.get('/summary/events')
-    eventsFromApi.value = res.data?.items || []
+    console.log('✅ Response:', res.data)
+    
+    // ✅ เพิ่มการตรวจสอบ
+    if (!res.data) {
+      console.warn('⚠️ Response data is undefined')
+      eventsFromApi.value = []
+      return
+    }
+    
+    const items = res.data?.items || []
+    
+    // ✅ ตรวจสอบก่อน assign
+    if (!Array.isArray(items)) {
+      console.warn('⚠️ Items is not array:', items)
+      eventsFromApi.value = []
+      return
+    }
+    
+    eventsFromApi.value = items
+    console.log('📦 Events loaded:', eventsFromApi.value.length)
+    
     lastUpdatedAt.value = new Date()
+    
   } catch (error) {
-    console.error('Failed to fetch events:', error)
+    console.error('❌ Failed to fetch events:', error)
+    
+    // ✅ ต้องตั้งค่า fallback
+    eventsFromApi.value = []
+    
+    // Optional: แสดง error ให้ user รู้
     await Swal.fire({
       icon: 'error',
       title: 'เกิดข้อผิดพลาด',
       text: 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
       confirmButtonText: 'รับทราบ',
     })
+  } finally {
+    isFetching.value = false
   }
 }
-
 const startAutoRefresh = () => {
   if (refreshInterval) {
     clearInterval(refreshInterval)
@@ -480,6 +516,11 @@ const toggleDay = (dateKey: string) => {
 }
 
 const buildDaily = (events: SummaryEvent[]): DailySummary[] => {
+    if (!events || !Array.isArray(events)) {
+    console.warn('⚠️ buildDaily received invalid events:', events)
+    return []
+  }
+
   const dayMap = new Map<string, any>()
 
   for (const e of events) {
@@ -535,7 +576,20 @@ const buildDaily = (events: SummaryEvent[]): DailySummary[] => {
   return result
 }
 
-const dailyItems = computed(() => buildDaily(eventsFromApi.value))
+const dailyItems = computed(() => {
+  try {
+    // ✅ เช็คก่อนเรียก buildDaily
+    if (!eventsFromApi.value || !Array.isArray(eventsFromApi.value)) {
+      console.warn('⚠️ eventsFromApi is not ready:', eventsFromApi.value)
+      return []
+    }
+    
+    return buildDaily(eventsFromApi.value)
+  } catch (error) {
+    console.error('❌ Error in dailyItems computed:', error)
+    return []
+  }
+})
 
 const formatCurrency = (n: number) =>
   (Number(n || 0)).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -570,13 +624,30 @@ watch(() => dailyClose.isTodayClosed, (newVal) => {
 
 onMounted(async () => {
   isLoading.value = true
+  console.log('🚀 Component mounted') // 👈 เพิ่ม
+  
   try {
     await fetchEvents()
+    
+    // ✅ เช็คว่าโหลดสำเร็จหรือไม่
+    if (eventsFromApi.value.length === 0) {
+      console.warn('⚠️ No events loaded')
+    }
+    
     startAutoRefresh()
   } catch (error) {
-    console.error('Initial load failed:', error)
+    console.error('❌ Initial load failed:', error)
+    
+    // แสดง error ให้ชัดเจน
+    await Swal.fire({
+      icon: 'error',
+      title: 'ไม่สามารถโหลดข้อมูล',
+      text: error.message || 'กรุณาลองใหม่อีกครั้ง',
+      confirmButtonText: 'รับทราบ',
+    })
   } finally {
     isLoading.value = false
+    console.log('✅ Loading complete') // 👈 เพิ่ม
   }
 })
 

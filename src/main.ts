@@ -8,12 +8,7 @@ import { VueDatePicker } from "@vuepic/vue-datepicker";
 import '@vuepic/vue-datepicker/dist/main.css'
 import "hover.css";
 import VueApexCharts from "vue3-apexcharts";
-
-// ⚠️ สำคัญ: Import Axios ตัวที่คุณใช้เรียก API
-// ถ้าคุณสร้าง instance แยก (เช่นใน utils/axios.js) ให้ import ตัวนั้นมา
-// แต่ถ้าคุณใช้ axios ธรรมดา ก็ import axios from 'axios'
-import axios from 'axios'
-
+import '@/fake/mockAxios'
 const app = createApp(App)
 const pinia = createPinia()
 
@@ -39,7 +34,6 @@ if (import.meta.env.VITE_USE_FAKE_API ==='true') {
 
 app.use(VueApexCharts);
 app.component('VueDatePicker', VueDatePicker)
-app.use(pinia) // ใช้ตัวแปรที่ประกาศไว้
 app.use(router)
 app.directive('tippy', tippyDirective)
 

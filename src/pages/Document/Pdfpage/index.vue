@@ -187,6 +187,15 @@ const bankTransfers = receipt.bankTransfers || []
   const checkAmt = pm.check?.checked ? getAmount('check') : 0
   const otherAmt = pm.other?.checked ? getAmount('other') : 0
   const otherName = pm.other?.name?.trim() || 'อื่น ๆ'
+const isApproved = receipt.approvalStatus === 'approved'
+const approverName = receipt.approverName || 'เจ้าหน้าที่การเงิน'
+const approvalDate = receipt.approvedAt 
+  ? new Date(receipt.approvedAt).toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  : currentDate
 
   return {
     pageSize: 'A4',
@@ -638,22 +647,41 @@ const bankTransfers = receipt.bankTransfers || []
               margin: [0, 0, 225, 0],
               alignment: 'center',
             },
+                ...(isApproved
+      ? [
+          {
+            text: approverName,
+            alignment: 'center',
+            margin: [0, 0, 0, -15],
+            fontSize: 13,
+          },
+        ]
+      : []),
             {
               style: 'form',
               text: '(........................................................................)',
               alignment: 'center',
-              margin: [0, 1, 0, 0],
+              margin: [0, 0, 0, 0],
             },
             {
               style: 'form',
               text: 'ผู้รับเงิน',
               alignment: 'center',
-            },
+            },    ...(isApproved
+      ? [
+          {
+            text: approvalDate,
+            alignment: 'center',
+            margin: [0, 0, 0, -15],
+            fontSize: 13,
+          },
+        ]
+      : []),
             {
               style: 'form',
               text: 'ลงวันที่.......................................................',
               alignment: 'center',
-              margin: [0, 3, 0, 0],
+              margin: [0, 0, 0, 0],
             },
           ],
         },

@@ -805,3 +805,19 @@ export function setupAxiosMock(axiosInstance: AxiosInstance) {
   console.log('✅ Axios Mock Setup Complete - Using waybillNumber as primary + Dual Storage')
   return mock
 }
+/** -------------------------
+ * Auto Setup & Export
+ * ------------------------- */
+console.log('🔧 Auto-initializing Mock Axios...')
+
+// ✅ Auto-run เมื่อ import
+const mockInstance = setupAxiosMock()
+
+console.log('✅ Axios Mock Setup Complete - Auto-initialized')
+
+// ✅ Export instance และ ready promise
+export const mock = mockInstance
+export const mockAxiosReady = Promise.resolve()
+
+// ✅ ถ้าต้องการให้แน่ใจว่า ready
+export default setupAxiosMock

@@ -12,15 +12,29 @@ import '@/fake/mockAxios'
 const app = createApp(App)
 const pinia = createPinia()
 
+window.testAxios = axios;
 
-// if (import.meta.env.DEV && import.meta.env.VITE_USE_FAKE_API === 'true') {
-//   const { setupAxiosMock } = await import('@/fake/mockAxios');
-//   setupAxiosMock();
-// }
+// ใช้ await import เพื่อให้ Mock โหลดเสร็จก่อน App จะเริ่ม
+if (import.meta.env.VITE_USE_FAKE_API ==='true') {
+  console.log('🚧 Initializing Fake API...');
+  const { setupAxiosMock } = await import('@/fake/mockAxios');
+  // ✅✅ ส่ง axios instance เข้าไปที่นี่! ✅✅
+  setupAxiosMock(axios);
 
-app.use(pinia)
+
+    const datagetReceipt = await axios.get('/getReceipt')
+    console.log("datagetReceipt Test", datagetReceipt)
+
+
+}
+
+
+
+
+
 app.use(VueApexCharts);
 app.component('VueDatePicker', VueDatePicker)
 app.use(router)
 app.directive('tippy', tippyDirective)
+
 app.mount('#app')

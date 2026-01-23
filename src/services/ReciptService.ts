@@ -1,39 +1,30 @@
-// src/services/ReciptService.ts
-import type { Receipt } from '@/types/recipt'
-import { http } from '@/services/http'
+import axios, { type AxiosResponse } from 'axios';
 
-/** 🔍 Find one receipt (id หรือ delNumber) */
-export const findOneReceipt = async (id: string): Promise<Receipt> => {
-  const res = await http.get<Receipt>(
-    `/findOneReceipt/${encodeURIComponent(id)}`
-  )
-  return res.data
-}
+import {BaseURL} from '@/services/config'
+import type { Receipt, ReceiptItem  } from '@/types/recipt';
 
-/** 📄 Get receipts (with query params) */
-export const getReceipt = async (params?: any): Promise<Receipt[]> => {
-  const res = await http.get<Receipt[]>('/getReceipt', { params })
-  return res.data
-}
+export const findOneReceipt = async ( id:any, headers:any): Promise<Receipt> => {
+    const response: AxiosResponse<Receipt> = await axios.get(`${BaseURL}/findOneReceipt/${id}`, { headers: headers }  );
+    return response.data; // Assuming the response contains the token
+};
 
-/** ➕ Create receipt */
-export const saveReceipt = async (payload: Receipt): Promise<Receipt> => {
-  const res = await http.post<Receipt>('/saveReceipt', payload)
-  return res.data
-}
+export const getReceipt = async ( params:any, headers:any): Promise<Receipt[]> => {
+    const response: AxiosResponse<Receipt[]> = await axios.get(`${BaseURL}/getReceipt`,{params:params, headers: headers }  );
+    return response.data; // Assuming the response contains the token
+};
 
-/** ✏️ Update receipt */
-export const updateReceipt = async (payload: Receipt): Promise<Receipt> => {
-  const res = await http.put<Receipt>('/updateReceipt', payload)
-  return res.data
-}
+export const saveReceipt = async ( param:Receipt, headers:any): Promise<Receipt>  => {
+    const response: AxiosResponse<Receipt> = await axios.post(`${BaseURL}/saveReceipt`,param, { headers: headers }   );
+    return response.data; // Assuming the response contains the token
+};
 
-/** 🗑️ Delete receipt */
-export const deleteReceipt = async (
-  id: string
-): Promise<{ success: boolean }> => {
-  const res = await http.delete<{ success: boolean }>(
-    `/deleteReceipt/${encodeURIComponent(id)}`
-  )
-  return res.data
-}
+export const updateReceipt = async ( param:Receipt, headers:any): Promise<Receipt>  => {
+    const response: AxiosResponse<Receipt> = await axios.put(`${BaseURL}/updateReceipt`,param, { headers: headers }   );
+    return response.data; // Assuming the response contains the token
+};
+
+export const deleteReceipt = async ( idOrParam:any, headers:any): Promise<{ success: boolean }>  => {
+    const id = typeof idOrParam === 'object' ? idOrParam.id : idOrParam;
+    const response: AxiosResponse<{ success: boolean }> = await axios.delete(`${BaseURL}/deleteReceipt${id}`,{ headers: headers } );
+    return response.data; // Assuming the response contains the token
+};

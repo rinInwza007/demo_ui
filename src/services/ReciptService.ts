@@ -1,54 +1,26 @@
 // services/ReciptService.ts
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
-import type { ApprovalStatus,Receipt } from '@/types/recipt'
+import type { ApprovalStatus, Receipt } from '@/types/recipt'
+
 /**
- * DTO สำหรับการสร้าง/อัปเดตใบนำส่ง
+ * DTO สำหรับการสร้างใบนำส่งใหม่
+ * ไม่ต้องส่ง id, timestamps, approvalStatus (ระบบจะสร้างให้)
  */
-export interface ReciptPayload {
-  waybillNumber: string
-  fullName: string
-  moneyTypeNote: string
-  phone: string
-  mainAffiliationId: string
-  mainAffiliationName: string
-  subAffiliationId1?: string
-  subAffiliationName1?: string
-  subAffiliationId2?: string
-  subAffiliationName2?: string
-  fundName: string
-  moneyType: string
-  projectCode?: string
-  sendmoney: string
-  netTotalAmount: number
-  paymentMethods: Record<string, any>
-  totalPaymentAmount: number
-  receiptList: Array<{
-    itemName: string
-    itemId?: string
-    referenceNo?: string
-    note?: string
-    amount: number
-    type: 'income' | 'expense'
-  }>
-  affiliationId: string
-  affiliationName: string
-  bankTransfers?: Array<{
-    accountData: {
-      accountNumber: string
-      bankName: string
-      accountName: string
-    }
-    amount: string | number
-  }>
-  id?: string
-  createdAt?: string
-  updatedAt?: string
-  approvalStatus?: ApprovalStatus
-  approverName?: string
-  approvedAt?: Date | string
-  isLocked?: boolean
+export type CreateReceiptInput = Omit<
+  Receipt,
+  'id' | 'createdAt' | 'updatedAt' | 'isLocked' | 'approvalStatus'
+> & {
+  waybillNumber: string // required
 }
+
+/**
+ * DTO สำหรับการอัปเดตใบนำส่ง
+ * ทุกฟิลด์เป็น optional ยกเว้น id/timestamps/waybillNumber
+ */
+export type UpdateReceiptInput = Partial<
+  Omit<Receipt, 'id' | 'waybillNumber' | 'createdAt'>
+>
 
 /**
  * Response จากการตรวจสอบเลขที่นำส่งซ้ำ
@@ -61,39 +33,34 @@ export interface CheckWaybillNumberResponse {
  * Service สำหรับจัดการใบนำส่งเงิน (Waybill/Receipt)
  */
 class ReciptService {
-
   /**
    * 📋 ดึงข้อมูลใบนำส่งทั้งหมด
    */
-async getAll(): Promise<Receipt[]> {
-    
-  try {
-    const res = await axios.get('/getReceipt')
+  async getAll(): Promise<Receipt[]> {
+    try {
+      const res = await axios.get('/getReceipt')
+      const data = res.data
 
-    const data = res.data
+      // กันทุก format
+      if (Array.isArray(data)) {
+        return data
+      }
 
-    // กันทุก format
-    if (Array.isArray(data)) {
-      return data
+      if (Array.isArray(data?.data)) {
+        return data.data
+      }
+
+      if (Array.isArray(data?.receipts)) {
+        return data.receipts
+      }
+
+      console.warn('⚠️ Unexpected API format:', data)
+      return []
+    } catch (error) {
+      console.error('❌ Error fetching receipts:', error)
+      throw new Error('ไม่สามารถโหลดข้อมูลใบนำส่งได้')
     }
-
-    if (Array.isArray(data?.data)) {
-      return data.data
-    }
-
-    if (Array.isArray(data?.receipts)) {
-      return data.receipts
-    }
-
-    console.warn('⚠️ Unexpected API format:', data)
-    return []
-
-  } catch (error) {
-    console.error('❌ Error fetching receipts:', error)
-    throw new Error('ไม่สามารถโหลดข้อมูลใบนำส่งได้')
   }
-}
-
 
   /**
    * 🔍 ดึงข้อมูลใบนำส่งตาม ID (waybillNumber)
@@ -103,11 +70,11 @@ async getAll(): Promise<Receipt[]> {
       const response: AxiosResponse<Receipt> = await axios.get(
         `/getReceipt/${waybillNumber}`
       )
-      
+
       if (!response.data) {
         throw new Error('ไม่พบข้อมูลใบนำส่ง')
       }
-      
+
       return response.data
     } catch (error) {
       console.error(`❌ Error fetching receipt ${waybillNumber}:`, error)
@@ -133,23 +100,27 @@ async getAll(): Promise<Receipt[]> {
   /**
    * ➕ สร้างใบนำส่งใหม่
    */
-  async create(payload: ReciptPayload): Promise<Receipt> {
+  async create(input: CreateReceiptInput): Promise<Receipt> {
     try {
       // ✅ ตรวจสอบเลขที่นำส่งซ้ำก่อน
-      const exists = await this.checkWaybillNumber(payload.waybillNumber)
+      const exists = await this.checkWaybillNumber(input.waybillNumber)
       if (exists) {
-        throw new Error(`เลขที่นำส่ง "${payload.waybillNumber}" มีอยู่ในระบบแล้ว`)
+        throw new Error(`เลขที่นำส่ง "${input.waybillNumber}" มีอยู่ในระบบแล้ว`)
+      }
+
+      // ✅ สร้าง Receipt object จาก input
+      const receipt: Receipt = {
+        ...input,
+        id: input.waybillNumber,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        approvalStatus: 'pending',
+        isLocked: false,
       }
 
       const response: AxiosResponse<Receipt> = await axios.post(
-        `/saveReceipt`,
-        {
-          ...payload,
-          id: payload.waybillNumber,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          approvalStatus: 'pending' as ApprovalStatus,
-        }
+        '/saveReceipt',
+        receipt
       )
 
       // ✅ แจ้งเตือนการอัปเดต
@@ -158,11 +129,11 @@ async getAll(): Promise<Receipt[]> {
       return response.data
     } catch (error: any) {
       console.error('❌ Error creating receipt:', error)
-      
+
       if (error.response?.status === 409) {
         throw new Error('เลขที่นำส่งนี้มีอยู่ในระบบแล้ว')
       }
-      
+
       throw new Error(error.message || 'ไม่สามารถบันทึกใบนำส่งได้')
     }
   }
@@ -170,15 +141,25 @@ async getAll(): Promise<Receipt[]> {
   /**
    * ✏️ แก้ไขใบนำส่ง
    */
-  async update(waybillNumber: string, payload: ReciptPayload): Promise<Receipt> {
+  async update(
+    waybillNumber: string,
+    input: UpdateReceiptInput
+  ): Promise<Receipt> {
     try {
+      // ✅ ดึงข้อมูลเดิมมาก่อน
+      const current = await this.getById(waybillNumber)
+
+      // ✅ Merge ข้อมูลใหม่เข้ากับข้อมูลเดิม
+      const updated: Receipt = {
+        ...current,
+        ...input,
+        id: waybillNumber,
+        updatedAt: new Date().toISOString(),
+      }
+
       const response: AxiosResponse<Receipt> = await axios.put(
         `/updateReceipt/${waybillNumber}`,
-        {
-          ...payload,
-          id: waybillNumber,
-          updatedAt: new Date().toISOString(),
-        }
+        updated
       )
 
       // ✅ แจ้งเตือนการอัปเดต
@@ -187,7 +168,9 @@ async getAll(): Promise<Receipt[]> {
       return response.data
     } catch (error: any) {
       console.error('❌ Error updating receipt:', error)
-      throw new Error(error.response?.data?.message || 'ไม่สามารถอัปเดตใบนำส่งได้')
+      throw new Error(
+        error.response?.data?.message || 'ไม่สามารถอัปเดตใบนำส่งได้'
+      )
     }
   }
 
@@ -197,7 +180,7 @@ async getAll(): Promise<Receipt[]> {
   async delete(waybillNumber: string): Promise<void> {
     try {
       await axios.delete(`/deleteReceipt/${waybillNumber}`)
-      
+
       // ✅ แจ้งเตือนการอัปเดต
       this.notifyUpdate('delete')
     } catch (error) {
@@ -209,10 +192,7 @@ async getAll(): Promise<Receipt[]> {
   /**
    * ✅ อนุมัติใบนำส่ง (สำหรับกองคลัง)
    */
-  async approve(
-    waybillNumber: string,
-    approverName: string
-  ): Promise<Receipt> {
+  async approve(waybillNumber: string, approverName: string): Promise<Receipt> {
     try {
       // 1. ดึงข้อมูลปัจจุบัน
       const current = await this.getById(waybillNumber)
@@ -227,16 +207,18 @@ async getAll(): Promise<Receipt[]> {
       }
 
       // 3. อัปเดตสถานะ
+      const approved: Receipt = {
+        ...current,
+        approvalStatus: 'approved',
+        // approverName, // ⚠️ ถ้า Receipt type ไม่มี approverName ให้เอาออก
+        // approvedAt: new Date().toISOString(), // ⚠️ ถ้า Receipt type ไม่มี approvedAt ให้เอาออก
+        updatedAt: new Date().toISOString(),
+      }
+
       const response: AxiosResponse<Receipt> = await axios.post(
-        `/updateReceipt`,
+        '/updateReceipt',
         {
-          receipt: {
-            ...current,
-            approvalStatus: 'approved' as ApprovalStatus,
-            approverName,
-            approvedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }
+          receipt: approved,
         }
       )
 
@@ -265,17 +247,19 @@ async getAll(): Promise<Receipt[]> {
         throw new Error('ไม่สามารถปฏิเสธได้ เนื่องจากวันนี้ปิดยอดแล้ว')
       }
 
+      const rejected: Receipt = {
+        ...current,
+        approvalStatus: 'rejected',
+        // approverName, // ⚠️ ถ้า Receipt type ไม่มี approverName ให้เอาออก
+        // rejectedAt: new Date().toISOString(), // ⚠️ ถ้า Receipt type ไม่มี rejectedAt ให้เอาออก
+        // rejectionReason: reason, // ⚠️ ถ้า Receipt type ไม่มี rejectionReason ให้เอาออก
+        updatedAt: new Date().toISOString(),
+      }
+
       const response: AxiosResponse<Receipt> = await axios.post(
-        `/updateReceipt`,
+        '/updateReceipt',
         {
-          receipt: {
-            ...current,
-            approvalStatus: 'rejected' as ApprovalStatus,
-            approverName,
-            rejectedAt: new Date().toISOString(),
-            rejectionReason: reason,
-            updatedAt: new Date().toISOString(),
-          }
+          receipt: rejected,
         }
       )
 
@@ -293,13 +277,13 @@ async getAll(): Promise<Receipt[]> {
    */
   isReceiptLocked(receipt: Receipt): boolean {
     if (receipt.isLocked) return true
-    
+
     // ตรวจสอบจาก createdAt
     if (!receipt.createdAt) return false
-    
-    const createdDate = new Date(receipt.createdAt as any)
+
+    const createdDate = new Date(receipt.createdAt)
     const today = new Date()
-    
+
     // ถ้าสร้างก่อนวันนี้ถือว่าถูกล็อก (ตาม business logic ของคุณ)
     return createdDate.toDateString() !== today.toDateString()
   }
@@ -308,14 +292,14 @@ async getAll(): Promise<Receipt[]> {
    * 📊 กรองใบนำส่งตามสถานะ
    */
   filterByStatus(receipts: Receipt[], status: ApprovalStatus): Receipt[] {
-    return receipts.filter(r => r.approvalStatus === status)
+    return receipts.filter((r) => r.approvalStatus === status)
   }
 
   /**
    * 📊 กรองใบนำส่งตามสังกัด
    */
   filterByAffiliation(receipts: Receipt[], affiliationId: string): Receipt[] {
-    return receipts.filter(r => r.affiliationId === affiliationId)
+    return receipts.filter((r) => r.affiliationId === affiliationId)
   }
 
   /**
@@ -335,25 +319,34 @@ async getAll(): Promise<Receipt[]> {
       pending: this.filterByStatus(receipts, 'pending').length,
       approved: this.filterByStatus(receipts, 'approved').length,
       rejected: this.filterByStatus(receipts, 'rejected').length,
-      totalAmount: receipts.reduce((sum, r) => sum + (Number(r.netTotalAmount) || 0), 0),
-      pendingAmount: this.filterByStatus(receipts, 'pending')
-        .reduce((sum, r) => sum + (Number(r.netTotalAmount) || 0), 0),
-      approvedAmount: this.filterByStatus(receipts, 'approved')
-        .reduce((sum, r) => sum + (Number(r.netTotalAmount) || 0), 0),
+      totalAmount: receipts.reduce(
+        (sum, r) => sum + (Number(r.netTotalAmount) || 0),
+        0
+      ),
+      pendingAmount: this.filterByStatus(receipts, 'pending').reduce(
+        (sum, r) => sum + (Number(r.netTotalAmount) || 0),
+        0
+      ),
+      approvedAmount: this.filterByStatus(receipts, 'approved').reduce(
+        (sum, r) => sum + (Number(r.netTotalAmount) || 0),
+        0
+      ),
     }
   }
 
   /**
    * 🔔 แจ้งเตือนการอัปเดตข้อมูล (สำหรับ sync ระหว่างหน้า)
    */
-  private notifyUpdate(action: 'create' | 'update' | 'delete' | 'approve' | 'reject'): void {
+  private notifyUpdate(
+    action: 'create' | 'update' | 'delete' | 'approve' | 'reject'
+  ): void {
     // อัปเดต localStorage timestamp
     localStorage.setItem('receipts_last_update', Date.now().toString())
-    
+
     // Dispatch custom event
     window.dispatchEvent(
       new CustomEvent('receipts-updated', {
-        detail: { action }
+        detail: { action },
       })
     )
   }

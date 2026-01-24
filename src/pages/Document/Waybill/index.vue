@@ -1183,6 +1183,7 @@ import { useAuthStore } from '@/stores/auth'
 import BankAccountSelect from '@/components/TomSelect/BankAccountSelect.vue'
 import { bankOptions, bankAccountOptions } from '@/components/utils/bankHelpers'
 import { reciptService } from '@/services/ReciptService'
+import AffiliationService from '@/services/affiliation/AffiliationService'
 // Initialize
 const route = useRoute()
 const router = useRouter()
@@ -1254,8 +1255,8 @@ const sub2OptionsForSelect = computed(() => {
   }))
 })
 const mainCategoryOptions = computed(() => {
-  if (!departmentOptions) return []
-  return Object.keys(departmentOptions)
+  if (!departmentOptions.value) return []
+  return Object.keys(departmentOptions.value)
 })
 
 watch(subId, (id) => {
@@ -1610,6 +1611,9 @@ watch(
   { deep: true, flush: 'post' } // ⭐ เพิ่ม flush: 'post'
 )
 onMounted(async () => {
+  // โหลด department options จาก Service
+  await loadDepartmentOptions()
+  
   // ✅ ถ้าเป็น edit mode ให้โหลดข้อมูล
   if (isEditMode.value) {
     await loadReceiptData()
@@ -1619,7 +1623,7 @@ onMounted(async () => {
       const defaultCategory = mapAffiliationToMainCategory(authStore.user.affiliationId)
       if (defaultCategory) {
         mainCategory.value = defaultCategory
-        const categoryData = departmentOptions[defaultCategory]
+        const categoryData = departmentOptions.value[defaultCategory]
         mainCategoryId.value = categoryData?.id || ''
         await nextTick()
       }
@@ -1643,8 +1647,28 @@ onMounted(async () => {
 
   loadUserTemplates()
 })
-
-
+const isLoadingDepartments = ref(false)
+const loadDepartmentOptions = async () => {
+  isLoadingDepartments.value = true
+  try {
+    console.log('🔄 Loading department options from AffiliationService...')
+    departmentOptions.value = await AffiliationService.generateDepartmentOptions()
+    console.log('✅ Loaded department options:', Object.keys(departmentOptions.value).length, 'faculties')
+  } catch (error) {
+    console.error('❌ Error loading department options:', error)
+    // ✅ แก้ไข: ใช้ dynamic import แบบ async ถูกต้อง
+    try {
+      const module = await import('@/components/data/TSdepartments')
+      departmentOptions.value = module.departmentOptions
+      console.log('⚠️ Using static department options as fallback')
+    } catch (fallbackError) {
+      console.error('❌ Failed to load fallback:', fallbackError)
+      departmentOptions.value = {}
+    }
+  } finally {
+    isLoadingDepartments.value = false
+  }
+}
 const loadUserTemplates = () => {
   const storageKey = getTemplateStorageKey()
   if (!storageKey) return
@@ -1808,9 +1832,9 @@ const clearError = (field) => {
 
 // ✅ Computed Properties
 const sub1OptionsArray = computed(() => {
-  if (!mainCategory.value) return []
+  if (!mainCategory.value || !departmentOptions.value) return []
 
-  const data = departmentOptions[mainCategory.value]
+  const data = departmentOptions.value[mainCategory.value]
 
   if (!data || !Array.isArray(data.main)) {
     return []
@@ -1820,9 +1844,9 @@ const sub1OptionsArray = computed(() => {
 })
 
 const sub2OptionsArray = computed(() => {
-  if (!mainCategory.value || !subCategory.value) return []
+  if (!mainCategory.value || !subCategory.value || !departmentOptions.value) return []
 
-  const data = departmentOptions[mainCategory.value]
+  const data = departmentOptions.value[mainCategory.value]
 
   if (!data || !Array.isArray(data.subs)) {
     return []
@@ -1833,8 +1857,8 @@ const sub2OptionsArray = computed(() => {
 
 
 const hasAnySub = computed(() => {
-  if (!mainCategory.value) return false
-  const data = departmentOptions[mainCategory.value]
+  if (!mainCategory.value || !departmentOptions.value) return false
+  const data = departmentOptions.value[mainCategory.value]
   if (!data) return false
 
   const main = data.main
@@ -1842,8 +1866,8 @@ const hasAnySub = computed(() => {
 })
 
 const hasSub2 = computed(() => {
-  if (!mainCategory.value || !subCategory.value) return false
-  const data = departmentOptions[mainCategory.value]
+  if (!mainCategory.value || !subCategory.value || !departmentOptions.value) return false
+  const data = departmentOptions.value[mainCategory.value]
   if (!data) return false
 
   const subs = data.subs
@@ -1852,7 +1876,8 @@ const hasSub2 = computed(() => {
 
 
 watch(mainCategory, (newVal) => {
-  const data = departmentOptions[newVal]
+  if (!departmentOptions.value) return
+  const data = departmentOptions.value[newVal]
   mainCategoryId.value = data?.id || ''
   subCategory.value = ''
   subCategoryId.value = ''

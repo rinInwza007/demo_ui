@@ -1,22 +1,30 @@
 <template>
   <div class="tomselect-container relative">
+    <!-- Loading State -->
+    <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center bg-white/80 rounded-xl z-30">
+      <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+    </div>
+
     <select
       :id="inputId"
       v-model="localValue"
       class="w-full px-2 text-sm"
+      :disabled="isLoading"
     >
       <option value=""></option>
       <!-- ✅ แบ่งหมวดตาม type: income และ receivable -->
       <optgroup 
         v-for="group in groupedOptions" 
-        :key="group.label"
+        :key="group.value"
         :label="group.label"
+        :data-value="group.value"
       >
         <option
           v-for="option in group.options"
           :key="option.id"
           :value="option.name"
           :data-item-id="option.id"
+          :data-optgroup="group.value"
         >
           {{ option.name }}
         </option>
@@ -31,10 +39,10 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import TomSelect from 'tom-select'
-import { getOptionsForUser } from '@/components/data/ItemNameOption'
 import { useAuthStore } from '@/stores/auth'
+import ItemNameService from '@/services/ItemName/ItemNameService'
 
 const auth = useAuthStore()
 
@@ -50,7 +58,7 @@ const props = defineProps({
   },
   waybillType: {
     type: String,
-    default: 'all' // 'income', 'receivable', 'all'
+    default: 'all'
   },
   placeholder: {
     type: String,
@@ -65,33 +73,56 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'input', 'item-selected'])
 
 const localValue = ref(props.modelValue)
+const itemOptions = ref([])
+const isLoading = ref(false)
 let tomSelectInstance = null
 
-// ✅ แบ่งกลุ่ม options ตาม type: income และ receivable
+/**
+ * ✅ โหลดข้อมูลจาก ItemNameService
+ */
+const loadItems = async () => {
+  isLoading.value = true
+  try {
+    console.log('📦 Loading items from ItemNameService...')
+    const items = await ItemNameService.getItemNamesForUser(auth, props.waybillType)
+    itemOptions.value = items
+    console.log('✅ Loaded', items.length, 'items')
+    
+    if (tomSelectInstance) {
+      await nextTick()
+      updateTomSelectOptions()
+    }
+  } catch (error) {
+    console.error('❌ Error loading items:', error)
+    itemOptions.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+/**
+ * ✅ แบ่งกลุ่ม options
+ */
 const groupedOptions = computed(() => {
-  const rawOptions = getOptionsForUser(auth, props.waybillType)
-  
-  console.log('📦 Raw Options from getOptionsForUser:', rawOptions)
-  
-  // สร้างโครงสร้างกลุ่ม
   const groups = {
     income: { 
+      value: 'income',
       label: '💰 รายการนำส่งเงิน', 
       options: [],
       order: 1 
     },
     receivable: { 
+      value: 'receivable',
       label: '📄 รายการลูกหนี้', 
       options: [],
       order: 2 
     }
   }
 
-  // ✅ จัดกลุ่มตาม type และเก็บ id, name
-  rawOptions.forEach(opt => {
+  itemOptions.value.forEach(opt => {
     const mapped = {
-      id: opt.id,           // ✅ เพิ่ม id
-      name: opt.name,       // ✅ ใช้ name แทน value
+      id: opt.id,
+      name: opt.name,
       type: opt.type,
       affiliationId: opt.affiliationId
     }
@@ -103,14 +134,50 @@ const groupedOptions = computed(() => {
     }
   })
 
-  console.log('📋 Grouped Options:', groups)
-
-  // ส่งคืนเฉพาะกลุ่มที่มี options และเรียงตาม order
   return Object.values(groups)
     .filter(g => g.options.length > 0)
     .sort((a, b) => a.order - b.order)
 })
 
+/**
+ * ✅ อัปเดต TomSelect options
+ */
+const updateTomSelectOptions = () => {
+  if (!tomSelectInstance) return
+
+  console.log('🔄 Updating TomSelect options...')
+  
+  tomSelectInstance.clearOptions()
+  tomSelectInstance.clearOptionGroups()
+  
+  // เพิ่ม optgroups
+  groupedOptions.value.forEach(group => {
+    tomSelectInstance.addOptionGroup(group.value, {
+      label: group.label
+    })
+  })
+  
+  // เพิ่ม options
+  groupedOptions.value.forEach(group => {
+    group.options.forEach(option => {
+      tomSelectInstance.addOption({
+        value: option.name,
+        text: option.name,
+        optgroup: group.value,
+        itemId: option.id,
+        itemType: option.type,
+        affiliationId: option.affiliationId
+      })
+    })
+  })
+  
+  tomSelectInstance.refreshOptions(false)
+  console.log('✅ TomSelect options updated')
+}
+
+/**
+ * ✅ Watch
+ */
 watch(() => props.modelValue, (newVal) => {
   localValue.value = newVal
   if (tomSelectInstance && tomSelectInstance.getValue() !== newVal) {
@@ -118,42 +185,80 @@ watch(() => props.modelValue, (newVal) => {
   }
 })
 
+watch(() => props.waybillType, () => {
+  loadItems()
+})
+
 watch(localValue, (newVal) => {
   emit('update:modelValue', newVal)
   emit('input', newVal)
   
-  // ✅ ค้นหา item ที่เลือกและส่ง id กลับไป
   const allOptions = groupedOptions.value.flatMap(g => g.options)
   const selectedItem = allOptions.find(opt => opt.name === newVal)
   
   if (selectedItem) {
-    console.log('✅ Item Selected:', selectedItem)
-    emit('item-selected', {
-      id: selectedItem.id,
-      name: selectedItem.name,
-      type: selectedItem.type,
-      affiliationId: selectedItem.affiliationId
-    })
+    emit('item-selected', selectedItem)
   }
 })
 
-onMounted(() => {
+/**
+ * ✅ Initialize TomSelect
+ */
+onMounted(async () => {
+  console.log('🚀 Component mounted, loading items...')
+  
+  await loadItems()
+  await nextTick()
+  
   const el = document.getElementById(props.inputId)
 
   if (el && !el.tomselect) {
+    console.log('🎨 Initializing TomSelect with config:', {
+      optgroups: groupedOptions.value.map(g => ({ value: g.value, label: g.label }))
+    })
+
     tomSelectInstance = new TomSelect(el, {
       create: props.allowCreate,
       placeholder: props.placeholder,
       allowEmptyOption: true,
+      
+      // ✅ สำคัญ: ต้องมีทั้ง 3 อย่างนี้
       lockOptgroupOrder: true,
+      optgroupField: 'optgroup',
+      optgroups: groupedOptions.value.map(g => ({
+        value: g.value,
+        label: g.label
+      })),
+      
       onChange(value) {
         localValue.value = value
-        console.log('📝 TomSelect onChange:', value)
+      },
+      
+      // ✅ Custom render - สำคัญมาก!
+      render: {
+        // Render optgroup header
+        optgroup_header: function(data, escape) {
+          return `<div class="optgroup-header" data-group="${escape(data.value)}">
+            ${escape(data.label)}
+          </div>`
+        },
+        
+        // Render option
+        option: function(data, escape) {
+          return `<div class="option">
+            ${escape(data.text)}
+          </div>`
+        },
+        
+        // Render item (selected)
+        item: function(data, escape) {
+          return `<div class="item">${escape(data.text)}</div>`
+        }
       }
     })
 
+    // Apply custom styles
     const control = tomSelectInstance.control
-
     control.style.position = 'relative'
     control.style.width = '100%'
     control.style.height = '2.70rem'
@@ -178,9 +283,16 @@ onMounted(() => {
       input.style.padding = '0.25rem'
       input.style.color = '#334155'
     }
+
+    console.log('✅ TomSelect initialized')
+    console.log('   Optgroups:', tomSelectInstance.optgroups)
+    console.log('   Options count:', Object.keys(tomSelectInstance.options).length)
   }
 })
 
+/**
+ * ✅ Cleanup
+ */
 onBeforeUnmount(() => {
   if (tomSelectInstance) {
     tomSelectInstance.destroy()
@@ -189,17 +301,20 @@ onBeforeUnmount(() => {
 })
 </script>
 
-
 <style>
+/* ✅ TomSelect Dropdown */
 .ts-dropdown {
   z-index: 9999 !important;
   @apply rounded-xl shadow-lg border border-gray-200;
   max-height: 400px;
   overflow-y: auto;
+  background: white;
 }
 
+/* ✅ Option styles */
 .ts-dropdown .option {
   @apply text-sm text-slate-700 py-2 px-3 cursor-pointer transition-colors;
+  background: white;
 }
 
 .ts-dropdown .option:hover,
@@ -207,26 +322,37 @@ onBeforeUnmount(() => {
   @apply bg-blue-50;
 }
 
-/* ✅ สไตล์สำหรับ optgroup header */
+/* ✅ Optgroup Header - สำคัญมาก! */
 .ts-dropdown .optgroup-header {
-  @apply font-semibold text-sm text-slate-700 py-2.5 px-3 bg-gradient-to-r from-slate-100 to-slate-50 border-b-2 border-slate-300;
+  @apply font-semibold text-sm py-2.5 px-3;
   position: sticky;
   top: 0;
   z-index: 10;
   backdrop-filter: blur(10px);
+  color: #475569;
+  letter-spacing: 0.025em;
+  background: linear-gradient(to right, #f1f5f9, #f8fafc);
+  border-bottom: 2px solid #cbd5e1;
+  cursor: default !important;
+  pointer-events: none;
 }
 
-/* ✅ แยกสีตามกลุ่ม */
-.ts-dropdown .optgroup:first-child .optgroup-header {
-  @apply bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 text-green-800;
+/* ✅ แยกสีตามกลุ่ม - ใช้ data-group */
+.ts-dropdown .optgroup-header[data-group="income"] {
+  background: linear-gradient(to right, #d1fae5, #a7f3d0);
+  border-bottom-color: #86efac;
+  color: #047857;
 }
 
-.ts-dropdown .optgroup:last-child .optgroup-header {
-  @apply bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200 text-orange-800;
+.ts-dropdown .optgroup-header[data-group="receivable"] {
+  background: linear-gradient(to right, #fed7aa, #fde68a);
+  border-bottom-color: #fbbf24;
+  color: #c2410c;
 }
 
+/* ✅ Optgroup container */
 .ts-dropdown .optgroup {
-  @apply border-b border-slate-200 last:border-b-0;
+  position: relative;
 }
 
 /* ✅ เพิ่ม indent ให้ options ภายใน group */
@@ -234,8 +360,28 @@ onBeforeUnmount(() => {
   @apply pl-6;
 }
 
-/* ✅ เพิ่มเส้นแบ่งระหว่างกลุ่ม */
+/* ✅ เส้นแบ่งระหว่างกลุ่ม */
 .ts-dropdown .optgroup + .optgroup {
   border-top: 3px solid #e2e8f0;
+  margin-top: 0;
+}
+
+/* ✅ Hover effect (ยกเว้น header) */
+.ts-dropdown .optgroup-header:hover {
+  opacity: 1;
+}
+
+/* ✅ Control (input box) */
+.ts-control {
+  min-height: 2.70rem !important;
+}
+
+.ts-control input {
+  @apply text-sm;
+}
+
+/* ✅ Selected item */
+.ts-control .item {
+  @apply text-sm text-slate-700;
 }
 </style>

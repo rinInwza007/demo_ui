@@ -60,11 +60,7 @@
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import TomSelect from 'tom-select'
 import type { BankAccount, BankAccountData } from '@/types/BankTypes'
-import { 
-  getBankAccountByNumber, 
-  getActiveAccounts,
-  isValidAccountNumber
-} from '@/components/utils/bankHelpers'
+import { bankService } from '@/services/BankService/BankService'
 
 // ==================== Props Interface ====================
 interface Props {
@@ -99,20 +95,24 @@ const localAccountNumber = ref<string>('')
 const localBankName = ref<string>(props.modelValue?.bankName || '')
 const localAccountName = ref<string>(props.modelValue?.accountName || '')
 const syncingFromParent = ref<boolean>(false)
+const bankAccounts = ref<BankAccount[]>([])
+const isLoading = ref<boolean>(false)
 
 let tomSelectInstance: TomSelect | null = null
 
 // ==================== Computed ====================
 const activeAccounts = computed<BankAccount[]>(() => {
+  // ✅ ถ้ามี props.bankAccountOptions ให้ใช้อันนั้น
   if (props.bankAccountOptions && props.bankAccountOptions.length > 0) {
     return props.bankAccountOptions
   }
-  return getActiveAccounts()
+  // ✅ ไม่เช่นนั้นใช้ข้อมูลจาก API
+  return bankAccounts.value.filter(acc => acc.isActive === true)
 })
 
 const isFromPredefinedOption = computed<boolean>(() => {
   if (!localAccountNumber.value) return false
-  return isValidAccountNumber(localAccountNumber.value)
+  return activeAccounts.value.some(acc => acc.accountNumber === localAccountNumber.value)
 })
 
 const inputClasses = computed<string[]>(() => {
@@ -139,6 +139,24 @@ const inputClasses = computed<string[]>(() => {
 })
 
 // ==================== Methods ====================
+const loadBankAccounts = async () => {
+  try {
+    isLoading.value = true
+    const accounts = await bankService.getAll()
+    bankAccounts.value = accounts
+    console.log('✅ Loaded bank accounts from API:', accounts.length)
+  } catch (error) {
+    console.error('❌ Failed to load bank accounts:', error)
+    bankAccounts.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const getBankAccountByNumber = (accountNumber: string): BankAccount | undefined => {
+  return activeAccounts.value.find(acc => acc.accountNumber === accountNumber)
+}
+
 const emitChange = (): void => {
   const data: BankAccountData = {
     accountNumber: localAccountNumber.value,
@@ -235,7 +253,6 @@ watch([localBankName, localAccountName], () => {
   }
 })
 
-// ✅ แก้ไข Watch modelValue ให้รองรับทั้ง Edit และ Template
 watch(
   () => props.modelValue,
   (newVal) => {
@@ -243,18 +260,14 @@ watch(
 
     syncingFromParent.value = true
 
-    // ✅ ตั้งค่า local state ก่อน (ไม่ว่าจะมีค่าหรือไม่)
     localAccountNumber.value = newVal.accountNumber || ''
     localBankName.value = newVal.bankName || ''
     localAccountName.value = newVal.accountName || ''
 
-    // ✅ อัพเดท TomSelect
     if (tomSelectInstance) {
       if (newVal.accountNumber) {
-        // มีเลขบัญชี -> set ค่า
         tomSelectInstance.setValue(newVal.accountNumber, true)
       } else {
-        // ไม่มีเลขบัญชี -> clear
         tomSelectInstance.clear(true)
       }
     }
@@ -269,11 +282,15 @@ watch(
       accountName: localAccountName.value
     })
   },
-  { deep: true, immediate: true }  // ✅ เพิ่ม immediate: true
+  { deep: true, immediate: true }
 )
 
 // ==================== Lifecycle ====================
-onMounted(() => {
+onMounted(async () => {
+  // ✅ โหลดข้อมูลธนาคารจาก API
+  await loadBankAccounts()
+  
+  // ✅ รอให้ข้อมูลโหลดเสร็จก่อน init TomSelect
   initTomSelect()
   
   // ✅ ถ้ามีค่าตั้งต้น ให้ set ทันที

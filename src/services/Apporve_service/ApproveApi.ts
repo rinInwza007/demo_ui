@@ -14,11 +14,6 @@ export interface ApprovePayload {
   approverName: string
 }
 
-export interface RejectPayload {
-  approverName: string
-  reason?: string
-}
-
 export interface ApproveResponse {
   success: boolean
   data?: Receipt
@@ -73,7 +68,7 @@ export const approveReceipt = async (
  * 🔄 GET /receipts/:waybillNumber/approval-status - ดึงสถานะการอนุมัติ (Optional)
  */
 export const getApprovalStatus = async (waybillNumber: string): Promise<{
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'approved' 
   canApprove: boolean
   reason?: string
 }> => {
@@ -85,7 +80,7 @@ export const getApprovalStatus = async (waybillNumber: string): Promise<{
     const response = await axios.get<{
       success: boolean
       data: {
-        status: 'pending' | 'approved' | 'rejected'
+        status: 'pending' | 'approved' 
         canApprove: boolean
         reason?: string
       }

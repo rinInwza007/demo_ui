@@ -165,19 +165,21 @@
                     {{ row.time }}
                   </div>
                 </div>
-                
+
                 <div class="col-span-1 flex justify-center">
                   <div
                     class="px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-center min-w-[100px] transition-all duration-300"
                     :class="{
-                      'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-yellow-300 shadow-sm animate-pulse': 
+                      'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-yellow-300 shadow-sm animate-pulse':
                         row.status === 'pending',
-                      'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-300 shadow-md': 
+                      'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-300 shadow-md':
                         row.status === 'approved',
+                      'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-300 shadow-sm':
+                        row.status === 'rejected'
                     }"
                   >
-                    <i 
-                      class="mr-1.5 text-sm" 
+                    <i
+                      class="mr-1.5 text-sm"
                       :class="{
                         'ph ph-clock text-yellow-600': row.status === 'pending',
                         'ph ph-check-circle text-green-600': row.status === 'approved'
@@ -259,6 +261,7 @@ import { departmentOptions } from '@/components/data/TSdepartments'
 import { reciptService } from '@/services/ReciptService'
 import { approveService } from '@/services/Apporve_service/ApproveService'
 
+const isLoading = ref(false)
 const router = useRouter()
 const auth = useAuthStore()
 const dailyClose = useDailyCloseStore()
@@ -319,60 +322,64 @@ const getLastDate = (createdAt: Date | null, updatedAt: Date | null) => {
  */
 const isReceiptClosed = (receipt: Receipt) => {
   if (!receipt.createdAt) return false
-  
+
   const d = new Date(receipt.createdAt as any)
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   const dateKey = `${y}-${m}-${day}`
-  
+
   return dailyClose.isDateClosed(dateKey)
 }
 
-const mapReceiptToRow = (r: Receipt): TableRow => {
-  const createdDate = r.createdAt ? new Date(r.createdAt as any) : null
-  const updatedDate = r.updatedAt ? new Date(r.updatedAt as any) : null
-  const lastDate = getLastDate(createdDate, updatedDate)
-  const lastTimeMs = lastDate?.getTime() ?? 0
-  
-  const isLocked = r.isLocked ?? isReceiptClosed(r)
-  const approvalStatus = r.approvalStatus || 'pending'
-
+function mapReceiptToRow(r: any) {
   return {
-    id: r.waybillNumber,
-    status: approvalStatus,
-    department: r.mainAffiliationName || r.affiliationName || '-',
-    subDepartment: r.subAffiliationName1 || '-',
-    time: formatThaiDateTime(lastDate),
-    lastTimeMs,
-    project: r.fundName || '-',
-    responsible: r.fullName || '-',
-    amount: r.netTotalAmount ? Number(String(r.netTotalAmount).replace(/,/g, '')) : 0,
-    createdAt: createdDate,
-    updatedAt: updatedDate,
-    isLocked,
-    _raw: r,
+    id: r.waybillNumber || r.projectCode || r.id,
+    waybillNumber: r.waybillNumber ?? '-',
+    fullName: r.fullName ?? '-',
+    affiliationName: r.affiliationName ?? '-',
+    fundName: r.fundName ?? '-',
+    netTotalAmount: Number(r.netTotalAmount ?? 0),
+    createdAt: r.createdAt,
   }
 }
+
 
 const loadData = async () => {
+  isLoading.value = true
   try {
     const receipts = await reciptService.getAll()
-    
-    rawData.value = receipts
-      .filter((r) => r.moneyTypeNote === 'Waybill')
-      .map((r) => ({
-        ...r,
-        createdAt: r.createdAt ? new Date(r.createdAt as any) : new Date(),
-        updatedAt: r.updatedAt ? new Date(r.updatedAt as any) : new Date(),
-        isLocked: r.isLocked ?? false,
-        approvalStatus: r.approvalStatus ?? 'pending',
-      }))
-  } catch (error: any) {
-    console.error('❌ Error loading data:', error)
-    Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถโหลดข้อมูลได้', 'error')
+
+    rawData.value = (receipts ?? [])
+      .map((r: any) => {
+        const kind = getReceiptKind(r)
+        if (kind !== 'WAYBILL') return null
+
+        return {
+          ...r,
+
+          // 🔒 normalize field ที่ UI ใช้แน่ ๆ
+          affiliationId: r.affiliationId ?? '',
+          affiliationName: r.affiliationName ?? '',
+          mainAffiliationName: r.mainAffiliationName ?? r.affiliationName ?? '',
+          subAffiliationName1: r.subAffiliationName1 ?? '',
+          subAffiliationName2: r.subAffiliationName2 ?? '',
+
+          __kind: kind,
+        }
+      })
+      .filter(Boolean)
+
+    console.log('[loadData] waybills', rawData.value)
+  } catch (err) {
+    console.error('[loadData] failed', err)
+    rawData.value = []
+  } finally {
+    isLoading.value = false
   }
 }
+
+
 
 const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
@@ -394,7 +401,8 @@ const items = computed<TableRow[]>(() => {
   if (selectedSub2.value) {
     filtered = filtered.filter((r) => (r.subAffiliationName2 || '').trim() === selectedSub2.value.trim())
   }
-  
+
+  // ✅ Filter by search text
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
     filtered = filtered.filter((r) => {
@@ -428,7 +436,7 @@ const items = computed<TableRow[]>(() => {
 const headerStats = computed(() => {
   const receipts = items.value.map(r => r._raw)
   const stats = reciptService.calculateStats(receipts)
-  
+
   return {
     total: stats.total,
     pending: stats.pending,
@@ -445,6 +453,22 @@ const activeFiltersText = computed(() => {
   if (searchText.value.trim()) parts.push(`ค้นหา: "${searchText.value.trim()}"`)
   return parts.length ? `กำลังกรอง: ${parts.join(' · ')}` : ''
 })
+function getReceiptKind(r: any): 'WAYBILL' | 'DEBT_NEW' | 'DEBT_CLEAR' | 'UNKNOWN' {
+  const note = r.moneyTypeNote?.toUpperCase?.()
+
+  if (note === 'WAYBILL') return 'WAYBILL'
+  if (note === 'DEBT_NEW') return 'DEBT_NEW'
+  if (note === 'CLEAR_DEBTOR' || note === 'DEBT_CLEAR') return 'DEBT_CLEAR'
+
+  // fallback จาก receiptList
+  if (Array.isArray(r.receiptList)) {
+    if (r.receiptList.some((i: any) => i.type === 'income')) return 'WAYBILL'
+    if (r.receiptList.some((i: any) => i.type === 'receivable')) return 'DEBT_NEW'
+  }
+
+  return 'UNKNOWN'
+}
+
 
 /**
  * ✅ Row permissions: เช็คสิทธิ์ตาม role และสถานะการปิดยอด
@@ -541,7 +565,7 @@ const edit = (row: TableRow) => {
     Swal.fire('ข้อผิดพลาด', 'ไม่พบเลขที่นำส่ง', 'error')
     return
   }
-  
+
   console.log('✅ Opening edit for:', waybillNumber, 'isLocked:', row.isLocked)
   router.push(`/waybill/edit/${waybillNumber}`)
 }
@@ -572,10 +596,18 @@ const approveItem = async (row: TableRow) => {
     return
   }
 
-  // ✅ ตรวจสอบด้วย ApproveService
-  const checkResult = approveService.canApprove(row._raw)
-  if (!checkResult.canApprove) {
-    Swal.fire('ไม่สามารถอนุมัติได้', checkResult.reason, 'warning')
+  if (row.isLocked) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ไม่สามารถอนุมัติได้',
+      text: 'วันนี้ปิดยอดแล้ว ไม่สามารถอนุมัติใบนำส่งได้',
+      confirmButtonText: 'รับทราบ',
+    })
+    return
+  }
+
+  if (row.status !== 'pending') {
+    Swal.fire('ไม่สามารถอนุมัติได้', 'รายการนี้ได้รับการอนุมัติแล้ว', 'info')
     return
   }
 
@@ -665,7 +697,7 @@ const removeItem = async (row: TableRow) => {
   try {
     await reciptService.delete(row.id)
     await loadData()
-    
+
     Swal.fire({
       icon: 'success',
       title: 'ลบสำเร็จ',

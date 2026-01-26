@@ -621,7 +621,7 @@ const clearSelectedDebtors = async () => {
 
     acc[receiptId].items.push({
       ...item,
-      amount: Number(item.balanceAmount || item.debtorAmount || 0),
+      amount: Number(item.balanceAmount),
       debtorAmount: Number(item.balanceAmount || item.debtorAmount || 0)
     })
 
@@ -727,50 +727,31 @@ if (DEBUG && typeof window !== 'undefined') {
 }
 // ✅ เก็บแค่ส่วนนี้
 const groupedItems = computed(() => {
-  const grouped = new Map<number, any>()
+  const grouped = new Map<string, any>()
 
   for (const item of rawData.value) {
-    const itemId = item.itemId
+    const key = item.id   // ✅ ใช้ key จาก summary โดยตรง
 
-    if (grouped.has(itemId)) {
-      // ✅ รวมยอดเงิน
-      const existing = grouped.get(itemId)!
-      existing.depositNetAmount = (existing.depositNetAmount || 0) + (item.depositNetAmount || 0)
-      existing.debtorAmount = (existing.debtorAmount || 0) + (item.debtorAmount || 0)
-      existing.balanceAmount = (existing.balanceAmount || 0) + (item.balanceAmount || 0)
-
-      // ✅ นับจำนวน
+    if (grouped.has(key)) {
+      const existing = grouped.get(key)!
+      existing.balanceAmount += item.balanceAmount
       existing._count++
-
-      // ✅ รวม receipts
-      if (item._receipts) {
-        existing._receipts.push(...item._receipts)
-      }
-
-      // ✅ รวมผู้รับผิดชอบ
-      if (item.responsible) {
-        existing._responsibles.add(item.responsible)
-      }
-
+      existing._receipts.push(...(item._receipts || []))
     } else {
-      // ✅ สร้างรายการใหม่
-      grouped.set(itemId, {
+      grouped.set(key, {
         ...item,
         _count: 1,
-        _receipts: item._receipts || [],
-        _responsibles: new Set(item.responsible ? [item.responsible] : [])
+        _receipts: [...(item._receipts || [])],
       })
     }
   }
 
-  // ✅ แปลง Set เป็น string และสร้าง note
-  return Array.from(grouped.values()).map(item => ({
-    ...item,
-    responsible: Array.from(item._responsibles).join(', ') || '-',
-    note: item._count > 1 ? `รวม ${item._count} รายการ` : item.note || '',
-    _responsibles: undefined, // ลบ Set ออก
+  return Array.from(grouped.values()).map(i => ({
+    ...i,
+    note: i._count > 1 ? `รวม ${i._count} รายการ` : '',
   }))
 })
+
 
 // ✅ ใช้ groupedItems แทน
 const filteredItems = computed(() => groupedItems.value)

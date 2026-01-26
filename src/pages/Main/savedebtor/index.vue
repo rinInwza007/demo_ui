@@ -102,13 +102,12 @@
                       <p class="font-bold text-slate-800 text-sm truncate">
                         {{ item.itemName }}
                       </p>
-                       <!-- ✅ แสดงจำนวนรายการที่รวม -->
-      <span
-        v-if="item._count && item._count > 1"
-        class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold"
-      >
-        {{ item._count }} รายการ
-      </span>
+                      <span
+                        v-if="item._count && item._count > 1"
+                        class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold"
+                      >
+                        {{ item._count }} รายการ
+                      </span>
                       <p class="text-xs text-slate-500 truncate">
                         {{ item.department }} • {{ item.subDepartment }}
                       </p>
@@ -227,8 +226,10 @@
                           <i class="ph-fill ph-check text-xl"></i>
                         </div>
                         <div>
-                          <p class="font-bold text-slate-800">{{ item.items }}</p>
-                          <p class="text-xs text-slate-500">{{ item.date }}</p>
+                       <div>
+  <p class="font-bold text-slate-800">{{ item.itemsText || (Array.isArray(item.items) ? item.items.map(i => i.itemName).join(', ') : item.items) }}</p>
+  <p class="text-xs text-slate-500">{{ item.date }}</p>
+</div>
                         </div>
                       </div>
                       <div class="text-right">
@@ -391,7 +392,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, onActivated } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import sidebar from '@/components/bar/sidebar.vue'
@@ -445,6 +446,7 @@ const isLoading = ref(false)
  * ========================= */
 const currentPageNew = ref(1)
 const currentPageHistory = ref(1)
+const itemsPerPage = ITEMS_PER_PAGE
 
 /* =========================
  * Utils
@@ -461,19 +463,11 @@ const formatCurrency = (amount: number | string) => {
   })
 }
 
-// ในส่วน setup หรือ methods
-const loadDebtorItems = () => {
-  const itemIds = [201, 202, 203, 301, 401] // รายการที่ต้องการ
-  const allowedItems = filterDebtorsByPermission(itemIds, auth)
-
-  // ถ้าผู้ใช้เป็นคณะแพทย์ จะได้เฉพาะ 201, 202, 203
-  // ถ้าเป็น Admin จะได้ทุกรายการ
-}
 /* =========================
- * Load Receipt Data (Pending Debts)
+ * ✅ Load Receipt Data (กรองรายการที่ล้างแล้ว)
  * ========================= */
 const loadReceiptData = async () => {
-  console.log('📥 Load debtor from Summary Store')
+  console.log('📥 Loading debtor data...')
 
   isLoading.value = true
   try {
@@ -482,41 +476,62 @@ const loadReceiptData = async () => {
       return
     }
 
-    // 1️⃣ Load receipts
-    const res = await axios.get('/getReceipt')
-    const receipts = res.data || []
-
+    // 1️⃣ ดึงข้อมูลจาก Service
+    const receipts = await reciptService.getAll()
     console.log('📦 Total receipts loaded:', receipts.length)
 
-    // 🔍 Debug: ดูว่ามีรายการที่ isClearedDebt = true หรือไม่
-    const clearedCount = receipts.reduce((count, r) => {
-      return count + (r.receiptList || []).filter(i => i.isClearedDebt).length
+    // 🔍 Debug: ดูข้อมูลก่อนกรอง
+    const totalItemsBefore = receipts.reduce((sum, r) => sum + (r.receiptList?.length || 0), 0)
+    const clearedItemsCount = receipts.reduce((sum, r) => {
+      return sum + (r.receiptList || []).filter(item => item.isClearedDebt === true).length
     }, 0)
-    console.log('✅ Already cleared items:', clearedCount)
+    console.log(`📊 Total items before filter: ${totalItemsBefore}`)
+    console.log(`✅ Already cleared items: ${clearedItemsCount}`)
 
-    // 2️⃣ Rebuild summary store
-    summaryStore.ingestMany(receipts)
-    console.log('📊 Ledger entries:', ledger.value.length)
+    // 2️⃣ กรองเฉพาะรายการที่ยังไม่ได้ล้าง + เฉพาะ type='receivable' เท่านั้น
+    const filteredReceipts = receipts.map(receipt => {
+      if (!Array.isArray(receipt.receiptList)) {
+        return { ...receipt, receiptList: [] }
+      }
 
-    // 3️⃣ Get pending debts
+      const unClearedItems = receipt.receiptList.filter(item => {
+        const isCleared = item.isClearedDebt === true
+
+        // ✅ ตรวจสอบ itemType - เฉพาะ 'receivable' เท่านั้น
+        const itemId = item.itemId || null
+        const itemName = item.itemName || ''
+        const itemType = getItemType(itemId || itemName)
+
+        if (isCleared) {
+          console.log(`🚫 Filtering out (cleared): ${item.itemName} (ID: ${item.id})`)
+          return false
+        }
+
+        if (itemType !== 'receivable') {
+          console.log(`🚫 Filtering out (not receivable): ${item.itemName} (type: ${itemType})`)
+          return false
+        }
+
+        return true
+      })
+
+      return {
+        ...receipt,
+        receiptList: unClearedItems
+      }
+    }).filter(receipt => receipt.receiptList.length > 0)
+
+    console.log('✅ Filtered receipts:', filteredReceipts.length)
+
+    // 3️⃣ Rebuild summary store
+    summaryStore.clearAll()
+    summaryStore.ingestMany(filteredReceipts)
+
+    // 4️⃣ Get pending debts
     let pendingItems = summaryStore.pendingDebts
-    console.log('⏳ Pending debts (before filter):', pendingItems.length)
+    console.log('⏳ Pending debts:', pendingItems.length)
 
-    // 🔍 Debug: ดูว่ามี item ไหน isClearedDebt = true แต่ยังอยู่ใน pending
-    const shouldBeClearedButStillPending = pendingItems.filter(
-      i => i.isClearedDebt === true
-    )
-    if (shouldBeClearedButStillPending.length > 0) {
-      console.warn('⚠️ These items should be cleared but still showing:',
-        shouldBeClearedButStillPending.map(i => ({
-          id: i.id,
-          name: i.itemName,
-          isClearedDebt: i.isClearedDebt
-        }))
-      )
-    }
-
-    // 4️⃣ Permission filter
+    // 5️⃣ Permission filter
     if (auth.role === 'user' && auth.user?.affiliationId) {
       const beforeFilter = pendingItems.length
       pendingItems = pendingItems.filter(
@@ -526,10 +541,7 @@ const loadReceiptData = async () => {
     }
 
     rawData.value = pendingItems
-    console.log('✅ Final pending debts:', rawData.value.length)
-
-    // 🔍 Debug: แสดง ID ของรายการที่แสดง
-    console.log('Item IDs shown:', rawData.value.map(i => i.id))
+    console.log('✅ Final items to display:', rawData.value.length)
 
   } catch (err) {
     console.error('❌ Load error:', err)
@@ -538,27 +550,70 @@ const loadReceiptData = async () => {
     isLoading.value = false
   }
 }
-
 /* =========================
  * Load History
  * ========================= */
 const loadHistory = () => {
   try {
     const stored = localStorage.getItem(STORAGE_HISTORY_KEY)
-    historyItems.value = stored ? JSON.parse(stored) : []
+    const parsed = stored ? JSON.parse(stored) : []
+
+    // ✅ รองรับทั้งแบบเก่า (items เป็น string) และแบบใหม่ (items เป็น array)
+    historyItems.value = parsed.filter(
+      (h: any) => h.referenceId && (typeof h.items === 'string' || Array.isArray(h.items))
+    )
   } catch {
     historyItems.value = []
   }
 }
 
 /* =========================
- * Computed
+ * Computed - Group Items
  * ========================= */
+const groupedItems = computed(() => {
+  const grouped = new Map<number, any>()
 
-// placeholder for future filters
+  for (const item of rawData.value) {
+    const itemId = item.itemId
 
+    if (grouped.has(itemId)) {
+      const existing = grouped.get(itemId)!
+      existing.depositNetAmount = (existing.depositNetAmount || 0) + (item.depositNetAmount || 0)
+      existing.debtorAmount = (existing.debtorAmount || 0) + (item.debtorAmount || 0)
+      existing.balanceAmount = (existing.balanceAmount || 0) + (item.balanceAmount || 0)
+      existing._count++
 
-// --- New Tab Pagination ---
+      if (item._receipts) {
+        existing._receipts.push(...item._receipts)
+      }
+
+      if (item.responsible) {
+        existing._responsibles.add(item.responsible)
+      }
+
+    } else {
+      grouped.set(itemId, {
+        ...item,
+        _count: 1,
+        _receipts: item._receipts || [],
+        _responsibles: new Set(item.responsible ? [item.responsible] : [])
+      })
+    }
+  }
+
+  return Array.from(grouped.values()).map(item => ({
+    ...item,
+    responsible: Array.from(item._responsibles).join(', ') || '-',
+    note: item._count > 1 ? `รวม ${item._count} รายการ` : item.note || '',
+    _responsibles: undefined,
+  }))
+})
+
+const filteredItems = computed(() => groupedItems.value)
+
+/* =========================
+ * Pagination - New Tab
+ * ========================= */
 const totalPagesNew = computed(() =>
   Math.ceil(filteredItems.value.length / ITEMS_PER_PAGE)
 )
@@ -568,7 +623,9 @@ const paginatedItemsNew = computed(() => {
   return filteredItems.value.slice(start, start + ITEMS_PER_PAGE)
 })
 
-// --- History Pagination ---
+/* =========================
+ * Pagination - History Tab
+ * ========================= */
 const totalPagesHistory = computed(() =>
   Math.ceil(historyItems.value.length / ITEMS_PER_PAGE)
 )
@@ -578,7 +635,9 @@ const paginatedItemsHistory = computed(() => {
   return historyItems.value.slice(start, start + ITEMS_PER_PAGE)
 })
 
-// --- Selected total ---
+/* =========================
+ * Selected Total
+ * ========================= */
 const selectedTotal = computed(() =>
   rawData.value
     .filter(i => selectedItems.value.has(i.id))
@@ -594,13 +653,10 @@ const clearSelectedDebtors = async () => {
     return
   }
 
-  const selectedList = rawData.value.filter(i =>
+  const selectedList = groupedItems.value.filter(i =>
     selectedItems.value.has(i.id)
   )
 
-  // =========================
-  // 1️⃣ สร้าง Summary Data สำหรับหน้า cleardebtor
-  // =========================
   const receiptsGrouped = selectedList.reduce((acc, item) => {
     const receiptId = item._originalReceipt?.projectCode || item.receiptId || 'unknown'
 
@@ -632,16 +688,52 @@ const clearSelectedDebtors = async () => {
     receipts: Object.values(receiptsGrouped)
   }
 
-  // =========================
-  // 2️⃣ บันทึกข้อมูลลง localStorage
-  // =========================
   localStorage.setItem(STORAGE_SUMMARY_KEY, JSON.stringify(summaryData))
 
-  // =========================
-  // 3️⃣ ไปหน้า cleardebtor (ไม่ใช่ PDF)
-  // =========================
+ const referenceId = `REF-${Date.now()}`
+
+const historyEntry = {
+  id: `CLEAR-${Date.now()}`,
+  referenceId: referenceId,
+  date: new Date().toLocaleString('th-TH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }),
+  // ✅ เปลี่ยนจาก string เป็น array ของ objects
+  items: selectedList.map(i => ({
+    itemName: i.itemName,
+    amount: Number(i.balanceAmount || 0),
+    referenceId: i.receiptId || i.id,
+    note: i.note || '',
+    department: i.department,
+    subDepartment: i.subDepartment
+  })),
+  // เก็บ summary text ไว้แสดงในหน้า history
+  itemsText: selectedList.map(i => i.itemName).join(', '),
+  total: selectedList.reduce(
+    (sum, i) => sum + Number(i.balanceAmount || 0),
+    0
+  ),
+  // ✅ ข้อมูลเพิ่มเติมสำหรับ PDF
+  fullName: selectedList[0]?.responsible || 'ไม่ระบุ',
+  phone: selectedList[0]?._originalReceipt?.phone || '-',
+  department: selectedList[0]?.department || 'ไม่ระบุ',
+  sendmoney: selectedList[0]?._originalReceipt?.sendmoney || 'รายได้',
+  fundName: selectedList[0]?._originalReceipt?.fundName || '-',
+  receiptId: selectedList[0]?._originalReceipt?.projectCode || referenceId,
+  payments: [],
+}
+
+  const currentHistory = historyItems.value
+  currentHistory.unshift(historyEntry)
+  localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(currentHistory))
+
   router.push('/cleardebtor/multi')
 }
+
 /* =========================
  * Actions
  * ========================= */
@@ -683,13 +775,26 @@ const handleStorageChange = (e: StorageEvent) => {
 }
 
 onMounted(async () => {
+  console.log('🚀 Component mounted')
   await loadReceiptData()
   loadHistory()
   window.addEventListener('storage', handleStorageChange)
 })
 
+// ✅ เพิ่ม onActivated เพื่อ reload เมื่อกลับมาหน้านี้
+onActivated(async () => {
+  console.log('🔄 Component activated - reloading data')
+  await loadReceiptData()
+  loadHistory()
+})
+
 onBeforeUnmount(() => {
   window.removeEventListener('storage', handleStorageChange)
+})
+onActivated(async () => {
+  console.log('🔄 Component activated - reloading data')
+  await loadReceiptData()
+  loadHistory()
 })
 
 /* =========================
@@ -709,6 +814,7 @@ watch(
   () => route.path,
   async path => {
     if (path === '/indexsavedebtor' && activeTab.value === 'new') {
+      console.log('🔄 Route changed to /indexsavedebtor - reloading')
       await loadReceiptData()
     }
   }
@@ -759,7 +865,6 @@ const filteredItems = computed(() => groupedItems.value)
 // --- New Tab Pagination ---
 
 </script>
-
 
 <style scoped>
 body {

@@ -172,12 +172,14 @@ export const useSummaryStore = defineStore('Summary', {
       this.reset()
       receipts.forEach((r) => this.ingestUpsert(r))
     },
-
-    reset() {
-      this.totals = emptyTotals()
-      this.unitsByKey = {}
-      this.ledgerByDoc = {}
-      this.receiptsByDoc = {}
-    },
+  clearAll() {
+    this.reset()
+  },
+  reset() {
+    this.totals = emptyTotals()
+    this.unitsByKey = {}
+    this.ledgerByDoc = {}
+    this.receiptsByDoc = {}
+  },
   },
 })

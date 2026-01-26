@@ -35,7 +35,7 @@ export const useDailyCloseStore = defineStore('dailyClose', {
     ) || {} as Record<string, DailyCloseRecord>,
   }),
 
-  getters: {
+getters: {
     /**
      * ✅ เช็คว่าวันนี้ปิดยอดหรือยัง
      */
@@ -64,6 +64,22 @@ export const useDailyCloseStore = defineStore('dailyClose', {
      */
     getRecord: (state) => (dateKey: string) => {
       return state.records[dateKey] || null
+    },
+
+    /**
+     * ✅ เช็คว่าสามารถแก้ไขข้อมูลวันที่นี้ได้หรือไม่
+     * (ใช้สำหรับหน้าสร้าง/แก้ไข Waybill)
+     */
+    canModifyDate: (state) => (dateKey: string) => {
+      return !state.records[dateKey]?.isClosed
+    },
+
+    /**
+     * ✅ เช็คว่าสามารถแก้ไขข้อมูลวันนี้ได้หรือไม่
+     */
+    canModifyToday: (state) => {
+      const today = getToday()
+      return !state.records[today]?.isClosed
     },
   },
 

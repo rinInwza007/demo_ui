@@ -1165,7 +1165,6 @@
 <script setup >
 import { ref, computed, onMounted, watch, nextTick ,reactive} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
 import Swal from 'sweetalert2'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'

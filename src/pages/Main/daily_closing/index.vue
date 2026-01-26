@@ -1,3 +1,4 @@
+// src/pages/Main/daily_closing/index.vue
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full h-screen flex overflow-hidden">

@@ -68,11 +68,16 @@ const generateBankAccountId = (): string => {
 // Receipt Utils (เดิม)
 // ============================================
 const toNum = (v: any) => {
-  if (v === null || v === undefined) return 0
-  if (typeof v === 'number') return Number.isFinite(v) ? v : 0
-  const s = String(v).replaceAll(',', '').trim()
-  const n = Number(s)
-  return Number.isFinite(n) ? n : 0
+  try {
+    const n = parseFloat(
+      String(v ?? '0')
+        .replace(/,/g, '')
+        .trim()
+    )
+    return isNaN(n) ? 0 : n
+  } catch {
+    return 0
+  }
 }
 
 const nowIso = () => new Date().toISOString()
@@ -414,6 +419,16 @@ const dispatchUpdateEvents = (payload: {
   )
 }
 
+const Number = (v: unknown) => Number(v ?? 0)
+
+function isDebtorNew(r: any) {
+  return r.moneyTypeNote === 'DEBTOR_NEW'
+}
+
+function isClearDebtor(r: any) {
+  return r.moneyTypeNote === 'CLEAR_DEBTOR'
+}
+
 /** -------------------------
  * Main Setup
  * ------------------------- */
@@ -520,7 +535,7 @@ mock.onGet(/\/affiliations(?:\?.*)?$/).reply((config) => {
   // Filter by search
   if (search) {
     const searchLower = search.toLowerCase()
-    affiliations = affiliations.filter(a => 
+    affiliations = affiliations.filter(a =>
       a.name.toLowerCase().includes(searchLower) ||
       a.id.toLowerCase().includes(searchLower)
     )
@@ -671,7 +686,7 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
     console.log('🏦 [Mock] GET /bank-accounts')
     const accounts = loadBankAccounts()
     console.log('📋 Total accounts:', accounts.length)
-    
+
     return [200, {
       success: true,
       data: accounts,
@@ -682,17 +697,17 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
   mock.onGet(/\/bank-accounts\/[^/]+$/).reply((config) => {
     const id = config.url?.split('/').pop()
     console.log(`🏦 [Mock] GET /bank-accounts/${id}`)
-    
+
     const accounts = loadBankAccounts()
     const account = accounts.find(acc => acc.id === id)
-    
+
     if (!account) {
       return [404, {
         success: false,
         message: 'Bank account not found'
       }]
     }
-    
+
     return [200, {
       success: true,
       data: account
@@ -701,41 +716,41 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
 
   mock.onPost('/bank-accounts').reply((config) => {
     console.log('🏦 [Mock] POST /bank-accounts')
-    
+
     try {
       const newAccount = JSON.parse(config.data) as BankAccount
-      
+
       if (!newAccount.accountNumber || !newAccount.bankName || !newAccount.accountName) {
         return [400, {
           success: false,
           message: 'Missing required fields: accountNumber, bankName, accountName'
         }]
       }
-      
+
       const accounts = loadBankAccounts()
-      
+
       const isDuplicate = accounts.some(
         acc => acc.accountNumber === newAccount.accountNumber
       )
-      
+
       if (isDuplicate) {
         return [409, {
           success: false,
           message: 'Account number already exists'
         }]
       }
-      
+
       const accountWithId: BankAccount = {
         ...newAccount,
         id: newAccount.id || generateBankAccountId(),
         isActive: newAccount.isActive !== false
       }
-      
+
       accounts.push(accountWithId)
       saveBankAccounts(accounts)
-      
+
       console.log('✅ [Mock] Created bank account:', accountWithId)
-      
+
       return [201, {
         success: true,
         data: accountWithId,
@@ -753,25 +768,25 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
   mock.onPut(/\/bank-accounts\/[^/]+$/).reply((config) => {
     const id = config.url?.split('/').pop()
     console.log(`🏦 [Mock] PUT /bank-accounts/${id}`)
-    
+
     try {
       const accounts = loadBankAccounts()
       const index = accounts.findIndex(acc => acc.id === id)
-      
+
       if (index === -1) {
         return [404, {
           success: false,
           message: 'Bank account not found'
         }]
       }
-      
+
       const updatedData = JSON.parse(config.data)
-      
+
       if (updatedData.accountNumber && updatedData.accountNumber !== accounts[index].accountNumber) {
         const isDuplicate = accounts.some(
           acc => acc.accountNumber === updatedData.accountNumber && acc.id !== id
         )
-        
+
         if (isDuplicate) {
           return [409, {
             success: false,
@@ -779,17 +794,17 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
           }]
         }
       }
-      
+
       accounts[index] = {
         ...accounts[index],
         ...updatedData,
         id
       }
-      
+
       saveBankAccounts(accounts)
-      
+
       console.log('✏️ [Mock] Updated bank account:', accounts[index])
-      
+
       return [200, {
         success: true,
         data: accounts[index],
@@ -807,22 +822,22 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
   mock.onDelete(/\/bank-accounts\/[^/]+$/).reply((config) => {
     const id = config.url?.split('/').pop()
     console.log(`🏦 [Mock] DELETE /bank-accounts/${id}`)
-    
+
     const accounts = loadBankAccounts()
     const index = accounts.findIndex(acc => acc.id === id)
-    
+
     if (index === -1) {
       return [404, {
         success: false,
         message: 'Bank account not found'
       }]
     }
-    
+
     const deleted = accounts.splice(index, 1)[0]
     saveBankAccounts(accounts)
-    
+
     console.log('🗑️ [Mock] Deleted bank account:', deleted)
-    
+
     return [200, {
       success: true,
       data: deleted,
@@ -1388,6 +1403,232 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
     console.log(`✅ summary/events - Found ${items.length} events`)
     return [200, { items }]
   })
+
+  //cleardebtor
+  mock.onGet('/debtors').reply(() => {
+  const receipts = loadReceipts()
+
+  const map = new Map<string, any>()
+
+  for (const r of receipts) {
+    if (!isDebtorNew(r) && !isClearDebtor(r)) continue
+
+    // key ลูกหนี้ (ใช้ fullName ตาม type ที่คุณมี)
+    const key = r.fullName
+    if (!key) continue
+
+    if (!map.has(key)) {
+      map.set(key, {
+        debtorKey: key,
+        fullName: r.fullName,
+        affiliationId: r.affiliationId,
+        affiliationName: r.affiliationName,
+        totalDebt: 0,
+        totalCleared: 0,
+      })
+    }
+
+    const row = map.get(key)
+
+    if (isDebtorNew(r)) {
+      row.totalDebt += toNum(r.netTotalAmount)
+    }
+
+    if (isClearDebtor(r)) {
+      row.totalCleared += toNum(r.netTotalAmount)
+    }
+  }
+
+  const items = Array.from(map.values())
+    .map((r) => ({
+      ...r,
+      balance: r.totalDebt - r.totalCleared,
+    }))
+    .filter((r) => r.balance > 0)
+    .sort((a, b) => b.balance - a.balance)
+
+  return [
+    200,
+    {
+      items,
+      total: items.length,
+    },
+  ]
+})
+
+mock.onGet('/debtors/history').reply(() => {
+  const receipts = loadReceipts()
+
+  const items = receipts
+    .filter(isClearDebtor)
+    .map((r: any) => ({
+      createdAt: r.createdAt,
+      waybillNumber: r.waybillNumber,
+      fullName: r.fullName,
+      affiliationId: r.affiliationId,
+      affiliationName: r.affiliationName,
+      amount: toNum(r.netTotalAmount),
+      fundName: r.fundName,
+    }))
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+    )
+
+  return [
+    200,
+    {
+      items,
+      total: items.length,
+    },
+  ]
+})
+
+
+
+mock.onGet('/debtors/outstanding').reply(() => {
+  const receipts = loadReceipts()
+
+  const debtorMap = new Map<string, number>()
+  const affiliationMap = new Map<string, number>()
+
+  for (const r of receipts) {
+    if (!isDebtorNew(r) && !isClearDebtor(r)) continue
+
+    const key = r.fullName
+    if (!key) continue
+
+    const signedAmount = isDebtorNew(r)
+      ? toNum(r.netTotalAmount)
+      : -toNum(r.netTotalAmount)
+
+    debtorMap.set(
+      key,
+      (debtorMap.get(key) ?? 0) + signedAmount
+    )
+
+    if (r.affiliationId) {
+      affiliationMap.set(
+        r.affiliationId,
+        (affiliationMap.get(r.affiliationId) ?? 0) + signedAmount
+      )
+    }
+  }
+
+  const balances = Array.from(debtorMap.values()).filter(
+    (v) => v > 0
+  )
+
+  return [
+    200,
+    {
+      totalDebtors: balances.length,
+      totalOutstandingAmount: balances.reduce((a, b) => a + b, 0),
+      byAffiliation: Array.from(affiliationMap.entries())
+        .filter(([, amount]) => amount > 0)
+        .map(([affiliationId, amount]) => ({
+          affiliationId,
+          amount,
+        })),
+    },
+  ]
+})
+
+
+mock.onPost('/debtors/clear').reply((config) => {
+  try {
+    const body = JSON.parse(config.data || '{}')
+    const { targetWaybill, amount, note } = body
+
+    if (!targetWaybill || !amount || amount <= 0) {
+      return [400, { message: 'invalid payload' }]
+    }
+
+    const receipts = loadReceipts()
+
+    // หา receipt ลูกหนี้ต้นทาง
+    const debtorReceipt = receipts.find(
+      (r: any) => r.waybillNumber === targetWaybill
+    )
+
+    if (!debtorReceipt) {
+      return [404, { message: 'debtor receipt not found' }]
+    }
+
+    // ยอดหนี้คงเหลือ
+    const balance =
+      Number(debtorReceipt.netTotalAmount ?? 0) -
+      Number(debtorReceipt.totalPaymentAmount ?? 0)
+
+    if (amount > balance) {
+      return [
+        400,
+        {
+          message: 'amount exceeds balance',
+          balance,
+        },
+      ]
+    }
+
+    // สร้าง receipt clear debtor ใหม่
+    const clearReceipt = {
+      id: `CLR-${Date.now()}`,
+      waybillNumber: `CLR-${Date.now()}`,
+
+      fullName: debtorReceipt.fullName,
+      phone: debtorReceipt.phone,
+
+      fundName: debtorReceipt.fundName,
+      projectCode: debtorReceipt.projectCode,
+
+      affiliationId: debtorReceipt.affiliationId,
+      affiliationName: debtorReceipt.affiliationName,
+
+      moneyType: 'cash',
+      moneyTypeNote: 'CLEAR_DEBTOR',
+
+      netTotalAmount: amount,
+      totalPaymentAmount: amount,
+
+      receiptList: [
+        {
+          itemName: note ?? 'ล้างลูกหนี้',
+          amount,
+          type: 'income',
+        },
+      ],
+
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+
+    receipts.push(clearReceipt)
+
+    // update ยอดที่จ่ายแล้ว
+    debtorReceipt.totalPaymentAmount =
+      Number(debtorReceipt.totalPaymentAmount ?? 0) + amount
+    debtorReceipt.updatedAt = new Date().toISOString()
+
+    saveReceipts(receipts)
+
+    return [
+      200,
+      {
+        success: true,
+        clearedAmount: amount,
+        remainingBalance: balance - amount,
+        clearWaybill: clearReceipt.waybillNumber,
+      },
+    ]
+  } catch (e) {
+    console.error('[mock] clear debtor error', e)
+    return [500, { message: 'internal error' }]
+  }
+})
+
+
+
 
   console.log('✅ Axios Mock Setup Complete')
   console.log('   🏦 Bank Accounts: Loaded from BankOptions.ts')

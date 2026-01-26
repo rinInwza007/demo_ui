@@ -787,44 +787,84 @@ async function clearAllDebts() {
     console.log('🗺️ Item ID Map:', Object.fromEntries(itemIdMap))
 
     // ✅ วนลูปและ mark items
-    for (const receipt of allReceipts) {
-      const waybillNumber = receipt.waybillNumber
+for (const receipt of allReceipts) {
+  const waybillNumber = receipt.waybillNumber
 
-      if (!itemIdMap.has(waybillNumber)) continue
+  if (!itemIdMap.has(waybillNumber)) continue
 
-      const itemIdsToMark = itemIdMap.get(waybillNumber)
+  const itemIdsToMark = itemIdMap.get(waybillNumber)
 
-      if (!Array.isArray(receipt.receiptList)) {
-        console.warn(`⚠️ receiptList not array for: ${waybillNumber}`)
-        continue
-      }
+  let hasChanges = false
 
-      let hasChanges = false
-      const updatedReceiptList = receipt.receiptList.map(item => {
-        const itemIdentifier = item.id || item.itemId
+  // ✅ 1. อัปเดต receiptList (สำหรับ format เก่า)
+  if (Array.isArray(receipt.receiptList)) {
+    const updatedReceiptList = receipt.receiptList.map(item => {
+      const itemIdentifier = item.id || item.itemId
 
-        if (itemIdsToMark.includes(itemIdentifier)) {
-          console.log(`✅ MARKING: ${item.itemName} (ID: ${itemIdentifier})`)
-          markedCount++
-          hasChanges = true
-          return {
-            ...item,
-            isClearedDebt: true,  // ✅ ตัวนี้สำคัญ!
-            clearedDate: new Date().toISOString()
-          }
+      if (itemIdsToMark.includes(itemIdentifier)) {
+        console.log(`✅ MARKING receiptList: ${item.itemName} (ID: ${itemIdentifier})`)
+        markedCount++
+        hasChanges = true
+        return {
+          ...item,
+          isClearedDebt: true,
+          clearedDate: new Date().toISOString()
         }
-        return item
-      })
+      }
+      return item
+    })
 
-      if (hasChanges) {
+    if (hasChanges) {
+      updatePromises.push(
+        reciptService.update(waybillNumber, {
+          receiptList: updatedReceiptList
+        })
+      )
+    }
+  }
+
+  // ✅ 2. อัปเดต debtorList (สำหรับ format ใหม่)
+  if (Array.isArray(receipt.debtorList)) {
+    let debtorHasChanges = false
+
+    const updatedDebtorList = receipt.debtorList.map(debtor => {
+      // ใช้ itemName ในการเทียบ
+      const itemToMark = itemsToMark.find(
+        marked =>
+          marked.waybillNumber === waybillNumber &&
+          marked.itemName === debtor.itemName
+      )
+
+      if (itemToMark) {
+        console.log(`✅ MARKING debtorList: ${debtor.itemName}`)
+        debtorHasChanges = true
+        return {
+          ...debtor,
+          isClearedDebt: true,
+          clearedDate: new Date().toISOString()
+        }
+      }
+      return debtor
+    })
+
+    if (debtorHasChanges) {
+      // ถ้า receiptList ยังไม่ได้ push เข้าไป ให้ push
+      if (!hasChanges) {
         updatePromises.push(
           reciptService.update(waybillNumber, {
-            receiptList: updatedReceiptList
+            debtorList: updatedDebtorList
           })
         )
+      } else {
+        // แก้ promise สุดท้ายให้ update ทั้ง 2 list
+        updatePromises[updatePromises.length - 1] = reciptService.update(waybillNumber, {
+          receiptList: receipt.receiptList,
+          debtorList: updatedDebtorList
+        })
       }
     }
-
+  }
+}
     console.log(`📊 Updating ${updatePromises.length} receipts...`)
     await Promise.all(updatePromises)
 

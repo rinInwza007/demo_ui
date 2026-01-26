@@ -401,6 +401,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useSummaryStore } from '@/stores/summary'
 import { storeToRefs } from 'pinia'
 import { filterDebtorsByPermission } from '@/components/utils/filterdebtor'
+import { reciptService } from '@/services/ReciptService'
+import { getAllOptions, getItemById, getItemByName } from '@/components/data/ItemNameOption'
 
 /* =========================
  * Constants
@@ -831,39 +833,22 @@ if (DEBUG && typeof window !== 'undefined') {
     loadReceiptData,
   }
 }
-// ✅ เก็บแค่ส่วนนี้
-const groupedItems = computed(() => {
-  const grouped = new Map<string, any>()
+/**
+ * ✅ Helper: ดึง itemType จาก itemId หรือ itemName
+ */
+const getItemType = (itemIdOrName: number | string | null): 'income' | 'receivable' | 'expense' | 'unknown' => {
+  if (!itemIdOrName) return 'unknown'
 
-  for (const item of rawData.value) {
-    const key = item.id   // ✅ ใช้ key จาก summary โดยตรง
-
-    if (grouped.has(key)) {
-      const existing = grouped.get(key)!
-      existing.balanceAmount += item.balanceAmount
-      existing._count++
-      existing._receipts.push(...(item._receipts || []))
-    } else {
-      grouped.set(key, {
-        ...item,
-        _count: 1,
-        _receipts: [...(item._receipts || [])],
-      })
-    }
+  // ถ้าเป็น itemId (number) ให้ดึงจาก ItemNameOption
+  if (typeof itemIdOrName === 'number') {
+    const item = getItemById(itemIdOrName)
+    return item?.type || 'unknown'
   }
 
-  return Array.from(grouped.values()).map(i => ({
-    ...i,
-    note: i._count > 1 ? `รวม ${i._count} รายการ` : '',
-  }))
-})
-
-
-// ✅ ใช้ groupedItems แทน
-const filteredItems = computed(() => groupedItems.value)
-
-// --- New Tab Pagination ---
-
+  // ถ้าเป็น itemName (string) ให้ดึงจาก ItemNameOption
+  const item = getItemByName(itemIdOrName as string)
+  return item?.type || 'unknown'
+}
 </script>
 
 <style scoped>

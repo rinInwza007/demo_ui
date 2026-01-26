@@ -261,6 +261,7 @@ import { departmentOptions } from '@/components/data/TSdepartments'
 import { reciptService } from '@/services/ReciptService'
 import { approveService } from '@/services/Apporve_service/ApproveService'
 
+
 const isLoading = ref(false)
 const router = useRouter()
 const auth = useAuthStore()
@@ -276,7 +277,7 @@ const selectedSub2 = ref('')
 const canCreateWaybill = computed(() => auth.isRole('user') && !dailyClose.isTodayClosed)
 const canApprove = computed(() => auth.isRole('treasury'))
 
-type ActionKey = 'view' | 'edit' | 'delete' | 'approve' 
+type ActionKey = 'view' | 'edit' | 'delete' | 'approve'
 
 const formatThaiDateTime = (date: Date | null) => {
   if (!date || isNaN(date.getTime())) return '-'
@@ -332,15 +333,25 @@ const isReceiptClosed = (receipt: Receipt) => {
   return dailyClose.isDateClosed(dateKey)
 }
 
-function mapReceiptToRow(r: any) {
+function mapReceiptToRow(r: any): TableRow {
+  const createdAt = r.createdAt ? new Date(r.createdAt) : null
+  const updatedAt = r.updatedAt ? new Date(r.updatedAt) : null
+  const lastDate = getLastDate(createdAt, updatedAt)
+
   return {
     id: r.waybillNumber || r.projectCode || r.id,
-    waybillNumber: r.waybillNumber ?? '-',
-    fullName: r.fullName ?? '-',
-    affiliationName: r.affiliationName ?? '-',
-    fundName: r.fundName ?? '-',
-    netTotalAmount: Number(r.netTotalAmount ?? 0),
-    createdAt: r.createdAt,
+    status: r.approvalStatus || 'pending',
+    department: r.mainAffiliationName || r.affiliationName || '-',
+    subDepartment: [r.subAffiliationName1, r.subAffiliationName2].filter(Boolean).join(' / ') || '-',
+    time: formatThaiDateTime(lastDate),
+    lastTimeMs: lastDate?.getTime() || 0,
+    project: r.fundName || '-',
+    responsible: r.fullName || '-',
+    amount: Number(r.netTotalAmount ?? 0),
+    createdAt,
+    updatedAt,
+    isLocked: isReceiptClosed(r),
+    _raw: r
   }
 }
 
@@ -479,7 +490,7 @@ const rowPermissions = (row: TableRow): ActionKey[] => {
   if (auth.isRole('user') && row.status === 'pending' && !row.isLocked) {
     perms.push('edit', 'delete')
   }
-  
+
   if (canApprove.value && row.status === 'pending' && !row.isLocked) {
     perms.push('approve')
   }

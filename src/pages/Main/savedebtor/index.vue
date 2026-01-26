@@ -570,46 +570,7 @@ const loadHistory = () => {
 /* =========================
  * Computed - Group Items
  * ========================= */
-const groupedItems = computed(() => {
-  const grouped = new Map<number, any>()
 
-  for (const item of rawData.value) {
-    const itemId = item.itemId
-
-    if (grouped.has(itemId)) {
-      const existing = grouped.get(itemId)!
-      existing.depositNetAmount = (existing.depositNetAmount || 0) + (item.depositNetAmount || 0)
-      existing.debtorAmount = (existing.debtorAmount || 0) + (item.debtorAmount || 0)
-      existing.balanceAmount = (existing.balanceAmount || 0) + (item.balanceAmount || 0)
-      existing._count++
-
-      if (item._receipts) {
-        existing._receipts.push(...item._receipts)
-      }
-
-      if (item.responsible) {
-        existing._responsibles.add(item.responsible)
-      }
-
-    } else {
-      grouped.set(itemId, {
-        ...item,
-        _count: 1,
-        _receipts: item._receipts || [],
-        _responsibles: new Set(item.responsible ? [item.responsible] : [])
-      })
-    }
-  }
-
-  return Array.from(grouped.values()).map(item => ({
-    ...item,
-    responsible: Array.from(item._responsibles).join(', ') || '-',
-    note: item._count > 1 ? `รวม ${item._count} รายการ` : item.note || '',
-    _responsibles: undefined,
-  }))
-})
-
-const filteredItems = computed(() => groupedItems.value)
 
 /* =========================
  * Pagination - New Tab

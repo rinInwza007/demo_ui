@@ -831,36 +831,8 @@ if (DEBUG && typeof window !== 'undefined') {
     loadReceiptData,
   }
 }
-// ✅ เก็บแค่ส่วนนี้
-const groupedItems = computed(() => {
-  const grouped = new Map<string, any>()
-
-  for (const item of rawData.value) {
-    const key = item.id   // ✅ ใช้ key จาก summary โดยตรง
-
-    if (grouped.has(key)) {
-      const existing = grouped.get(key)!
-      existing.balanceAmount += item.balanceAmount
-      existing._count++
-      existing._receipts.push(...(item._receipts || []))
-    } else {
-      grouped.set(key, {
-        ...item,
-        _count: 1,
-        _receipts: [...(item._receipts || [])],
-      })
-    }
-  }
-
-  return Array.from(grouped.values()).map(i => ({
-    ...i,
-    note: i._count > 1 ? `รวม ${i._count} รายการ` : '',
-  }))
-})
 
 
-// ✅ ใช้ groupedItems แทน
-const filteredItems = computed(() => groupedItems.value)
 
 // --- New Tab Pagination ---
 

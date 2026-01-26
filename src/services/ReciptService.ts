@@ -232,47 +232,6 @@ async getAll(): Promise<Receipt[]> {
       throw new Error(error.message || 'ไม่สามารถอนุมัติใบนำส่งได้')
     }
   }
-
-  /**
-   * ❌ ปฏิเสธใบนำส่ง (สำหรับกองคลัง)
-   */
-  async reject(
-    waybillNumber: string,
-    approverName: string,
-    reason?: string
-  ): Promise<Receipt> {
-    try {
-      const current = await this.getById(waybillNumber)
-
-      if (current.isLocked) {
-        throw new Error('ไม่สามารถปฏิเสธได้ เนื่องจากวันนี้ปิดยอดแล้ว')
-      }
-
-      const rejected: Receipt = {
-        ...current,
-        approvalStatus: 'rejected',
-        // approverName, // ⚠️ ถ้า Receipt type ไม่มี approverName ให้เอาออก
-        // rejectedAt: new Date().toISOString(), // ⚠️ ถ้า Receipt type ไม่มี rejectedAt ให้เอาออก
-        // rejectionReason: reason, // ⚠️ ถ้า Receipt type ไม่มี rejectionReason ให้เอาออก
-        updatedAt: new Date().toISOString(),
-      }
-
-      const response: AxiosResponse<Receipt> = await axios.post(
-        '/updateReceipt',
-        {
-          receipt: rejected,
-        }
-      )
-
-      this.notifyUpdate('reject')
-
-      return response.data
-    } catch (error: any) {
-      console.error('❌ Error rejecting receipt:', error)
-      throw new Error(error.message || 'ไม่สามารถปฏิเสธใบนำส่งได้')
-    }
-  }
-
   /**
    * 🔒 ตรวจสอบว่าใบนำส่งถูกล็อก (ปิดยอด) หรือไม่
    */
@@ -310,7 +269,6 @@ calculateStats(receipts: Receipt[]): {
   total: number
   pending: number
   approved: number
-  rejected: number
   totalAmount: number
   pendingAmount: number
   approvedAmount: number
@@ -322,7 +280,6 @@ calculateStats(receipts: Receipt[]): {
     total: validReceipts.length,
     pending: this.filterByStatus(validReceipts, 'pending').length,
     approved: this.filterByStatus(validReceipts, 'approved').length,
-    rejected: this.filterByStatus(validReceipts, 'rejected').length,
     totalAmount: validReceipts.reduce(
       (sum, r) => sum + (Number(r.netTotalAmount) || 0),
       0
@@ -342,7 +299,7 @@ calculateStats(receipts: Receipt[]): {
    * 🔔 แจ้งเตือนการอัปเดตข้อมูล (สำหรับ sync ระหว่างหน้า)
    */
   private notifyUpdate(
-    action: 'create' | 'update' | 'delete' | 'approve' | 'reject'
+    action: 'create' | 'update' | 'delete' | 'approve' 
   ): void {
     // อัปเดต localStorage timestamp
     localStorage.setItem('receipts_last_update', Date.now().toString())

@@ -1,3 +1,4 @@
+<!-- //ClearDebtor/index-->
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full h-screen flex">
@@ -345,12 +346,12 @@ import sidebar from '@/components/bar/sidebar.vue'
 import BankAccountSelect from '@/components/TomSelect/BankAccountSelect.vue'
 import InputText from '@/components/input/inputtext.vue'
 import { useBankTransferManager } from '@/components/Function/FuncClear.js'
-import { reciptService } from '@/services/ReciptService'
+import { clearDebtorService } from '@/services/ClearDebtorService' // ✅ ใช้ clearDebtorService
 
 const route = useRoute()
 const router = useRouter()
 
-// ✅ ใช้ Bank Transfer Manager
+// Bank Transfer Manager
 const {
   bankTransfers,
   addBankTransfer,
@@ -363,7 +364,6 @@ const {
   getBankTransfersData,
 } = useBankTransferManager()
 
-// ✅ รายการธนาคารที่มีอยู่แล้ว (สำหรับ dropdown)
 const bankAccountOptions = ref([
   {
     accountNumber: '512-1-43488-6',
@@ -378,20 +378,10 @@ const bankAccountOptions = ref([
 ])
 
 const errors = ref({ bankTransfers: {} })
-
-// State
 const receipts = ref([])
 const allItems = ref([])
 const paymentHistory = ref([])
 
-// Payment Methods State
-const paymentMethods = ref({
-  krungthai: { checked: false, amount: '' },
-  scb: { checked: false, amount: '' },
-  other: { checked: false, name: '', amount: '' }
-})
-
-// Computed Properties
 const totalDebt = computed(() =>
   allItems.value.reduce((sum, i) => sum + Number(i.debtorAmount || 0), 0)
 )
@@ -400,58 +390,12 @@ const totalPaid = computed(() =>
   paymentHistory.value.reduce((sum, p) => sum + Number(p.amount || 0), 0)
 )
 
-// คำนวณยอดที่กำลังจะชำระ (จากช่องกรอก)
-const currentPaymentAmount = computed(() => totalBankAmount.value)
-
-// คำนวณยอดหนี้คงเหลือ (หักทั้งที่จ่ายแล้ว + กำลังจะจ่าย)
-const remainingAmount = computed(() =>
-  Math.max(0, totalDebt.value - totalPaid.value - currentPaymentAmount.value)
-)
-
-// Utility Functions
 const formatNumber = (num) =>
   Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })
 
 const formatMoney = formatNumber
 
-const formatDate = (date) => {
-  if (!date) return '-'
-  const d = date instanceof Date ? date : new Date(date)
-  return d.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
-}
-
-// Payment Amount Handlers
-const handleAmountInput = (method, event) => {
-  const value = event.target.value.replace(/[^0-9.]/g, '')
-  const parts = value.split('.')
-  if (parts.length > 2) return
-
-  paymentMethods.value[method].amount = value
-}
-
-const formatAmountOnBlur = (method) => {
-  const value = paymentMethods.value[method].amount
-  if (!value) return
-
-  const cleanValue = value.toString().replace(/,/g, '')
-  const numValue = parseFloat(cleanValue)
-
-  if (isNaN(numValue)) {
-    paymentMethods.value[method].amount = ''
-    return
-  }
-
-  paymentMethods.value[method].amount = numValue.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
-// Load Data on Mount
+// ✅ Load Data
 onMounted(() => {
   const raw = localStorage.getItem('clearDebtorSummary')
 
@@ -469,25 +413,36 @@ onMounted(() => {
 
   try {
     const summary = JSON.parse(raw)
+    
+    console.log('📦 Raw summary:', summary)
+    console.log('📋 Receipts count:', summary.receipts?.length)
 
-    const baseReceipts = Array.isArray(summary.receipts)
-      ? summary.receipts
-      : []
+    const baseReceipts = Array.isArray(summary.receipts) ? summary.receipts : []
+
+    // ✅ ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
+    const waybillNumbers = baseReceipts.map(r => r.waybillNumber)
+    const uniqueWaybills = new Set(waybillNumbers)
+    
+    if (waybillNumbers.length !== uniqueWaybills.size) {
+      console.error('❌ Duplicate waybills detected!', waybillNumbers)
+    } else {
+      console.log('✅ No duplicates')
+    }
 
     const items = baseReceipts.flatMap(r =>
       (r.items || [])
         .filter(item => !item.isClearedDebt)
         .map(item => {
-          const debtorAmount =
-            item.debtorAmount != null
-              ? Number(item.debtorAmount)
-              : Number(item.amount || 0)
+          const debtorAmount = item.debtorAmount != null
+            ? Number(item.debtorAmount)
+            : Number(item.amount || 0)
 
           return {
             ...item,
             debtorAmount,
             amount: debtorAmount,
             paymentInput: '',
+            responsible: r.fullName || '-',
             _originalReceipt: {
               ...r,
               projectCode: r.projectCode || r.receiptId,
@@ -499,11 +454,10 @@ onMounted(() => {
 
     allItems.value = items
 
+    // ✅ แยกตาม waybillNumber
     receipts.value = baseReceipts.map(r => {
       const receiptItems = items.filter(
-        i =>
-          i._originalReceipt.projectCode ===
-          (r.projectCode || r.receiptId)
+        i => i._originalReceipt.waybillNumber === r.waybillNumber
       )
 
       const totalDebtorAmount = receiptItems.reduce(
@@ -513,13 +467,19 @@ onMounted(() => {
 
       return {
         ...r,
+        department: `📋 [${r.waybillNumber || r.projectCode}] ${formatMoney(totalDebtorAmount)} บาท`,
+        subDepartment: `${receiptItems.length} รายการ - ${r.fullName || 'ไม่ระบุ'}`,
         items: receiptItems,
-        totalDebtorAmount
+        totalDebtorAmount,
+        originalDepartment: r.department,
+        originalSubDepartment: r.subDepartment
       }
     })
 
+    console.log('✅ Final receipts:', receipts.value.length)
+
   } catch (err) {
-    console.error(err)
+    console.error('❌ Error:', err)
     Swal.fire({
       title: 'เกิดข้อผิดพลาด',
       text: 'ไม่สามารถอ่านข้อมูลได้',
@@ -531,115 +491,11 @@ onMounted(() => {
   }
 })
 
-// Confirm Payment
-function confirmPayment() {
-  const payments = []
-  const map = paymentMethods.value
-
-  if (map.krungthai.checked) {
-    const amount = parseFloat(String(map.krungthai.amount).replace(/,/g, ''))
-    if (amount > 0) {
-      payments.push({
-        type: 'ฝากเข้าบัญชี',
-        BankName: 'กรุงไทย',
-        AccountName: 'มหาวิทยาลัยพะเยา',
-        AccountNum: '512-1-43488-6',
-        amount: amount
-      })
-    }
-  }
-
-  if (map.scb.checked) {
-    const amount = parseFloat(String(map.scb.amount).replace(/,/g, ''))
-    if (amount > 0) {
-      payments.push({
-        type: 'ฝากเข้าบัญชี',
-        BankName: 'ไทยพาณิชย์',
-        AccountName: 'มหาวิทยาลัยพะเยา',
-        AccountNum: '891-2-00225-5',
-        amount: amount
-      })
-    }
-  }
-
-  if (map.other.checked) {
-    const amount = parseFloat(String(map.other.amount).replace(/,/g, ''))
-    if (amount > 0) {
-      payments.push({
-        type: map.other.name || 'อื่น ๆ',
-        amount: amount
-      })
-    }
-  }
-
-  if (payments.length === 0) {
-    Swal.fire('ผิดพลาด', 'กรุณาเลือกวิธีชำระเงินและกรอกจำนวนเงิน', 'warning')
-    return
-  }
-
-  payments.forEach(p => {
-    paymentHistory.value.push({
-      id: Date.now() + Math.random(),
-      referenceNo: `PAY-${Date.now()}`,
-      timestamp: new Date().toLocaleString('th-TH'),
-      ...p
-    })
-  })
-
-  Object.keys(paymentMethods.value).forEach(key => {
-    paymentMethods.value[key].checked = false
-    paymentMethods.value[key].amount = ''
-    if (paymentMethods.value[key].name !== undefined) {
-      paymentMethods.value[key].name = ''
-    }
-    if (paymentMethods.value[key].num !== undefined) {
-      paymentMethods.value[key].num = ''
-    }
-  })
-
-  Swal.fire('สำเร็จ', 'บันทึกการชำระเงินแล้ว', 'success')
-}
-
-// ✅ Format สำหรับแสดงผล
-const formatDisplayPaymentAmount = (value) => {
-  return formatDisplayBankAmount(value)
-}
-
-// ✅ Clear error
-const clearBankError = (index, field) => {
-  if (errors.value.bankTransfers?.[index]?.[field]) {
-    delete errors.value.bankTransfers[index][field]
-    if (Object.keys(errors.value.bankTransfers[index]).length === 0) {
-      delete errors.value.bankTransfers[index]
-    }
-  }
-}
-
-const handlePaymentAmountInput = (method, event) => {
-  const value = event.target.value.replace(/[^0-9.]/g, '')
-  paymentMethods.value[method].amount = value
-}
-
-const formatPaymentAmountOnBlur = (method) => {
-  const value = paymentMethods.value[method].amount
-  if (!value) return
-  const num = parseFloat(String(value).replace(/,/g, ''))
-  if (isNaN(num)) {
-    paymentMethods.value[method].amount = ''
-    return
-  }
-  paymentMethods.value[method].amount = num.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-}
-
 // Payment Input Handlers
 const handlePaymentInputChange = (item, event) => {
   const value = event.target.value.replace(/[^0-9.]/g, '')
   const parts = value.split('.')
   if (parts.length > 2) return
-
   item.paymentInput = value
 }
 
@@ -673,26 +529,37 @@ const totalPaymentInput = computed(() => {
   }, 0)
 })
 
-// Clear All Debts Function
+const formatDisplayPaymentAmount = (value) => formatDisplayBankAmount(value)
+
+const clearBankError = (index, field) => {
+  if (errors.value.bankTransfers?.[index]?.[field]) {
+    delete errors.value.bankTransfers[index][field]
+    if (Object.keys(errors.value.bankTransfers[index]).length === 0) {
+      delete errors.value.bankTransfers[index]
+    }
+  }
+}
+
+// ✅ Clear All Debts - ใช้ clearDebtorService
 async function clearAllDebts() {
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
-  const combinedPayment = totalPaymentInputValue + totalBankValue
-
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
 
-  // ✅ เก็บข้อมูลที่จะใช้ mark - รวมทั้ง waybillNumber และ index
+  // ✅ เก็บข้อมูลรายการที่จะล้าง
   const itemsToMark = []
 
   receipts.value.forEach(receipt => {
-    receipt.items.forEach((item, itemIndex) => {
+    receipt.items.forEach((item) => {
       const paymentValue = parseFloat(String(item.paymentInput || '0').replace(/,/g, ''))
       if (paymentValue > 0) {
         itemsToMark.push({
           waybillNumber: receipt.waybillNumber || receipt.receiptId,
           itemId: item.id,
           itemName: item.itemName,
-          // ✅ เพิ่มข้อมูลสำหรับ debug
+          paymentAmount: paymentValue,
+          receiptNumber: item.receiptNumber || '',
+          note: item.note || '',
           originalItem: item
         })
       }
@@ -701,6 +568,7 @@ async function clearAllDebts() {
 
   console.log('🎯 Items to mark:', itemsToMark)
 
+  // ✅ ตรวจสอบยอดเงิน
   if (paymentDifference > 0.01) {
     await Swal.fire({
       icon: 'error',
@@ -710,11 +578,11 @@ async function clearAllDebts() {
           <p class="text-gray-700 mb-2">ยอดที่กรอกใน 2 ช่องต้องเท่ากัน</p>
           <hr class="my-3">
           <p class="text-gray-700">
-            <span class="font-bold text-blue-600">• ยอดที่ต้องชำระ (textbox):</span>
+            <span class="font-bold text-blue-600">• ยอดที่ต้องชำระ:</span>
             <span class="float-right">${formatNumber(totalPaymentInputValue)} บาท</span>
           </p>
           <p class="text-gray-700">
-            <span class="font-bold text-purple-600">• ยอดรวมที่จะจ่าย (ธนาคาร):</span>
+            <span class="font-bold text-purple-600">• ยอดรวมที่จะจ่าย:</span>
             <span class="float-right">${formatNumber(totalBankValue)} บาท</span>
           </p>
           <hr class="my-3">
@@ -731,31 +599,16 @@ async function clearAllDebts() {
     return
   }
 
-  const debtDifference = totalDebt.value - totalPaymentInputValue
-  const confirmMessage = debtDifference > 0.01
-    ? `
-      <div class="text-left space-y-2">
-        <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold text-red-600">${formatNumber(totalDebt.value)} บาท</span></p>
-        <p class="text-gray-700">ยอดที่จะชำระ: <span class="font-bold text-green-600">${formatNumber(totalPaymentInputValue)} บาท</span></p>
-        <hr class="my-2">
-        <p class="text-gray-700">
-          <span class="font-bold text-orange-600">⚠️ ยอดคงเหลือ:</span>
-          <span class="float-right font-bold text-orange-600">${formatNumber(debtDifference)} บาท</span>
-        </p>
-        <hr class="my-2">
-        <p class="text-gray-700">จำนวนรายการที่จะล้าง: <span class="font-bold">${itemsToMark.length} รายการ</span></p>
-      </div>
-    `
-    : `
-      <div class="text-left space-y-2">
-        <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold">${formatNumber(totalDebt.value)} บาท</span></p>
-        <p class="text-gray-700">จำนวนรายการที่จะล้าง: <span class="font-bold">${itemsToMark.length} รายการ</span></p>
-      </div>
-    `
-
+  // ✅ Confirm Dialog
   const result = await Swal.fire({
     title: 'ยืนยันการล้างหนี้?',
-    html: confirmMessage,
+    html: `
+      <div class="text-left space-y-2">
+        <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold">${formatNumber(totalDebt.value)} บาท</span></p>
+        <p class="text-gray-700">ยอดที่จะชำระ: <span class="font-bold text-green-600">${formatNumber(totalPaymentInputValue)} บาท</span></p>
+        <p class="text-gray-700">จำนวนรายการที่จะล้าง: <span class="font-bold">${itemsToMark.length} รายการ</span></p>
+      </div>
+    `,
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'ยืนยัน',
@@ -769,22 +622,17 @@ async function clearAllDebts() {
   try {
     console.log('🧹 Starting debt clearing process...')
 
-    const allReceipts = await reciptService.getAll()
-    console.log('📦 Total receipts:', allReceipts.length)
-
-    let markedCount = 0
-    const updatePromises = []
-
-    // ✅ สร้าง Map สำหรับค้นหา
-    const itemIdMap = new Map()
+    // ✅ Group items by waybillNumber
+    const itemsByWaybill = new Map()
+    
     itemsToMark.forEach(item => {
-      if (!itemIdMap.has(item.waybillNumber)) {
-        itemIdMap.set(item.waybillNumber, [])
+      if (!itemsByWaybill.has(item.waybillNumber)) {
+        itemsByWaybill.set(item.waybillNumber, [])
       }
-      itemIdMap.get(item.waybillNumber).push(item.itemId)
+      itemsByWaybill.get(item.waybillNumber).push(item)
     })
 
-    console.log('🗺️ Item ID Map:', Object.fromEntries(itemIdMap))
+    console.log('📦 Grouped by waybill:', itemsByWaybill.size)
 
     // ✅ วนลูปและ mark items
 for (const receipt of allReceipts) {
@@ -877,9 +725,9 @@ for (const receipt of allReceipts) {
       date: new Date().toLocaleString('th-TH'),
       items: itemsToMark.map(i => ({
         itemName: i.itemName,
-        amount: Number(String(i.originalItem.paymentInput).replace(/,/g, '')),
-        note: i.originalItem.note || '',
-        referenceId: i.originalItem.receiptNumber || i.waybillNumber || ''
+        amount: i.paymentAmount,
+        note: i.note,
+        referenceId: i.receiptNumber || i.waybillNumber
       })),
       payments: getBankTransfersData().map(p => ({
         type: 'transfer',
@@ -891,24 +739,22 @@ for (const receipt of allReceipts) {
       total: totalPaymentInputValue,
       fullName: receipts.value[0]?.fullName || '-',
       phone: receipts.value[0]?.phone || '-',
-      department: receipts.value[0]?.department || '-',
+      department: receipts.value[0]?.originalDepartment || '-',
       sendmoney: receipts.value[0]?.sendmoney || '-',
       fundName: receipts.value[0]?.fundName || '-',
-      receiptId: receipts.value[0]?.receiptId || `CLEAR-${Date.now()}`
+      receiptId: receipts.value[0]?.waybillNumber || `CLEAR-${Date.now()}`
     }
 
-    const existingHistory = JSON.parse(localStorage.getItem('debtorClearHistory') || '[]')
-    existingHistory.unshift(historyRecord)
-    localStorage.setItem('debtorClearHistory', JSON.stringify(existingHistory))
-
+    clearDebtorService.saveHistory(historyRecord)
     localStorage.removeItem('clearDebtorSummary')
 
     await Swal.fire({
       title: 'ล้างหนี้สำเร็จ!',
       html: `
         <div class="text-left space-y-2">
-          <p>✅ ล้างหนี้: <span class="font-bold">${markedCount} รายการ</span></p>
-          <p>📝 อัปเดต: <span class="font-bold">${updatePromises.length} ใบเสร็จ</span></p>
+          <p>✅ รายการทั้งหมด: <span class="font-bold">${totalMarked} รายการ</span></p>
+          <p>🎯 ล้างหนี้สำเร็จ: <span class="font-bold text-green-600">${totalCleared} รายการ</span></p>
+          <p>📝 อัปเดตบางส่วน: <span class="font-bold text-blue-600">${totalUpdated} รายการ</span></p>
           <p>💰 ยอดเงิน: <span class="font-bold text-green-600">${formatNumber(totalPaymentInputValue)} บาท</span></p>
         </div>
       `,

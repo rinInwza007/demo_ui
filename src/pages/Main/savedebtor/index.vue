@@ -1,3 +1,4 @@
+<!-- //SaveDebtor/index-->
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full h-screen flex overflow-hidden">
@@ -176,31 +177,36 @@
               </div>
             </div>
 
-            <div class="px-6 py-4 border-t border-white/40 bg-white/10 flex-shrink-0">
-              <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-6">
-                  <div class="text-center">
-                    <p class="text-xs text-slate-500 mb-1">รายการที่เลือก</p>
-                    <p class="text-2xl font-bold text-blue-600">{{ selectedItems.size }}</p>
-                  </div>
-                  <div class="h-12 w-px bg-slate-300"></div>
-                  <div class="text-center">
-                    <p class="text-xs text-slate-500 mb-1">ยอดรวม</p>
-                    <p class="text-2xl font-bold text-red-600">{{ formatCurrency(selectedTotal) }}</p>
-                  </div>
-                </div>
+<div class="px-6 py-4 border-t border-white/40 bg-white/10 flex-shrink-0">
+  <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-6">
+      <div class="text-center">
+        <p class="text-xs text-slate-500 mb-1">รายการที่เลือก</p>
+        <p class="text-2xl font-bold text-blue-600">{{ selectedItems.size }}</p>
+      </div>
+      <div class="h-12 w-px bg-slate-300"></div>
+      <div class="text-center">
+        <p class="text-xs text-slate-500 mb-1">ยอดที่เลือก</p>
+        <p class="text-2xl font-bold text-purple-600">{{ formatCurrency(selectedTotal) }}</p>
+      </div>
+      <div class="h-12 w-px bg-slate-300"></div>
+      <div class="text-center">
+        <p class="text-xs text-slate-500 mb-1">ยอดคงเหลือสุทธิทั้งหมด</p>
+        <p class="text-2xl font-bold text-red-600">{{ formatCurrency(totalBalanceAmount) }}</p>
+      </div>
+    </div>
 
-                <button
-                  @click="clearSelectedDebtors"
-                  :disabled="selectedItems.size === 0"
-                  class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white"
-                >
-                  <i class="ph ph-broom text-lg"></i>
-                  ดำเนินการล้างหนี้
-                </button>
-              </div>
-            </div>
+    <button
+      @click="clearSelectedDebtors"
+      :disabled="selectedItems.size === 0"
+      class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white"
+    >
+      <i class="ph ph-broom text-lg"></i>
+      ดำเนินการล้างหนี้
+    </button>
+  </div>
+</div>
           </div>
         </div>
 
@@ -402,6 +408,7 @@ import { storeToRefs } from 'pinia'
 import { filterDebtorsByPermission } from '@/components/utils/filterdebtor'
 import { reciptService } from '@/services/ReciptService'
 import { getAllOptions, getItemById, getItemByName } from '@/components/data/ItemNameOption'
+import { clearDebtorService } from '@/services/ClearDebtorService'
 
 /* =========================
  * Constants
@@ -555,19 +562,8 @@ const loadReceiptData = async () => {
  * Load History
  * ========================= */
 const loadHistory = () => {
-  try {
-    const stored = localStorage.getItem(STORAGE_HISTORY_KEY)
-    const parsed = stored ? JSON.parse(stored) : []
-
-    // ✅ รองรับทั้งแบบเก่า (items เป็น string) และแบบใหม่ (items เป็น array)
-    historyItems.value = parsed.filter(
-      (h: any) => h.referenceId && (typeof h.items === 'string' || Array.isArray(h.items))
-    )
-  } catch {
-    historyItems.value = []
-  }
+  historyItems.value = clearDebtorService.getHistory()
 }
-
 /* =========================
  * Computed - Group Items
  * ========================= */

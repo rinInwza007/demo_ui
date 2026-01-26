@@ -401,8 +401,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useSummaryStore } from '@/stores/summary'
 import { storeToRefs } from 'pinia'
 import { filterDebtorsByPermission } from '@/components/utils/filterdebtor'
-import { reciptService } from '@/services/ReciptService'
-import { getItemType } from '@/components/data/ItemNameOption'
+
 /* =========================
  * Constants
  * ========================= */
@@ -678,7 +677,7 @@ const clearSelectedDebtors = async () => {
 
     acc[receiptId].items.push({
       ...item,
-      amount: Number(item.balanceAmount || item.debtorAmount || 0),
+      amount: Number(item.balanceAmount),
       debtorAmount: Number(item.balanceAmount || item.debtorAmount || 0)
     })
 
@@ -832,6 +831,39 @@ if (DEBUG && typeof window !== 'undefined') {
     loadReceiptData,
   }
 }
+// ✅ เก็บแค่ส่วนนี้
+const groupedItems = computed(() => {
+  const grouped = new Map<string, any>()
+
+  for (const item of rawData.value) {
+    const key = item.id   // ✅ ใช้ key จาก summary โดยตรง
+
+    if (grouped.has(key)) {
+      const existing = grouped.get(key)!
+      existing.balanceAmount += item.balanceAmount
+      existing._count++
+      existing._receipts.push(...(item._receipts || []))
+    } else {
+      grouped.set(key, {
+        ...item,
+        _count: 1,
+        _receipts: [...(item._receipts || [])],
+      })
+    }
+  }
+
+  return Array.from(grouped.values()).map(i => ({
+    ...i,
+    note: i._count > 1 ? `รวม ${i._count} รายการ` : '',
+  }))
+})
+
+
+// ✅ ใช้ groupedItems แทน
+const filteredItems = computed(() => groupedItems.value)
+
+// --- New Tab Pagination ---
+
 </script>
 
 <style scoped>

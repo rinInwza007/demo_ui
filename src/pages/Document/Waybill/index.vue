@@ -1165,7 +1165,6 @@
 <script setup >
 import { ref, computed, onMounted, watch, nextTick ,reactive} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
 import Swal from 'sweetalert2'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
@@ -1174,7 +1173,6 @@ import InputText from '@/components/input/inputtext.vue'
 import ItemNameSelect from '@/components/TomSelect/ItemNameSelect.vue'
 import SendMoneySelect from '@/components/TomSelect/SendMoneyTomSelect.vue'
 import sidebar from '@/components/bar/sidebar.vue'
-import { departmentOptions } from '@/components/data/TSdepartments'
 import { getAllOptions , isReceivableItem ,getItemByName,getItemById } from '@/components/data/ItemNameOption'
 import { useReceiptStore } from '@/stores/recipt'
 import { useRowManager } from '@/components/Function/FuncForm'
@@ -1184,6 +1182,7 @@ import BankAccountSelect from '@/components/TomSelect/BankAccountSelect.vue'
 import { bankOptions, bankAccountOptions } from '@/components/utils/bankHelpers'
 import { reciptService } from '@/services/ReciptService'
 import AffiliationService from '@/services/affiliation/AffiliationService'
+import { departmentOptions, initializeDepartmentOptions } from '@/components/data/TSdepartments'
 // Initialize
 const route = useRoute()
 const router = useRouter()
@@ -1613,7 +1612,7 @@ watch(
 onMounted(async () => {
   // โหลด department options จาก Service
   await loadDepartmentOptions()
-  
+  console.log('📋 Department options after loading:', departmentOptions.value)
   // ✅ ถ้าเป็น edit mode ให้โหลดข้อมูล
   if (isEditMode.value) {
     await loadReceiptData()
@@ -1652,23 +1651,47 @@ const loadDepartmentOptions = async () => {
   isLoadingDepartments.value = true
   try {
     console.log('🔄 Loading department options from AffiliationService...')
-    departmentOptions.value = await AffiliationService.generateDepartmentOptions()
+    
+    // ✅ เรียกใช้ generateDepartmentOptions เพื่อสร้างข้อมูลใหม่
+    const options = await AffiliationService.generateDepartmentOptions()
+    
+    // ✅ ตรวจสอบว่ามีข้อมูลหรือไม่
+    if (!options || Object.keys(options).length === 0) {
+      console.warn('⚠️ No department options generated, using fallback')
+      // ✅ ลอง re-initialize
+      initializeDepartmentOptions()
+    }
+    
     console.log('✅ Loaded department options:', Object.keys(departmentOptions.value).length, 'faculties')
   } catch (error) {
     console.error('❌ Error loading department options:', error)
-    // ✅ แก้ไข: ใช้ dynamic import แบบ async ถูกต้อง
+    
+    // ✅ Fallback: ลอง initialize ใหม่
     try {
-      const module = await import('@/components/data/TSdepartments')
-      departmentOptions.value = module.departmentOptions
-      console.log('⚠️ Using static department options as fallback')
+      console.log('🔄 Trying to initialize department options again...')
+      initializeDepartmentOptions()
+      console.log('✅ Successfully initialized department options')
     } catch (fallbackError) {
-      console.error('❌ Failed to load fallback:', fallbackError)
+      console.error('❌ Failed to initialize:', fallbackError)
       departmentOptions.value = {}
     }
   } finally {
     isLoadingDepartments.value = false
   }
 }
+
+watch(
+  () => departmentOptions.value,
+  (newVal) => {
+    console.log('🔍 departmentOptions changed:', {
+      keys: Object.keys(newVal),
+      count: Object.keys(newVal).length,
+      data: newVal
+    })
+  },
+  { deep: true, immediate: true }
+)
+
 const loadUserTemplates = () => {
   const storageKey = getTemplateStorageKey()
   if (!storageKey) return

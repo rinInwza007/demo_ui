@@ -1,4 +1,3 @@
-// stores/summary.ts
 import { defineStore } from 'pinia'
 import type { Receipt } from '@/types/recipt'
 import type {
@@ -6,19 +5,12 @@ import type {
   UnitAgg,
   DashboardTotals,
 } from '@/types/summary'
-import { getItemType, getItemByName, getItemById } from '@/components/data/ItemNameOption'
-import { ReceiptMode } from "@/types/summary"
+
+import { receiptToLedgerEntry } from '@/mappers/ledger/receiptToLedger'
 
 /* =========================
  * Utils
  * ========================= */
-const toNum = (v: any) => {
-  const n = Number(String(v ?? 0).replaceAll(',', '').trim())
-  return Number.isFinite(n) ? n : 0
-}
-const safeStr = (v: any) => String(v ?? '').trim()
-const makeUnitKey = (f: string, s1: string, s2: string) => `${f}|${s1}|${s2}`
-
 const emptyTotals = (): DashboardTotals => ({
   docs: 0,
   income: 0,
@@ -32,156 +24,15 @@ const initUnitAgg = (e: LedgerEntry): UnitAgg => ({
   faculty: e.faculty,
   sub1: e.sub1,
   sub2: e.sub2,
+
   docs: 0,
   income: 0,
   debtNew: 0,
   debtClear: 0,
   net: 0,
+
   byDoc: {},
 })
-
-/* =========================
- * Receipt → Ledger
- * ========================= */
-const receiptToLedgers = (
-  receipt: Receipt,
-  mode: ReceiptMode
-): LedgerEntry[] => {
-  const ledgers: LedgerEntry[] = []
-
-  const delNumber =
-  safeStr(receipt.waybillNumber) ||
-  safeStr((receipt as any).delNumber) ||
-  safeStr((receipt as any).id)
-
-  console.log('🔍 Processing receipt:', { waybillNumber: receipt.waybillNumber, delNumber, hasReceiptList: !!receipt.receiptList })
-
-  if (!delNumber) return ledgers
-  if (!Array.isArray(receipt.receiptList)) return ledgers
-
-  const faculty = safeStr(receipt.mainAffiliationName)
-  const sub1 = safeStr(receipt.subAffiliationName1)
-  const sub2 = safeStr(receipt.subAffiliationName2)
-  const unitKey = makeUnitKey(faculty, sub1, sub2)
-  const affiliationId = getAffiliationId(faculty)
-
-  const createdAt = safeStr(receipt.createdAt)
-  const updatedAt = safeStr(receipt.updatedAt || receipt.createdAt)
-  const fullName = safeStr(receipt.fullName)
-
-  receipt.receiptList.forEach((item, index) => {
-    const amount = toNum(item.amount)
-    if (amount <= 0) return
-
-    const itemName = safeStr(item.itemName)
-    const itemId = item.itemId || null
-
-    // ✅ ถ้าไม่มี itemId ให้หาจาก itemName
-    const resolvedItemId = itemId || getItemByName(itemName)?.id || null
-
-    const itemType = getItemType(resolvedItemId || itemName)
-    const isClearedDebt = item.isClearedDebt === true
-
-    /* =========================
-     * DEBT NEW
-     * ========================= */
-    if (itemType === 'receivable') {
-      ledgers.push({
-        docKey: `${delNumber}-DEBT-${index}`,
-        delNumber,
-
-        eventType: 'DEBTOR_NEW',
-        direction: 'DEBT_NEW',
-
-        amount,
-        signed: -amount,
-
-        unitKey,
-        faculty,
-        sub1,
-        sub2,
-
-        affiliationId,
-        fundName: itemName,
-        itemId: resolvedItemId,
-        fullName,
-
-        createdAt,
-        updatedAt,
-
-        isClearedDebt,
-
-        _originalReceipt: receipt,
-      })
-    }
-
-    /* =========================
-     * CLEAR DEBT
-     * ========================= */
-    if (itemType === 'clear') {
-      ledgers.push({
-        docKey: `${delNumber}-CLR-${index}`,
-        delNumber,
-
-        eventType: 'CLEAR_DEBTOR',
-        direction: 'DEBT_CLEAR',
-
-        amount,
-        signed: amount,
-
-        unitKey,
-        faculty,
-        sub1,
-        sub2,
-
-        affiliationId,
-        fundName: itemName,
-        itemId: resolvedItemId,
-        fullName,
-
-        createdAt,
-        updatedAt,
-
-        isClearedDebt: true,
-
-        _originalReceipt: receipt,
-      })
-    }
-
-    /* =========================
-     * INCOME (ถ้ามี)
-     * ========================= */
-    if (itemType === 'income') {
-      ledgers.push({
-        docKey: `${delNumber}-INC-${index}`,
-        delNumber,
-
-        eventType: 'WAYBILL',
-        direction: 'INCOME',
-
-        amount,
-        signed: amount,
-
-        unitKey,
-        faculty,
-        sub1,
-        sub2,
-
-        affiliationId,
-        fundName: itemName,
-        itemId: resolvedItemId,
-        fullName,
-
-        createdAt,
-        updatedAt,
-
-        _originalReceipt: receipt,
-      })
-    }
-  })
-
-  return ledgers
-}
 
 /* =========================
  * Store
@@ -191,7 +42,8 @@ export const useSummaryStore = defineStore('Summary', {
     totals: emptyTotals(),
     unitsByKey: {} as Record<string, UnitAgg>,
 
-    ledgerByDoc: {} as Record<string, LedgerEntry[]>,
+    // 1 receipt = 1 ledger entry
+    ledgerByDoc: {} as Record<string, LedgerEntry>,
 
     receiptsByDoc: {} as Record<string, Receipt>,
   }),
@@ -199,70 +51,52 @@ export const useSummaryStore = defineStore('Summary', {
   getters: {
     units: (s) => Object.values(s.unitsByKey),
 
-    ledger: (s) => {
-      const all: LedgerEntry[] = []
-      Object.values(s.ledgerByDoc).forEach(entries => {
-        all.push(...entries)
+    ledger: (s) => Object.values(s.ledgerByDoc),
+
+    /**
+     * ลูกหนี้คงค้าง (ใช้กับ UI หน้า clear)
+     * derive จาก ledger โดยตรง
+     */
+    pendingDebtors: (s) => {
+      const map = new Map<string, any>()
+
+      Object.values(s.ledgerByDoc).forEach((e) => {
+        if (e.direction !== 'DEBT_NEW' && e.direction !== 'DEBT_CLEAR') return
+
+        const key = e.fullName
+        if (!key) return
+
+        if (!map.has(key)) {
+          map.set(key, {
+            debtorKey: key,
+            fullName: e.fullName,
+            affiliationId: e.affiliationId,
+            faculty: e.faculty,
+            totalDebt: 0,
+            totalCleared: 0,
+            balance: 0,
+          })
+        }
+
+        const row = map.get(key)
+
+        if (e.direction === 'DEBT_NEW') row.totalDebt += e.amount
+        if (e.direction === 'DEBT_CLEAR') row.totalCleared += e.amount
+
+        row.balance = row.totalDebt - row.totalCleared
       })
-      return all
+
+      return Array.from(map.values()).filter((r) => r.balance > 0)
     },
-
-    // ✅ รวมรายการลูกหนี้ตาม itemId
-    pendingDebts: (s) => {
-      const groupedByItemId: Record<string, any> = {}
-
-      Object.values(s.ledgerByDoc).forEach(ledgers => {
-        ledgers.forEach(ledger => {
-          if (ledger.direction === 'DEBT_NEW' && !ledger.isClearedDebt) {
-            // ✅ ใช้ itemId เป็น key หลัก (ถ้าไม่มีให้ใช้ fundName)
-            const itemId = ledger.itemId || ledger.fundName
-            const key = `item-${itemId}`
-
-            if (!groupedByItemId[key]) {
-              // ✅ ดึงข้อมูล Item จาก itemId
-              const itemData = ledger.itemId ? getItemById(ledger.itemId) : null
-
-              groupedByItemId[key] = {
-                id: key,
-                itemId: ledger.itemId,
-                itemName: ledger.fundName,
-                department: ledger.faculty,
-                subDepartment: ledger.sub1 || ledger.sub2 || '-',
-
-                // ✅ ยอดเงิน
-                depositNetAmount: 0, // ยอดยกยอดจากต้นปี (ถ้ามี)
-                debtorAmount: 0, // ยอดที่ล้างสะสมในปีนี้ (0 เพราะยังไม่ได้ล้าง)
-                balanceAmount: 0, // ยอดคงเหลือสุทธิ (จะบวกทีละรายการ)
-
-                affiliationId: ledger.affiliationId,
-
-                // ✅ เก็บรายการต้นฉบับทั้งหมด
-                _receipts: [],
-                _originalReceipt: ledger._originalReceipt,
-              }
-            }
-
-            // ✅ บวกยอดเงิน
-            groupedByItemId[key].balanceAmount += ledger.amount
-
-            // ✅ เก็บข้อมูลรายการย่อย
-            groupedByItemId[key]._receipts.push({
-              receiptId: ledger.delNumber,
-              amount: ledger.amount,
-              responsible: ledger.fullName,
-              createdAt: ledger.createdAt,
-              docKey: ledger.docKey,
-            })
-          }
-        })
-      })
-
-      return Object.values(groupedByItemId)
-    }
   },
 
   actions: {
+    /* =========================
+     * core apply / rollback
+     * ========================= */
+
     applyLedger(e: LedgerEntry) {
+      // ---------- unit agg ----------
       if (!this.unitsByKey[e.unitKey]) {
         this.unitsByKey[e.unitKey] = initUnitAgg(e)
       }
@@ -276,6 +110,7 @@ export const useSummaryStore = defineStore('Summary', {
       if (e.direction === 'DEBT_CLEAR') u.debtClear += e.amount
       u.net += e.signed
 
+      // ---------- totals ----------
       this.totals.docs++
       if (e.direction === 'INCOME') this.totals.income += e.amount
       if (e.direction === 'DEBT_NEW') this.totals.debtNew += e.amount
@@ -304,40 +139,38 @@ export const useSummaryStore = defineStore('Summary', {
       if (u.docs <= 0) delete this.unitsByKey[e.unitKey]
     },
 
-    ingestUpsert(
-      receipt: Receipt,
-      mode: 'create' | 'update' | 'clear'
-    ) {
-      const docKey = safeStr(
-        (receipt as any).projectCode || (receipt as any).id
-      )
+    /* =========================
+     * ingest
+     * ========================= */
+
+    ingestUpsert(receipt: Receipt) {
+      const docKey = receipt.id
       if (!docKey) return
 
-      if (mode !== 'create' && this.ledgerByDoc[docKey]) {
-        this.ledgerByDoc[docKey].forEach((e) => this.rollbackLedger(e))
+      // rollback old
+      if (this.ledgerByDoc[docKey]) {
+        this.rollbackLedger(this.ledgerByDoc[docKey])
       }
 
-      const ledgers = receiptToLedgers(receipt, mode)
-      ledgers.forEach((e) => this.applyLedger(e))
+      const ledger = receiptToLedgerEntry(receipt)
+      this.applyLedger(ledger)
 
-      this.ledgerByDoc[docKey] = ledgers
-
+      this.ledgerByDoc[docKey] = ledger
       this.receiptsByDoc[docKey] = receipt
     },
 
     ingestDelete(docKey: string) {
-      const key = safeStr(docKey)
-      const ledgers = this.ledgerByDoc[key]
-      if (!ledgers) return
+      const ledger = this.ledgerByDoc[docKey]
+      if (!ledger) return
 
-      ledgers.forEach((e) => this.rollbackLedger(e))
-      delete this.ledgerByDoc[key]
-      delete this.receiptsByDoc[key]
+      this.rollbackLedger(ledger)
+      delete this.ledgerByDoc[docKey]
+      delete this.receiptsByDoc[docKey]
     },
 
     ingestMany(receipts: Receipt[]) {
       this.reset()
-      receipts.forEach((r) => this.ingestUpsert(r, 'create'))
+      receipts.forEach((r) => this.ingestUpsert(r))
     },
   clearAll() {
     this.reset()
@@ -350,12 +183,3 @@ export const useSummaryStore = defineStore('Summary', {
   },
   },
 })
-
-function getAffiliationId(faculty: string): string {
-  const mapping: Record<string, string> = {
-    'คณะแพทยศาสตร์': 'MED',
-    'คณะพยาบาลศาสตร์': 'NUR',
-    'คณะทันตแพทยศาสตร์': 'DEN',
-  }
-  return mapping[faculty] || ''
-}

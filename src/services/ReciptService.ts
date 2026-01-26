@@ -36,31 +36,32 @@ class ReciptService {
   /**
    * 📋 ดึงข้อมูลใบนำส่งทั้งหมด
    */
-  async getAll(): Promise<Receipt[]> {
-    try {
-      const res = await axios.get('/getReceipt')
-      const data = res.data
+async getAll(): Promise<Receipt[]> {
+  try {
+    const res = await axios.get('/getReceipt')
+    const data = res.data
 
-      // กันทุก format
-      if (Array.isArray(data)) {
-        return data
-      }
+    // กันทุก format
+    let receipts: any[] = []
 
-      if (Array.isArray(data?.data)) {
-        return data.data
-      }
-
-      if (Array.isArray(data?.receipts)) {
-        return data.receipts
-      }
-
+    if (Array.isArray(data)) {
+      receipts = data
+    } else if (Array.isArray(data?.data)) {
+      receipts = data.data
+    } else if (Array.isArray(data?.receipts)) {
+      receipts = data.receipts
+    } else {
       console.warn('⚠️ Unexpected API format:', data)
       return []
-    } catch (error) {
-      console.error('❌ Error fetching receipts:', error)
-      throw new Error('ไม่สามารถโหลดข้อมูลใบนำส่งได้')
     }
+
+    // ✅ กรองเฉพาะ receipts ที่ valid และมี approvalStatus
+    return receipts.filter(r => r && typeof r === 'object' && r.approvalStatus)
+  } catch (error) {
+    console.error('❌ Error fetching receipts:', error)
+    throw new Error('ไม่สามารถโหลดข้อมูลใบนำส่งได้')
   }
+}
 
   /**
    * 🔍 ดึงข้อมูลใบนำส่งตาม ID (waybillNumber)
@@ -292,47 +293,50 @@ class ReciptService {
    * 📊 กรองใบนำส่งตามสถานะ
    */
   filterByStatus(receipts: Receipt[], status: ApprovalStatus): Receipt[] {
-    return receipts.filter((r) => r.approvalStatus === status)
-  }
+  return receipts.filter((r) => r && r.approvalStatus === status)
+}
 
   /**
    * 📊 กรองใบนำส่งตามสังกัด
    */
   filterByAffiliation(receipts: Receipt[], affiliationId: string): Receipt[] {
-    return receipts.filter((r) => r.affiliationId === affiliationId)
-  }
+  return receipts.filter((r) => r && r.affiliationId === affiliationId)
+}
 
   /**
    * 📊 คำนวณสถิติ
    */
-  calculateStats(receipts: Receipt[]): {
-    total: number
-    pending: number
-    approved: number
-    rejected: number
-    totalAmount: number
-    pendingAmount: number
-    approvedAmount: number
-  } {
-    return {
-      total: receipts.length,
-      pending: this.filterByStatus(receipts, 'pending').length,
-      approved: this.filterByStatus(receipts, 'approved').length,
-      rejected: this.filterByStatus(receipts, 'rejected').length,
-      totalAmount: receipts.reduce(
-        (sum, r) => sum + (Number(r.netTotalAmount) || 0),
-        0
-      ),
-      pendingAmount: this.filterByStatus(receipts, 'pending').reduce(
-        (sum, r) => sum + (Number(r.netTotalAmount) || 0),
-        0
-      ),
-      approvedAmount: this.filterByStatus(receipts, 'approved').reduce(
-        (sum, r) => sum + (Number(r.netTotalAmount) || 0),
-        0
-      ),
-    }
+calculateStats(receipts: Receipt[]): {
+  total: number
+  pending: number
+  approved: number
+  rejected: number
+  totalAmount: number
+  pendingAmount: number
+  approvedAmount: number
+} {
+  // กรอง receipts ที่ valid ก่อน
+  const validReceipts = receipts.filter(r => r && r.approvalStatus)
+
+  return {
+    total: validReceipts.length,
+    pending: this.filterByStatus(validReceipts, 'pending').length,
+    approved: this.filterByStatus(validReceipts, 'approved').length,
+    rejected: this.filterByStatus(validReceipts, 'rejected').length,
+    totalAmount: validReceipts.reduce(
+      (sum, r) => sum + (Number(r.netTotalAmount) || 0),
+      0
+    ),
+    pendingAmount: this.filterByStatus(validReceipts, 'pending').reduce(
+      (sum, r) => sum + (Number(r.netTotalAmount) || 0),
+      0
+    ),
+    approvedAmount: this.filterByStatus(validReceipts, 'approved').reduce(
+      (sum, r) => sum + (Number(r.netTotalAmount) || 0),
+      0
+    ),
   }
+}
 
   /**
    * 🔔 แจ้งเตือนการอัปเดตข้อมูล (สำหรับ sync ระหว่างหน้า)

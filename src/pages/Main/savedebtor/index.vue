@@ -374,7 +374,6 @@
                   </button>
                   <span v-else-if="page === currentPageHistory - 2 || page === currentPageHistory + 2" class="text-slate-400 px-1">...</span>
                 </template>
-
                 <button
                   @click="goToPageHistory(currentPageHistory + 1)"
                   :disabled="currentPageHistory === totalPagesHistory"
@@ -471,35 +470,85 @@ const formatCurrency = (amount: number | string) => {
     maximumFractionDigits: 2,
   })
 }
-
+/* =========================
+ * ✅ Load Receipt Data (กรองรายการที่ล้างแล้ว)
+ * ========================= */
 /* =========================
  * ✅ Load Receipt Data (กรองรายการที่ล้างแล้ว)
  * ========================= */
 const loadReceiptData = async () => {
   console.log('📥 Loading debtor data...')
-
   isLoading.value = true
+
   try {
-    if (!auth.isLoggedIn) {
-      rawData.value = []
-      return
-    }
+    const receipts = await reciptService.getAll()
+    console.log('📦 Total receipts loaded:', receipts.length)
 
-    // ✅ ใช้ ClearDebtorService แทน
-    let pendingItems = await clearDebtorService.getPendingDebts()
+    // ✅ แปลง receipts เป็น array ของ items
+    const allItems: any[] = []
 
-    // Permission filter
-    if (auth.role === 'user' && auth.user?.affiliationId) {
-      const beforeFilter = pendingItems.length
-      pendingItems = clearDebtorService.filterByAffiliation(
-        pendingItems,
-        auth.user.affiliationId
-      )
-      console.log(`🔒 Permission filter: ${beforeFilter} → ${pendingItems.length}`)
-    }
+    receipts.forEach((receipt) => {
+      console.log('🔍 Processing receipt:', {
+        waybillNumber: receipt.waybillNumber,
+        hasDebtorList: !!receipt.debtorList,
+        debtorListLength: receipt.debtorList?.length || 0
+      })
 
-    rawData.value = pendingItems
-    console.log('✅ Final items to display:', rawData.value.length)
+      // ✅ ใช้ debtorList แทน receiptList
+      if (!receipt.debtorList || receipt.debtorList.length === 0) {
+        console.warn(`⚠️ Receipt ${receipt.waybillNumber} has no debtorList`)
+        return
+      }
+
+      receipt.debtorList.forEach((item: any) => {
+        // ✅ ตรวจสอบว่าเป็น receivable และยังไม่ได้ล้าง
+        const itemType = getItemType(item.itemName)
+        const isClearedDebt = item.isClearedDebt === true
+
+        console.log(`📝 Processing debtor item:`, {
+          itemName: item.itemName,
+          amount: item.amount,
+          detectedType: itemType,
+          isClearedDebt,
+          willShow: itemType === 'receivable' && !isClearedDebt
+        })
+
+        // ✅ เฉพาะ receivable ที่ยังไม่ได้ล้าง
+        if (itemType === 'receivable' && !isClearedDebt) {
+          allItems.push({
+            // ✅ ใช้ waybillNumber + itemName + timestamp เป็น unique ID
+            id: `${receipt.waybillNumber}-${item.itemName}-${Date.now()}-${Math.random()}`,
+            receiptId: receipt.waybillNumber,
+            itemName: item.itemName,
+
+            // ✅ ใช้ amount จาก debtorList (ยอดลูกหนี้)
+            debtorAmount: Number(item.amount || 0),
+
+            // ✅ ยอดคงเหลือ = ยอดลูกหนี้ (เพราะยังไม่ได้ล้าง)
+            balanceAmount: Number(item.amount || 0),
+
+            // ✅ ไม่ต้องมี depositNetAmount
+            depositNetAmount: 0,
+
+            // ข้อมูลหน่วยงาน
+            department: receipt.mainAffiliationName || receipt.affiliationName || '-',
+            subDepartment: receipt.subAffiliationName1 || '-',
+            responsible: receipt.fullName || '-',
+
+            // เก็บ reference กลับไป receipt ต้นฉบับ
+            _originalReceipt: receipt,
+            note: item.debtornote || ''
+          })
+        }
+      })
+    })
+
+    rawData.value = allItems
+
+    console.log('✅ Processed items:', {
+      total: allItems.length,
+      sample: allItems.slice(0, 3)
+    })
 
   } catch (err) {
     console.error('❌ Load error:', err)
@@ -509,58 +558,19 @@ const loadReceiptData = async () => {
   }
 }
 
+/* =========================
+ * Load History
+ * ========================= */
 const loadHistory = () => {
   historyItems.value = clearDebtorService.getHistory()
 }
 /* =========================
  * Computed - Group Items
  * ========================= */
-const groupedItems = computed(() => {
-  const grouped = new Map<number, any>()
-
-  for (const item of rawData.value) {
-    const itemId = item.itemId
-
-    if (grouped.has(itemId)) {
-      const existing = grouped.get(itemId)!
-      existing.depositNetAmount = Number(existing.depositNetAmount || 0) + Number(item.depositNetAmount || 0)
-      existing.debtorAmount = Number(existing.debtorAmount || 0) + Number(item.debtorAmount || 0)
-      existing.balanceAmount = Number(existing.balanceAmount || 0) + Number(item.balanceAmount || 0)
-      existing._count++
-
-      if (item._receipts) {
-        existing._receipts.push(...item._receipts)
-      }
-
-      if (item.responsible) {
-        existing._responsibles.add(item.responsible)
-      }
-
-      // ✅ เก็บรายการย่อยทั้งหมดไว้
-      existing._allItems.push(item)
-
-    } else {
-      grouped.set(itemId, {
-        ...item,
-        _count: 1,
-        _receipts: item._receipts || [],
-        _responsibles: new Set(item.responsible ? [item.responsible] : []),
-        _allItems: [item] // ✅ เก็บรายการย่อยทั้งหมด
-      })
-    }
-  }
-
-  return Array.from(grouped.values()).map(item => ({
-    ...item,
-    responsible: Array.from(item._responsibles).join(', ') || '-',
-    note: item._count > 1 ? `รวม ${item._count} รายการ` : item.note || '',
-    _responsibles: undefined,
-  }))
+const filteredItems = computed(() => {
+  // ✅ ไม่ต้อง group แล้ว แสดงทีละรายการตามที่กรอกมา
+  return rawData.value
 })
-
-const filteredItems = computed(() => groupedItems.value)
-
-
 /* =========================
  * Pagination - New Tab
  * ========================= */
@@ -593,122 +603,11 @@ const selectedTotal = computed(() =>
     .filter(i => selectedItems.value.has(i.id))
     .reduce((sum, i) => sum + Number(i.balanceAmount || 0), 0)
 )
-const totalBalanceAmount = computed(() =>
-  filteredItems.value.reduce((sum, i) => sum + Number(i.balanceAmount || 0), 0)
-)
 /* =========================
  * Clear Selected Debtors
  * ========================= */
 const clearSelectedDebtors = async () => {
-  if (selectedItems.value.size === 0) {
-    alert('กรุณาเลือกรายการที่ต้องการล้างลูกหนี้')
-    return
-  }
-
-  // ✅ ดึงรายการที่เลือก (grouped by waybillNumber)
-  const selectedGrouped = groupedItems.value.filter(group =>
-    selectedItems.value.has(group.id)
-  )
-
-  console.log('📦 Selected groups:', selectedGrouped.length)
-
-  // ✅ เตรียมข้อมูลสำหรับส่งไปหน้าถัดไป (ไม่ซ้ำ)
-  const receiptsByWaybill = new Map()
-
-  selectedGrouped.forEach(group => {
-    const receipt = group._originalReceipt
-    const waybillNumber = group.waybillNumber
-
-    // ✅ ป้องกันการซ้ำ - ถ้ามีอยู่แล้วให้ข้าม
-    if (receiptsByWaybill.has(waybillNumber)) {
-      console.warn(`⚠️ Duplicate waybill: ${waybillNumber}`)
-      return
-    }
-
-    receiptsByWaybill.set(waybillNumber, {
-      waybillNumber: waybillNumber,
-      receiptId: receipt.id,
-      projectCode: receipt.projectCode || waybillNumber,
-      fullName: receipt.fullName || group.responsible || '-',
-      phone: receipt.phone || '-',
-      department: group.department || receipt.mainAffiliationName || '-',
-      subDepartment: group.subDepartment || receipt.subAffiliationName || '-',
-      sendmoney: receipt.sendmoney || 'รายได้',
-      fundName: receipt.fundName || '-',
-      createdAt: receipt.createdAt || new Date().toISOString(),
-      items: group._allItems.map(item => ({
-        id: item.id,
-        itemId: item.itemId,
-        itemName: item.itemName,
-        amount: Number(item.balanceAmount || 0),
-        debtorAmount: Number(item.balanceAmount || item.debtorAmount || 0),
-        balanceAmount: Number(item.balanceAmount || 0),
-        note: item.note || '',
-        referenceId: item.receiptId || item.id
-      }))
-    })
-  })
-
-  // ✅ แปลง Map เป็น Array
-  const receiptsArray = Array.from(receiptsByWaybill.values())
-
-  console.log('📊 Unique receipts:', receiptsArray.length)
-  console.log('📋 Receipt details:', receiptsArray)
-
-  const summaryData = {
-    receipts: receiptsArray
-  }
-
-  localStorage.setItem(STORAGE_SUMMARY_KEY, JSON.stringify(summaryData))
-
-  const referenceId = `REF-${Date.now()}`
-
-  // ✅ สร้าง History Entry
-  const historyEntry = {
-    id: `CLEAR-${Date.now()}`,
-    referenceId: referenceId,
-    date: new Date().toLocaleString('th-TH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }),
-    items: receiptsArray.flatMap(r => 
-      r.items.map(item => ({
-        itemName: item.itemName,
-        amount: Number(item.balanceAmount || 0),
-        referenceId: r.waybillNumber,
-        note: item.note || '',
-        department: r.department,
-        subDepartment: r.subDepartment
-      }))
-    ),
-    itemsText: receiptsArray.map(r => 
-      `[${r.waybillNumber}] ${r.fullName}`
-    ).join(', '),
-    total: receiptsArray.reduce(
-      (sum, r) => sum + r.items.reduce((s, i) => s + Number(i.balanceAmount || 0), 0),
-      0
-    ),
-    fullName: receiptsArray[0]?.fullName || 'ไม่ระบุ',
-    phone: receiptsArray[0]?.phone || '-',
-    department: receiptsArray[0]?.department || 'ไม่ระบุ',
-    sendmoney: receiptsArray[0]?.sendmoney || 'รายได้',
-    fundName: receiptsArray[0]?.fundName || '-',
-    receiptId: receiptsArray[0]?.waybillNumber || referenceId,
-    payments: [],
-  }
-
-  const currentHistory = historyItems.value
-  currentHistory.unshift(historyEntry)
-  localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(currentHistory))
-
-  console.log('✅ Saved to localStorage:', summaryData)
-
-  router.push('/cleardebtor/multi')
 }
-
 /* =========================
  * Actions
  * ========================= */
@@ -745,6 +644,20 @@ const goToPageHistory = (page: number) => {
  * ========================= */
 const handleStorageChange = (e: StorageEvent) => {
   if (e.key === 'fakeApi.receipts' || e.key === 'receipts_last_update') {
+    console.log('🔄 Storage changed - reloading data')
+    loadReceiptData()
+  }
+}
+
+// ✅ เพิ่ม listener สำหรับ custom event จาก ReciptService
+const handleReceiptsUpdated = (event: Event) => {
+  const customEvent = event as CustomEvent
+  const action = customEvent.detail?.action
+
+  console.log('🔔 Receipts updated event:', action)
+
+  // Reload เมื่อมีการ create, update, delete
+  if (['create', 'update', 'delete', 'approve', 'reject'].includes(action)) {
     loadReceiptData()
   }
 }
@@ -753,7 +666,12 @@ onMounted(async () => {
   console.log('🚀 Component mounted')
   await loadReceiptData()
   loadHistory()
+
+  // Listen to storage events
   window.addEventListener('storage', handleStorageChange)
+
+  // ✅ Listen to custom receipts-updated events
+  window.addEventListener('receipts-updated', handleReceiptsUpdated)
 })
 
 // ✅ เพิ่ม onActivated เพื่อ reload เมื่อกลับมาหน้านี้
@@ -765,17 +683,14 @@ onActivated(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', handleStorageChange)
-})
-onActivated(async () => {
-  console.log('🔄 Component activated - reloading data')
-  await loadReceiptData()
-  loadHistory()
+  window.removeEventListener('receipts-updated', handleReceiptsUpdated)
 })
 
 /* =========================
  * Watchers
  * ========================= */
 watch(activeTab, async tab => {
+  console.log('🔄 Tab changed to:', tab)
   if (tab === 'new') {
     await loadReceiptData()
     currentPageNew.value = 1
@@ -785,14 +700,32 @@ watch(activeTab, async tab => {
   }
 })
 
+// ✅ เพิ่ม watcher สำหรับ route changes
 watch(
   () => route.path,
   async path => {
-    if (path === '/indexsavedebtor' && activeTab.value === 'new') {
+    if (path === '/indexsavedebtor') {
       console.log('🔄 Route changed to /indexsavedebtor - reloading')
       await loadReceiptData()
+      loadHistory()
     }
   }
+)
+
+// ✅ เพิ่ม watcher สำหรับ filteredItems เพื่อ debug
+watch(
+  () => filteredItems.value,
+  (newVal) => {
+    console.log('📊 Filtered items updated:', {
+      total: newVal.length,
+      sample: newVal.slice(0, 3).map(i => ({
+        id: i.id,
+        itemName: i.itemName,
+        balanceAmount: i.balanceAmount
+      }))
+    })
+  },
+  { deep: true }
 )
 
 /* =========================
@@ -809,18 +742,20 @@ if (DEBUG && typeof window !== 'undefined') {
 /**
  * ✅ Helper: ดึง itemType จาก itemId หรือ itemName
  */
-const getItemType = (itemIdOrName: number | string | null): 'income' | 'receivable' | 'expense' | 'unknown' => {
-  if (!itemIdOrName) return 'unknown'
-
-  // ถ้าเป็น itemId (number) ให้ดึงจาก ItemNameOption
-  if (typeof itemIdOrName === 'number') {
-    const item = getItemById(itemIdOrName)
-    return item?.type || 'unknown'
+const getItemType = (itemName: string | null): 'income' | 'receivable' | 'expense' | 'unknown' => {
+  if (!itemName) {
+    console.warn('⚠️ getItemType: No itemName provided')
+    return 'unknown'
   }
 
-  // ถ้าเป็น itemName (string) ให้ดึงจาก ItemNameOption
-  const item = getItemByName(itemIdOrName as string)
-  return item?.type || 'unknown'
+  const item = getItemByName(itemName)
+  if (item) {
+    console.log(`✅ Found item by name "${itemName}":`, item.name, item.type)
+    return item.type
+  }
+
+  console.warn(`⚠️ Item name "${itemName}" not found`)
+  return 'unknown'
 }
 </script>
 

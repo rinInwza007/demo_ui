@@ -1,3 +1,4 @@
+//pdfpage/index.vue
 <template>
   <div>
     <div v-if="loading" class="flex justify-center items-center h-96">
@@ -189,7 +190,7 @@ const bankTransfers = receipt.bankTransfers || []
   const otherName = pm.other?.name?.trim() || 'อื่น ๆ'
 const isApproved = receipt.approvalStatus === 'approved'
 const approverName = receipt.approverName || 'เจ้าหน้าที่การเงิน'
-const approvalDate = receipt.approvedAt 
+const approvalDate = receipt.approvedAt
   ? new Date(receipt.approvedAt).toLocaleDateString('th-TH', {
       year: 'numeric',
       month: 'long',

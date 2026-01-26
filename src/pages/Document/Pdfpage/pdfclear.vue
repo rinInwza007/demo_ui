@@ -28,7 +28,6 @@
   </div>
 </template>
 
-<!-- ✅ เพิ่ม lang="ts" -->
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -36,7 +35,6 @@ import pdfMake from 'pdfmake/build/pdfmake'
 import { vfs, fonts } from '../../../assets/fonts.js'
 import Navbar from '@/components/bar/navbar.vue'
 import SecondNavbar from '@/components/bar/secoudnavbar.vue'
-
 
 const route = useRoute()
 const router = useRouter()
@@ -47,11 +45,6 @@ const gotomainpage = () => {
 
 pdfMake.vfs = vfs
 pdfMake.fonts = fonts
-
-// ✅ ลบฟังก์ชัน viewPdf ออกเพราะไม่ได้ใช้ในไฟล์นี้
-// const viewPdf = (id: string) => {
-//   router.push(`/pdfclear/${id}`)
-// }
 
 const pdfUrl = ref<string | null>(null)
 const receiptData = ref<any>(null)
@@ -68,6 +61,83 @@ const currentDate = new Date().toLocaleDateString('th-TH', {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
+})
+
+// ✅ ฟังก์ชันตรวจสอบว่าเป็นลูกหนี้หรือไม่ (คัดลอกจาก pdfpage)
+function isReceivableItem(itemName: string): boolean {
+  if (!itemName) return false
+  const receivableKeywords = ['ลูกหนี้', 'receivable', 'debtor']
+  const lowerItemName = itemName.toLowerCase()
+  return receivableKeywords.some(keyword => lowerItemName.includes(keyword))
+}
+
+// ✅ ฟังก์ชันแยกรายการลูกหนี้ (คัดลอกจาก pdfpage)
+function separateDebtorItems() {
+  const debtors: any[] = []
+  const normalItems: any[] = []
+  let totalDebtor = 0
+
+  rows.forEach((row) => {
+    const isDebtor = isReceivableItem(row.item)
+
+    if (isDebtor && row.amount) {
+      const amount =
+        typeof row.amount === 'string'
+          ? parseFloat(row.amount.replace(/,/g, ''))
+          : Number(row.amount)
+
+      debtors.push({
+        itemName: row.item,
+        amount: amount,
+        formattedAmount: amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+      })
+
+      totalDebtor += amount
+    } else {
+      normalItems.push(row)
+    }
+  })
+
+  return {
+    debtors,
+    normalItems,
+    totalDebtor,
+    hasDebtor: debtors.length > 0,
+  }
+}
+
+// ✅ ฟังก์ชันสร้างเครื่องหมายถูก (คัดลอกจาก pdfpage)
+const createCheckbox = () => ({
+  canvas: [
+    {
+      type: 'rect',
+      x: 0,
+      y: 2,
+      w: 8,
+      h: 8,
+      stroke: 'black',
+      fill: null,
+    },
+    {
+      type: 'line',
+      x1: 2,
+      y1: 6,
+      x2: 4,
+      y2: 8,
+      stroke: 'black',
+      strokeWidth: 1,
+    },
+    {
+      type: 'line',
+      x1: 4,
+      y1: 8,
+      x2: 7,
+      y2: 3,
+      stroke: 'black',
+      strokeWidth: 1,
+    },
+  ],
+  width: 10,
 })
 
 function convertNumberToThaiText(number: number) {
@@ -93,11 +163,13 @@ function convertNumberToThaiText(number: number) {
 
 function createDocDefinition() {
   const receipt = receiptData.value || {}
+  const { debtors, totalDebtor, hasDebtor } = separateDebtorItems()
 
   console.log('🎨 Creating PDF with:')
   console.log('  Receipt data:', receipt)
   console.log('  Rows count:', rows.length)
-  console.log('  Rows data:', rows)
+  console.log('  Has debtor:', hasDebtor)
+  console.log('  Debtors:', debtors)
 
   return {
     pageSize: 'A4',
@@ -185,7 +257,7 @@ function createDocDefinition() {
 
       { text: '\n' },
 
-      // รายการชำระเงิน
+      // ✅ รายการชำระเงิน พร้อมเครื่องหมายถูก
       ...(receipt.payments && receipt.payments.length > 0 ?
         receipt.payments.flatMap((payment: any) => {
           const result: any[] = []
@@ -193,128 +265,127 @@ function createDocDefinition() {
           if (payment.type === 'transfer') {
             result.push({
               columns: [
+                { ...createCheckbox(), margin: [100, 12, 0, 0] },
                 {
-                  text: 'นำฝากเข้าบัญชีธนาคาร',
-                  style: 'form',
-                  width: 'auto',
-                  margin: [33, 3, 0, 0],
-                  noWrap: true
+                  text: `นำฝากบัญชี ${payment.bankName || ''}`,
+                  margin: [110, 10, 0, 0],
                 },
                 {
-                  stack: [
-                    { text: `${payment.bankName || ''}`, alignment: 'center', lineHeight: 1.2 },
-                    { text: '.............................', alignment: 'center', margin: [0, -19, 0, 0], lineHeight: 1 }
-                  ],
-                  width: 120,
-                  margin: [-60, 3, 0, 0]
-                },
-                {
-                  text: 'เลขที่บัญชี',
-                  style: 'form',
-                  width: 'auto',
-                  margin: [-60, 3, 0, 0]
-                },
-                {
-                  stack: [
-                    { text: `${payment.accountNumber || ''}`, alignment: 'center', lineHeight: 1.2 },
-                    { text: '.............................', alignment: 'center', margin: [0, -19, 0, 0], lineHeight: 1 }
-                  ],
-                  width: 100,
-                  margin: [-40, 3, 0, 0]
+                  text: `เลขที่ ${payment.accountNumber || ''}`,
+                  margin: [5, 10, 0, 0],
                 }
               ],
-              columnGap: 3,
-              margin: [50, 3, 0, 0]
             })
 
             result.push({
               columns: [
-                { text: '', width: 20, margin: [52.5, 0, 0, 0] },
-                { text: 'ชื่อบัญชี', style: 'form', width: 'auto', margin: [13, 3, 0, 0] },
                 {
-                  stack: [
-                    { text: `${payment.accountName || payment.bankName || ''}`, alignment: 'center', lineHeight: 1.2 },
-                    { text: '.........................................................', alignment: 'center', margin: [0, -19, 0, 0], lineHeight: 1 }
-                  ],
+                  text: `ชื่อบัญชี ${payment.accountName || payment.bankName || ''}`,
+                  margin: [120, 0, 0, 0],
                   width: 200,
-                  margin: [-75, 3, 0, 0]
+                  noWrap: true,
                 },
-                { text: 'จำนวนเงิน', style: 'form', width: 'auto', margin: [34.5, 3, 0, 0] },
                 {
-                  stack: [
-                    { text: `${payment.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`, alignment: 'center', lineHeight: 1.2 },
-                    { text: '.............................', alignment: 'center', margin: [0, -19, 0, 0], lineHeight: 1 }
-                  ],
-                  width: 80,
-                  margin: [-18, 3, 0, 0]
+                  text: 'จำนวน',
+                  width: 50,
+                  margin: [163, 0, 0, 0],
+                  noWrap: true,
                 },
-                { text: 'บาท', style: 'form', width: 'auto', margin: [-20, 3, 0, 0] }
+                {
+                  text: payment.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+                  width: 80,
+                  margin: [155, 0, 0, 0],
+                  noWrap: true,
+                },
+                {
+                  text: 'บาท',
+                  width: 30,
+                  noWrap: true,
+                  margin: [115, 0, 0, 0],
+                },
               ],
-              margin: [50, 3, 0, 0]
             })
           } else if (payment.type === 'cash') {
             result.push({
               columns: [
-                { text: 'เงินสด', style: 'form', width: 'auto', margin: [33, 3, 0, 0] },
-                { text: 'จำนวนเงิน', style: 'form', width: 'auto', margin: [0, 3, 0, 0] },
+                { ...createCheckbox(), margin: [100, 7, 0, 0] },
                 {
-                  stack: [
-                    { text: `${payment.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`, alignment: 'center', lineHeight: 1.2 },
-                    { text: '.............................', alignment: 'center', margin: [0, -19, 0, 0], lineHeight: 1 }
-                  ],
-                  width: 80,
-                  margin: [-15, 3, 7, 0]
+                  text: 'เงินสด',
+                  margin: [110, 5, 0, 0],
+                  noWrap: true,
+                  width: 'auto',
                 },
-                { text: 'บาท', style: 'form', width: 'auto', margin: [-20, 3, 0, 0] }
+                {
+                  text: 'จำนวน',
+                  width: 'auto',
+                  margin: [220, 5, 0, 0],
+                  noWrap: true,
+                },
+                {
+                  text: payment.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+                  width: 80,
+                  margin: [0, 5, 15, 0],
+                  alignment: 'center',
+                },
+                {
+                  text: 'บาท',
+                  width: 'auto',
+                  noWrap: true,
+                  margin: [-19, 5, 0, 0],
+                },
               ],
-              margin: [50, 3, 95, 0]
             })
           } else if (payment.type === 'check') {
             result.push({
               columns: [
-                { text: 'เช็คธนาคาร', style: 'form', width: 'auto', margin: [33, 3, 0, 0] },
+                { ...createCheckbox(), margin: [100, 7, 0, 0] },
                 {
-                  stack: [
-                    { text: `${payment.bankName || ''}`, alignment: 'center', lineHeight: 1.2 },
-                    { text: '.............................', alignment: 'center', margin: [0, -19, 0, 0], lineHeight: 1 }
-                  ],
-                  width: 120,
-                  margin: [-60, 3, 0, 0]
-                },
-                {
-                  text: 'เลขที่เช็ค',
-                  style: 'form',
+                  text: 'เช็ค',
                   width: 'auto',
-                  margin: [-60, 3, 0, 0]
+                  noWrap: true,
+                  margin: [110, 5, 0, 0],
                 },
                 {
-                  stack: [
-                    { text: `${payment.checkNumber || ''}`, alignment: 'center', lineHeight: 1.2 },
-                    { text: '.............................', alignment: 'center', margin: [0, -19, 0, 0], lineHeight: 1 }
-                  ],
-                  width: 100,
-                  margin: [-40, 3, 0, 0]
-                }
+                  text: `ธนาคาร${payment.bankName || ''}`,
+                  margin: [5, 5, 0, 0],
+                },
               ],
-              columnGap: 3,
-              margin: [50, 3, 0, 0]
             })
 
             result.push({
               columns: [
-                { text: '', width: 20, margin: [52.5, 0, 0, 0] },
-                { text: 'จำนวนเงิน', style: 'form', width: 'auto', margin: [13, 3, 0, 0] },
                 {
-                  stack: [
-                    { text: `${payment.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`, alignment: 'center', lineHeight: 1.2 },
-                    { text: '.............................', alignment: 'center', margin: [0, -19, 0, 0], lineHeight: 1 }
-                  ],
-                  width: 80,
-                  margin: [-18, 3, 0, 0]
+                  text: payment.checkNumber ? `เลขที่เช็ค ${payment.checkNumber}` : '',
+                  alignment: 'left',
+                  noWrap: true,
+                  margin: [-10, 0, 0, 0],
                 },
-                { text: 'บาท', style: 'form', width: 'auto', margin: [-20, 3, 0, 0] }
+                {
+                  columns: [
+                    {
+                      text: 'จำนวน',
+                      noWrap: true,
+                      width: 'auto',
+                    },
+                    {
+                      text: payment.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+                      alignment: 'right',
+                      width: 'auto',
+                      noWrap: true,
+                      margin: [18.5, 0, 0, 0],
+                    },
+                    {
+                      text: 'บาท',
+                      noWrap: true,
+                      width: 'auto',
+                      margin: [16.5, 0, 0, 0],
+                    },
+                  ],
+                  alignment: 'right',
+                  width: 'auto',
+                },
               ],
-              margin: [50, 3, 0, 0]
+              margin: [130, 0, 92.5, 0],
             })
           }
 
@@ -322,78 +393,85 @@ function createDocDefinition() {
         })
       : []),
 
-      { text: '\n\n' },
+      // ✅ ส่วนลูกหนี้ (เพิ่มใหม่)
+
+      { text: '\n' },
 
       // ลายเซ็น
       {
-        columns: [
+        unbreakable: true,
+        stack: [
           {
-            stack: [
+            columns: [
               {
-                style: 'form',
-                text: 'ลงชื่อ',
-                margin: [20, 0, 0, 0],
-                alignment: 'left',
+                stack: [
+                  {
+                    text: 'ลงชื่อ',
+                    margin: [20, 0, 0, 0],
+                    alignment: 'left',
+                    bold: true,
+                  },
+                  {
+                    text: receipt.fullName || '',
+                    alignment: 'center',
+                    margin: [0, 0, 0, -15],
+                    fontSize: 13,
+                  },
+                  {
+                    text: '(........................................................................)',
+                    alignment: 'center',
+                    bold: true,
+                  },
+                  {
+                    text: 'ผู้นำส่งเงิน',
+                    alignment: 'center',
+                    margin: [10, 0, 0, 0],
+                    bold: true,
+                  },
+                  {
+                    text: receipt.date || currentDate,
+                    alignment: 'center',
+                    margin: [0, 0, 0, -15],
+                    fontSize: 13,
+                  },
+                  {
+                    text: 'ลงวันที่.......................................................',
+                    alignment: 'center',
+                    bold: true,
+                  },
+                ],
               },
               {
-                text: receipt.fullName || '',
-                alignment: 'center',
-                margin: [0, 0, 0, -15],
-                fontSize: 13,
-              },
-              {
-                style: 'form',
-                text: '(........................................................................)',
-                alignment: 'center',
-              },
-              {
-                style: 'form',
-                text: 'ผู้นำส่งเงิน',
-                alignment: 'center',
-                margin: [10, 0, 0, 0]
-              },
-              {
-                text: receipt.date || currentDate,
-                alignment: 'center',
-                margin: [0, 0, 0, -15],
-                fontSize: 13,
-              },
-              {
-                style: 'form',
-                text: 'ลงวันที่.......................................................',
-                alignment: 'center',
+                stack: [
+                  {
+                    text: 'ลงชื่อ',
+                    margin: [0, 0, 225, 0],
+                    alignment: 'center',
+                    bold: true,
+                  },
+                  {
+                    text: '(........................................................................)',
+                    alignment: 'center',
+                    margin: [0, 1, 0, 0],
+                    bold: true,
+                  },
+                  {
+                    text: 'ผู้รับเงิน',
+                    alignment: 'center',
+                    bold: true,
+                  },
+                  {
+                    text: 'ลงวันที่.......................................................',
+                    alignment: 'center',
+                    margin: [0, 3, 0, 0],
+                    bold: true,
+                  },
+                ],
               },
             ],
-          },
-          {
-            stack: [
-              {
-                style: 'form',
-                text: 'ลงชื่อ',
-                margin: [0, 0, 225, 0],
-                alignment: 'center',
-              },
-              {
-                style: 'form',
-                text: '(........................................................................)',
-                alignment: 'center',
-                margin: [0, 1, 0, 0],
-              },
-              {
-                style: 'form',
-                text: 'ผู้รับเงิน',
-                alignment: 'center',
-              },
-              {
-                style: 'form',
-                text: 'ลงวันที่.......................................................',
-                alignment: 'center',
-                margin: [0, 3, 0, 0],
-              },
-            ],
+            widths: ['50%', '50%']
           },
         ],
-        widths: ['50%', '50%']
       },
     ],
     styles: {
@@ -427,7 +505,7 @@ onMounted(() => {
 
     const foundHistory = history.find((h: any) => h.referenceId === referenceId)
 
-     if (!foundHistory) {
+    if (!foundHistory) {
       console.error('❌ History item not found:', referenceId)
       console.log('Available IDs:', history.map((h: any) => h.referenceId))
       loading.value = false
@@ -436,8 +514,6 @@ onMounted(() => {
 
     console.log('✅ Found history item:', foundHistory)
     console.log('📋 Items array:', foundHistory.items)
-    console.log('📋 Items count:', foundHistory.items?.length)
-    console.log('📋 First item:', foundHistory.items?.[0])
 
     receiptData.value = {
       referenceId: foundHistory.referenceId,
@@ -446,63 +522,32 @@ onMounted(() => {
       mainAffiliationName: foundHistory.department || 'ไม่ระบุ',
       sendmoney: foundHistory.sendmoney || '-',
       fundName: foundHistory.fundName || '-',
-      projectCode: foundHistory.receiptId || referenceId,
+      projectCode: foundHistory.receiptId || foundHistory.referenceId,
       date: foundHistory.date,
       payments: foundHistory.payments || []
     }
 
-// ✅ ลบ MIN_ROWS เพราะไม่ต้องการแถวว่างอีกต่อไป
-rows.splice(0, rows.length)
+    // ✅ ล้าง rows และเติมข้อมูลใหม่
+    rows.splice(0, rows.length)
 
-// ✅ เพิ่มการ debug เพื่อดู structure ของข้อมูล
-console.log('🔍 Full foundHistory:', foundHistory)
-console.log('🔍 foundHistory.items type:', typeof foundHistory.items)
-console.log('🔍 foundHistory.items value:', foundHistory.items)
+    if (Array.isArray(foundHistory.items) && foundHistory.items.length > 0) {
+      console.log('✅ Processing', foundHistory.items.length, 'items')
 
-if (foundHistory.items && Array.isArray(foundHistory.items) && foundHistory.items.length > 0) {
-  console.log('🔄 Processing items:', foundHistory.items.length)
+      foundHistory.items.forEach((item: any) => {
+        const isDebtor = isReceivableItem(item.itemName || item.name || '')
 
-  foundHistory.items.forEach((item: any, index: number) => {
-    console.log(`  Item ${index + 1}:`, {
-      itemName: item.itemName,
-      amount: item.amount,
-      referenceId: item.referenceId,
-      note: item.note
-    })
-
-    rows.push({
-      item: item.itemName || '',
-      amount: item.amount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0.00',
-      ref: item.referenceId || '',
-      note: item.note || '',
-    })
-  })
-
-  console.log('✅ Rows created:', rows.length)
-  console.log('📦 Rows data:', rows)
-} else {
-  console.error('❌ items is not valid array:', foundHistory.items)
-  console.warn('⚠️ Possible reasons:')
-  console.warn('   1. items was saved as string instead of array')
-  console.warn('   2. items array is empty')
-  console.warn('   3. Data structure in localStorage is incorrect')
-
-  // ✅ ลองหาข้อมูลจาก key อื่นๆ ที่อาจมี items
-  if (foundHistory.selectedItems && Array.isArray(foundHistory.selectedItems)) {
-    console.log('✅ Found items in selectedItems field')
-    foundHistory.selectedItems.forEach((item: any) => {
-      rows.push({
-        item: item.itemName || item.name || '',
-        amount: item.amount?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0.00',
-        ref: item.referenceId || item.id || '',
-        note: item.note || '',
+        rows.push({
+          item: item.itemName || item.name || '',
+          amount: (item.amount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+          ref: item.referenceId || item.id || '',
+          note:  item.note || '',
+        })
       })
-    })
-  }
-}
 
-// ✅ ลบ while loop ที่สร้างแถวว่าง - ให้ตารางขยายตามจำนวนรายการจริง
-console.log('📊 Final rows count:', rows.length)
+      console.log('✅ Created', rows.length, 'rows')
+    } else {
+      console.error('❌ items is not a valid array')
+    }
 
     const total = foundHistory.total || 0
     summary.text = convertNumberToThaiText(total)

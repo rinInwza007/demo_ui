@@ -351,7 +351,6 @@ function createDocDefinition() {
                 },
               ],
             })
-
             result.push({
               columns: [
                 {

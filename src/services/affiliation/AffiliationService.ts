@@ -1,6 +1,7 @@
 // src/services/affiliation/AffiliationService.ts
 import type { Affiliation } from '@/types/affiliation'
 import { defaultAffiliation } from '@/components/data/Affiliation'
+import { departmentOptions, initializeDepartmentOptions } from '@/components/data/TSdepartments'
 import * as AffiliationApi from './affiliationApi'
 import type { 
   AffiliationFilters, 
@@ -25,6 +26,7 @@ console.log('🔧 AffiliationService initialized:', useMockAPI ? 'MOCK MODE' : '
  * CRUD Operations
  * ========================================
  */
+
 
 /**
  * ✅ ดึงรายการทั้งหมดตาม filters
@@ -185,22 +187,26 @@ export const checkDuplicateId = async (
  * ✅ สร้าง departmentOptions จาก Affiliation data
  */
 export const generateDepartmentOptions = async (): Promise<Record<string, any>> => {
-  const affiliations = await getAffiliations()
-  const departmentOptions: Record<string, any> = {}
+  if (useMockAPI) {
+    console.log('🧪 [Mock] Generating departmentOptions from static data')
+    // ✅ Re-initialize เพื่อให้แน่ใจว่าข้อมูลถูกต้อง
+    return initializeDepartmentOptions()
+  }
 
-  // หาเฉพาะคณะ (parentId === null)
+  // ✅ Real API Mode
+  console.log('📡 [API] Generating departmentOptions from API')
+  const affiliations = await getAffiliations()
+  const options: Record<string, any> = {}
+
   const faculties = affiliations.filter(a => !a.parentId)
 
   faculties.forEach(faculty => {
-    // หาหน่วยงานรอง (ลูกโดยตรง)
     const directChildren = affiliations.filter(a => a.parentId === faculty.id)
-    
-    // หาหน่วยงานย่อย (หลาน)
     const grandchildren = affiliations.filter(a => {
       return a.parentId && directChildren.some(dc => dc.id === a.parentId)
     })
 
-    departmentOptions[faculty.name] = {
+    options[faculty.name] = {
       id: faculty.id,
       main: directChildren.length > 0 
         ? directChildren.map(c => ({ id: c.id, name: c.name })) 
@@ -211,7 +217,11 @@ export const generateDepartmentOptions = async (): Promise<Record<string, any>> 
     }
   })
 
-  return departmentOptions
+  // ✅ อัพเดท departmentOptions
+  departmentOptions.value = options
+  console.log('✅ Generated departmentOptions:', options)
+  
+  return options
 }
 
 /**
@@ -247,7 +257,6 @@ export const getAffiliationPath = async (id: string): Promise<string[]> => {
 export { useMockAPI }
 
 export default {
-  // CRUD
   getAffiliations,
   getAffiliationById,
   getChildrenAffiliations,
@@ -256,12 +265,8 @@ export default {
   updateAffiliation,
   deleteAffiliation,
   checkDuplicateId,
-  
-  // Helpers
   generateDepartmentOptions,
   getAffiliationName,
   getAffiliationPath,
-  
-  // Config
   useMockAPI,
 }

@@ -399,7 +399,7 @@ import { setupAxiosMock } from '@/fake/mockAxios'
 import { useAuthStore } from '@/stores/auth'
 import { useSummaryStore } from '@/stores/summary'
 import { storeToRefs } from 'pinia'
-import { filterDebtorsByPermission } from '@/components/ีutils/filterdebtor'
+import { filterDebtorsByPermission } from '@/components/utils/filterdebtor'
 
 /* =========================
  * Constants

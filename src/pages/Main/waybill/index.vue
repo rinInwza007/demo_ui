@@ -174,16 +174,13 @@
                         row.status === 'pending',
                       'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-300 shadow-md': 
                         row.status === 'approved',
-                      'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-red-300 shadow-sm': 
-                        row.status === 'rejected'
                     }"
                   >
                     <i 
                       class="mr-1.5 text-sm" 
                       :class="{
                         'ph ph-clock text-yellow-600': row.status === 'pending',
-                        'ph ph-check-circle text-green-600': row.status === 'approved',
-                        'ph ph-x-circle text-red-600': row.status === 'rejected'
+                        'ph ph-check-circle text-green-600': row.status === 'approved'
                       }"
                     ></i>
                     <span v-if="row.status === 'pending'">รอดำเนินการ</span>
@@ -250,18 +247,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useDailyCloseStore } from '@/stores/DailyClose'
-import { ApprovalStatus,Receipt } from '@/types/recipt'
+import { ApprovalStatus, Receipt } from '@/types/recipt'
 import ActionButtons from '@/components/Actionbutton/ActionButtons.vue'
 import sidebar from '@/components/bar/sidebar.vue'
 import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 import { departmentOptions } from '@/components/data/TSdepartments'
 import { reciptService } from '@/services/ReciptService'
-
+import { approveService } from '@/services/Apporve_service/ApproveService'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -277,7 +273,7 @@ const selectedSub2 = ref('')
 const canCreateWaybill = computed(() => auth.isRole('user') && !dailyClose.isTodayClosed)
 const canApprove = computed(() => auth.isRole('treasury'))
 
-type ActionKey = 'view' | 'edit' | 'delete' | 'approve'
+type ActionKey = 'view' | 'edit' | 'delete' | 'approve' 
 
 const formatThaiDateTime = (date: Date | null) => {
   if (!date || isNaN(date.getTime())) return '-'
@@ -339,7 +335,6 @@ const mapReceiptToRow = (r: Receipt): TableRow => {
   const lastDate = getLastDate(createdDate, updatedDate)
   const lastTimeMs = lastDate?.getTime() ?? 0
   
-  // ✅ ใช้การปิดยอดเป็นหลักในการ lock
   const isLocked = r.isLocked ?? isReceiptClosed(r)
   const approvalStatus = r.approvalStatus || 'pending'
 
@@ -373,7 +368,7 @@ const loadData = async () => {
         isLocked: r.isLocked ?? false,
         approvalStatus: r.approvalStatus ?? 'pending',
       }))
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error loading data:', error)
     Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถโหลดข้อมูลได้', 'error')
   }
@@ -383,12 +378,10 @@ const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
   if (!auth.user) return []
 
-  // ✅ Filter by role
   if (auth.user.role === 'user') {
     filtered = filtered.filter((r) => r.affiliationId === auth.user!.affiliationId)
   }
 
-  // ✅ Filter by department selections
   if (selectedMain.value) {
     filtered = filtered.filter((r) => {
       const main = (r.mainAffiliationName || r.affiliationName || '').trim()
@@ -402,7 +395,6 @@ const items = computed<TableRow[]>(() => {
     filtered = filtered.filter((r) => (r.subAffiliationName2 || '').trim() === selectedSub2.value.trim())
   }
   
-  // ✅ Filter by search text
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
     filtered = filtered.filter((r) => {
@@ -415,7 +407,6 @@ const items = computed<TableRow[]>(() => {
 
   const rows = filtered.map(mapReceiptToRow)
 
-  // ✅ Sort by status and time
   const rank = (s: TableStatus) => {
     if (s === 'pending') return 0
     if (s === 'approved') return 1
@@ -461,10 +452,10 @@ const activeFiltersText = computed(() => {
 const rowPermissions = (row: TableRow): ActionKey[] => {
   const perms: ActionKey[] = ['view']
 
-  // ✅ ถ้าวันนั้นปิดยอดแล้ว (isLocked = true) จะไม่สามารถแก้ไข/ลบได้
   if (auth.isRole('user') && row.status === 'pending' && !row.isLocked) {
     perms.push('edit', 'delete')
   }
+  
   if (canApprove.value && row.status === 'pending' && !row.isLocked) {
     perms.push('approve')
   }
@@ -473,7 +464,7 @@ const rowPermissions = (row: TableRow): ActionKey[] => {
 }
 
 /**
- * ✅ Event Handlers: ฟังการเปลี่ยนแปลงจาก localStorage
+ * ✅ Event Handlers
  */
 const handleStorageChange = (e: StorageEvent) => {
   if (e.key === 'fakeApi.receipts' || e.key === 'receipts_last_update' || e.key === 'daily_close_records') {
@@ -498,7 +489,7 @@ const handleDailyCloseUpdate = () => {
 }
 
 /**
- * ✅ Lifecycle: Setup และ cleanup
+ * ✅ Lifecycle
  */
 onMounted(async () => {
   if (!auth.isLoggedIn) {
@@ -526,7 +517,6 @@ const view = (row: TableRow) => {
 }
 
 const edit = (row: TableRow) => {
-  // ✅ เช็คการปิดยอดก่อนแก้ไข (Double Check)
   if (row.isLocked || dailyClose.isTodayClosed) {
     Swal.fire({
       icon: 'warning',
@@ -573,24 +563,19 @@ const gotowaybil = () => {
   router.push('/waybill')
 }
 
+/**
+ * ✅ อนุมัติใบนำส่ง (ใช้ ApproveService)
+ */
 const approveItem = async (row: TableRow) => {
   if (!canApprove.value) {
     Swal.fire('ไม่มีสิทธิ์', 'เฉพาะกองคลัง (treasury) เท่านั้นที่อนุมัติได้', 'warning')
     return
   }
-  
-  if (row.isLocked) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'ไม่สามารถอนุมัติได้',
-      text: 'วันนี้ปิดยอดแล้ว ไม่สามารถอนุมัติใบนำส่งได้',
-      confirmButtonText: 'รับทราบ',
-    })
-    return
-  }
-  
-  if (row.status !== 'pending') {
-    Swal.fire('ไม่สามารถอนุมัติได้', 'รายการนี้ได้รับการอนุมัติแล้ว', 'info')
+
+  // ✅ ตรวจสอบด้วย ApproveService
+  const checkResult = approveService.canApprove(row._raw)
+  if (!checkResult.canApprove) {
+    Swal.fire('ไม่สามารถอนุมัติได้', checkResult.reason, 'warning')
     return
   }
 
@@ -613,11 +598,10 @@ const approveItem = async (row: TableRow) => {
   if (!result.isConfirmed) return
 
   try {
-    // ⭐ ใช้ reciptService.approve()
+    // ⭐ ใช้ ApproveService
     const approverName = auth.user?.fullName || 'เจ้าหน้าที่การเงิน'
-    await reciptService.approve(row.id, approverName)
+    await approveService.approve(row.id, approverName)
 
-    // อัปเดต local data
     await loadData()
 
     Swal.fire({
@@ -630,7 +614,7 @@ const approveItem = async (row: TableRow) => {
       timerProgressBar: true,
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Approve error:', error)
     Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถอนุมัติได้', 'error')
     await loadData()
@@ -638,7 +622,7 @@ const approveItem = async (row: TableRow) => {
 }
 
 /**
- * ⭐ ลบใบนำส่ง (ใช้ Service)
+ * 🗑️ ลบใบนำส่ง (ใช้ ReciptService)
  */
 const removeItem = async (row: TableRow) => {
   if (row.isLocked || dailyClose.isTodayClosed) {
@@ -679,7 +663,6 @@ const removeItem = async (row: TableRow) => {
   if (!result.isConfirmed) return
 
   try {
-    // ⭐ ใช้ reciptService.delete()
     await reciptService.delete(row.id)
     await loadData()
     
@@ -690,12 +673,11 @@ const removeItem = async (row: TableRow) => {
       timer: 2000,
       showConfirmButton: false
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Delete error:', error)
     Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถลบได้', 'error')
   }
 }
-
 </script>
 
 <style>

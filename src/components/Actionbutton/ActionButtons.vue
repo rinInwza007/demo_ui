@@ -69,6 +69,17 @@
     >
       <i class="material-symbols-outlined text-emerald-600">check_circle</i>
     </button>
+
+    <!-- ✅ ปฏิเสธ (ใหม่) -->
+    <button
+      v-if="canShow('reject')"
+      :disabled="isDisabled('reject')"
+      @click="emitSafe('reject')"
+      v-tippy="getTooltip('reject')"
+      class="hvr-bob disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      <i class="material-symbols-outlined text-red-600">cancel</i>
+    </button>
   </div>
 </template>
 
@@ -76,6 +87,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
+// ✅ เพิ่ม 'reject' เข้าไป
 export type ActionKey =
   | 'view'
   | 'edit'
@@ -83,6 +95,7 @@ export type ActionKey =
   | 'delete'
   | 'cleardebtor'
   | 'approve'
+  | 'reject'  // ← เพิ่มบรรทัดนี้
 
 type ItemBase = {
   isLocked?: boolean
@@ -105,7 +118,7 @@ const props = withDefaults(
   }>(),
   {
     permissions: undefined,
-    forceDisabled: false, // ✅ default เป็น false
+    forceDisabled: false,
     showView: false,
     showEdit: false,
     showLock: false,
@@ -114,12 +127,13 @@ const props = withDefaults(
   }
 )
 
-const emit = defineEmits<{
+const emit = defineEmits<{  
   (e: ActionKey, item: ItemBase): void
 }>()
 
 const auth = useAuthStore()
 
+// ✅ เพิ่ม reject mapping
 const actionToPermission: Record<ActionKey, string> = {
   view: 'view',
   edit: 'edit',
@@ -127,6 +141,7 @@ const actionToPermission: Record<ActionKey, string> = {
   delete: 'delete',
   cleardebtor: 'cleardebtor',
   approve: 'approve',
+  reject: 'reject',  // ← เพิ่มบรรทัดนี้
 }
 
 const isDeclarative = computed(() => Array.isArray(props.permissions) && props.permissions.length > 0)
@@ -160,9 +175,9 @@ function isDisabled(action: ActionKey) {
     return true
   }
   
-  // ✅ กรณี item ถูกล็อก
+  // ✅ กรณี item ถูกล็อก - เพิ่ม reject เข้าไปด้วย
   const locked = props.item?.isLocked === true
-  if ((action === 'edit' || action === 'delete' || action === 'approve') && locked) {
+  if ((action === 'edit' || action === 'delete' || action === 'approve' || action === 'reject') && locked) {
     return true
   }
   
@@ -182,7 +197,7 @@ function getTooltip(action: ActionKey) {
     }
   }
   
-  // Default tooltips
+  // ✅ เพิ่ม tooltip สำหรับ reject
   const defaultTooltips: Record<ActionKey, string> = {
     view: 'ดูข้อมูล',
     edit: 'แก้ไข',
@@ -190,6 +205,7 @@ function getTooltip(action: ActionKey) {
     delete: 'ลบ',
     cleardebtor: 'ล้างลูกหนี้',
     approve: 'อนุมัติ',
+    reject: 'ปฏิเสธ',  // ← เพิ่มบรรทัดนี้
   }
   
   return defaultTooltips[action] || ''

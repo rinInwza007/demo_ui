@@ -1,5 +1,6 @@
 // src/stores/auth.ts
 import { defineStore } from 'pinia'
+import { authService } from '@/services/Auth_Service/AuthService'
 
 export type roleType = 'user' | 'treasury' | 'admin' | 'superadmin'
 
@@ -30,90 +31,6 @@ function safeJsonParse<T>(val: string | null): T | null {
   }
 }
 
-/** ✅ mock users สำหรับทดสอบ */
-const MOCK_USERS: Array<User & { password: string }> = [
-  {
-    id: 'u-001',
-    fullName: 'User Demo',
-    affiliation: 'คณะวิศวกรรมศาสตร์',
-    affiliationId: 'ENG',
-    role: 'user',
-    email: 'user02@up.ac.th',
-    phone: '0999999999',
-    password: '1234',
-  },
-  {
-    id: 'u-002',
-    fullName: 'User Demo',
-    affiliation: 'คณะพยาบาลศาสตร์',
-    affiliationId: 'NUR',
-    role: 'user',
-    email: 'user01@up.ac.th',
-    phone: '0999999999',
-    password: '1234',
-  },    
-  {
-    id: 'u-003',
-    fullName: 'User Demo',
-    affiliation: 'คณะทันตแพทยศาสตร์', // ✅ แก้ให้ตรงกับ defaultAffiliation
-    affiliationId: 'DEN',
-    role: 'user',
-    email: 'user03@up.ac.th',
-    phone: '0999999999',
-    password: '1234',
-  },
-  {
-    id: 'u-004',
-    fullName: 'User Demo',
-    affiliation: 'คณะแพทยศาสตร์', // ✅ แก้ให้ตรงกับ defaultAffiliation
-    affiliationId: 'MED',
-    role: 'user',
-    email: 'user@up.ac.th',
-    phone: '0999999999',
-    password: '1234',
-  },
-  {
-    id: 'u-005',
-    fullName: 'User Demo',
-    affiliation: 'คณะพลังงานและสิ่งแวดล้อม', // ✅ ตรงกับ defaultAffiliation แล้ว
-    affiliationId: 'ENE',
-    role: 'user',
-    email: 'user04@up.ac.th',
-    phone: '0999999999',
-    password: '1234',
-  },
-  {
-    id: 't-001',
-    fullName: 'Treasury Demo',
-    affiliation: 'กองคลัง',
-    affiliationId: 'FIN',
-    role: 'treasury',
-    email: 'treasury@up.ac.th',
-    phone: '0888888888',
-    password: '1234',
-  },
-  {
-    id: 'a-001',
-    fullName: 'Admin Demo',
-    affiliation: 'กองคลัง',
-    affiliationId: 'FIN',
-    role: 'admin',
-    email: 'admin@up.ac.th',
-    phone: '0777777777',
-    password: '1234',
-  },
-  {
-    id: 'sa-001',
-    fullName: 'Super Admin Demo',
-    affiliation: 'มหาวิทยาลัยพะเยา',
-    affiliationId: 'UP',
-    role: 'superadmin',
-    email: 'superadmin@up.ac.th',
-    phone: '0666666666',
-    password: '1234',
-  },
-]
-
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     token: localStorage.getItem(LS_TOKEN),
@@ -127,50 +44,99 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    /** ✅ login แบบ mock */
+    /**
+     * ✅ Login ผ่าน AuthService
+     * - Mock Mode: ใช้ MOCK_USERS จาก mockAxios
+     * - Real API: เรียก Backend จริง
+     */
     async login(payload: { email: string; password: string }) {
-      const found = MOCK_USERS.find(
-        (u) => u.email.toLowerCase() === payload.email.toLowerCase() && u.password === payload.password
-      )
+      try {
+        const response = await authService.login(payload)
 
-      if (!found) {
-        throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
+        if (!response.success) {
+          throw new Error(response.message || 'Login failed')
+        }
+
+        this.token = response.token
+        this.user = response.user
+
+        localStorage.setItem(LS_TOKEN, response.token)
+        localStorage.setItem(LS_USER, JSON.stringify(response.user))
+
+        return response
+      } catch (error: any) {
+        // แปลง error message ให้เป็นภาษาไทย
+        const message = error.response?.data?.message || error.message || 'เกิดข้อผิดพลาด'
+        throw new Error(message)
       }
-
-      // token mock
-      const token = `mock_${found.id}_${Date.now()}`
-
-      const user: User = {
-        id: found.id,
-        fullName: found.fullName,
-        affiliation: found.affiliation,
-        affiliationId: found.affiliationId,
-        role: found.role,
-        email: found.email,
-        phone: found.phone,
-      }
-
-      this.token = token
-      this.user = user
-
-      localStorage.setItem(LS_TOKEN, token)
-      localStorage.setItem(LS_USER, JSON.stringify(user))
     },
 
-    logout() {
-      this.token = null
-      this.user = null
-      localStorage.removeItem(LS_TOKEN)
-      localStorage.removeItem(LS_USER)
+    /**
+     * ✅ Logout
+     */
+    async logout() {
+      try {
+        await authService.logout()
+      } catch (error) {
+        console.warn('Logout API failed, continuing with client-side logout')
+      } finally {
+        this.token = null
+        this.user = null
+        localStorage.removeItem(LS_TOKEN)
+        localStorage.removeItem(LS_USER)
+      }
     },
 
-    /** ✅ ใช้เช็ค role ได้ง่าย ๆ */
+    /**
+     * ✅ Verify Token - ตรวจสอบว่า token ยังใช้ได้อยู่หรือไม่
+     */
+    async verifyToken(): Promise<boolean> {
+      if (!this.token) return false
+
+      try {
+        const result = await authService.verifyToken(this.token)
+        
+        if (result.valid && result.user) {
+          this.user = result.user
+          localStorage.setItem(LS_USER, JSON.stringify(result.user))
+          return true
+        }
+
+        // Token ไม่ valid ให้ logout
+        await this.logout()
+        return false
+      } catch (error) {
+        await this.logout()
+        return false
+      }
+    },
+
+    /**
+     * ✅ Refresh User Data
+     */
+    async refreshUser() {
+      if (!this.token) return
+
+      try {
+        const user = await authService.getCurrentUser()
+        this.user = user
+        localStorage.setItem(LS_USER, JSON.stringify(user))
+      } catch (error) {
+        console.error('Failed to refresh user:', error)
+      }
+    },
+
+    /**
+     * ✅ ใช้เช็ค role ได้ง่าย ๆ
+     */
     isRole(...roles: roleType[]) {
       if (!this.user) return false
       return roles.includes(this.user.role)
     },
 
-    /** ✅ เช็ค affiliationId */
+    /**
+     * ✅ เช็ค affiliationId
+     */
     isAffiliation(...affIds: string[]) {
       if (!this.user) return false
       return affIds.includes(this.user.affiliationId)

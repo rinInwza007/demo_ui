@@ -419,6 +419,251 @@ const dispatchUpdateEvents = (payload: {
  * ------------------------- */
 export function setupAxiosMock() {
   const mock = new AxiosMockAdapter(axios, { delayResponse: 300 })
+  const MOCK_USERS = [
+    {
+      id: 'u-001',
+      fullName: 'User Demo',
+      affiliation: 'คณะวิศวกรรมศาสตร์',
+      affiliationId: 'ENG',
+      role: 'user',
+      email: 'user02@up.ac.th',
+      phone: '0999999999',
+      password: '1234',
+    },
+    {
+      id: 'u-002',
+      fullName: 'User Demo',
+      affiliation: 'คณะพยาบาลศาสตร์',
+      affiliationId: 'NUR',
+      role: 'user',
+      email: 'user01@up.ac.th',
+      phone: '0999999999',
+      password: '1234',
+    },
+    {
+      id: 'u-003',
+      fullName: 'User Demo',
+      affiliation: 'คณะทันตแพทยศาสตร์',
+      affiliationId: 'DEN',
+      role: 'user',
+      email: 'user03@up.ac.th',
+      phone: '0999999999',
+      password: '1234',
+    },
+    {
+      id: 'u-004',
+      fullName: 'User Demo',
+      affiliation: 'คณะแพทยศาสตร์',
+      affiliationId: 'MED',
+      role: 'user',
+      email: 'user@up.ac.th',
+      phone: '0999999999',
+      password: '1234',
+    },
+    {
+      id: 'u-005',
+      fullName: 'User Demo',
+      affiliation: 'คณะพลังงานและสิ่งแวดล้อม',
+      affiliationId: 'ENE',
+      role: 'user',
+      email: 'user04@up.ac.th',
+      phone: '0999999999',
+      password: '1234',
+    },
+    {
+      id: 't-001',
+      fullName: 'Treasury Demo',
+      affiliation: 'กองคลัง',
+      affiliationId: 'FIN',
+      role: 'treasury',
+      email: 'treasury@up.ac.th',
+      phone: '0888888888',
+      password: '1234',
+    },
+    {
+      id: 'a-001',
+      fullName: 'Admin Demo',
+      affiliation: 'กองคลัง',
+      affiliationId: 'FIN',
+      role: 'admin',
+      email: 'admin@up.ac.th',
+      phone: '0777777777',
+      password: '1234',
+    },
+    {
+      id: 'sa-001',
+      fullName: 'Super Admin Demo',
+      affiliation: 'มหาวิทยาลัยพะเยา',
+      affiliationId: 'UP',
+      role: 'superadmin',
+      email: 'superadmin@up.ac.th',
+      phone: '0666666666',
+      password: '1234',
+    },
+  ]
+
+  // ============================================
+  // 🔐 Auth Endpoints
+  // ============================================
+
+  // POST /auth/login
+  mock.onPost('/auth/login').reply((config) => {
+    console.log('🔐 [Mock] POST /auth/login')
+
+    try {
+      const { email, password } = JSON.parse(config.data)
+
+      if (!email || !password) {
+        return [400, {
+          success: false,
+          message: 'กรุณากรอก email และ password'
+        }]
+      }
+
+      const found = MOCK_USERS.find(
+        (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+      )
+
+      if (!found) {
+        console.log('❌ [Mock] Login failed: Invalid credentials')
+        return [401, {
+          success: false,
+          message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+        }]
+      }
+
+      const token = `mock_${found.id}_${Date.now()}`
+
+      const user = {
+        id: found.id,
+        fullName: found.fullName,
+        affiliation: found.affiliation,
+        affiliationId: found.affiliationId,
+        role: found.role,
+        email: found.email,
+        phone: found.phone,
+      }
+
+      console.log('✅ [Mock] Login successful:', user.email)
+
+      return [200, {
+        success: true,
+        token,
+        user,
+        message: 'เข้าสู่ระบบสำเร็จ'
+      }]
+    } catch (error) {
+      console.error('❌ [Mock] Login error:', error)
+      return [500, {
+        success: false,
+        message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+      }]
+    }
+  })
+
+  // POST /auth/logout
+  mock.onPost('/auth/logout').reply(() => {
+    console.log('🔐 [Mock] POST /auth/logout')
+    return [200, {
+      success: true,
+      message: 'ออกจากระบบสำเร็จ'
+    }]
+  })
+
+  // POST /auth/verify
+  mock.onPost('/auth/verify').reply((config) => {
+    console.log('🔐 [Mock] POST /auth/verify')
+
+    try {
+      const { token } = JSON.parse(config.data)
+
+      if (!token || !token.startsWith('mock_')) {
+        return [401, {
+          valid: false,
+          message: 'Invalid token'
+        }]
+      }
+
+      const userId = token.split('_')[1]
+      const found = MOCK_USERS.find(u => u.id === userId)
+
+      if (!found) {
+        return [401, {
+          valid: false,
+          message: 'User not found'
+        }]
+      }
+
+      const user = {
+        id: found.id,
+        fullName: found.fullName,
+        affiliation: found.affiliation,
+        affiliationId: found.affiliationId,
+        role: found.role,
+        email: found.email,
+        phone: found.phone,
+      }
+
+      return [200, {
+        valid: true,
+        user
+      }]
+    } catch (error) {
+      return [401, {
+        valid: false,
+        message: 'Invalid token'
+      }]
+    }
+  })
+
+  // GET /auth/me
+  mock.onGet('/auth/me').reply((config) => {
+    console.log('🔐 [Mock] GET /auth/me')
+
+    const authHeader = config.headers?.Authorization
+    if (!authHeader) {
+      return [401, {
+        success: false,
+        message: 'No authorization header'
+      }]
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    
+    if (!token.startsWith('mock_')) {
+      return [401, {
+        success: false,
+        message: 'Invalid token'
+      }]
+    }
+
+    const userId = token.split('_')[1]
+    const found = MOCK_USERS.find(u => u.id === userId)
+
+    if (!found) {
+      return [401, {
+        success: false,
+        message: 'User not found'
+      }]
+    }
+
+    const user = {
+      id: found.id,
+      fullName: found.fullName,
+      affiliation: found.affiliation,
+      affiliationId: found.affiliationId,
+      role: found.role,
+      email: found.email,
+      phone: found.phone,
+    }
+
+    return [200, {
+      success: true,
+      user
+    }]
+  })
+
+
 
 // ============================================
 // 🏢 Affiliation Endpoints
@@ -1165,68 +1410,6 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
     return [201, serializeReceipt(sanitized)]
   })
 
-  mock.onPost('/updateReceipt').reply((config) => {
-    console.log('🔧 POST /updateReceipt called')
-
-    const { receipt } = JSON.parse(config.data || '{}')
-    if (!receipt) {
-      console.error('❌ No receipt in request body')
-      return [400, { message: 'receipt object is required' }]
-    }
-
-    const waybillNumber = receipt.waybillNumber || receipt.id
-    if (!waybillNumber) {
-      console.error('❌ No waybillNumber in receipt')
-      return [400, { message: 'receipt.waybillNumber is required' }]
-    }
-
-    const db = loadReceipts().map(ensureReceiptFields)
-    const found = findReceiptByWaybillNumber(db, waybillNumber)
-
-    if (!found) {
-      console.error('❌ Receipt not found:', waybillNumber)
-      return [404, { message: 'Receipt not found', waybillNumber }]
-    }
-
-    const idx = db.indexOf(found)
-    const normalized = normalizeBoth(ensureReceiptFields(receipt))
-
-    console.log('🔍 Before merge:', {
-      foundStatus: db[idx].approvalStatus,
-      incomingStatus: receipt.approvalStatus,
-      normalizedStatus: normalized.approvalStatus
-    })
-
-    const updated = sanitizeReceipt({
-      ...db[idx],
-      ...normalized,
-      waybillNumber: db[idx].waybillNumber,
-      id: db[idx].waybillNumber,
-      createdAt: db[idx].createdAt,
-      updatedAt: new Date(),
-    })
-
-    console.log('📝 Updating receipt:', {
-      waybillNumber: updated.waybillNumber,
-      oldStatus: db[idx].approvalStatus,
-      newStatus: updated.approvalStatus,
-    })
-
-    db[idx] = updated
-
-    saveToBothStorages(updated)
-
-    dispatchUpdateEvents({
-      action: 'update',
-      data: updated,
-      waybillNumber: updated.waybillNumber,
-      list: db,
-    })
-
-    console.log('✅ Updated in both storages:', updated.waybillNumber, '| Status:', updated.approvalStatus)
-    return [200, { success: true, data: serializeReceipt(updated) }]
-  })
-
   mock.onPut(/\/updateReceipt\/(.+)$/).reply(async (config) => {
     console.log('🔧 PUT /updateReceipt/:waybillNumber called')
 
@@ -1320,6 +1503,164 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
     return [200, { success: deleted > 0, deletedCount: deleted }]
   })
 
+
+  mock.onPost(/\/receipts\/([^/]+)\/approve$/).reply((config) => {
+    const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/approve$/)?.[1]
+    
+    if (!waybillNumber) {
+      return [400, {
+        success: false,
+        message: 'waybillNumber is required'
+      }]
+    }
+
+    const decoded = decodeURIComponent(waybillNumber)
+    console.log('✅ [Mock] POST /receipts/' + decoded + '/approve')
+
+    try {
+      const { approverName } = JSON.parse(config.data || '{}')
+
+      const db = loadReceipts().map(ensureReceiptFields)
+      const receiptIndex = db.findIndex(r => r.waybillNumber === decoded)
+
+      if (receiptIndex === -1) {
+        console.error('❌ Receipt not found:', decoded)
+        return [404, {
+          success: false,
+          message: 'Receipt not found'
+        }]
+      }
+
+      const receipt = db[receiptIndex]
+
+      // ตรวจสอบสถานะ
+      if (receipt.approvalStatus === 'approved') {
+        return [400, {
+          success: false,
+          message: 'ใบนำส่งนี้ได้รับการอนุมัติแล้ว'
+        }]
+      }
+
+      if (receipt.isLocked) {
+        return [400, {
+          success: false,
+          message: 'ไม่สามารถอนุมัติได้ เนื่องจากวันนี้ปิดยอดแล้ว'
+        }]
+      }
+
+      // ✅ อัปเดตเฉพาะสถานะ
+      db[receiptIndex] = {
+        ...receipt,
+        approvalStatus: 'approved',
+        updatedAt: new Date().toISOString()
+      }
+
+      saveReceipts(db)
+      saveToBothStorages(db[receiptIndex])
+
+      // Dispatch events
+      dispatchUpdateEvents({
+        action: 'update',
+        data: db[receiptIndex],
+        waybillNumber: decoded,
+        list: db
+      })
+
+      console.log('✅ [Mock] Approved:', decoded)
+
+      return [200, {
+        success: true,
+        data: serializeReceipt(normalizeBoth(db[receiptIndex])),
+        message: 'อนุมัติสำเร็จ'
+      }]
+
+    } catch (error) {
+      console.error('❌ [Mock] Approve error:', error)
+      return [500, {
+        success: false,
+        message: 'Internal server error'
+      }]
+    }
+  })
+
+  /**
+   * POST /receipts/:waybillNumber/reject
+   * - ปฏิเสธใบนำส่ง
+   * - อัปเดตเฉพาะ approvalStatus เป็น 'rejected'
+   */
+  mock.onPost(/\/receipts\/([^/]+)\/reject$/).reply((config) => {
+    const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/reject$/)?.[1]
+    
+    if (!waybillNumber) {
+      return [400, {
+        success: false,
+        message: 'waybillNumber is required'
+      }]
+    }
+
+    const decoded = decodeURIComponent(waybillNumber)
+    console.log('❌ [Mock] POST /receipts/' + decoded + '/reject')
+
+    try {
+      const { approverName, reason } = JSON.parse(config.data || '{}')
+
+      const db = loadReceipts().map(ensureReceiptFields)
+      const receiptIndex = db.findIndex(r => r.waybillNumber === decoded)
+
+      if (receiptIndex === -1) {
+        console.error('❌ Receipt not found:', decoded)
+        return [404, {
+          success: false,
+          message: 'Receipt not found'
+        }]
+      }
+
+      const receipt = db[receiptIndex]
+
+      // ตรวจสอบสถานะ
+      if (receipt.isLocked) {
+        return [400, {
+          success: false,
+          message: 'ไม่สามารถปฏิเสธได้ เนื่องจากวันนี้ปิดยอดแล้ว'
+        }]
+      }
+
+      // ❌ อัปเดตเฉพาะสถานะ
+      db[receiptIndex] = {
+        ...receipt,
+        approvalStatus: 'rejected',
+        updatedAt: new Date().toISOString()
+      }
+
+      saveReceipts(db)
+      saveToBothStorages(db[receiptIndex])
+
+      // Dispatch events
+      dispatchUpdateEvents({
+        action: 'update',
+        data: db[receiptIndex],
+        waybillNumber: decoded,
+        list: db
+      })
+
+      console.log('❌ [Mock] Rejected:', decoded, reason ? `(Reason: ${reason})` : '')
+
+      return [200, {
+        success: true,
+        data: serializeReceipt(normalizeBoth(db[receiptIndex])),
+        message: 'ปฏิเสธสำเร็จ'
+      }]
+
+    } catch (error) {
+      console.error('❌ [Mock] Reject error:', error)
+      return [500, {
+        success: false,
+        message: 'Internal server error'
+      }]
+    }
+  })
+
+
   mock.onGet(/\/getSummary(?:\?.*)?$/).reply((config) => {
     const summaryDb = loadSummaryStorage().map(ensureReceiptFields)
 
@@ -1388,10 +1729,12 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
     console.log(`✅ summary/events - Found ${items.length} events`)
     return [200, { items }]
   })
+  
 
   console.log('✅ Axios Mock Setup Complete')
   console.log('   🏦 Bank Accounts: Loaded from BankOptions.ts')
   console.log('   📋 ItemNames: Loaded from ItemNameOption.ts')
   console.log('   📝 Receipts: Using waybillNumber + Dual Storage')
+    console.log('   ✅ Approve/Reject: Dedicated endpoints')
   return mock
 }

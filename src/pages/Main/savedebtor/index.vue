@@ -1,3 +1,4 @@
+<!-- //SaveDebtor/index-->
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full h-screen flex overflow-hidden">
@@ -176,31 +177,36 @@
               </div>
             </div>
 
-            <div class="px-6 py-4 border-t border-white/40 bg-white/10 flex-shrink-0">
-              <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-6">
-                  <div class="text-center">
-                    <p class="text-xs text-slate-500 mb-1">รายการที่เลือก</p>
-                    <p class="text-2xl font-bold text-blue-600">{{ selectedItems.size }}</p>
-                  </div>
-                  <div class="h-12 w-px bg-slate-300"></div>
-                  <div class="text-center">
-                    <p class="text-xs text-slate-500 mb-1">ยอดรวม</p>
-                    <p class="text-2xl font-bold text-red-600">{{ formatCurrency(selectedTotal) }}</p>
-                  </div>
-                </div>
+<div class="px-6 py-4 border-t border-white/40 bg-white/10 flex-shrink-0">
+  <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-6">
+      <div class="text-center">
+        <p class="text-xs text-slate-500 mb-1">รายการที่เลือก</p>
+        <p class="text-2xl font-bold text-blue-600">{{ selectedItems.size }}</p>
+      </div>
+      <div class="h-12 w-px bg-slate-300"></div>
+      <div class="text-center">
+        <p class="text-xs text-slate-500 mb-1">ยอดที่เลือก</p>
+        <p class="text-2xl font-bold text-purple-600">{{ formatCurrency(selectedTotal) }}</p>
+      </div>
+      <div class="h-12 w-px bg-slate-300"></div>
+      <div class="text-center">
+        <p class="text-xs text-slate-500 mb-1">ยอดคงเหลือสุทธิทั้งหมด</p>
+        <p class="text-2xl font-bold text-red-600">{{ formatCurrency(totalBalanceAmount) }}</p>
+      </div>
+    </div>
 
-                <button
-                  @click="clearSelectedDebtors"
-                  :disabled="selectedItems.size === 0"
-                  class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white"
-                >
-                  <i class="ph ph-broom text-lg"></i>
-                  ดำเนินการล้างหนี้
-                </button>
-              </div>
-            </div>
+    <button
+      @click="clearSelectedDebtors"
+      :disabled="selectedItems.size === 0"
+      class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white"
+    >
+      <i class="ph ph-broom text-lg"></i>
+      ดำเนินการล้างหนี้
+    </button>
+  </div>
+</div>
           </div>
         </div>
 
@@ -403,6 +409,7 @@ import { storeToRefs } from 'pinia'
 import { filterDebtorsByPermission } from '@/components/utils/filterdebtor'
 import { reciptService } from '@/services/ReciptService'
 import { getAllOptions, getItemById, getItemByName } from '@/components/data/ItemNameOption'
+import { clearDebtorService } from '@/services/ClearDebtorService'
 
 /* =========================
  * Constants
@@ -478,66 +485,15 @@ const loadReceiptData = async () => {
       return
     }
 
-    // 1️⃣ ดึงข้อมูลจาก Service
-    const receipts = await reciptService.getAll()
-    console.log('📦 Total receipts loaded:', receipts.length)
+    // ✅ ใช้ ClearDebtorService แทน
+    let pendingItems = await clearDebtorService.getPendingDebts()
 
-    // 🔍 Debug: ดูข้อมูลก่อนกรอง
-    const totalItemsBefore = receipts.reduce((sum, r) => sum + (r.receiptList?.length || 0), 0)
-    const clearedItemsCount = receipts.reduce((sum, r) => {
-      return sum + (r.receiptList || []).filter(item => item.isClearedDebt === true).length
-    }, 0)
-    console.log(`📊 Total items before filter: ${totalItemsBefore}`)
-    console.log(`✅ Already cleared items: ${clearedItemsCount}`)
-
-    // 2️⃣ กรองเฉพาะรายการที่ยังไม่ได้ล้าง + เฉพาะ type='receivable' เท่านั้น
-    const filteredReceipts = receipts.map(receipt => {
-      if (!Array.isArray(receipt.receiptList)) {
-        return { ...receipt, receiptList: [] }
-      }
-
-      const unClearedItems = receipt.receiptList.filter(item => {
-        const isCleared = item.isClearedDebt === true
-
-        // ✅ ตรวจสอบ itemType - เฉพาะ 'receivable' เท่านั้น
-        const itemId = item.itemId || null
-        const itemName = item.itemName || ''
-        const itemType = getItemType(itemId || itemName)
-
-        if (isCleared) {
-          console.log(`🚫 Filtering out (cleared): ${item.itemName} (ID: ${item.id})`)
-          return false
-        }
-
-        if (itemType !== 'receivable') {
-          console.log(`🚫 Filtering out (not receivable): ${item.itemName} (type: ${itemType})`)
-          return false
-        }
-
-        return true
-      })
-
-      return {
-        ...receipt,
-        receiptList: unClearedItems
-      }
-    }).filter(receipt => receipt.receiptList.length > 0)
-
-    console.log('✅ Filtered receipts:', filteredReceipts.length)
-
-    // 3️⃣ Rebuild summary store
-    summaryStore.clearAll()
-    summaryStore.ingestMany(filteredReceipts)
-
-    // 4️⃣ Get pending debts
-    let pendingItems = summaryStore.pendingDebts
-    console.log('⏳ Pending debts:', pendingItems.length)
-
-    // 5️⃣ Permission filter
+    // Permission filter
     if (auth.role === 'user' && auth.user?.affiliationId) {
       const beforeFilter = pendingItems.length
-      pendingItems = pendingItems.filter(
-        item => item.affiliationId === auth.user!.affiliationId
+      pendingItems = clearDebtorService.filterByAffiliation(
+        pendingItems,
+        auth.user.affiliationId
       )
       console.log(`🔒 Permission filter: ${beforeFilter} → ${pendingItems.length}`)
     }
@@ -552,23 +508,10 @@ const loadReceiptData = async () => {
     isLoading.value = false
   }
 }
-/* =========================
- * Load History
- * ========================= */
+
 const loadHistory = () => {
-  try {
-    const stored = localStorage.getItem(STORAGE_HISTORY_KEY)
-    const parsed = stored ? JSON.parse(stored) : []
-
-    // ✅ รองรับทั้งแบบเก่า (items เป็น string) และแบบใหม่ (items เป็น array)
-    historyItems.value = parsed.filter(
-      (h: any) => h.referenceId && (typeof h.items === 'string' || Array.isArray(h.items))
-    )
-  } catch {
-    historyItems.value = []
-  }
+  historyItems.value = clearDebtorService.getHistory()
 }
-
 /* =========================
  * Computed - Group Items
  * ========================= */
@@ -580,9 +523,9 @@ const groupedItems = computed(() => {
 
     if (grouped.has(itemId)) {
       const existing = grouped.get(itemId)!
-      existing.depositNetAmount = (existing.depositNetAmount || 0) + (item.depositNetAmount || 0)
-      existing.debtorAmount = (existing.debtorAmount || 0) + (item.debtorAmount || 0)
-      existing.balanceAmount = (existing.balanceAmount || 0) + (item.balanceAmount || 0)
+      existing.depositNetAmount = Number(existing.depositNetAmount || 0) + Number(item.depositNetAmount || 0)
+      existing.debtorAmount = Number(existing.debtorAmount || 0) + Number(item.debtorAmount || 0)
+      existing.balanceAmount = Number(existing.balanceAmount || 0) + Number(item.balanceAmount || 0)
       existing._count++
 
       if (item._receipts) {
@@ -593,12 +536,16 @@ const groupedItems = computed(() => {
         existing._responsibles.add(item.responsible)
       }
 
+      // ✅ เก็บรายการย่อยทั้งหมดไว้
+      existing._allItems.push(item)
+
     } else {
       grouped.set(itemId, {
         ...item,
         _count: 1,
         _receipts: item._receipts || [],
-        _responsibles: new Set(item.responsible ? [item.responsible] : [])
+        _responsibles: new Set(item.responsible ? [item.responsible] : []),
+        _allItems: [item] // ✅ เก็บรายการย่อยทั้งหมด
       })
     }
   }
@@ -612,6 +559,7 @@ const groupedItems = computed(() => {
 })
 
 const filteredItems = computed(() => groupedItems.value)
+
 
 /* =========================
  * Pagination - New Tab
@@ -645,7 +593,9 @@ const selectedTotal = computed(() =>
     .filter(i => selectedItems.value.has(i.id))
     .reduce((sum, i) => sum + Number(i.balanceAmount || 0), 0)
 )
-
+const totalBalanceAmount = computed(() =>
+  filteredItems.value.reduce((sum, i) => sum + Number(i.balanceAmount || 0), 0)
+)
 /* =========================
  * Clear Selected Debtors
  * ========================= */
@@ -655,83 +605,106 @@ const clearSelectedDebtors = async () => {
     return
   }
 
-  const selectedList = groupedItems.value.filter(i =>
-    selectedItems.value.has(i.id)
+  // ✅ ดึงรายการที่เลือก (grouped by waybillNumber)
+  const selectedGrouped = groupedItems.value.filter(group =>
+    selectedItems.value.has(group.id)
   )
 
-  const receiptsGrouped = selectedList.reduce((acc, item) => {
-    const receiptId = item._originalReceipt?.projectCode || item.receiptId || 'unknown'
+  console.log('📦 Selected groups:', selectedGrouped.length)
 
-    if (!acc[receiptId]) {
-      acc[receiptId] = {
-        receiptId,
-        projectCode: item._originalReceipt?.projectCode || receiptId,
-        fullName: item._originalReceipt?.fullName || item.responsible || '-',
-        phone: item._originalReceipt?.phone || '-',
-        department: item.department || item._originalReceipt?.mainAffiliationName || '-',
-        subDepartment: item.subDepartment || '-',
-        sendmoney: item._originalReceipt?.sendmoney || 'รายได้',
-        fundName: item._originalReceipt?.fundName || '-',
-        createdAt: item._originalReceipt?.createdAt || new Date().toISOString(),
-        items: []
-      }
+  // ✅ เตรียมข้อมูลสำหรับส่งไปหน้าถัดไป (ไม่ซ้ำ)
+  const receiptsByWaybill = new Map()
+
+  selectedGrouped.forEach(group => {
+    const receipt = group._originalReceipt
+    const waybillNumber = group.waybillNumber
+
+    // ✅ ป้องกันการซ้ำ - ถ้ามีอยู่แล้วให้ข้าม
+    if (receiptsByWaybill.has(waybillNumber)) {
+      console.warn(`⚠️ Duplicate waybill: ${waybillNumber}`)
+      return
     }
 
-    acc[receiptId].items.push({
-      ...item,
-      amount: Number(item.balanceAmount),
-      debtorAmount: Number(item.balanceAmount || item.debtorAmount || 0)
+    receiptsByWaybill.set(waybillNumber, {
+      waybillNumber: waybillNumber,
+      receiptId: receipt.id,
+      projectCode: receipt.projectCode || waybillNumber,
+      fullName: receipt.fullName || group.responsible || '-',
+      phone: receipt.phone || '-',
+      department: group.department || receipt.mainAffiliationName || '-',
+      subDepartment: group.subDepartment || receipt.subAffiliationName || '-',
+      sendmoney: receipt.sendmoney || 'รายได้',
+      fundName: receipt.fundName || '-',
+      createdAt: receipt.createdAt || new Date().toISOString(),
+      items: group._allItems.map(item => ({
+        id: item.id,
+        itemId: item.itemId,
+        itemName: item.itemName,
+        amount: Number(item.balanceAmount || 0),
+        debtorAmount: Number(item.balanceAmount || item.debtorAmount || 0),
+        balanceAmount: Number(item.balanceAmount || 0),
+        note: item.note || '',
+        referenceId: item.receiptId || item.id
+      }))
     })
+  })
 
-    return acc
-  }, {})
+  // ✅ แปลง Map เป็น Array
+  const receiptsArray = Array.from(receiptsByWaybill.values())
+
+  console.log('📊 Unique receipts:', receiptsArray.length)
+  console.log('📋 Receipt details:', receiptsArray)
 
   const summaryData = {
-    receipts: Object.values(receiptsGrouped)
+    receipts: receiptsArray
   }
 
   localStorage.setItem(STORAGE_SUMMARY_KEY, JSON.stringify(summaryData))
 
- const referenceId = `REF-${Date.now()}`
+  const referenceId = `REF-${Date.now()}`
 
-const historyEntry = {
-  id: `CLEAR-${Date.now()}`,
-  referenceId: referenceId,
-  date: new Date().toLocaleString('th-TH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }),
-  // ✅ เปลี่ยนจาก string เป็น array ของ objects
-  items: selectedList.map(i => ({
-    itemName: i.itemName,
-    amount: Number(i.balanceAmount || 0),
-    referenceId: i.receiptId || i.id,
-    note: i.note || '',
-    department: i.department,
-    subDepartment: i.subDepartment
-  })),
-  // เก็บ summary text ไว้แสดงในหน้า history
-  itemsText: selectedList.map(i => i.itemName).join(', '),
-  total: selectedList.reduce(
-    (sum, i) => sum + Number(i.balanceAmount || 0),
-    0
-  ),
-  // ✅ ข้อมูลเพิ่มเติมสำหรับ PDF
-  fullName: selectedList[0]?.responsible || 'ไม่ระบุ',
-  phone: selectedList[0]?._originalReceipt?.phone || '-',
-  department: selectedList[0]?.department || 'ไม่ระบุ',
-  sendmoney: selectedList[0]?._originalReceipt?.sendmoney || 'รายได้',
-  fundName: selectedList[0]?._originalReceipt?.fundName || '-',
-  receiptId: selectedList[0]?._originalReceipt?.projectCode || referenceId,
-  payments: [],
-}
+  // ✅ สร้าง History Entry
+  const historyEntry = {
+    id: `CLEAR-${Date.now()}`,
+    referenceId: referenceId,
+    date: new Date().toLocaleString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }),
+    items: receiptsArray.flatMap(r => 
+      r.items.map(item => ({
+        itemName: item.itemName,
+        amount: Number(item.balanceAmount || 0),
+        referenceId: r.waybillNumber,
+        note: item.note || '',
+        department: r.department,
+        subDepartment: r.subDepartment
+      }))
+    ),
+    itemsText: receiptsArray.map(r => 
+      `[${r.waybillNumber}] ${r.fullName}`
+    ).join(', '),
+    total: receiptsArray.reduce(
+      (sum, r) => sum + r.items.reduce((s, i) => s + Number(i.balanceAmount || 0), 0),
+      0
+    ),
+    fullName: receiptsArray[0]?.fullName || 'ไม่ระบุ',
+    phone: receiptsArray[0]?.phone || '-',
+    department: receiptsArray[0]?.department || 'ไม่ระบุ',
+    sendmoney: receiptsArray[0]?.sendmoney || 'รายได้',
+    fundName: receiptsArray[0]?.fundName || '-',
+    receiptId: receiptsArray[0]?.waybillNumber || referenceId,
+    payments: [],
+  }
 
   const currentHistory = historyItems.value
   currentHistory.unshift(historyEntry)
   localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(currentHistory))
+
+  console.log('✅ Saved to localStorage:', summaryData)
 
   router.push('/cleardebtor/multi')
 }

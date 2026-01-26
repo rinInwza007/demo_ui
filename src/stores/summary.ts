@@ -1,12 +1,23 @@
+// src/stores/summary.ts
 import { defineStore } from 'pinia'
+import { toRaw } from 'vue'
 import type { Receipt } from '@/types/recipt'
-import type {
-  LedgerEntry,
-  UnitAgg,
-  DashboardTotals,
-} from '@/types/summary'
+import type { LedgerEntry, UnitAgg, DashboardTotals } from '@/types/summary'
 
 import { receiptToLedgerEntry } from '@/mappers/ledger/receiptToLedger'
+
+/* =========================
+ * Types
+ * ========================= */
+interface PendingRow {
+  debtorKey: string
+  fullName: string
+  affiliationId: string
+  faculty: string
+  totalDebt: number
+  totalCleared: number
+  balance: number
+}
 
 /* =========================
  * Utils
@@ -16,7 +27,7 @@ const emptyTotals = (): DashboardTotals => ({
   income: 0,
   debtNew: 0,
   debtClear: 0,
-  net: 0,
+  net: 0
 })
 
 const initUnitAgg = (e: LedgerEntry): UnitAgg => ({
@@ -31,7 +42,7 @@ const initUnitAgg = (e: LedgerEntry): UnitAgg => ({
   debtClear: 0,
   net: 0,
 
-  byDoc: {},
+  byDoc: {}
 })
 
 /* =========================
@@ -45,7 +56,8 @@ export const useSummaryStore = defineStore('Summary', {
     // 1 receipt = 1 ledger entry
     ledgerByDoc: {} as Record<string, LedgerEntry>,
 
-    receiptsByDoc: {} as Record<string, Receipt>,
+    // keep non-reactive receipts
+    receiptsByDoc: {} as Record<string, Receipt>
   }),
 
   getters: {
@@ -54,17 +66,17 @@ export const useSummaryStore = defineStore('Summary', {
     ledger: (s) => Object.values(s.ledgerByDoc),
 
     /**
-     * ลูกหนี้คงค้าง (ใช้กับ UI หน้า clear)
-     * derive จาก ledger โดยตรง
+     * ลูกหนี้คงค้าง (derive จาก ledger)
      */
-    pendingDebtors: (s) => {
-      const map = new Map<string, any>()
+    pendingDebtors: (s): PendingRow[] => {
+      const map = new Map<string, PendingRow>()
 
       Object.values(s.ledgerByDoc).forEach((e) => {
         if (e.direction !== 'DEBT_NEW' && e.direction !== 'DEBT_CLEAR') return
 
-        const key = e.fullName
-        if (!key) return
+        // prevent name collision
+        const key = `${e.affiliationId}-${e.fullName}`
+        if (!e.fullName || !e.affiliationId) return
 
         if (!map.has(key)) {
           map.set(key, {
@@ -74,11 +86,11 @@ export const useSummaryStore = defineStore('Summary', {
             faculty: e.faculty,
             totalDebt: 0,
             totalCleared: 0,
-            balance: 0,
+            balance: 0
           })
         }
 
-        const row = map.get(key)
+        const row = map.get(key)!
 
         if (e.direction === 'DEBT_NEW') row.totalDebt += e.amount
         if (e.direction === 'DEBT_CLEAR') row.totalCleared += e.amount
@@ -87,7 +99,7 @@ export const useSummaryStore = defineStore('Summary', {
       })
 
       return Array.from(map.values()).filter((r) => r.balance > 0)
-    },
+    }
   },
 
   actions: {
@@ -96,10 +108,11 @@ export const useSummaryStore = defineStore('Summary', {
      * ========================= */
 
     applyLedger(e: LedgerEntry) {
-      // ---------- unit agg ----------
+      /* ---------- unit agg ---------- */
       if (!this.unitsByKey[e.unitKey]) {
         this.unitsByKey[e.unitKey] = initUnitAgg(e)
       }
+
       const u = this.unitsByKey[e.unitKey]
 
       if (!u.byDoc[e.docKey]) u.docs++
@@ -110,12 +123,14 @@ export const useSummaryStore = defineStore('Summary', {
       if (e.direction === 'DEBT_CLEAR') u.debtClear += e.amount
       u.net += e.signed
 
-      // ---------- totals ----------
-      this.totals.docs++
+      /* ---------- totals ---------- */
       if (e.direction === 'INCOME') this.totals.income += e.amount
       if (e.direction === 'DEBT_NEW') this.totals.debtNew += e.amount
       if (e.direction === 'DEBT_CLEAR') this.totals.debtClear += e.amount
       this.totals.net += e.signed
+
+      // recalc docs safely
+      this.totals.docs = Object.keys(this.ledgerByDoc).length + 1
     },
 
     rollbackLedger(e: LedgerEntry) {
@@ -130,13 +145,18 @@ export const useSummaryStore = defineStore('Summary', {
       if (e.direction === 'DEBT_CLEAR') u.debtClear -= e.amount
       u.net -= e.signed
 
-      this.totals.docs--
       if (e.direction === 'INCOME') this.totals.income -= e.amount
       if (e.direction === 'DEBT_NEW') this.totals.debtNew -= e.amount
       if (e.direction === 'DEBT_CLEAR') this.totals.debtClear -= e.amount
       this.totals.net -= e.signed
 
       if (u.docs <= 0) delete this.unitsByKey[e.unitKey]
+
+      // recalc docs safely
+      this.totals.docs = Math.max(
+        0,
+        Object.keys(this.ledgerByDoc).length - 1
+      )
     },
 
     /* =========================
@@ -147,16 +167,19 @@ export const useSummaryStore = defineStore('Summary', {
       const docKey = receipt.id
       if (!docKey) return
 
+      const clean = toRaw(receipt)
+
       // rollback old
       if (this.ledgerByDoc[docKey]) {
         this.rollbackLedger(this.ledgerByDoc[docKey])
       }
 
-      const ledger = receiptToLedgerEntry(receipt)
+      const ledger = receiptToLedgerEntry(clean)
+
       this.applyLedger(ledger)
 
       this.ledgerByDoc[docKey] = ledger
-      this.receiptsByDoc[docKey] = receipt
+      this.receiptsByDoc[docKey] = clean
     },
 
     ingestDelete(docKey: string) {
@@ -164,6 +187,7 @@ export const useSummaryStore = defineStore('Summary', {
       if (!ledger) return
 
       this.rollbackLedger(ledger)
+
       delete this.ledgerByDoc[docKey]
       delete this.receiptsByDoc[docKey]
     },
@@ -172,14 +196,20 @@ export const useSummaryStore = defineStore('Summary', {
       this.reset()
       receipts.forEach((r) => this.ingestUpsert(r))
     },
-  clearAll() {
-    this.reset()
-  },
-  reset() {
-    this.totals = emptyTotals()
-    this.unitsByKey = {}
-    this.ledgerByDoc = {}
-    this.receiptsByDoc = {}
-  },
-  },
+
+    /* =========================
+     * reset
+     * ========================= */
+
+    clearAll() {
+      this.reset()
+    },
+
+    reset() {
+      this.totals = emptyTotals()
+      this.unitsByKey = {}
+      this.ledgerByDoc = {}
+      this.receiptsByDoc = {}
+    }
+  }
 })

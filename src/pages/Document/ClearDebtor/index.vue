@@ -288,7 +288,7 @@ import BankAccountSelect from '@/components/TomSelect/BankAccountSelect.vue'
 import InputText from '@/components/input/inputtext.vue'
 import { useBankTransferManager } from '@/components/Function/FuncClear.js'
 import { useSummaryStore } from '@/stores/summary'
-import { clearSummaryService } from '@/services/ClearDebtor/ClearDebtorService'
+import { reciptService } from '@/services/ReciptService'
 
 const route = useRoute()
 const router = useRouter()
@@ -495,7 +495,6 @@ const clearBankError = (index, field) => {
 }
 
 // ✅ ฟังก์ชันล้างหนี้แบบใหม่ - ใช้ summaryStore
-// ✅ ฟังก์ชันล้างหนี้แบบใหม่ - ใช้ทั้ง summaryStore และ clearSummaryService
 async function clearAllDebts() {
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
@@ -527,6 +526,8 @@ async function clearAllDebts() {
     })
   })
 
+  console.log('🎯 Items to mark:', itemsToMark)
+
   if (itemsToMark.length === 0) {
     await Swal.fire({
       icon: 'warning',
@@ -553,9 +554,16 @@ async function clearAllDebts() {
             <span class="font-bold text-purple-600">• ยอดรวมที่จะจ่าย:</span>
             <span class="float-right">${formatNumber(totalBankValue)} บาท</span>
           </p>
+          <hr class="my-3">
+          <p class="text-gray-700">
+            <span class="font-bold text-red-600">✗ ส่วนต่าง:</span>
+            <span class="float-right font-bold">${formatNumber(paymentDifference)} บาท</span>
+          </p>
         </div>
       `,
+      confirmButtonText: 'รับทราบ',
       confirmButtonColor: '#DC2626',
+      width: '500px',
     })
     return
   }
@@ -564,8 +572,9 @@ async function clearAllDebts() {
     title: 'ยืนยันการล้างหนี้?',
     html: `
       <div class="text-left space-y-2">
-        <p>ยอดที่จะชำระ: <span class="font-bold text-green-600">${formatNumber(totalPaymentInputValue)} บาท</span></p>
-        <p>จำนวนรายการ: <span class="font-bold">${itemsToMark.length} รายการ</span></p>
+        <p class="text-gray-700">ยอดหนี้ทั้งหมด: <span class="font-bold">${formatNumber(totalDebt.value)} บาท</span></p>
+        <p class="text-gray-700">ยอดที่จะชำระ: <span class="font-bold text-green-600">${formatNumber(totalPaymentInputValue)} บาท</span></p>
+        <p class="text-gray-700">จำนวนรายการที่จะล้าง: <span class="font-bold">${itemsToMark.length} รายการ</span></p>
       </div>
     `,
     icon: 'question',
@@ -579,7 +588,7 @@ async function clearAllDebts() {
   if (!result.isConfirmed) return
 
   try {
-    console.log('🧹 Starting debt clearing process...')
+    console.log('🧹 Starting debt clearing process with SummaryStore...')
 
     // ✅ จัดกลุ่มตาม waybillNumber
     const grouped = new Map()
@@ -591,13 +600,19 @@ async function clearAllDebts() {
       grouped.get(item.waybillNumber).push(item)
     })
 
+    console.log('📦 Processing', grouped.size, 'receipts')
+
     let totalMarkedCount = 0
+    let totalClearedCount = 0
 
     // ✅ ประมวลผลแต่ละ receipt
     for (const [waybillNumber, items] of grouped) {
+      console.log(`🔍 Processing waybill: ${waybillNumber}`)
+
       try {
         // ✅ ล้างหนี้แต่ละรายการใน summaryStore
         for (const item of items) {
+          // เรียกใช้ applyDebtClear จาก summaryStore
           summaryStore.applyDebtClear(waybillNumber, {
             itemName: item.itemName,
             amount: item.paymentAmount,
@@ -605,14 +620,24 @@ async function clearAllDebts() {
           })
 
           totalMarkedCount++
+          console.log(`   ✅ Cleared: ${item.itemName} - ${item.paymentAmount}`)
         }
+
+        // ✅ ตรวจสอบว่ารายการใดล้างหมดแล้ว
+        const debtors = summaryStore.getDebtors(waybillNumber)
+        const clearedCount = debtors.filter(d => d.isCleared).length
+        totalClearedCount += clearedCount
+
+        console.log(`   📊 Summary: ${clearedCount}/${debtors.length} items fully cleared`)
 
       } catch (error) {
         console.error(`❌ Error clearing waybill ${waybillNumber}:`, error)
       }
     }
 
-    // ✅ บันทึกประวัติลง localStorage (เดิม)
+    console.log(`✅ Total: Marked ${totalMarkedCount}, Fully Cleared ${totalClearedCount}`)
+
+    // ✅ บันทึกประวัติ
     const historyRecord = {
       id: Date.now().toString(),
       referenceId: `CLEAR-${Date.now()}`,
@@ -620,17 +645,26 @@ async function clearAllDebts() {
       items: uniqueHistoryItems.map(i => ({
         itemName: i.itemName,
         amount: i.paymentAmount,
-        note: i.note
+        note: i.note,
+        referenceId: i.receiptNumber || i.waybillNumber
       })),
       payments: getBankTransfersData().map(p => ({
         type: 'transfer',
         bankName: p.accountData.bankName,
+        accountName: p.accountData.accountName,
         accountNumber: p.accountData.accountNumber,
         amount: p.amount
       })),
-      total: totalPaymentInputValue
+      total: totalPaymentInputValue,
+      fullName: receipts.value[0]?.fullName || '-',
+      phone: receipts.value[0]?.phone || '-',
+      department: receipts.value[0]?.originalDepartment || '-',
+      sendmoney: receipts.value[0]?.sendmoney || '-',
+      fundName: receipts.value[0]?.fundName || '-',
+      receiptId: receipts.value[0]?.waybillNumber || `CLEAR-${Date.now()}`
     }
 
+    // บันทึกประวัติลง localStorage
     const STORAGE_HISTORY_KEY = 'debtorClearHistory'
     try {
       const stored = localStorage.getItem(STORAGE_HISTORY_KEY)
@@ -641,35 +675,14 @@ async function clearAllDebts() {
       console.error('❌ Error saving history:', err)
     }
 
-    // ✅ NEW: บันทึกลง clearSummaryService (รองรับทั้ง Mock และ Real API)
-    const clearSummaryData: ClearSummary = {
-      id: historyRecord.referenceId,
-      createdAt: new Date().toISOString(),
-      totalItems: itemsToMark.length,
-      totalAmount: totalPaymentInputValue,
-      debtorList: itemsToMark.map(item => ({
-        waybillNumber: item.waybillNumber,
-        itemName: item.itemName,
-        amount: item.paymentAmount,
-        isCleared: true,
-        note: item.note
-      }))
-    }
-
-    try {
-      await clearSummaryService.create(clearSummaryData)
-      console.log('✅ Clear summary saved via API')
-    } catch (apiError) {
-      console.error('⚠️ Failed to save via API, but localStorage is updated:', apiError)
-    }
-
     localStorage.removeItem('clearDebtorSummary')
 
     await Swal.fire({
       title: 'ล้างหนี้สำเร็จ!',
       html: `
         <div class="text-left space-y-2">
-          <p>✅ ล้างแล้ว: <span class="font-bold text-green-600">${totalMarkedCount} รายการ</span></p>
+          <p>✅ ทำเครื่องหมายล้างแล้ว: <span class="font-bold text-blue-600">${totalMarkedCount} รายการ</span></p>
+          <p>🎯 ล้างหมดแล้ว: <span class="font-bold text-green-600">${totalClearedCount} รายการ</span></p>
           <p>💰 ยอดเงินรวม: <span class="font-bold text-green-600">${formatNumber(totalPaymentInputValue)} บาท</span></p>
         </div>
       `,

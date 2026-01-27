@@ -11,6 +11,7 @@ import { VueDatePicker } from "@vuepic/vue-datepicker"
 import '@vuepic/vue-datepicker/dist/main.css'
 import "hover.css"
 import VueApexCharts from "vue3-apexcharts"
+import Swal from 'sweetalert2'
 
 async function bootstrap() {
   // ===================================
@@ -19,7 +20,7 @@ async function bootstrap() {
   const apiBaseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
   axios.defaults.baseURL = apiBaseURL
   axios.defaults.timeout = 10000
-  
+
   // ===================================
   // ✅ Request Interceptor - สำหรับ Debug
   // ===================================
@@ -68,7 +69,7 @@ async function bootstrap() {
   // ✅ เฉพาะ DEV + VITE_USE_FAKE_API=true → ใช้ Mock
   // ===================================
   const useMockAPI = import.meta.env.DEV && import.meta.env.VITE_USE_FAKE_API === 'true'
-  
+
   if (useMockAPI) {
     const { setupAxiosMock } = await import('@/fake/mockAxios')
     setupAxiosMock()
@@ -96,7 +97,6 @@ async function bootstrap() {
   app.component('VueDatePicker', VueDatePicker)
   app.use(router)
   app.directive('tippy', tippyDirective)
-
   app.mount('#app')
 }
 

@@ -10,6 +10,13 @@ import { getAllOptions, getItemById, getItemByName } from '@/components/data/Ite
 import type { Item } from '@/types/recipt'
 import { defaultAffiliation } from '@/components/data/Affiliation'
 import type { Affiliation } from '@/types/affiliation'
+import {
+  createClearSummary,
+  getClearSummaries,
+  getClearSummaryById,
+  updateClearSummary,
+  deleteClearSummary
+} from '@/services/ClearDebtor/clearSummaryApi'
 /**
  * ==========================================================
  * Fake API via Axios Mock Adapter
@@ -516,6 +523,116 @@ export function setupAxiosMock() {
       password: '1234',
     },
   ]
+
+// ============================================
+// 🧹 Clear Debtor Summary Endpoints (แก้ไขให้สมบูรณ์)
+// ============================================
+
+mock.onPost('/clear-summaries').reply(config => {
+  console.log('🧹 [Mock] POST /clear-summaries')
+  
+  try {
+    const body = JSON.parse(config.data)
+    const result = createClearSummary(body)
+    
+    if (!result.success) {
+      return [409, result]
+    }
+    
+    console.log('✅ [Mock] Clear summary created:', result.data.id)
+    return [201, result]
+    
+  } catch (error) {
+    console.error('❌ [Mock] Error creating clear summary:', error)
+    return [500, {
+      success: false,
+      message: 'Internal server error'
+    }]
+  }
+})
+
+mock.onGet('/clear-summaries').reply(() => {
+  console.log('🧹 [Mock] GET /clear-summaries')
+  
+  const result = getClearSummaries()
+  console.log('✅ [Mock] Found', result.data.length, 'clear summaries')
+  
+  return [200, result]
+})
+
+mock.onGet(/\/clear-summaries\/([^/]+)$/).reply(config => {
+  const id = config.url?.match(/\/clear-summaries\/([^/]+)$/)?.[1]
+  console.log('🧹 [Mock] GET /clear-summaries/' + id)
+  
+  if (!id) {
+    return [400, {
+      success: false,
+      message: 'ID is required'
+    }]
+  }
+  
+  const result = getClearSummaryById(id)
+  
+  if (!result.success) {
+    return [404, result]
+  }
+  
+  console.log('✅ [Mock] Found clear summary:', id)
+  return [200, result]
+})
+
+mock.onPut(/\/clear-summaries\/([^/]+)$/).reply(config => {
+  const id = config.url?.match(/\/clear-summaries\/([^/]+)$/)?.[1]
+  console.log('🧹 [Mock] PUT /clear-summaries/' + id)
+  
+  if (!id) {
+    return [400, {
+      success: false,
+      message: 'ID is required'
+    }]
+  }
+  
+  try {
+    const body = JSON.parse(config.data)
+    const result = updateClearSummary(id, body)
+    
+    if (!result.success) {
+      return [404, result]
+    }
+    
+    console.log('✅ [Mock] Updated clear summary:', id)
+    return [200, result]
+    
+  } catch (error) {
+    console.error('❌ [Mock] Error updating clear summary:', error)
+    return [500, {
+      success: false,
+      message: 'Internal server error'
+    }]
+  }
+})
+
+mock.onDelete(/\/clear-summaries\/([^/]+)$/).reply(config => {
+  const id = config.url?.match(/\/clear-summaries\/([^/]+)$/)?.[1]
+  console.log('🧹 [Mock] DELETE /clear-summaries/' + id)
+  
+  if (!id) {
+    return [400, {
+      success: false,
+      message: 'ID is required'
+    }]
+  }
+  
+  const result = deleteClearSummary(id)
+  
+  if (!result.success) {
+    return [404, result]
+  }
+  
+  console.log('✅ [Mock] Deleted clear summary:', id)
+  return [200, result]
+})
+
 
   // ============================================
   // 🔐 Auth Endpoints

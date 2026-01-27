@@ -485,17 +485,20 @@ const loadReceiptData = async () => {
         return
       }
 
-      receipt.debtorList.forEach((item: any) => {
-        const itemType = getItemType(item.itemName)
-        const isClearedDebt = item.isClearedDebt === true  // ✅ สำคัญมาก!
+     receipt.debtorList.forEach((item: any) => {
+  const itemType = getItemType(item.itemName)
+  const isClearedDebt = item.isClearedDebt === true
 
-        console.log(`📝 Item check:`, {
-          itemName: item.itemName,
-          type: itemType,
-          isClearedDebt,
-          willShow: itemType === 'receivable' && !isClearedDebt
-        })
+         console.log(`📝 Debug item:`, {
+    itemName: item.itemName,
+    isClearedDebt: item.isClearedDebt,  // ดูค่าจริง
+    type: itemType,
+    willShow: itemType === 'receivable' && !isClearedDebt
+  })
 
+  if (itemType === 'receivable' && !isClearedDebt) {
+    allItems.push
+  }
         // ✅ เฉพาะ receivable ที่ยังไม่ได้ล้าง
         if (itemType === 'receivable' && !isClearedDebt) {
           allItems.push({
@@ -546,13 +549,40 @@ const loadHistory = () => {
     historyItems.value = []
   }
 }
-
 /* =========================
  * Computed - Group Items
  * ========================= */
 const filteredItems = computed(() => {
-  // ✅ ไม่ต้อง group แล้ว แสดงทีละรายการตามที่กรอกมา
-  return rawData.value
+  // ✅ รวมรายการที่มีชื่อเหมือนกันและรวมยอดเงิน
+  const groupedMap = new Map()
+
+  rawData.value.forEach(item => {
+    const key = item.itemName // ใช้ชื่อรายการเป็น key
+
+    if (groupedMap.has(key)) {
+      // ถ้ามีอยู่แล้ว ให้รวมยอดเงิน
+      const existing = groupedMap.get(key)
+      existing.debtorAmount += Number(item.debtorAmount || 0)
+      existing.balanceAmount += Number(item.balanceAmount || 0)
+      existing.depositNetAmount += Number(item.depositNetAmount || 0)
+      existing._count = (existing._count || 1) + 1
+
+      // เก็บ originalReceipts ทั้งหมด
+      if (!existing._originalReceipts) {
+        existing._originalReceipts = [existing._originalReceipt]
+      }
+      existing._originalReceipts.push(item._originalReceipt)
+    } else {
+      // ถ้ายังไม่มี ให้สร้างใหม่
+      groupedMap.set(key, {
+        ...item,
+        _count: 1,
+        _originalReceipts: [item._originalReceipt]
+      })
+    }
+  })
+
+  return Array.from(groupedMap.values())
 })
 /* =========================
  * Pagination - New Tab
@@ -582,7 +612,7 @@ const paginatedItemsHistory = computed(() => {
  * Selected Total
  * ========================= */
 const selectedTotal = computed(() =>
-  rawData.value
+   filteredItems.value
     .filter(i => selectedItems.value.has(i.id))
     .reduce((sum, i) => sum + Number(i.balanceAmount || 0), 0)
 )
@@ -590,7 +620,6 @@ const selectedTotal = computed(() =>
  * Clear Selected Debtors
  * ========================= */
 const clearSelectedDebtors = async () => {
-  // ✅ ตรวจสอบว่ามีรายการที่เลือกหรือไม่
   if (selectedItems.value.size === 0) {
     await Swal.fire({
       title: 'ไม่พบรายการ',
@@ -601,66 +630,77 @@ const clearSelectedDebtors = async () => {
     return
   }
 
-  // ✅ ดึงรายการที่เลือก
-  const selectedItemsData = rawData.value.filter(item =>
+  // ✅ ใช้ filteredItems แทน rawData
+  const selectedItemsData = filteredItems.value.filter(item =>
     selectedItems.value.has(item.id)
   )
 
-  console.log('🎯 Selected items:', selectedItemsData)
+  console.log('🎯 Selected grouped items:', selectedItemsData)
 
-  // ✅ จัดกลุ่มตาม waybillNumber เพื่อสร้าง receipts
+  // ✅ จัดกลุ่มตาม waybillNumber
   const receiptMap = new Map()
 
-  selectedItemsData.forEach(item => {
-    const waybillNumber = item.receiptId || item._originalReceipt?.waybillNumber
+  selectedItemsData.forEach(groupedItem => {
+    // ✅ ใช้ _originalReceipts (array) ที่เก็บไว้ตอน group
+    const originalReceipts = groupedItem._originalReceipts || [groupedItem._originalReceipt]
 
-    if (!receiptMap.has(waybillNumber)) {
-      const originalReceipt = item._originalReceipt || {}
+    originalReceipts.forEach(receipt => {
+      const waybillNumber = receipt?.waybillNumber
 
-      receiptMap.set(waybillNumber, {
-        waybillNumber,
-        receiptId: waybillNumber,
-        projectCode: originalReceipt.projectCode || waybillNumber,
-        fullName: item.responsible || originalReceipt.fullName || '-',
-        phone: originalReceipt.phone || '-',
-        department: item.department,
-        subDepartment: item.subDepartment,
-        mainAffiliationName: originalReceipt.mainAffiliationName || item.department,
-        affiliationName: originalReceipt.affiliationName || item.department,
-        subAffiliationName1: originalReceipt.subAffiliationName1 || item.subDepartment,
-        sendmoney: originalReceipt.sendmoney || '-',
-        fundName: originalReceipt.fundName || '-',
-        createdAt: originalReceipt.createdAt || new Date().toISOString(),
-        items: []
+      if (!waybillNumber) return
+
+      if (!receiptMap.has(waybillNumber)) {
+        receiptMap.set(waybillNumber, {
+          waybillNumber,
+          receiptId: waybillNumber,
+          projectCode: receipt.projectCode || waybillNumber,
+          fullName: receipt.fullName || '-',
+          phone: receipt.phone || '-',
+          department: receipt.mainAffiliationName || receipt.affiliationName || '-',
+          subDepartment: receipt.subAffiliationName1 || '-',
+          mainAffiliationName: receipt.mainAffiliationName || '-',
+          affiliationName: receipt.affiliationName || '-',
+          subAffiliationName1: receipt.subAffiliationName1 || '-',
+          sendmoney: receipt.sendmoney || '-',
+          fundName: receipt.fundName || '-',
+          createdAt: receipt.createdAt || new Date().toISOString(),
+          items: []
+        })
+      }
+
+      // ✅ หา item ที่ตรงกับ itemName ใน debtorList
+      const debtorItems = receipt.debtorList?.filter(
+        (item: any) => item.itemName === groupedItem.itemName && !item.isClearedDebt
+      ) || []
+
+      debtorItems.forEach((debtorItem: any) => {
+        receiptMap.get(waybillNumber).items.push({
+          id: `${waybillNumber}-${debtorItem.itemName}-${Date.now()}-${Math.random()}`,
+          itemName: debtorItem.itemName,
+          debtorAmount: Number(debtorItem.amount || 0),
+          amount: Number(debtorItem.amount || 0),
+          balanceAmount: Number(debtorItem.amount || 0),
+          depositNetAmount: 0,
+          note: debtorItem.debtornote || '',
+          receiptNumber: '',
+          paymentInput: '',
+          isClearedDebt: false,
+          _originalReceipt: receipt
+        })
       })
-    }
-
-    // ✅ เพิ่ม item เข้า receipt
-    receiptMap.get(waybillNumber).items.push({
-      id: item.id,
-      itemName: item.itemName,
-      debtorAmount: item.debtorAmount,
-      amount: item.debtorAmount,
-      balanceAmount: item.balanceAmount,
-      depositNetAmount: item.depositNetAmount || 0,
-      note: item.note || '',
-      receiptNumber: '',
-      paymentInput: '',
-      isClearedDebt: false,
-      _originalReceipt: item._originalReceipt
     })
   })
 
-  // ✅ แปลง Map เป็น Array
   const receipts = Array.from(receiptMap.values())
 
-  console.log('📦 Prepared receipts:', receipts)
+  console.log('📦 Prepared receipts from grouped data:', receipts)
+  console.log('📊 Total items:', receipts.reduce((sum, r) => sum + r.items.length, 0))
 
   // ✅ บันทึกข้อมูลลง localStorage
   const summaryData = {
     receipts,
     selectedAt: new Date().toISOString(),
-    totalItems: selectedItemsData.length,
+    totalItems: receipts.reduce((sum, r) => sum + r.items.length, 0),
     totalAmount: selectedItemsData.reduce((sum, item) => sum + Number(item.balanceAmount || 0), 0)
   }
 
@@ -668,8 +708,6 @@ const clearSelectedDebtors = async () => {
     localStorage.setItem(STORAGE_SUMMARY_KEY, JSON.stringify(summaryData))
     console.log('✅ Saved to localStorage:', STORAGE_SUMMARY_KEY)
 
-
-    // ✅ นำทางไปหน้าล้างลูกหนี้
     router.push('/cleardebtor/multi')
 
   } catch (error) {
@@ -682,8 +720,6 @@ const clearSelectedDebtors = async () => {
     })
   }
 }
-
-
 /* =========================
  * Actions
  * ========================= */

@@ -54,106 +54,116 @@
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-medium text-slate-600">จำนวนรายการทั้งหมด</span>
                   <span class="text-lg font-semibold text-slate-900">
-                    {{ allItems.length }} <span class="text-sm text-slate-500">รายการ</span>
+                    {{ totalItemsCount }} <span class="text-sm text-slate-500">รายการ</span>
                   </span>
                 </div>
               </div>
             </div>
+<!-- ✅ ตารางเดียว มีหัวข้อคณะด้านบน -->
+<div class="glass-panel rounded-2xl shadow-lg overflow-hidden">
 
-            <!-- Grouped by Receipt -->
-            <div v-for="receipt in receipts" :key="receipt.receiptId" class="glass-panel rounded-2xl shadow-lg overflow-hidden">
-              <div class="px-6 py-4 border-b border-white/40 bg-white/20">
-                <div class="flex items-center justify-between">
-                  <h2 class="text-xl font-bold text-slate-900">{{ receipt.department }}</h2>
-                  <span class="text-lg font-bold text-red-600">{{ formatMoney(receipt.totalDebtorAmount) }} บาท</span>
-                </div>
-                <p class="text-xs text-slate-600 mt-1">{{ receipt.subDepartment }} • {{ receipt.items.length }} รายการ</p>
-              </div>
-
-              <!-- Table Header -->
-<div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-  <div class="col-span-2">เลขที่ใบเสร็จ</div>
-  <div class="col-span-2">รายการ</div>
-  <div class="col-span-2">ผู้ทำรายการ</div>
-  <div class="col-span-1 text-right">หนี้</div>
-  <div class="col-span-3 text-right">จำนวนเงินที่ชำระ</div>
-  <div class="col-span-2">หมายเหตุ</div>
-</div>
-<div
-  v-for="item in receipt.items"
-  :key="item.id"
-  class="group grid grid-cols-12 gap-4 px-6 py-4 mb-2 items-center rounded-xl
-         transition-all duration-200 border border-white/50 hover:bg-white/50"
->
-  <!-- Receipt Number -->
-  <div class="col-span-2">
-    <input
-      type="text"
-      v-model="item.receiptNumber"
-      class="glass-input w-full px-3 py-2 rounded-md text-sm"
-      placeholder="เลขที่ใบเสร็จ"
-    />
-  </div>
-
-  <!-- Item Name -->
-  <div class="col-span-2">
-    <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
-  </div>
-
-  <!-- Full Name -->
-  <div class="col-span-2 flex items-center gap-2">
-    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0">
-      {{ (item.responsible || '-').charAt(0) }}
+  <!-- ✅ หัวข้อคณะ (แสดงคณะแรก หรือรวมชื่อทุกคณะ) -->
+  <div class="px-6 py-4 border-b border-white/40 bg-white/20">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-bold text-slate-900">
+  {{ receipts[0]?.department || 'รายละเอียดหนี้' }}
+</h2>
+      <h2 class="text-xl font-bold text-slate-900"></h2>
+      <span class="text-lg font-bold text-red-600">
+        {{ formatMoney(totalDebt) }} บาท
+      </span>
     </div>
-    <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
+
   </div>
 
-  <!-- Debt Amount -->
-  <div class="col-span-1 text-right">
-    <span class="font-bold text-red-600 font-mono text-sm whitespace-nowrap">
-      {{ formatMoney(item.debtorAmount) }}
+  <!-- Table Header -->
+  <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+    <div class="col-span-2">เลขที่ใบเสร็จ</div>
+    <div class="col-span-2">รายการ</div>
+    <div class="col-span-2">ผู้ทำรายการ</div>
+    <div class="col-span-1 text-right">หนี้</div>
+    <div class="col-span-3 text-right">จำนวนเงินที่ชำระ</div>
+    <div class="col-span-2">หมายเหตุ</div>
+  </div>
+
+  <!-- ✅ รายการทั้งหมดต่อกัน (รวมแล้ว) -->
+  <div class="px-6">
+    <template v-for="receipt in receipts" :key="receipt.receiptId">
+      <div
+        v-for="item in receipt.items"
+        :key="item.id"
+        class="group grid grid-cols-12 gap-4 py-4 items-center border-b border-white/20 hover:bg-white/30 transition-all duration-200"
+      >
+        <!-- Receipt Number -->
+        <div class="col-span-2">
+          <input
+            type="text"
+            v-model="item.receiptNumber"
+            class="glass-input w-full px-3 py-2 rounded-md text-sm"
+            placeholder="เลขที่ใบเสร็จ"
+          />
+        </div>
+
+        <!-- Item Name (แสดงชื่อรายการธรรมดา) -->
+        <div class="col-span-2">
+          <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
+        </div>
+
+        <!-- Full Name -->
+        <div class="col-span-2 flex items-center gap-2">
+          <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0">
+            {{ (item.responsible || '-').charAt(0) }}
+          </div>
+          <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
+        </div>
+
+        <!-- Debt Amount (แสดงยอดรวม) -->
+        <div class="col-span-1 text-right">
+          <span class="font-bold text-red-600 font-mono text-sm whitespace-nowrap">
+            {{ formatMoney(item.debtorAmount) }}
+          </span>
+        </div>
+
+        <!-- Payment Input -->
+        <div class="col-span-3 flex justify-end">
+          <input
+            type="text"
+            v-model="item.paymentInput"
+            @input="(e) => handlePaymentInputChange(item, e)"
+            @blur="() => formatPaymentInput(item)"
+            class="glass-input w-40 px-3 py-2 rounded-md text-sm text-right"
+            placeholder="0.00"
+          />
+        </div>
+
+        <!-- Note -->
+        <div class="col-span-2">
+          <input
+            type="text"
+            v-model="item.note"
+            class="glass-input w-full px-3 py-2 rounded-md text-sm"
+            placeholder="หมายเหตุ"
+          />
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+            <!-- ยอดที่ต้องชำระ -->
+<div
+  class="rounded-xl p-6 shadow-lg mb-6"
+  style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);"
+>
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
+    <div class="flex items-center gap-3">
+      <i class="ph-fill ph-money text-3xl"></i> <!-- ✅ เพิ่มบรรทัดนี้ -->
+      <span class="text-xl font-bold">ยอดที่ต้องชำระ</span>
+    </div>
+    <span class="text-3xl font-bold">
+      {{ formatNumber(totalPaymentInput) }} บาท
     </span>
   </div>
-
-  <!-- Payment Input -->
-<div class="col-span-3 flex justify-end">
-  <input
-    type="text"
-    v-model="item.paymentInput"
-    @input="(e) => handlePaymentInputChange(item, e)"
-    @blur="() => formatPaymentInput(item)"
-    class="glass-input w-40 px-3 py-2 rounded-md text-sm text-right"
-    placeholder="0.00"
-  />
 </div>
-
-  <!-- Note -->
-  <div class="col-span-2">
-    <input
-      type="text"
-      v-model="item.note"
-      class="glass-input w-full px-3 py-2 rounded-md text-sm"
-      placeholder="หมายเหตุ"
-    />
-  </div>
-</div>
-            </div>
-
-            <!-- ยอดที่ต้องชำระ -->
-            <div
-              class="rounded-xl p-6 shadow-lg mb-6"
-              style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);"
-            >
-              <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
-                <div class="flex items-center gap-3">
-                  <i class="ph-fill ph-coins text-3xl"></i>
-                  <span class="text-xl font-bold">ยอดที่ต้องชำระ</span>
-                </div>
-                <span class="text-3xl font-bold">
-                  {{ formatNumber(totalPaymentInput) }} บาท
-                </span>
-              </div>
-            </div>
 
             <!-- Payment Section -->
             <div class="glass-panel rounded-2xl p-6 shadow-lg">
@@ -391,6 +401,13 @@ const totalPaid = computed(() =>
   paymentHistory.value.reduce((sum, p) => sum + Number(p.amount || 0), 0)
 )
 
+// ✅ คำนวณจำนวนรายการที่แสดง (นับจากรายการที่รวมแล้ว)
+const totalItemsCount = computed(() => {
+  return receipts.value.reduce((total, receipt) => {
+    return total + receipt.items.length
+  }, 0)
+})
+
 const formatNumber = (num) =>
   Number(num || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })
 
@@ -420,7 +437,6 @@ onMounted(() => {
 
     const baseReceipts = Array.isArray(summary.receipts) ? summary.receipts : []
 
-    // ✅ ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
     const waybillNumbers = baseReceipts.map(r => r.waybillNumber)
     const uniqueWaybills = new Set(waybillNumbers)
 
@@ -430,6 +446,7 @@ onMounted(() => {
       console.log('✅ No duplicates')
     }
 
+    // ✅ สร้าง items แบบธรรมดาก่อน
     const items = baseReceipts.flatMap(r =>
       (r.items || [])
         .filter(item => !item.isClearedDebt)
@@ -453,31 +470,69 @@ onMounted(() => {
         })
     )
 
-    allItems.value = items
+   allItems.value = items
 
-    // ✅ แยกตาม waybillNumber
-    receipts.value = baseReceipts.map(r => {
-      const receiptItems = items.filter(
-        i => i._originalReceipt.waybillNumber === r.waybillNumber
-      )
+// ✅ รวมรายการทั้งหมดจากทุก receipt เป็นรายการเดียว
+const globalGroupedMap = new Map()
 
-      const totalDebtorAmount = receiptItems.reduce(
-        (sum, i) => sum + Number(i.debtorAmount || 0),
-        0
-      )
+// วนลูปทุก item และรวมตามชื่อรายการ
+items.forEach(item => {
+  const key = item.itemName
 
-      return {
-        ...r,
-        department: `📋 [${r.waybillNumber || r.projectCode}] ${formatMoney(totalDebtorAmount)} บาท`,
-        subDepartment: `${receiptItems.length} รายการ - ${r.fullName || 'ไม่ระบุ'}`,
-        items: receiptItems,
-        totalDebtorAmount,
-        originalDepartment: r.department,
-        originalSubDepartment: r.subDepartment
-      }
+  if (globalGroupedMap.has(key)) {
+    const existing = globalGroupedMap.get(key)
+    // รวมยอดเงิน
+    existing.debtorAmount += Number(item.debtorAmount || 0)
+    existing.amount += Number(item.amount || 0)
+    // อัปเดตผู้ทำรายการเป็นคนล่าสุด
+    existing.responsible = item.responsible
+    // เก็บ waybillNumber และ original items
+    if (!existing._mergedWaybills) {
+      existing._mergedWaybills = [existing._originalReceipt.waybillNumber]
+    }
+    if (!existing._mergedWaybills.includes(item._originalReceipt.waybillNumber)) {
+      existing._mergedWaybills.push(item._originalReceipt.waybillNumber)
+    }
+    if (!existing._mergedItems) {
+      existing._mergedItems = [existing.id]
+    }
+    existing._mergedItems.push(item.id)
+  } else {
+    globalGroupedMap.set(key, {
+      ...item,
+      paymentInput: '',
+      _mergedWaybills: [item._originalReceipt.waybillNumber],
+      _mergedItems: [item.id]
     })
+  }
+})
+
+const globalGroupedItems = Array.from(globalGroupedMap.values())
+
+// สร้าง receipt เดียวที่มีรายการรวมทั้งหมด
+const totalDebtorAmount = globalGroupedItems.reduce(
+  (sum, i) => sum + Number(i.debtorAmount || 0),
+  0
+)
+
+receipts.value = [{
+  receiptId: 'MERGED_ALL',
+  waybillNumber: 'MERGED_ALL',
+  department: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName || 'รายการรวมทั้งหมด',
+  subDepartment: `${globalGroupedItems.length} รายการ - รวมจากทุกหน่วยงาน - ${formatMoney(totalDebtorAmount)} บาท`,
+  items: globalGroupedItems,
+  totalDebtorAmount,
+  originalDepartment: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName,
+  originalSubDepartment: baseReceipts[0]?.subAffiliationName1,
+  fullName: baseReceipts[0]?.fullName || '-',
+  phone: baseReceipts[0]?.phone || '-',
+  sendmoney: baseReceipts[0]?.sendmoney || '-',
+  fundName: baseReceipts[0]?.fundName || '-',
+  _allOriginalReceipts: baseReceipts // เก็บ receipts ต้นฉบับทั้งหมด
+}]
 
     console.log('✅ Final receipts:', receipts.value.length)
+    console.log('✅ Total items (merged):', totalItemsCount.value)
 
   } catch (err) {
     console.error('❌ Error:', err)
@@ -521,12 +576,14 @@ const formatPaymentInput = (item) => {
   })
 }
 
+// ✅ ฟังก์ชันนี้ยังทำงานได้เหมือนเดิม เพราะวนลูปผ่านทุก item ใน receipts
 const totalPaymentInput = computed(() => {
-  return allItems.value.reduce((sum, item) => {
-    const value = item.paymentInput || '0'
-    const cleanValue = String(value).replace(/,/g, '')
-    const numValue = parseFloat(cleanValue) || 0
-    return sum + numValue
+  return receipts.value.reduce((total, receipt) => {
+    return total + receipt.items.reduce((sum, item) => {
+      const value = item.paymentInput || '0'
+      const cleanValue = String(value).replace(/,/g, '')
+      return sum + (parseFloat(cleanValue) || 0)
+    }, 0)
   }, 0)
 })
 
@@ -541,27 +598,33 @@ const clearBankError = (index, field) => {
   }
 }
 
-// ✅ Clear All Debts - ใช้ clearDebtorService
+// ✅ Clear All Debts - รองรับรายการรวมทั้งหมด
 async function clearAllDebts() {
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
 
-  // ✅ เก็บข้อมูลรายการที่จะล้าง
+  // ✅ เก็บข้อมูลรายการที่จะล้าง (ขยายให้ครบทุก waybill และ item ID)
   const itemsToMark = []
 
   receipts.value.forEach(receipt => {
     receipt.items.forEach((item) => {
       const paymentValue = parseFloat(String(item.paymentInput || '0').replace(/,/g, ''))
       if (paymentValue > 0) {
-        itemsToMark.push({
-          waybillNumber: receipt.waybillNumber || receipt.receiptId,
-          itemId: item.id,
-          itemName: item.itemName,
-          paymentAmount: paymentValue,
-          receiptNumber: item.receiptNumber || '',
-          note: item.note || '',
-          originalItem: item
+        // ✅ ถ้ามีการรวมหลาย waybill ต้องขยายให้ครบ
+        const waybills = item._mergedWaybills || [receipt.waybillNumber]
+        const itemIds = item._mergedItems || [item.id]
+
+        waybills.forEach(waybillNumber => {
+          itemsToMark.push({
+            waybillNumber: waybillNumber,
+            itemName: item.itemName,
+            paymentAmount: paymentValue,
+            receiptNumber: item.receiptNumber || '',
+            note: item.note || '',
+            originalItem: item,
+            itemIds: itemIds // เก็บทุก ID ที่ต้อง mark
+          })
         })
       }
     })
@@ -675,30 +738,23 @@ async function clearAllDebts() {
       const itemNamesToMark = new Set(items.map(i => i.itemName))
 
       let hasChanges = false
-      // ✅ ตรวจสอบว่า update ถูก field
-const updatedDebtorList = receipt.debtorList.map(debtorItem => {
-  if (itemNamesToMark.has(debtorItem.itemName) && !debtorItem.isClearedDebt) {
-    console.log(`✅ MARKING: ${debtorItem.itemName}`)
-    markedCount++
-    hasChanges = true
 
-    return {
-      ...debtorItem,
-      isClearedDebt: true,  // ✅ ตัวนี้สำคัญ!
-      clearedDate: new Date().toISOString()
-    }
-  }
-  return debtorItem
-})
+      // ✅ Mark items as cleared
+      const updatedDebtorList = receipt.debtorList.map(debtorItem => {
+        if (itemNamesToMark.has(debtorItem.itemName) && !debtorItem.isClearedDebt) {
+          console.log(`✅ MARKING: ${debtorItem.itemName} (ID: ${debtorItem.id})`)
+          markedCount++
+          hasChanges = true
 
-// ✅ อัปเดตด้วย debtorList ไม่ใช่ receiptList
-if (hasChanges) {
-  updatePromises.push(
-    reciptService.update(waybillNumber, {
-      debtorList: updatedDebtorList  // ✅ ต้องเป็น debtorList
-    })
-  )
-}
+          return {
+            ...debtorItem,
+            isClearedDebt: true,
+            clearedDate: new Date().toISOString()
+          }
+        }
+        return debtorItem
+      })
+
       // ✅ Update receipt if there are changes
       if (hasChanges) {
         updatePromises.push(
@@ -714,16 +770,47 @@ if (hasChanges) {
 
     console.log(`✅ Successfully marked ${markedCount} items`)
 
+    // ✅ รวมรายการที่มีชื่อเดียวกันก่อนบันทึกประวัติ
+    const groupedHistoryItems = new Map()
+
+    itemsToMark.forEach(item => {
+      const key = item.itemName
+
+      if (groupedHistoryItems.has(key)) {
+        // ถ้ามีอยู่แล้ว ไม่ต้องรวมเงิน เพราะเงินถูกบันทึกครั้งเดียวต่อรายการแล้ว
+        const existing = groupedHistoryItems.get(key)
+        // อัปเดต note ถ้ามี
+        if (item.note && !existing.note) {
+          existing.note = item.note
+        }
+        // อัปเดต receiptNumber ถ้ามี
+        if (item.receiptNumber && !existing.receiptNumber) {
+          existing.receiptNumber = item.receiptNumber
+        }
+      } else {
+        groupedHistoryItems.set(key, {
+          itemName: item.itemName,
+          amount: item.paymentAmount,
+          note: item.note,
+          receiptNumber: item.receiptNumber || item.waybillNumber
+        })
+      }
+    })
+
+    const uniqueHistoryItems = Array.from(groupedHistoryItems.values())
+
+    console.log('📝 Unique history items:', uniqueHistoryItems)
+
     // ✅ บันทึกประวัติ
     const historyRecord = {
       id: Date.now().toString(),
       referenceId: `CLEAR-${Date.now()}`,
       date: new Date().toLocaleString('th-TH'),
-      items: itemsToMark.map(i => ({
+      items: uniqueHistoryItems.map(i => ({
         itemName: i.itemName,
-        amount: i.paymentAmount,
-        note: i.note,
-        referenceId: i.receiptNumber || i.waybillNumber
+        amount: i.amount,
+        note: i.note || '',
+        referenceId: i.receiptNumber
       })),
       payments: getBankTransfersData().map(p => ({
         type: 'transfer',

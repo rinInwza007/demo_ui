@@ -406,7 +406,6 @@ const debug = (...args: any[]) => {
 /* =========================
  * Setup
  * ========================= */
-setupAxiosMock()
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()

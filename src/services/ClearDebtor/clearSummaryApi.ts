@@ -1,44 +1,11 @@
-// src/services/ClearDebtor/clearSummaryApi.ts
+// src/fake/api/clearSummaryApi.ts
 
+import { clearSummaryDB } from './clearSummaryDB'
 import type { ClearSummary } from '@/types/summary'
-
-const STORAGE_KEY = 'fakeApi.clearSummaries'
-
-/**
- * ✅ Load from localStorage
- */
-function loadClearSummaries(): ClearSummary[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-/**
- * ✅ Save to localStorage
- */
-function saveClearSummaries(data: ClearSummary[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-}
 
 /* Create */
 export function createClearSummary(data: ClearSummary) {
-  const db = loadClearSummaries()
-  const exists = db.find(s => s.id === data.id)
-
-  if (exists) {
-    return {
-      success: false,
-      message: 'Summary already exists'
-    }
-  }
-
-  db.push(data)
-  saveClearSummaries(db)
-
-  console.log('💾 Clear Summary saved to localStorage:', data.id)
+  clearSummaryDB.push(data)
 
   return {
     success: true,
@@ -48,18 +15,15 @@ export function createClearSummary(data: ClearSummary) {
 
 /* Get All */
 export function getClearSummaries() {
-  const db = loadClearSummaries()
-  
   return {
     success: true,
-    data: db
+    data: clearSummaryDB
   }
 }
 
 /* Get By ID */
 export function getClearSummaryById(id: string) {
-  const db = loadClearSummaries()
-  const found = db.find(s => s.id === id)
+  const found = clearSummaryDB.find(s => s.id === id)
 
   return {
     success: !!found,
@@ -69,8 +33,7 @@ export function getClearSummaryById(id: string) {
 
 /* Update */
 export function updateClearSummary(id: string, payload: Partial<ClearSummary>) {
-  const db = loadClearSummaries()
-  const index = db.findIndex(s => s.id === id)
+  const index = clearSummaryDB.findIndex(s => s.id === id)
 
   if (index === -1) {
     return {
@@ -79,37 +42,25 @@ export function updateClearSummary(id: string, payload: Partial<ClearSummary>) {
     }
   }
 
-  db[index] = {
-    ...db[index],
-    ...payload,
-    debtorList: payload.debtorList ?? db[index].debtorList
+  clearSummaryDB[index] = {
+    ...clearSummaryDB[index],
+    ...payload
   }
-
-  saveClearSummaries(db)
 
   return {
     success: true,
-    data: db[index]
+    data: clearSummaryDB[index]
   }
 }
 
 /* Delete */
 export function deleteClearSummary(id: string) {
-  const db = loadClearSummaries()
-  const index = db.findIndex(s => s.id === id)
+  const before = clearSummaryDB.length
 
-  if (index === -1) {
-    return {
-      success: false,
-      deleted: 0
-    }
-  }
-
-  db.splice(index, 1)
-  saveClearSummaries(db)
+  clearSummaryDB = clearSummaryDB.filter(s => s.id !== id)
 
   return {
     success: true,
-    deleted: 1
+    deleted: before - clearSummaryDB.length
   }
 }

@@ -496,7 +496,6 @@ const loadHistory = () => {
     historyItems.value = []
   }
 }
-
 /* =========================
  * ✅ Computed - ดึงรายการลูกหนี้จาก Store
  * ========================= */

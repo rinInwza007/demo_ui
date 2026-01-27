@@ -10,6 +10,13 @@ import { getAllOptions, getItemById, getItemByName } from '@/components/data/Ite
 import type { Item } from '@/types/recipt'
 import { defaultAffiliation } from '@/components/data/Affiliation'
 import type { Affiliation } from '@/types/affiliation'
+import {
+  createClearSummary,
+  getClearSummaries,
+  getClearSummaryById,
+  updateClearSummary,
+  deleteClearSummary
+} from '@/services/ClearDebtor/clearSummaryApi'
 /**
  * ==========================================================
  * Fake API via Axios Mock Adapter
@@ -516,6 +523,33 @@ export function setupAxiosMock() {
       password: '1234',
     },
   ]
+
+//===============================================
+//ClearDebtoer
+//===============================================
+mock.onPost('/clear-summaries').reply(config => {
+  const body = JSON.parse(config.data)
+
+  return [200, createClearSummary(body)]
+})
+
+mock.onGet(/\/clear-summaries\/\w+/).reply(config => {
+  const id = config.url!.split('/').pop()!
+
+  return [200, getClearSummaryById(id)]
+})
+mock.onPut(/\/clear-summaries\/\w+/).reply(config => {
+  const id = config.url!.split('/').pop()!
+  const body = JSON.parse(config.data)
+
+  return [200, updateClearSummary(id, body)]
+})
+mock.onDelete(/\/clear-summaries\/\w+/).reply(config => {
+  const id = config.url!.split('/').pop()!
+
+  return [200, deleteClearSummary(id)]
+})
+
 
   // ============================================
   // 🔐 Auth Endpoints

@@ -644,7 +644,7 @@ export function setupAxiosMock() {
     }
 
     const token = authHeader.replace('Bearer ', '')
-    
+
     if (!token.startsWith('mock_')) {
       return [401, {
         success: false,
@@ -1521,7 +1521,7 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
 
   mock.onPost(/\/receipts\/([^/]+)\/approve$/).reply((config) => {
     const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/approve$/)?.[1]
-    
+
     if (!waybillNumber) {
       return [400, {
         success: false,
@@ -1605,7 +1605,7 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
    */
   mock.onPost(/\/receipts\/([^/]+)\/reject$/).reply((config) => {
     const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/reject$/)?.[1]
-    
+
     if (!waybillNumber) {
       return [400, {
         success: false,
@@ -1744,7 +1744,7 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
     console.log(`✅ summary/events - Found ${items.length} events`)
     return [200, { items }]
   })
-  
+
 
   //cleardebtor
   mock.onGet('/debtors').reply(() => {
@@ -1969,7 +1969,80 @@ mock.onPost('/debtors/clear').reply((config) => {
   }
 })
 
+//debtorlsit update
+mock.onPatch(/\/receipts\/([^/]+)\/debtor-list$/).reply((config) => {
+  const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/debtor-list$/)?.[1]
 
+  if (!waybillNumber) {
+    return [400, {
+      success: false,
+      message: 'waybillNumber is required'
+    }]
+  }
+
+  const decoded = decodeURIComponent(waybillNumber)
+  console.log('🧹 [Mock] PATCH /receipts/' + decoded + '/debtor-list')
+
+  try {
+    const { debtorList } = JSON.parse(config.data || '{}')
+
+    if (!Array.isArray(debtorList)) {
+      return [400, {
+        success: false,
+        message: 'debtorList must be an array'
+      }]
+    }
+
+    const db = loadReceipts().map(ensureReceiptFields)
+    const receiptIndex = db.findIndex(r => r.waybillNumber === decoded)
+
+    if (receiptIndex === -1) {
+      console.error('❌ Receipt not found:', decoded)
+      return [404, {
+        success: false,
+        message: 'Receipt not found'
+      }]
+    }
+
+    const receipt = db[receiptIndex]
+
+    // ✅ อัปเดตเฉพาะ debtorList
+    db[receiptIndex] = {
+      ...receipt,
+      debtorList: debtorList,
+      updatedAt: new Date().toISOString()
+    }
+
+    // ✅ บันทึกกลับทั้งสอง storages
+    saveReceipts(db)
+    saveToBothStorages(db[receiptIndex])
+
+    // ✅ Dispatch events
+    dispatchUpdateEvents({
+      action: 'update',
+      data: db[receiptIndex],
+      waybillNumber: decoded,
+      list: db
+    })
+
+    console.log('✅ [Mock] Updated debtorList:', decoded)
+    console.log('   📦 DebtorList items:', debtorList.length)
+    console.log('   🔍 Sample:', debtorList.slice(0, 2))
+
+    return [200, {
+      success: true,
+      data: serializeReceipt(normalizeBoth(db[receiptIndex])),
+      message: 'DebtorList updated successfully'
+    }]
+
+  } catch (error) {
+    console.error('❌ [Mock] Update debtorList error:', error)
+    return [500, {
+      success: false,
+      message: 'Internal server error'
+    }]
+  }
+})
 
 
   console.log('✅ Axios Mock Setup Complete')

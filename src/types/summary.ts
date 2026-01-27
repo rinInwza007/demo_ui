@@ -1,19 +1,56 @@
-// src/types/ClearSummaryTypes.ts
+// types/summary.ts
 
-export interface DebtorItem {
-  waybillNumber: string
-  itemName: string
+export type EventType = 'WAYBILL' | 'DEBTOR_NEW' | 'CLEAR_DEBTOR'
+
+export type Direction = 'INCOME' | 'DEBT_NEW' | 'DEBT_CLEAR'
+
+export type ReceiptMode = 'create' | 'update' | 'clear'
+
+export type LedgerEntry = {
+  docKey: string
+  delNumber: string
+
+  eventType: EventType
+  direction: Direction
+
   amount: number
-  isCleared: boolean
-  note?: string
+  signed: number
+
+  unitKey: string
+  faculty: string
+  sub1: string
+  sub2: string
+
+  affiliationId: string
+
+  fundName: string
+  fullName: string
+
+  createdAt: Date;
+  updatedAt: Date;
+
+  isClearedDebt?: boolean
 }
 
-export interface ClearSummary {
-  id: string
-  createdAt: string
+export type UnitAgg = {
+  unitKey: string
+  faculty: string
+  sub1: string
+  sub2: string
 
-  totalItems: number
-  totalAmount: number
+  docs: number
+  income: number
+  debtNew: number
+  debtClear: number
+  net: number
 
-  debtorList: DebtorItem[]
+  byDoc: Record<string, LedgerEntry>
+}
+
+export type DashboardTotals = {
+  docs: number
+  income: number
+  debtNew: number
+  debtClear: number
+  net: number
 }

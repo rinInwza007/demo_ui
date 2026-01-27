@@ -1,4 +1,4 @@
-<!-- //ClearDebtor/index.vue -->
+<!-- //ClearDebtor/index-->
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full h-screen flex">
@@ -85,72 +85,72 @@
               </div>
 
               <!-- Table Header -->
-              <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                <div class="col-span-2">เลขที่ใบเสร็จ</div>
-                <div class="col-span-2">รายการ</div>
-                <div class="col-span-2">ผู้ทำรายการ</div>
-                <div class="col-span-1 text-right">หนี้</div>
-                <div class="col-span-3 text-right">จำนวนเงินที่ชำระ</div>
-                <div class="col-span-2">หมายเหตุ</div>
-              </div>
+<div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+  <div class="col-span-2">เลขที่ใบเสร็จ</div>
+  <div class="col-span-2">รายการ</div>
+  <div class="col-span-2">ผู้ทำรายการ</div>
+  <div class="col-span-1 text-right">หนี้</div>
+  <div class="col-span-3 text-right">จำนวนเงินที่ชำระ</div>
+  <div class="col-span-2">หมายเหตุ</div>
+</div>
+<div
+  v-for="item in receipt.items"
+  :key="item.id"
+  class="group grid grid-cols-12 gap-4 px-6 py-4 mb-2 items-center rounded-xl
+         transition-all duration-200 border border-white/50 hover:bg-white/50"
+>
+  <!-- Receipt Number -->
+  <div class="col-span-2">
+    <input
+      type="text"
+      v-model="item.receiptNumber"
+      class="glass-input w-full px-3 py-2 rounded-md text-sm"
+      placeholder="เลขที่ใบเสร็จ"
+    />
+  </div>
 
-              <div
-                v-for="item in receipt.items"
-                :key="item.id"
-                class="group grid grid-cols-12 gap-4 px-6 py-4 mb-2 items-center rounded-xl transition-all duration-200 border border-white/50 hover:bg-white/50"
-              >
-                <!-- Receipt Number -->
-                <div class="col-span-2">
-                  <input
-                    type="text"
-                    v-model="item.receiptNumber"
-                    class="glass-input w-full px-3 py-2 rounded-md text-sm"
-                    placeholder="เลขที่ใบเสร็จ"
-                  />
-                </div>
+  <!-- Item Name -->
+  <div class="col-span-2">
+    <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
+  </div>
 
-                <!-- Item Name -->
-                <div class="col-span-2">
-                  <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
-                </div>
+  <!-- Full Name -->
+  <div class="col-span-2 flex items-center gap-2">
+    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0">
+      {{ (item.responsible || '-').charAt(0) }}
+    </div>
+    <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
+  </div>
 
-                <!-- Full Name -->
-                <div class="col-span-2 flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0">
-                    {{ (item.responsible || '-').charAt(0) }}
-                  </div>
-                  <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
-                </div>
+  <!-- Debt Amount -->
+  <div class="col-span-1 text-right">
+    <span class="font-bold text-red-600 font-mono text-sm whitespace-nowrap">
+      {{ formatMoney(item.debtorAmount) }}
+    </span>
+  </div>
 
-                <!-- Debt Amount -->
-                <div class="col-span-1 text-right">
-                  <span class="font-bold text-red-600 font-mono text-sm whitespace-nowrap">
-                    {{ formatMoney(item.debtorAmount) }}
-                  </span>
-                </div>
+  <!-- Payment Input -->
+<div class="col-span-3 flex justify-end">
+  <input
+    type="text"
+    v-model="item.paymentInput"
+    @input="(e) => handlePaymentInputChange(item, e)"
+    @blur="() => formatPaymentInput(item)"
+    class="glass-input w-40 px-3 py-2 rounded-md text-sm text-right"
+    placeholder="0.00"
+  />
+</div>
 
-                <!-- Payment Input -->
-                <div class="col-span-3 flex justify-end">
-                  <input
-                    type="text"
-                    v-model="item.paymentInput"
-                    @input="(e) => handlePaymentInputChange(item, e)"
-                    @blur="() => formatPaymentInput(item)"
-                    class="glass-input w-40 px-3 py-2 rounded-md text-sm text-right"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <!-- Note -->
-                <div class="col-span-2">
-                  <input
-                    type="text"
-                    v-model="item.note"
-                    class="glass-input w-full px-3 py-2 rounded-md text-sm"
-                    placeholder="หมายเหตุ"
-                  />
-                </div>
-              </div>
+  <!-- Note -->
+  <div class="col-span-2">
+    <input
+      type="text"
+      v-model="item.note"
+      class="glass-input w-full px-3 py-2 rounded-md text-sm"
+      placeholder="หมายเหตุ"
+    />
+  </div>
+</div>
             </div>
 
             <!-- ยอดที่ต้องชำระ -->
@@ -241,9 +241,82 @@
                 เพิ่มรายการธนาคาร
               </button>
 
+              <!-- Payment History -->
+              <div v-if="paymentHistory.length > 0" class="space-y-3 mb-6 mt-6">
+                <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2 border-b border-white/40 pb-3">
+                  <i class="ph ph-clock-clockwise text-xl"></i>
+                  ประวัติการชำระเงิน
+                </h3>
+
+                <div
+                  v-for="payment in paymentHistory"
+                  :key="payment.id"
+                  class="glass-input rounded-xl p-4 hover:shadow-md transition-all"
+                >
+                  <div class="flex items-center justify-between mb-3">
+                    <span
+                      class="px-3 py-1 rounded-lg text-xs font-medium border"
+                      :class="{
+                        'bg-green-50/50 text-green-700 border-green-100': payment.type === 'เงินสด',
+                        'bg-blue-50/50 text-blue-700 border-blue-100': payment.type === 'เช็คธนาคาร',
+                        'bg-orange-50/50 text-orange-700 border-orange-100': payment.type === 'ฝากเข้าบัญชี',
+                        'bg-gray-50/50 text-gray-700 border-gray-100': !['เงินสด', 'เช็คธนาคาร', 'ฝากเข้าบัญชี'].includes(payment.type)
+                      }"
+                    >
+                      {{ payment.type }}
+                    </span>
+                    <span class="text-xs text-slate-500">{{ payment.timestamp }}</span>
+                  </div>
+
+                  <div class="space-y-2 text-sm mb-3">
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">เลขที่อ้างอิง:</span>
+                      <span class="text-slate-700 font-medium">{{ payment.referenceNo }}</span>
+                    </div>
+
+                    <div v-if="payment.AccountName" class="flex justify-between items-center">
+                      <span class="text-slate-500">ชื่อบัญชี:</span>
+                      <span class="text-slate-700">{{ payment.AccountName }}</span>
+                    </div>
+
+                    <div v-if="payment.BankName" class="flex justify-between items-center">
+                      <span class="text-slate-500">ธนาคาร:</span>
+                      <span class="text-slate-700">{{ payment.BankName }}</span>
+                    </div>
+
+                    <div v-if="payment.AccountNum" class="flex justify-between items-center">
+                      <span class="text-slate-500">เลขที่บัญชี:</span>
+                      <span class="text-slate-700">{{ payment.AccountNum }}</span>
+                    </div>
+
+                    <div v-if="payment.NumCheck" class="flex justify-between items-center">
+                      <span class="text-slate-500">เลขที่เช็ค:</span>
+                      <span class="text-slate-700">{{ payment.NumCheck }}</span>
+                    </div>
+                  </div>
+
+                  <div class="border-t border-slate-200 pt-3 flex justify-between items-center">
+                    <span class="font-semibold text-slate-800">ยอดชำระ</span>
+                    <span class="font-bold text-lg text-red-600">
+                      - {{ formatNumber(payment.amount) }} ฿
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Total Paid -->
+                <div class="glass-input rounded-xl p-4 border-2 border-blue-200/50">
+                  <div class="flex justify-between items-center">
+                    <span class="text-lg font-bold text-slate-800">ยอดชำระรวม</span>
+                    <span class="text-xl font-bold text-red-600">
+                      - {{ formatNumber(totalPaid) }} ฿
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <!-- ยอดรวมที่จะจ่าย -->
               <div
-                class="rounded-xl p-6 shadow-lg mb-4 mt-6"
+                class="rounded-xl p-6 shadow-lg mb-4"
                 style="background: linear-gradient(135deg, #A855F7 0%, #7E22CE 100%);"
               >
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
@@ -279,7 +352,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
@@ -287,12 +360,11 @@ import sidebar from '@/components/bar/sidebar.vue'
 import BankAccountSelect from '@/components/TomSelect/BankAccountSelect.vue'
 import InputText from '@/components/input/inputtext.vue'
 import { useBankTransferManager } from '@/components/Function/FuncClear.js'
-import { useSummaryStore } from '@/stores/summary'
+import { clearDebtorService } from '@/services/ClearDebtorService' // ✅ ใช้ clearDebtorService
 import { reciptService } from '@/services/ReciptService'
 
 const route = useRoute()
 const router = useRouter()
-const summaryStore = useSummaryStore()
 
 // Bank Transfer Manager
 const {
@@ -323,9 +395,14 @@ const bankAccountOptions = ref([
 const errors = ref({ bankTransfers: {} })
 const receipts = ref([])
 const allItems = ref([])
+const paymentHistory = ref([])
 
 const totalDebt = computed(() =>
   allItems.value.reduce((sum, i) => sum + Number(i.debtorAmount || 0), 0)
+)
+
+const totalPaid = computed(() =>
+  paymentHistory.value.reduce((sum, p) => sum + Number(p.amount || 0), 0)
 )
 
 const formatNumber = (num) =>
@@ -351,9 +428,21 @@ onMounted(() => {
 
   try {
     const summary = JSON.parse(raw)
+
     console.log('📦 Raw summary:', summary)
+    console.log('📋 Receipts count:', summary.receipts?.length)
 
     const baseReceipts = Array.isArray(summary.receipts) ? summary.receipts : []
+
+    // ✅ ตรวจสอบว่ามีข้อมูลซ้ำหรือไม่
+    const waybillNumbers = baseReceipts.map(r => r.waybillNumber)
+    const uniqueWaybills = new Set(waybillNumbers)
+
+    if (waybillNumbers.length !== uniqueWaybills.size) {
+      console.error('❌ Duplicate waybills detected!', waybillNumbers)
+    } else {
+      console.log('✅ No duplicates')
+    }
 
     const items = baseReceipts.flatMap(r =>
       (r.items || [])
@@ -380,6 +469,7 @@ onMounted(() => {
 
     allItems.value = items
 
+    // ✅ แยกตาม waybillNumber
     receipts.value = baseReceipts.map(r => {
       const receiptItems = items.filter(
         i => i._originalReceipt.waybillNumber === r.waybillNumber
@@ -494,7 +584,7 @@ const clearBankError = (index, field) => {
   }
 }
 
-// ✅ ฟังก์ชันล้างหนี้แบบใหม่ - ใช้ summaryStore
+// ✅ Clear All Debts - ใช้ clearDebtorService
 async function clearAllDebts() {
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
@@ -528,6 +618,7 @@ async function clearAllDebts() {
 
   console.log('🎯 Items to mark:', itemsToMark)
 
+  // ✅ ตรวจสอบว่ามีรายการที่จะล้างหรือไม่
   if (itemsToMark.length === 0) {
     await Swal.fire({
       icon: 'warning',
@@ -538,6 +629,7 @@ async function clearAllDebts() {
     return
   }
 
+  // ✅ ตรวจสอบยอดเงิน
   if (paymentDifference > 0.01) {
     await Swal.fire({
       icon: 'error',
@@ -568,6 +660,7 @@ async function clearAllDebts() {
     return
   }
 
+  // ✅ Confirm Dialog
   const result = await Swal.fire({
     title: 'ยืนยันการล้างหนี้?',
     html: `
@@ -588,54 +681,87 @@ async function clearAllDebts() {
   if (!result.isConfirmed) return
 
   try {
-    console.log('🧹 Starting debt clearing process with SummaryStore...')
+    console.log('🧹 Starting debt clearing process...')
 
-    // ✅ จัดกลุ่มตาม waybillNumber
-    const grouped = new Map()
-    
+    // ✅ โหลด receipts ทั้งหมดจาก service
+    const allReceipts = await reciptService.getAll()
+    console.log('📦 Loaded receipts:', allReceipts.length)
+
+    // ✅ Group items by waybillNumber
+    const itemsByWaybill = new Map()
+
     itemsToMark.forEach(item => {
-      if (!grouped.has(item.waybillNumber)) {
-        grouped.set(item.waybillNumber, [])
+      if (!itemsByWaybill.has(item.waybillNumber)) {
+        itemsByWaybill.set(item.waybillNumber, [])
       }
-      grouped.get(item.waybillNumber).push(item)
+      itemsByWaybill.get(item.waybillNumber).push(item)
     })
 
-    console.log('📦 Processing', grouped.size, 'receipts')
+    console.log('📦 Grouped by waybill:', itemsByWaybill.size, 'receipts')
 
-    let totalMarkedCount = 0
-    let totalClearedCount = 0
+    let markedCount = 0
+    const updatePromises = []
 
-    // ✅ ประมวลผลแต่ละ receipt
-    for (const [waybillNumber, items] of grouped) {
+    // ✅ Process each waybill
+    for (const [waybillNumber, items] of itemsByWaybill) {
       console.log(`🔍 Processing waybill: ${waybillNumber}`)
 
-      try {
-        // ✅ ล้างหนี้แต่ละรายการใน summaryStore
-        for (const item of items) {
-          // เรียกใช้ applyDebtClear จาก summaryStore
-          summaryStore.applyDebtClear(waybillNumber, {
-            itemName: item.itemName,
-            amount: item.paymentAmount,
-            ref: item.receiptNumber || `CLEAR-${Date.now()}`
+      // ✅ Find the receipt
+      const receipt = allReceipts.find(r => r.waybillNumber === waybillNumber)
+
+      if (!receipt) {
+        console.warn(`⚠️ Receipt not found: ${waybillNumber}`)
+        continue
+      }
+
+      // ✅ ใช้ debtorList แทน receiptList
+      if (!Array.isArray(receipt.debtorList)) {
+        console.warn(`⚠️ debtorList not array for: ${waybillNumber}`)
+        continue
+      }
+
+      // ✅ Create a set of item names to mark
+      const itemNamesToMark = new Set(items.map(i => i.itemName))
+
+      let hasChanges = false
+      // ✅ ตรวจสอบว่า update ถูก field
+const updatedDebtorList = receipt.debtorList.map(debtorItem => {
+  if (itemNamesToMark.has(debtorItem.itemName) && !debtorItem.isClearedDebt) {
+    console.log(`✅ MARKING: ${debtorItem.itemName}`)
+    markedCount++
+    hasChanges = true
+
+    return {
+      ...debtorItem,
+      isClearedDebt: true,  // ✅ ตัวนี้สำคัญ!
+      clearedDate: new Date().toISOString()
+    }
+  }
+  return debtorItem
+})
+
+// ✅ อัปเดตด้วย debtorList ไม่ใช่ receiptList
+if (hasChanges) {
+  updatePromises.push(
+    reciptService.update(waybillNumber, {
+      debtorList: updatedDebtorList  // ✅ ต้องเป็น debtorList
+    })
+  )
+}
+      // ✅ Update receipt if there are changes
+      if (hasChanges) {
+        updatePromises.push(
+          reciptService.update(waybillNumber, {
+            debtorList: updatedDebtorList
           })
-
-          totalMarkedCount++
-          console.log(`   ✅ Cleared: ${item.itemName} - ${item.paymentAmount}`)
-        }
-
-        // ✅ ตรวจสอบว่ารายการใดล้างหมดแล้ว
-        const debtors = summaryStore.getDebtors(waybillNumber)
-        const clearedCount = debtors.filter(d => d.isCleared).length
-        totalClearedCount += clearedCount
-
-        console.log(`   📊 Summary: ${clearedCount}/${debtors.length} items fully cleared`)
-
-      } catch (error) {
-        console.error(`❌ Error clearing waybill ${waybillNumber}:`, error)
+        )
       }
     }
 
-    console.log(`✅ Total: Marked ${totalMarkedCount}, Fully Cleared ${totalClearedCount}`)
+    console.log(`📊 Updating ${updatePromises.length} receipts...`)
+    await Promise.all(updatePromises)
+
+    console.log(`✅ Successfully marked ${markedCount} items`)
 
     // ✅ บันทึกประวัติ
     const historyRecord = {
@@ -664,25 +790,14 @@ async function clearAllDebts() {
       receiptId: receipts.value[0]?.waybillNumber || `CLEAR-${Date.now()}`
     }
 
-    // บันทึกประวัติลง localStorage
-    const STORAGE_HISTORY_KEY = 'debtorClearHistory'
-    try {
-      const stored = localStorage.getItem(STORAGE_HISTORY_KEY)
-      const history = stored ? JSON.parse(stored) : []
-      history.unshift(historyRecord)
-      localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(history))
-    } catch (err) {
-      console.error('❌ Error saving history:', err)
-    }
-
+    clearDebtorService.saveHistory(historyRecord)
     localStorage.removeItem('clearDebtorSummary')
 
     await Swal.fire({
       title: 'ล้างหนี้สำเร็จ!',
       html: `
         <div class="text-left space-y-2">
-          <p>✅ ทำเครื่องหมายล้างแล้ว: <span class="font-bold text-blue-600">${totalMarkedCount} รายการ</span></p>
-          <p>🎯 ล้างหมดแล้ว: <span class="font-bold text-green-600">${totalClearedCount} รายการ</span></p>
+          <p>✅ ล้างหนี้สำเร็จ: <span class="font-bold text-green-600">${markedCount} รายการ</span></p>
           <p>💰 ยอดเงินรวม: <span class="font-bold text-green-600">${formatNumber(totalPaymentInputValue)} บาท</span></p>
         </div>
       `,
@@ -703,6 +818,7 @@ async function clearAllDebts() {
   }
 }
 </script>
+
 
 <style scoped>
 body {

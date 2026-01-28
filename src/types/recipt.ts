@@ -39,6 +39,29 @@ export interface ReceiptItem {
   amount: number
   subtotal?: number
   type: ReceiptItemType
+  
+  // ✅ เพิ่มฟิลด์สำหรับประเภทการชำระ
+  paymentTypes?: {
+    cash: boolean
+    check: boolean
+    transfer: boolean
+  }
+  
+  // ✅ เพิ่มฟิลด์สำหรับข้อมูลเช็ค
+  checkDetails?: {
+    bankName: string
+    checkNumber: string
+    numInCheck: string
+  }
+  
+  // ✅ เพิ่มฟิลด์สำหรับข้อมูลเงินโอน
+  transferDetails?: {
+    accountData: {
+      accountNumber: string
+      bankName: string
+      accountName: string
+    }
+  }
 }
 
 export interface PaymentMethod {
@@ -57,15 +80,14 @@ export interface PaymentMethods {
   other?: PaymentMethod
 }
 
+
 // ✅ ลบ BankAccountData และ BankTransfer ออก (ใช้จาก BankTypes แทน)
 
 export interface Receipt {
   id: string
   waybillNumber: string
-
   fullName: string
   phone: string
-
   fundName: string
   projectCode: string | null
   mainAffiliationId?: string
@@ -81,17 +103,13 @@ export interface Receipt {
   sendmoney?: string
   moneyTypeNote?: string
   netTotalAmount: number
-  totalPaymentAmount: number
-
   receiptList: ReceiptItem[]
-
-  paymentMethods?: PaymentMethods
-  bankTransfers?: BankTransfer[] // ✅ ใช้จาก BankTypes
-
   isLocked?: boolean
   createdAt: string
   updatedAt: string
 }
+
+
 
 // ✅ Re-export เพื่อความสะดวก
 export type { BankAccountData, BankTransfer } from './BankTypes'

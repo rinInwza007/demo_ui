@@ -63,7 +63,7 @@ const currentDate = new Date().toLocaleDateString('th-TH', {
   day: 'numeric',
 })
 
-// ✅ ฟังก์ชันตรวจสอบว่าเป็นลูกหนี้หรือไม่ (คัดลอกจาก pdfpage)
+// ✅ ฟังก์ชันตรวจสอบว่าเป็นลูกหนี้หรือไม่
 function isReceivableItem(itemName: string): boolean {
   if (!itemName) return false
   const receivableKeywords = ['ลูกหนี้', 'receivable', 'debtor']
@@ -71,42 +71,7 @@ function isReceivableItem(itemName: string): boolean {
   return receivableKeywords.some(keyword => lowerItemName.includes(keyword))
 }
 
-// ✅ ฟังก์ชันแยกรายการลูกหนี้ (คัดลอกจาก pdfpage)
-function separateDebtorItems() {
-  const debtors: any[] = []
-  const normalItems: any[] = []
-  let totalDebtor = 0
-
-  rows.forEach((row) => {
-    const isDebtor = isReceivableItem(row.item)
-
-    if (isDebtor && row.amount) {
-      const amount =
-        typeof row.amount === 'string'
-          ? parseFloat(row.amount.replace(/,/g, ''))
-          : Number(row.amount)
-
-      debtors.push({
-        itemName: row.item,
-        amount: amount,
-        formattedAmount: amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
-      })
-
-      totalDebtor += amount
-    } else {
-      normalItems.push(row)
-    }
-  })
-
-  return {
-    debtors,
-    normalItems,
-    totalDebtor,
-    hasDebtor: debtors.length > 0,
-  }
-}
-
-// ✅ ฟังก์ชันสร้างเครื่องหมายถูก (คัดลอกจาก pdfpage)
+// ✅ ฟังก์ชันสร้างเครื่องหมายถูก
 const createCheckbox = () => ({
   canvas: [
     {
@@ -163,13 +128,10 @@ function convertNumberToThaiText(number: number) {
 
 function createDocDefinition() {
   const receipt = receiptData.value || {}
-  const { debtors, totalDebtor, hasDebtor } = separateDebtorItems()
 
   console.log('🎨 Creating PDF with:')
   console.log('  Receipt data:', receipt)
   console.log('  Rows count:', rows.length)
-  console.log('  Has debtor:', hasDebtor)
-  console.log('  Debtors:', debtors)
 
   return {
     pageSize: 'A4',
@@ -194,6 +156,8 @@ function createDocDefinition() {
         fontSize: 15,
       },
       { text: '\n\n' },
+
+      // ✅ ส่วนที่ 1: ข้อมูลผู้ทำรายการ (อัปเดตใหม่)
       {
         stack: [
           { text: `${currentDate}`, absolutePosition: { x: 440, y: 65 }, fontSize: 13 },
@@ -211,24 +175,65 @@ function createDocDefinition() {
           { text: 'ข้าพเจ้า........................................................เบอร์โทรติดต่อ.............................................สังกัด....................................................................................................\n', margin: [35, 0, 0, 0] }
         ],
       },
+
+      // ✅ แสดงหน่วยงานรอง (ถ้ามี)
+      ...(receipt.subAffiliationName1 ? [{
+        stack: [
+          { text: `${receipt.subAffiliationName1 || ''}`, absolutePosition: { x: 110, y: 98.5 }, fontSize: 13 },
+          { text: 'หน่วยงานรอง..........................................................................................................................................................................................................\n', margin: [-10, 0, 0, 0] },
+        ],
+      }] : []),
+
+      // ✅ แสดงหน่วยงานย่อย (ถ้ามี)
+      ...(receipt.subAffiliationName2 ? [{
+        stack: [
+          { text: `${receipt.subAffiliationName2 || ''}`, absolutePosition: { x: 110, y: receipt.subAffiliationName1 ? 115.5 : 98.5 }, fontSize: 13 },
+          { text: 'หน่วยงานย่อย..........................................................................................................................................................................................................\n', margin: [-10, 0, 0, 0] },
+        ],
+      }] : []),
+
+      // ✅ กองทุนและขอนำส่งเงิน
       {
         stack: [
-          { text: `${receipt.sendmoney || ''}`, absolutePosition: { x: 110, y: 98.5 }, fontSize: 13 },
-          { text: `${receipt.fundName || ''}`, absolutePosition: { x: 460, y: 98.5 }, fontSize: 13 },
+          {
+            text: `${receipt.sendmoney || ''}`,
+            absolutePosition: {
+              x: 110,
+              y: receipt.subAffiliationName2 ? 132.5 : (receipt.subAffiliationName1 ? 115.5 : 98.5)
+            },
+            fontSize: 13
+          },
+          {
+            text: `${receipt.fundName || ''}`,
+            absolutePosition: {
+              x: 460,
+              y: receipt.subAffiliationName2 ? 132.5 : (receipt.subAffiliationName1 ? 115.5 : 98.5)
+            },
+            fontSize: 13
+          },
           { text: 'ใบนำส่งรายได้/เงินโครงการ.........................................................................................................................................................กองทุน..........................................................\n', margin: [-10, 0, 0, 0] },
         ],
       },
+
+      // ✅ รหัสโครงการ
       {
         stack: [
-          { text: `${receipt.projectCode || receipt.referenceId || ''}`, absolutePosition: { x: 265, y: 115 }, fontSize: 13 },
+          {
+            text: `${receipt.projectCode || receipt.referenceId || ''}`,
+            absolutePosition: {
+              x: 265,
+              y: receipt.subAffiliationName2 ? 149 : (receipt.subAffiliationName1 ? 132 : 115)
+            },
+            fontSize: 13
+          },
           { text: 'รหัสโครงการ(กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ)............................................................. ', margin: [-10, 0, 0, 0] },
         ],
       },
 
-      // ตาราง
+      // ✅ ตาราง (ลบคอลัมน์ผู้ทำรายการออก)
       {
         table: {
-          widths: ['8%', '15%', '*', '12%', '20%'],
+          widths: ['10%', '18%', '*', '15%', '22%'],
           body: [
             [
               { text: '\n ลำดับที่', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
@@ -392,11 +397,9 @@ function createDocDefinition() {
         })
       : []),
 
-      // ✅ ส่วนลูกหนี้ (เพิ่มใหม่)
-
       { text: '\n' },
 
-      // ลายเซ็น
+      // ✅ ลายเซ็น
       {
         unbreakable: true,
         stack: [
@@ -514,11 +517,14 @@ onMounted(() => {
     console.log('✅ Found history item:', foundHistory)
     console.log('📋 Items array:', foundHistory.items)
 
+    // ✅ โหลดข้อมูลผู้ทำรายการแบบเต็ม
     receiptData.value = {
       referenceId: foundHistory.referenceId,
       fullName: foundHistory.fullName || 'ไม่ระบุ',
       phone: foundHistory.phone || '-',
       mainAffiliationName: foundHistory.department || 'ไม่ระบุ',
+      subAffiliationName1: foundHistory.subAffiliationName1 || '',
+      subAffiliationName2: foundHistory.subAffiliationName2 || '',
       sendmoney: foundHistory.sendmoney || '-',
       fundName: foundHistory.fundName || '-',
       projectCode: foundHistory.receiptId || foundHistory.referenceId,
@@ -526,20 +532,18 @@ onMounted(() => {
       payments: foundHistory.payments || []
     }
 
-    // ✅ ล้าง rows และเติมข้อมูลใหม่
+    // ✅ ล้าง rows และเติมข้อมูลใหม่ (ไม่มีคอลัมน์ผู้ทำรายการ)
     rows.splice(0, rows.length)
 
     if (Array.isArray(foundHistory.items) && foundHistory.items.length > 0) {
       console.log('✅ Processing', foundHistory.items.length, 'items')
 
       foundHistory.items.forEach((item: any) => {
-        const isDebtor = isReceivableItem(item.itemName || item.name || '')
-
         rows.push({
           item: item.itemName || item.name || '',
           amount: (item.amount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 }),
           ref: item.referenceId || item.id || '',
-          note:  item.note || '',
+          note: item.note || '',
         })
       })
 

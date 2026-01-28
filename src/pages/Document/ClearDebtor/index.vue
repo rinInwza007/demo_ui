@@ -1,4 +1,3 @@
-<!-- //ClearDebtor/index.vue -->
 <template>
   <div class="text-slate-700 antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="app" class="relative w-full h-screen flex">
@@ -36,138 +35,379 @@
         <div class="flex-1 px-8 pb-8 overflow-y-auto">
           <div class="max-w-7xl mx-auto space-y-6">
 
-            <!-- Summary Card -->
-            <div class="glass-panel rounded-2xl p-6 shadow-lg">
-              <div class="space-y-4">
-                <div class="flex items-center justify-between border-b border-white/40 pb-4">
-                  <span class="text-sm font-medium text-slate-600">จำนวนหน่วยงาน</span>
-                  <span class="text-lg font-semibold text-slate-900">{{ receipts.length }} หน่วยงาน</span>
+            <!-- ✅ Form สำหรับกรอกข้อมูล -->
+            <div class="glass-panel rounded-2xl p-6 shadow-lg space-y-4">
+              <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
+                ข้อมูลผู้ทำรายการ
+              </h2>
+
+              <!-- แถวที่ 1: เลขที่นำส่ง | ชื่อ -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <div class="flex flex-col gap-2">
+                  <label class="text-sm font-medium text-gray-700">
+                    เลขที่นำส่ง <span class="text-red-500">*</span>
+                  </label>
+                  <InputText
+                    v-model="formData.waybillNumber"
+                    placeholder="เลขที่นำส่ง"
+                    readonly
+                    class="transition-all duration-200 "
+                  />
                 </div>
 
-                <div class="flex items-center justify-between border-b border-white/40 pb-4">
-                  <span class="text-sm font-medium text-slate-600">ยอดหนี้รวมทั้งหมด</span>
-                  <span class="text-2xl font-bold text-red-600">
-                    {{ formatMoney(totalDebt) }} <span class="text-base">บาท</span>
-                  </span>
-                </div>
-
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium text-slate-600">จำนวนรายการทั้งหมด</span>
-                  <span class="text-lg font-semibold text-slate-900">
-                    {{ totalItemsCount }} <span class="text-sm text-slate-500">รายการ</span>
-                  </span>
+                <div class="flex flex-col gap-2">
+                  <label class="text-sm font-medium text-gray-700">
+                    ข้าพเจ้า <span class="text-red-500">*</span>
+                  </label>
+                  <InputText
+                    v-model="formData.fullName"
+                    placeholder="กรอกชื่อ-นามสกุล"
+                    class="transition-all duration-200"
+                  />
                 </div>
               </div>
-            </div>
-<!-- ✅ ตารางเดียว มีหัวข้อคณะด้านบน -->
-<div class="glass-panel rounded-2xl shadow-lg overflow-hidden">
 
-  <!-- ✅ หัวข้อคณะ (แสดงคณะแรก หรือรวมชื่อทุกคณะ) -->
-  <div class="px-6 py-4 border-b border-white/40 bg-white/20">
-    <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold text-slate-900">
-  {{ receipts[0]?.department || 'รายละเอียดหนี้' }}
-</h2>
-      <h2 class="text-xl font-bold text-slate-900"></h2>
-      <span class="text-lg font-bold text-red-600">
-        {{ formatMoney(totalDebt) }} บาท
-      </span>
-    </div>
-
-            <!-- Grouped by Receipt -->
-            <div v-for="receipt in receipts" :key="receipt.receiptId" class="glass-panel rounded-2xl shadow-lg overflow-hidden">
-              <div class="px-6 py-4 border-b border-white/40 bg-white/20">
-                <div class="flex items-center justify-between">
-                  <h2 class="text-xl font-bold text-slate-900">{{ receipt.department }}</h2>
-                  <span class="text-lg font-bold text-red-600">{{ formatMoney(receipt.totalDebtorAmount) }} บาท</span>
+              <!-- แถวที่ 2: เบอร์โทรศัพท์ | หน่วยงาน -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <div class="flex flex-col gap-2">
+                  <label class="text-sm font-medium text-gray-700">
+                    เบอร์โทรติดต่อ <span class="text-red-500">*</span>
+                  </label>
+                  <InputText
+                    v-model="formData.phone"
+                    placeholder="xxx-xxxx-xxx"
+                    maxlength="12"
+                    class="transition-all duration-200"
+                    @keypress="allowOnlyDigits"
+                  />
                 </div>
-                <p class="text-xs text-slate-600 mt-1">{{ receipt.subDepartment }} • {{ receipt.items.length }} รายการ</p>
+
+                <div class="flex flex-col gap-2">
+                  <label class="text-sm font-medium text-gray-700">
+                    หน่วยงาน <span class="text-red-500">*</span>
+                  </label>
+                  <Selects
+                    v-model="mainCategory"
+                    :options="mainCategoryOptions"
+                    placeholder="เลือกหน่วยงาน"
+                    value-type="string"
+                  />
+                </div>
+              </div>
+
+              <!-- กรณีไม่มีหน่วยงานรอง -->
+              <template v-if="!hasAnySub">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      กองทุน <span class="text-red-500">*</span>
+                    </label>
+                    <Selects
+                      v-model="formData.fundName"
+                      :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
+                      placeholder="เลือกกองทุน"
+                      value-type="string"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      ขอนำส่งเงิน <span class="text-red-500">*</span>
+                    </label>
+                    <SendMoneySelect
+                      ref="sendmoneySelectRef"
+                      v-model="formData.sendmoney"
+                      input-id="sendmoney"
+                      placeholder="เลือกประเภท"
+                      :required="true"
+                      :options="[
+                        { value: 'รายได้', text: 'รายได้' },
+                        { value: 'เงินโครงการ', text: 'เงินโครงการ' },
+                      ]"
+                      :create-new-option="true"
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      รหัสโครงงาน <span class="text-red-500">*</span>
+                    </label>
+                    <InputText
+                      v-model="formData.projectCode"
+                      placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+              </template>
+
+              <!-- กรณีมีหน่วยงานรองแต่ไม่มีหน่วยงานย่อย -->
+              <template v-if="hasAnySub && !hasSub2">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      หน่วยงานรอง <span class="text-red-500">*</span>
+                    </label>
+                    <Selects
+                      v-model="subCategory"
+                      :options="sub1OptionsForSelect"
+                      option-label="label"
+                      option-value="value"
+                      placeholder="เลือกหน่วยงานรอง"
+                      value-type="string"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      กองทุน <span class="text-red-500">*</span>
+                    </label>
+                    <Selects
+                      v-model="formData.fundName"
+                      :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
+                      placeholder="เลือกกองทุน"
+                      value-type="string"
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      ขอนำส่งเงิน <span class="text-red-500">*</span>
+                    </label>
+                    <SendMoneySelect
+                      ref="sendmoneySelectRef"
+                      v-model="formData.sendmoney"
+                      input-id="sendmoney"
+                      placeholder="เลือกประเภท"
+                      :required="true"
+                      :options="[
+                        { value: 'รายได้', text: 'รายได้' },
+                        { value: 'เงินโครงการ', text: 'เงินโครงการ' },
+                      ]"
+                      :create-new-option="true"
+                      class="mt-[2.5px]"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      รหัสโครงงาน <span class="text-red-500">*</span>
+                    </label>
+                    <InputText
+                      v-model="formData.projectCode"
+                      placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
+                    />
+                  </div>
+                </div>
+              </template>
+
+              <!-- กรณีมีหน่วยงานรองและหน่วยงานย่อย -->
+              <template v-if="hasSub2">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      หน่วยงานรอง <span class="text-red-500">*</span>
+                    </label>
+                    <Selects
+                      v-model="subCategory"
+                      :options="sub1OptionsForSelect"
+                      option-label="label"
+                      option-value="value"
+                      placeholder="เลือกหน่วยงานรอง"
+                      value-type="string"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      หน่วยงานย่อย <span class="text-red-500">*</span>
+                    </label>
+                    <Selects
+                      v-model="subCategory2"
+                      :options="sub2OptionsForSelect"
+                      option-label="label"
+                      option-value="value"
+                      placeholder="เลือกหน่วยงานย่อย"
+                      value-type="string"
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      กองทุน <span class="text-red-500">*</span>
+                    </label>
+                    <Selects
+                      v-model="formData.fundName"
+                      :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
+                      placeholder="เลือกกองทุน"
+                      value-type="string"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      ขอนำส่งเงิน <span class="text-red-500">*</span>
+                    </label>
+                    <SendMoneySelect
+                      ref="sendmoneySelectRef"
+                      v-model="formData.sendmoney"
+                      input-id="sendmoney"
+                      placeholder="เลือกประเภท"
+                      :required="true"
+                      :options="[
+                        { value: 'รายได้', text: 'รายได้' },
+                        { value: 'เงินโครงการ', text: 'เงินโครงการ' },
+                      ]"
+                      :create-new-option="true"
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-gray-700">
+                      รหัสโครงงาน <span class="text-red-500">*</span>
+                    </label>
+                    <InputText
+                      v-model="formData.projectCode"
+                      placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+              </template>
+            </div>
+
+            <!-- ✅ สรุปจำนวนหน่วยงานและยอดรวม -->
+            <div class="glass-panel rounded-2xl p-6 shadow-lg">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-slate-900">
+                  จำนวนหน่วยงาน
+                </h2>
+                <span class="text-xl font-bold text-slate-900">
+                  {{ groupedReceipts.length }} หน่วยงาน
+                </span>
+              </div>
+              <div class="flex items-center justify-between mt-4 pt-4 border-t border-white/40">
+                <span class="text-base text-slate-700">ยอดหนี้รวมทั้งหมด</span>
+                <span class="text-2xl font-bold text-red-600">
+                  {{ formatMoney(totalDebt) }} บาท
+                </span>
+              </div>
+              <div class="flex items-center justify-between mt-2">
+                <span class="text-base text-slate-700">จำนวนรายการทั้งหมด</span>
+                <span class="text-xl font-bold text-slate-900">
+                  {{ totalItemsCount }} รายการ
+                </span>
+              </div>
+            </div>
+
+            <!-- ✅ ตารางรายละเอียดหนี้แบ่งกลุ่มตาม waybillNumber -->
+            <div
+              v-for="(group, index) in groupedReceipts"
+              :key="group.waybillNumber"
+              class="glass-panel rounded-2xl shadow-lg overflow-hidden"
+            >
+              <!-- หัวข้อกลุ่ม -->
+              <div class="px-6 py-4 bg-white/30 border-b border-white/40">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-lg font-bold text-slate-900">
+                    {{ group.department }}
+                  </h3>
+                  <span class="text-lg font-bold text-red-600">
+                    {{ formatMoney(group.totalAmount) }} บาท
+                  </span>
+                </div>
+                <p class="text-sm text-slate-600 mt-1">
+                  {{ group.items.length }} รายการ - {{ group.waybillNumber }}
+                </p>
               </div>
 
               <!-- Table Header -->
-              <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 <div class="col-span-2">เลขที่ใบเสร็จ</div>
-                <div class="col-span-2">รายการ</div>
-                <div class="col-span-2">ผู้ทำรายการ</div>
-                <div class="col-span-1 text-right">หนี้</div>
+                <div class="col-span-3">รายการ</div>
+                <div class="col-span-2 text-right">หนี้</div>
                 <div class="col-span-3 text-right">จำนวนเงินที่ชำระ</div>
                 <div class="col-span-2">หมายเหตุ</div>
               </div>
 
-              <div
-                v-for="item in receipt.items"
-                :key="item.id"
-                class="group grid grid-cols-12 gap-4 px-6 py-4 mb-2 items-center rounded-xl transition-all duration-200 border border-white/50 hover:bg-white/50"
-              >
-                <!-- Receipt Number -->
-                <div class="col-span-2">
-                  <input
-                    type="text"
-                    v-model="item.receiptNumber"
-                    class="glass-input w-full px-3 py-2 rounded-md text-sm"
-                    placeholder="เลขที่ใบเสร็จ"
-                  />
-                </div>
-
-                <!-- Item Name -->
-                <div class="col-span-2">
-                  <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
-                </div>
-
-                <!-- Full Name -->
-                <div class="col-span-2 flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0">
-                    {{ (item.responsible || '-').charAt(0) }}
+              <!-- รายการ Items -->
+              <div class="pb-2">
+                <div
+                  v-for="item in group.items"
+                  :key="item.id"
+                  class="group grid grid-cols-12 gap-4 px-6 py-4 items-center transition-all duration-200 border-b border-white/20 hover:bg-white/30"
+                >
+                  <!-- Receipt Number -->
+                  <div class="col-span-2">
+                    <input
+                      type="text"
+                      v-model="item.receiptNumber"
+                      class="glass-input w-full px-3 py-2 rounded-md text-sm"
+                      placeholder="เลขที่ใบเสร็จ"
+                    />
                   </div>
-                  <span class="text-sm text-slate-700 truncate">{{ item.responsible || '-' }}</span>
-                </div>
 
-                <!-- Debt Amount -->
-                <div class="col-span-1 text-right">
-                  <span class="font-bold text-red-600 font-mono text-sm whitespace-nowrap">
-                    {{ formatMoney(item.debtorAmount) }}
-                  </span>
-                </div>
+                  <!-- Item Name -->
+                  <div class="col-span-3">
+                    <div class="font-medium text-slate-800 text-sm">{{ item.itemName }}</div>
+                  </div>
 
-                <!-- Payment Input -->
-                <div class="col-span-3 flex justify-end">
-                  <input
-                    type="text"
-                    v-model="item.paymentInput"
-                    @input="(e) => handlePaymentInputChange(item, e)"
-                    @blur="() => formatPaymentInput(item)"
-                    class="glass-input w-40 px-3 py-2 rounded-md text-sm text-right"
-                    placeholder="0.00"
-                  />
-                </div>
+                  <!-- Debt Amount -->
+                  <div class="col-span-2 text-right">
+                    <span class="font-bold text-red-600 font-mono text-sm whitespace-nowrap">
+                      {{ formatMoney(item.debtorAmount) }}
+                    </span>
+                  </div>
 
-                <!-- Note -->
-                <div class="col-span-2">
-                  <input
-                    type="text"
-                    v-model="item.note"
-                    class="glass-input w-full px-3 py-2 rounded-md text-sm"
-                    placeholder="หมายเหตุ"
-                  />
+                  <!-- Payment Input -->
+                  <div class="col-span-3 flex justify-end">
+                    <input
+                      type="text"
+                      v-model="item.paymentInput"
+                      @input="(e) => handlePaymentInputChange(item, e)"
+                      @blur="() => formatPaymentInput(item)"
+                      class="glass-input w-40 px-3 py-2 rounded-md text-sm text-right"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <!-- Note -->
+                  <div class="col-span-2">
+                    <input
+                      type="text"
+                      v-model="item.note"
+                      class="glass-input w-full px-3 py-2 rounded-md text-sm"
+                      placeholder="หมายเหตุ"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
             <!-- ยอดที่ต้องชำระ -->
-<div
-  class="rounded-xl p-6 shadow-lg mb-6"
-  style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);"
->
-  <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
-    <div class="flex items-center gap-3">
-      <i class="ph-fill ph-money text-3xl"></i> <!-- ✅ เพิ่มบรรทัดนี้ -->
-      <span class="text-xl font-bold">ยอดที่ต้องชำระ</span>
-    </div>
-    <span class="text-3xl font-bold">
-      {{ formatNumber(totalPaymentInput) }} บาท
-    </span>
-  </div>
-</div>
+            <div
+              class="rounded-xl p-6 shadow-lg mb-6"
+              style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);"
+            >
+              <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
+                <div class="flex items-center gap-3">
+                  <i class="ph-fill ph-money text-3xl"></i>
+                  <span class="text-xl font-bold">ยอดที่ต้องชำระ</span>
+                </div>
+                <span class="text-3xl font-bold">
+                  {{ formatNumber(totalPaymentInput) }} บาท
+                </span>
+              </div>
+            </div>
 
             <!-- Payment Section -->
             <div class="glass-panel rounded-2xl p-6 shadow-lg">
@@ -259,7 +499,6 @@
 
               <!-- Action Buttons -->
               <div class="flex justify-end gap-3">
-                <!-- ปุ่มล้างหนี้ -->
                 <button
                   class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all active:scale-95 hover:shadow-xl"
                   style="background: linear-gradient(135deg, #10B981 0%, #059669 100%);"
@@ -280,15 +519,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import sidebar from '@/components/bar/sidebar.vue'
 import BankAccountSelect from '@/components/TomSelect/BankAccountSelect.vue'
 import InputText from '@/components/input/inputtext.vue'
+import Selects from '@/components/input/select/select.vue'
+import SendMoneySelect from '@/components/TomSelect/SendMoneyTomSelect.vue'
 import { useBankTransferManager } from '@/components/Function/FuncClear.js'
 import { useSummaryStore } from '@/stores/summary'
 import { reciptService } from '@/services/ReciptService'
+import AffiliationService from '@/services/affiliation/AffiliationService'
+import { departmentOptions, initializeDepartmentOptions } from '@/components/data/TSdepartments'
 
 const route = useRoute()
 const router = useRouter()
@@ -324,6 +567,116 @@ const errors = ref({ bankTransfers: {} })
 const receipts = ref([])
 const allItems = ref([])
 
+// Form Data
+const formData = ref({
+  waybillNumber: '',
+  fullName: '',
+  phone: '',
+  affiliationName: '',
+  subAffiliationName1: '',
+  subAffiliationName2: '',
+  fundName: '',
+  sendmoney: '',
+  projectCode: ''
+})
+
+// Category states
+const mainCategory = ref('')
+const subCategory = ref('')
+const subCategory2 = ref('')
+const mainCategoryId = ref('')
+const subCategoryId = ref('')
+const subCategoryId2 = ref('')
+
+// Computed for categories
+const mainCategoryOptions = computed(() => {
+  if (!departmentOptions.value) return []
+  return Object.keys(departmentOptions.value)
+})
+
+const sub1OptionsArray = computed(() => {
+  if (!mainCategory.value || !departmentOptions.value) return []
+  const data = departmentOptions.value[mainCategory.value]
+  if (!data || !Array.isArray(data.main)) return []
+  return data.main
+})
+
+const sub2OptionsArray = computed(() => {
+  if (!mainCategory.value || !subCategory.value || !departmentOptions.value) return []
+  const data = departmentOptions.value[mainCategory.value]
+  if (!data || !Array.isArray(data.subs)) return []
+  return data.subs
+})
+
+const sub1OptionsForSelect = computed(() =>
+  sub1OptionsArray.value.map(opt => ({
+    label: opt.name,
+    value: opt.id
+  }))
+)
+
+const sub2OptionsForSelect = computed(() => {
+  return sub2OptionsArray.value.map(opt => ({
+    label: opt.name,
+    value: opt.id ?? opt.name,
+  }))
+})
+
+const hasAnySub = computed(() => {
+  if (!mainCategory.value || !departmentOptions.value) return false
+  const data = departmentOptions.value[mainCategory.value]
+  if (!data) return false
+  const main = data.main
+  return main !== null && (typeof main === 'string' || (Array.isArray(main) && main.length > 0))
+})
+
+const hasSub2 = computed(() => {
+  if (!mainCategory.value || !subCategory.value || !departmentOptions.value) return false
+  const data = departmentOptions.value[mainCategory.value]
+  if (!data) return false
+  const subs = data.subs
+  return Array.isArray(subs) && subs.length > 0
+})
+
+// Watch categories
+watch(mainCategory, (newVal) => {
+  if (!departmentOptions.value) return
+  const data = departmentOptions.value[newVal]
+  mainCategoryId.value = data?.id || ''
+  subCategory.value = ''
+  subCategoryId.value = ''
+  subCategory2.value = ''
+  subCategoryId2.value = ''
+})
+
+watch(subCategory, (newVal) => {
+  if (!newVal) {
+    subCategoryId.value = ''
+    subCategory2.value = ''
+    subCategoryId2.value = ''
+    return
+  }
+  subCategoryId.value = newVal
+  subCategory2.value = ''
+  subCategoryId2.value = ''
+})
+
+watch(subCategory2, (newVal) => {
+  if (!newVal) {
+    subCategoryId2.value = ''
+    return
+  }
+  subCategoryId2.value = newVal
+})
+
+// Helper functions
+const allowOnlyDigits = (event) => {
+  const charCode = event.which ? event.which : event.keyCode
+  if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+    event.preventDefault()
+  }
+}
+
 const totalDebt = computed(() =>
   allItems.value.reduce((sum, i) => sum + Number(i.debtorAmount || 0), 0)
 )
@@ -333,8 +686,61 @@ const formatNumber = (num) =>
 
 const formatMoney = formatNumber
 
-// ✅ Load Data
-onMounted(() => {
+const totalItemsCount = computed(() => {
+  return receipts.value.reduce((total, receipt) => {
+    return total + receipt.items.length
+  }, 0)
+})
+
+// ✅ จัดกลุ่มรายการตาม waybillNumber
+const groupedReceipts = computed(() => {
+  const groups = new Map()
+
+  receipts.value.forEach(receipt => {
+    receipt.items.forEach(item => {
+      const originalReceipt = item._originalReceipt
+      const waybillNumber = originalReceipt?.waybillNumber || receipt.waybillNumber
+
+      if (!groups.has(waybillNumber)) {
+        groups.set(waybillNumber, {
+          waybillNumber,
+          department: originalReceipt?.affiliationName || receipt.department,
+          subDepartment: originalReceipt?.subAffiliationName1 || receipt.subDepartment,
+          items: [],
+          totalAmount: 0
+        })
+      }
+
+      const group = groups.get(waybillNumber)
+      group.items.push(item)
+      group.totalAmount += Number(item.debtorAmount || 0)
+    })
+  })
+
+  return Array.from(groups.values())
+})
+
+// Load department options
+const loadDepartmentOptions = async () => {
+  try {
+    console.log('🔄 Loading department options from AffiliationService...')
+    const options = await AffiliationService.generateDepartmentOptions()
+
+    if (!options || Object.keys(options).length === 0) {
+      console.warn('⚠️ No department options generated, using fallback')
+      initializeDepartmentOptions()
+    }
+
+    console.log('✅ Loaded department options:', Object.keys(departmentOptions.value).length, 'faculties')
+  } catch (error) {
+    console.error('❌ Error loading department options:', error)
+    initializeDepartmentOptions()
+  }
+}
+
+onMounted(async () => {
+  await loadDepartmentOptions()
+
   const raw = localStorage.getItem('clearDebtorSummary')
 
   if (!raw) {
@@ -355,8 +761,45 @@ onMounted(() => {
 
     const baseReceipts = Array.isArray(summary.receipts) ? summary.receipts : []
 
-    const items = baseReceipts.flatMap(r =>
-      (r.items || [])
+    if (baseReceipts.length > 0) {
+      const firstReceipt = baseReceipts[0]
+
+      formData.value = {
+        waybillNumber: firstReceipt.waybillNumber || '',
+        fullName: firstReceipt.fullName || '',
+        phone: firstReceipt.phone || '',
+        affiliationName: firstReceipt.mainAffiliationName || firstReceipt.affiliationName || '',
+        subAffiliationName1: firstReceipt.subAffiliationName1 || '',
+        subAffiliationName2: firstReceipt.subAffiliationName2 || '',
+        fundName: firstReceipt.fundName || '',
+        sendmoney: firstReceipt.sendmoney || '',
+        projectCode: firstReceipt.projectCode || ''
+      }
+
+      if (firstReceipt.mainAffiliationId && firstReceipt.mainAffiliationName) {
+        mainCategoryId.value = firstReceipt.mainAffiliationId
+        mainCategory.value = firstReceipt.mainAffiliationName
+        await nextTick()
+      }
+
+      if (firstReceipt.subAffiliationId1) {
+        subCategoryId.value = firstReceipt.subAffiliationId1
+        subCategory.value = firstReceipt.subAffiliationId1
+        await nextTick()
+      }
+
+      if (firstReceipt.subAffiliationId2) {
+        subCategoryId2.value = firstReceipt.subAffiliationId2
+        subCategory2.value = firstReceipt.subAffiliationId2
+        await nextTick()
+      }
+    }
+
+    // ✅ แยกรายการออกแต่ละอัน (ไม่รวมกัน)
+    const allSeparatedItems = []
+
+    baseReceipts.forEach(receipt => {
+      const receiptItems = (receipt.items || [])
         .filter(item => !item.isClearedDebt)
         .map(item => {
           const debtorAmount = item.debtorAmount != null
@@ -368,67 +811,44 @@ onMounted(() => {
             debtorAmount,
             amount: debtorAmount,
             paymentInput: '',
-            responsible: r.fullName || '-',
             _originalReceipt: {
-              ...r,
-              projectCode: r.projectCode || r.receiptId,
-              createdAt: r.createdAt || new Date().toISOString()
+              ...receipt,
+              projectCode: receipt.projectCode || receipt.receiptId,
+              createdAt: receipt.createdAt || new Date().toISOString()
             }
           }
         })
+
+      allSeparatedItems.push(...receiptItems)
+    })
+
+    allItems.value = allSeparatedItems
+
+    console.log('✅ Items (separated):', allSeparatedItems.length)
+
+    const totalDebtorAmount = allSeparatedItems.reduce(
+      (sum, i) => sum + Number(i.debtorAmount || 0),
+      0
     )
 
-    allItems.value = items
-
-    receipts.value = baseReceipts.map(r => {
-      const receiptItems = items.filter(
-        i => i._originalReceipt.waybillNumber === r.waybillNumber
-      )
-
-      const totalDebtorAmount = receiptItems.reduce(
-        (sum, i) => sum + Number(i.debtorAmount || 0),
-        0
-      )
-
-      return {
-        ...r,
-        department: `📋 [${r.waybillNumber || r.projectCode}] ${formatMoney(totalDebtorAmount)} บาท`,
-        subDepartment: `${receiptItems.length} รายการ - ${r.fullName || 'ไม่ระบุ'}`,
-        items: receiptItems,
-        totalDebtorAmount,
-        originalDepartment: r.department,
-        originalSubDepartment: r.subDepartment
-      }
-    })
-  }
-})
-
-const globalGroupedItems = Array.from(globalGroupedMap.values())
-
-// สร้าง receipt เดียวที่มีรายการรวมทั้งหมด
-const totalDebtorAmount = globalGroupedItems.reduce(
-  (sum, i) => sum + Number(i.debtorAmount || 0),
-  0
-)
-
-receipts.value = [{
-  receiptId: 'MERGED_ALL',
-  waybillNumber: 'MERGED_ALL',
-  department: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName || 'รายการรวมทั้งหมด',
-  subDepartment: `${globalGroupedItems.length} รายการ - รวมจากทุกหน่วยงาน - ${formatMoney(totalDebtorAmount)} บาท`,
-  items: globalGroupedItems,
-  totalDebtorAmount,
-  originalDepartment: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName,
-  originalSubDepartment: baseReceipts[0]?.subAffiliationName1,
-  fullName: baseReceipts[0]?.fullName || '-',
-  phone: baseReceipts[0]?.phone || '-',
-  sendmoney: baseReceipts[0]?.sendmoney || '-',
-  fundName: baseReceipts[0]?.fundName || '-',
-  _allOriginalReceipts: baseReceipts // เก็บ receipts ต้นฉบับทั้งหมด
-}]
+    receipts.value = [{
+      receiptId: 'MERGED_ALL',
+      waybillNumber: 'MERGED_ALL',
+      department: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName || 'รายการรวมทั้งหมด',
+      subDepartment: '',
+      items: allSeparatedItems,
+      totalDebtorAmount,
+      originalDepartment: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName,
+      originalSubDepartment: baseReceipts[0]?.subAffiliationName1,
+      fullName: baseReceipts[0]?.fullName || '-',
+      phone: baseReceipts[0]?.phone || '-',
+      sendmoney: baseReceipts[0]?.sendmoney || '-',
+      fundName: baseReceipts[0]?.fundName || '-',
+      _allOriginalReceipts: baseReceipts
+    }]
 
     console.log('✅ Final receipts:', receipts.value.length)
-    console.log('✅ Total items (merged):', totalItemsCount.value)
+    console.log('✅ Total items (separated):', totalItemsCount.value)
 
   } catch (err) {
     console.error('❌ Error:', err)
@@ -472,7 +892,6 @@ const formatPaymentInput = (item) => {
   })
 }
 
-// ✅ ฟังก์ชันนี้ยังทำงานได้เหมือนเดิม เพราะวนลูปผ่านทุก item ใน receipts
 const totalPaymentInput = computed(() => {
   return receipts.value.reduce((total, receipt) => {
     return total + receipt.items.reduce((sum, item) => {
@@ -494,33 +913,29 @@ const clearBankError = (index, field) => {
   }
 }
 
-// ✅ ฟังก์ชันล้างหนี้แบบใหม่ - ใช้ summaryStore
+// ฟังก์ชันล้างหนี้
 async function clearAllDebts() {
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
 
-  // ✅ เก็บข้อมูลรายการที่จะล้าง (ขยายให้ครบทุก waybill และ item ID)
   const itemsToMark = []
 
   receipts.value.forEach(receipt => {
     receipt.items.forEach((item) => {
       const paymentValue = parseFloat(String(item.paymentInput || '0').replace(/,/g, ''))
       if (paymentValue > 0) {
-        // ✅ ถ้ามีการรวมหลาย waybill ต้องขยายให้ครบ
-        const waybills = item._mergedWaybills || [receipt.waybillNumber]
-        const itemIds = item._mergedItems || [item.id]
+        const originalReceipt = item._originalReceipt
+        const waybillNumber = originalReceipt?.waybillNumber || receipt.waybillNumber
 
-        waybills.forEach(waybillNumber => {
-          itemsToMark.push({
-            waybillNumber: waybillNumber,
-            itemName: item.itemName,
-            paymentAmount: paymentValue,
-            receiptNumber: item.receiptNumber || '',
-            note: item.note || '',
-            originalItem: item,
-            itemIds: itemIds // เก็บทุก ID ที่ต้อง mark
-          })
+        itemsToMark.push({
+          waybillNumber: waybillNumber,
+          itemName: item.itemName,
+          paymentAmount: paymentValue,
+          receiptNumber: item.receiptNumber || '',
+          note: item.note || '',
+          originalItem: item,
+          originalReceipt: originalReceipt
         })
       }
     })
@@ -588,11 +1003,10 @@ async function clearAllDebts() {
   if (!result.isConfirmed) return
 
   try {
-    console.log('🧹 Starting debt clearing process with SummaryStore...')
+    console.log('🧹 Starting debt clearing process...')
 
-    // ✅ จัดกลุ่มตาม waybillNumber
     const grouped = new Map()
-    
+
     itemsToMark.forEach(item => {
       if (!grouped.has(item.waybillNumber)) {
         grouped.set(item.waybillNumber, [])
@@ -605,25 +1019,30 @@ async function clearAllDebts() {
     let totalMarkedCount = 0
     let totalClearedCount = 0
 
-    // ✅ ประมวลผลแต่ละ receipt
     for (const [waybillNumber, items] of grouped) {
       console.log(`🔍 Processing waybill: ${waybillNumber}`)
 
       try {
-        // ✅ ล้างหนี้แต่ละรายการใน summaryStore
         for (const item of items) {
-          // เรียกใช้ applyDebtClear จาก summaryStore
+          const ref = item.receiptNumber || `CLEAR-${Date.now()}`
+
           summaryStore.applyDebtClear(waybillNumber, {
             itemName: item.itemName,
             amount: item.paymentAmount,
-            ref: item.receiptNumber || `CLEAR-${Date.now()}`
+            ref: ref
           })
 
+          await reciptService.applyDebtClearToReceipt(
+            waybillNumber,
+            item.itemName,
+            item.paymentAmount,
+            ref
+          )
+
           totalMarkedCount++
-          console.log(`   ✅ Cleared: ${item.itemName} - ${item.paymentAmount}`)
+          console.log(`   ✅ Cleared: ${item.itemName} - ${formatNumber(item.paymentAmount)} บาท`)
         }
 
-        // ✅ ตรวจสอบว่ารายการใดล้างหมดแล้ว
         const debtors = summaryStore.getDebtors(waybillNumber)
         const clearedCount = debtors.filter(d => d.isCleared).length
         totalClearedCount += clearedCount
@@ -637,7 +1056,27 @@ async function clearAllDebts() {
 
     console.log(`✅ Total: Marked ${totalMarkedCount}, Fully Cleared ${totalClearedCount}`)
 
-    // ✅ บันทึกประวัติ
+    const uniqueHistoryItems = Array.from(
+      new Map(
+        itemsToMark.map(item => [
+          `${item.itemName}_${item.paymentAmount}`,
+          item
+        ])
+      ).values()
+    )
+
+    const getSubName1 = () => {
+      if (!subCategoryId.value) return ''
+      const found = sub1OptionsArray.value.find(opt => opt.id === subCategoryId.value)
+      return found?.name || ''
+    }
+
+    const getSubName2 = () => {
+      if (!subCategoryId2.value) return ''
+      const found = sub2OptionsArray.value.find(opt => opt.id === subCategoryId2.value)
+      return found?.name || ''
+    }
+
     const historyRecord = {
       id: Date.now().toString(),
       referenceId: `CLEAR-${Date.now()}`,
@@ -656,24 +1095,30 @@ async function clearAllDebts() {
         amount: p.amount
       })),
       total: totalPaymentInputValue,
-      fullName: receipts.value[0]?.fullName || '-',
-      phone: receipts.value[0]?.phone || '-',
-      department: receipts.value[0]?.originalDepartment || '-',
-      sendmoney: receipts.value[0]?.sendmoney || '-',
-      fundName: receipts.value[0]?.fundName || '-',
+      fullName: formData.value.fullName || receipts.value[0]?.fullName || '-',
+      phone: formData.value.phone || receipts.value[0]?.phone || '-',
+      department: mainCategory.value || receipts.value[0]?.originalDepartment || '-',
+      subAffiliationName1: getSubName1(),
+      subAffiliationName2: getSubName2(),
+      sendmoney: formData.value.sendmoney || receipts.value[0]?.sendmoney || '-',
+      fundName: formData.value.fundName || receipts.value[0]?.fundName || '-',
       receiptId: receipts.value[0]?.waybillNumber || `CLEAR-${Date.now()}`
     }
 
-    // บันทึกประวัติลง localStorage
     const STORAGE_HISTORY_KEY = 'debtorClearHistory'
     try {
       const stored = localStorage.getItem(STORAGE_HISTORY_KEY)
       const history = stored ? JSON.parse(stored) : []
       history.unshift(historyRecord)
       localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(history))
+      console.log('✅ History saved to localStorage')
     } catch (err) {
       console.error('❌ Error saving history:', err)
     }
+
+    window.dispatchEvent(new CustomEvent('receipts-updated', {
+      detail: { action: 'clear' }
+    }))
 
     localStorage.removeItem('clearDebtorSummary')
 

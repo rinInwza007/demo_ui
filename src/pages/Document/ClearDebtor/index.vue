@@ -54,25 +54,11 @@
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-medium text-slate-600">จำนวนรายการทั้งหมด</span>
                   <span class="text-lg font-semibold text-slate-900">
-                    {{ totalItemsCount }} <span class="text-sm text-slate-500">รายการ</span>
+                    {{ allItems.length }} <span class="text-sm text-slate-500">รายการ</span>
                   </span>
                 </div>
               </div>
             </div>
-<!-- ✅ ตารางเดียว มีหัวข้อคณะด้านบน -->
-<div class="glass-panel rounded-2xl shadow-lg overflow-hidden">
-
-  <!-- ✅ หัวข้อคณะ (แสดงคณะแรก หรือรวมชื่อทุกคณะ) -->
-  <div class="px-6 py-4 border-b border-white/40 bg-white/20">
-    <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold text-slate-900">
-  {{ receipts[0]?.department || 'รายละเอียดหนี้' }}
-</h2>
-      <h2 class="text-xl font-bold text-slate-900"></h2>
-      <span class="text-lg font-bold text-red-600">
-        {{ formatMoney(totalDebt) }} บาท
-      </span>
-    </div>
 
             <!-- Grouped by Receipt -->
             <div v-for="receipt in receipts" :key="receipt.receiptId" class="glass-panel rounded-2xl shadow-lg overflow-hidden">
@@ -154,20 +140,20 @@
             </div>
 
             <!-- ยอดที่ต้องชำระ -->
-<div
-  class="rounded-xl p-6 shadow-lg mb-6"
-  style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);"
->
-  <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
-    <div class="flex items-center gap-3">
-      <i class="ph-fill ph-money text-3xl"></i> <!-- ✅ เพิ่มบรรทัดนี้ -->
-      <span class="text-xl font-bold">ยอดที่ต้องชำระ</span>
-    </div>
-    <span class="text-3xl font-bold">
-      {{ formatNumber(totalPaymentInput) }} บาท
-    </span>
-  </div>
-</div>
+            <div
+              class="rounded-xl p-6 shadow-lg mb-6"
+              style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);"
+            >
+              <div class="flex flex-col sm:flex-row justify-between items-center gap-2 text-white">
+                <div class="flex items-center gap-3">
+                  <i class="ph-fill ph-coins text-3xl"></i>
+                  <span class="text-xl font-bold">ยอดที่ต้องชำระ</span>
+                </div>
+                <span class="text-3xl font-bold">
+                  {{ formatNumber(totalPaymentInput) }} บาท
+                </span>
+              </div>
+            </div>
 
             <!-- Payment Section -->
             <div class="glass-panel rounded-2xl p-6 shadow-lg">
@@ -400,35 +386,8 @@ onMounted(() => {
         originalSubDepartment: r.subDepartment
       }
     })
-  }
-})
-
-const globalGroupedItems = Array.from(globalGroupedMap.values())
-
-// สร้าง receipt เดียวที่มีรายการรวมทั้งหมด
-const totalDebtorAmount = globalGroupedItems.reduce(
-  (sum, i) => sum + Number(i.debtorAmount || 0),
-  0
-)
-
-receipts.value = [{
-  receiptId: 'MERGED_ALL',
-  waybillNumber: 'MERGED_ALL',
-  department: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName || 'รายการรวมทั้งหมด',
-  subDepartment: `${globalGroupedItems.length} รายการ - รวมจากทุกหน่วยงาน - ${formatMoney(totalDebtorAmount)} บาท`,
-  items: globalGroupedItems,
-  totalDebtorAmount,
-  originalDepartment: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName,
-  originalSubDepartment: baseReceipts[0]?.subAffiliationName1,
-  fullName: baseReceipts[0]?.fullName || '-',
-  phone: baseReceipts[0]?.phone || '-',
-  sendmoney: baseReceipts[0]?.sendmoney || '-',
-  fundName: baseReceipts[0]?.fundName || '-',
-  _allOriginalReceipts: baseReceipts // เก็บ receipts ต้นฉบับทั้งหมด
-}]
 
     console.log('✅ Final receipts:', receipts.value.length)
-    console.log('✅ Total items (merged):', totalItemsCount.value)
 
   } catch (err) {
     console.error('❌ Error:', err)
@@ -472,14 +431,12 @@ const formatPaymentInput = (item) => {
   })
 }
 
-// ✅ ฟังก์ชันนี้ยังทำงานได้เหมือนเดิม เพราะวนลูปผ่านทุก item ใน receipts
 const totalPaymentInput = computed(() => {
-  return receipts.value.reduce((total, receipt) => {
-    return total + receipt.items.reduce((sum, item) => {
-      const value = item.paymentInput || '0'
-      const cleanValue = String(value).replace(/,/g, '')
-      return sum + (parseFloat(cleanValue) || 0)
-    }, 0)
+  return allItems.value.reduce((sum, item) => {
+    const value = item.paymentInput || '0'
+    const cleanValue = String(value).replace(/,/g, '')
+    const numValue = parseFloat(cleanValue) || 0
+    return sum + numValue
   }, 0)
 })
 
@@ -500,27 +457,21 @@ async function clearAllDebts() {
   const totalBankValue = totalBankAmount.value
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
 
-  // ✅ เก็บข้อมูลรายการที่จะล้าง (ขยายให้ครบทุก waybill และ item ID)
+  // ✅ เก็บข้อมูลรายการที่จะล้าง
   const itemsToMark = []
 
   receipts.value.forEach(receipt => {
     receipt.items.forEach((item) => {
       const paymentValue = parseFloat(String(item.paymentInput || '0').replace(/,/g, ''))
       if (paymentValue > 0) {
-        // ✅ ถ้ามีการรวมหลาย waybill ต้องขยายให้ครบ
-        const waybills = item._mergedWaybills || [receipt.waybillNumber]
-        const itemIds = item._mergedItems || [item.id]
-
-        waybills.forEach(waybillNumber => {
-          itemsToMark.push({
-            waybillNumber: waybillNumber,
-            itemName: item.itemName,
-            paymentAmount: paymentValue,
-            receiptNumber: item.receiptNumber || '',
-            note: item.note || '',
-            originalItem: item,
-            itemIds: itemIds // เก็บทุก ID ที่ต้อง mark
-          })
+        itemsToMark.push({
+          waybillNumber: receipt.waybillNumber || receipt.receiptId,
+          itemId: item.id,
+          itemName: item.itemName,
+          paymentAmount: paymentValue,
+          receiptNumber: item.receiptNumber || '',
+          note: item.note || '',
+          originalItem: item
         })
       }
     })
@@ -592,7 +543,7 @@ async function clearAllDebts() {
 
     // ✅ จัดกลุ่มตาม waybillNumber
     const grouped = new Map()
-    
+
     itemsToMark.forEach(item => {
       if (!grouped.has(item.waybillNumber)) {
         grouped.set(item.waybillNumber, [])
@@ -642,7 +593,7 @@ async function clearAllDebts() {
       id: Date.now().toString(),
       referenceId: `CLEAR-${Date.now()}`,
       date: new Date().toLocaleString('th-TH'),
-      items: uniqueHistoryItems.map(i => ({
+      items: itemsToMark.map(i => ({
         itemName: i.itemName,
         amount: i.paymentAmount,
         note: i.note,

@@ -17,6 +17,7 @@ import {
   updateClearSummary,
   deleteClearSummary
 } from '@/services/ClearDebtor/clearSummaryApi'
+import { tokenName } from '@/services/config'
 /**
  * ==========================================================
  * Fake API via Axios Mock Adapter
@@ -556,145 +557,26 @@ mock.onDelete(/\/clear-summaries\/\w+/).reply(config => {
   // ============================================
 
   // POST /auth/login
-  mock.onPost('/auth/login').reply((config) => {
-    console.log('🔐 [Mock] POST /auth/login')
+  const ACTIVE_TOKENS = new Set<string>()
 
-    try {
-      const { email, password } = JSON.parse(config.data)
+mock.onPost('/auth/login').reply((config) => {
+  try {
+    const { email, password } = JSON.parse(config.data)
 
-      if (!email || !password) {
-        return [400, {
-          success: false,
-          message: 'กรุณากรอก email และ password'
-        }]
-      }
-
-      const found = MOCK_USERS.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-      )
-
-      if (!found) {
-        console.log('❌ [Mock] Login failed: Invalid credentials')
-        return [401, {
-          success: false,
-          message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
-        }]
-      }
-
-      const token = `mock_${found.id}_${Date.now()}`
-
-      const user = {
-        id: found.id,
-        fullName: found.fullName,
-        affiliation: found.affiliation,
-        affiliationId: found.affiliationId,
-        role: found.role,
-        email: found.email,
-        phone: found.phone,
-      }
-
-      console.log('✅ [Mock] Login successful:', user.email)
-
-      return [200, {
-        success: true,
-        token,
-        user,
-        message: 'เข้าสู่ระบบสำเร็จ'
-      }]
-    } catch (error) {
-      console.error('❌ [Mock] Login error:', error)
-      return [500, {
-        success: false,
-        message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
-      }]
-    }
-  })
-
-  // POST /auth/logout
-  mock.onPost('/auth/logout').reply(() => {
-    console.log('🔐 [Mock] POST /auth/logout')
-    return [200, {
-      success: true,
-      message: 'ออกจากระบบสำเร็จ'
-    }]
-  })
-
-  // POST /auth/verify
-  mock.onPost('/auth/verify').reply((config) => {
-    console.log('🔐 [Mock] POST /auth/verify')
-
-    try {
-      const { token } = JSON.parse(config.data)
-
-      if (!token || !token.startsWith('mock_')) {
-        return [401, {
-          valid: false,
-          message: 'Invalid token'
-        }]
-      }
-
-      const userId = token.split('_')[1]
-      const found = MOCK_USERS.find(u => u.id === userId)
-
-      if (!found) {
-        return [401, {
-          valid: false,
-          message: 'User not found'
-        }]
-      }
-
-      const user = {
-        id: found.id,
-        fullName: found.fullName,
-        affiliation: found.affiliation,
-        affiliationId: found.affiliationId,
-        role: found.role,
-        email: found.email,
-        phone: found.phone,
-      }
-
-      return [200, {
-        valid: true,
-        user
-      }]
-    } catch (error) {
-      return [401, {
-        valid: false,
-        message: 'Invalid token'
-      }]
-    }
-  })
-
-  // GET /auth/me
-  mock.onGet('/auth/me').reply((config) => {
-    console.log('🔐 [Mock] GET /auth/me')
-
-    const authHeader = config.headers?.Authorization
-    if (!authHeader) {
-      return [401, {
-        success: false,
-        message: 'No authorization header'
-      }]
+    if (!email || !password) {
+      return [400, { success: false, message: 'กรุณากรอก email และ password' }]
     }
 
-    const token = authHeader.replace('Bearer ', '')
-
-    if (!token.startsWith('mock_')) {
-      return [401, {
-        success: false,
-        message: 'Invalid token'
-      }]
-    }
-
-    const userId = token.split('_')[1]
-    const found = MOCK_USERS.find(u => u.id === userId)
+    const found = MOCK_USERS.find(
+      u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+    )
 
     if (!found) {
-      return [401, {
-        success: false,
-        message: 'User not found'
-      }]
+      return [401, { success: false, message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' }]
     }
+
+    const token = `mock_${found.id}_${Date.now()}`
+    ACTIVE_TOKENS.add(token)
 
     const user = {
       id: found.id,
@@ -708,9 +590,118 @@ mock.onDelete(/\/clear-summaries\/\w+/).reply(config => {
 
     return [200, {
       success: true,
-      user
+      token,
+      user,
+      message: 'เข้าสู่ระบบสำเร็จ'
     }]
-  })
+  } catch {
+    return [500, { success: false, message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' }]
+  }
+})
+
+
+  // POST /auth/logout
+  mock.onPost('/auth/logout').reply((config) => {
+  console.log('🔐 [Mock] POST /auth/logout')
+
+  const authHeader = config.headers?.Authorization
+  if (!authHeader) {
+    return [401, {
+      success: false,
+      message: 'No authorization header'
+    }]
+  }
+
+  const token = authHeader.replace('Bearer ', '')
+
+  if (!ACTIVE_TOKENS.has(token)) {
+    return [401, {
+      success: false,
+      message: 'Token already revoked or invalid'
+    }]
+  }
+
+  // 🔥 revoke token
+  ACTIVE_TOKENS.delete(token)
+
+  return [200, {
+    success: true,
+    message: 'ออกจากระบบสำเร็จ'
+  }]
+})
+
+
+  // POST /auth/verify
+  mock.onPost('/auth/verify').reply((config) => {
+  try {
+    const { token } = JSON.parse(config.data)
+
+    if (!token || !ACTIVE_TOKENS.has(token)) {
+      return [401, { valid: false, message: 'Invalid or revoked token' }]
+    }
+
+    const userId = token.split('_')[1]
+    const found = MOCK_USERS.find(u => u.id === userId)
+
+    if (!found) {
+      return [401, { valid: false, message: 'User not found' }]
+    }
+
+    return [200, {
+      valid: true,
+      user: {
+        id: found.id,
+        fullName: found.fullName,
+        affiliation: found.affiliation,
+        affiliationId: found.affiliationId,
+        role: found.role,
+        email: found.email,
+        phone: found.phone,
+      }
+    }]
+  } catch {
+    return [401, { valid: false, message: 'Invalid token' }]
+  }
+})
+
+
+  // GET /auth/me
+  mock.onGet('/auth/me').reply((config) => {
+  const authHeader = config.headers?.Authorization
+  if (!authHeader) {
+    return [401, { success: false, message: 'No authorization header' }]
+  }
+
+  const token = authHeader.replace('Bearer ', '')
+
+  if (!ACTIVE_TOKENS.has(token)) {
+    return [401, {
+      success: false,
+      message: 'Token expired or logged out'
+    }]
+  }
+
+  const userId = token.split('_')[1]
+  const found = MOCK_USERS.find(u => u.id === userId)
+
+  if (!found) {
+    return [401, { success: false, message: 'User not found' }]
+  }
+
+  return [200, {
+    success: true,
+    user: {
+      id: found.id,
+      fullName: found.fullName,
+      affiliation: found.affiliation,
+      affiliationId: found.affiliationId,
+      role: found.role,
+      email: found.email,
+      phone: found.phone,
+    }
+  }]
+})
+
 
 
 

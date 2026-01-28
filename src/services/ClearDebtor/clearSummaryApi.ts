@@ -1,8 +1,7 @@
 // src/fake/api/clearSummaryApi.ts
 
-import { clearSummaryDB } from './clearSummaryDB'
 import type { ClearSummary } from '@/types/summary'
-
+export let clearSummaryDB: ClearSummary[] = []
 /* Create */
 export function createClearSummary(data: ClearSummary) {
   clearSummaryDB.push(data)

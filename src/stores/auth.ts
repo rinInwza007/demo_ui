@@ -1,5 +1,6 @@
 // src/stores/auth.ts
 import { defineStore } from 'pinia'
+import axios from 'axios'
 import { authService } from '@/services/Auth_Service/AuthService'
 
 export type roleType = 'user' | 'treasury' | 'admin' | 'superadmin'
@@ -45,15 +46,15 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     /**
-     * ✅ Login ผ่าน AuthService
-     * - Mock Mode: ใช้ MOCK_USERS จาก mockAxios
-     * - Real API: เรียก Backend จริง
+     * =========================
+     * ✅ LOGIN
+     * =========================
      */
     async login(payload: { email: string; password: string }) {
       try {
         const response = await authService.login(payload)
 
-        if (!response.success) {
+        if (!response.success || !response.token || !response.user) {
           throw new Error(response.message || 'Login failed')
         }
 
@@ -63,56 +64,70 @@ export const useAuthStore = defineStore('auth', {
         localStorage.setItem(LS_TOKEN, response.token)
         localStorage.setItem(LS_USER, JSON.stringify(response.user))
 
+        // ⭐ สำคัญมาก: set Authorization header
+        axios.defaults.headers.common.Authorization = `Bearer ${response.token}`
+
         return response
       } catch (error: any) {
-        // แปลง error message ให้เป็นภาษาไทย
-        const message = error.response?.data?.message || error.message || 'เกิดข้อผิดพลาด'
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
         throw new Error(message)
       }
     },
 
     /**
-     * ✅ Logout
+     * =========================
+     * ✅ LOGOUT (Production-style)
+     * =========================
      */
     async logout() {
       try {
-        await authService.logout()
+        if (this.token) {
+          await authService.logout()
+        }
       } catch (error) {
-        console.warn('Logout API failed, continuing with client-side logout')
+        // backend พังได้ แต่ frontend ต้อง logout ต่อ
+        console.warn('Logout API failed, continue client-side logout')
       } finally {
-        this.token = null
-        this.user = null
-        localStorage.removeItem(LS_TOKEN)
-        localStorage.removeItem(LS_USER)
+        this.clearAuth()
       }
     },
 
     /**
-     * ✅ Verify Token - ตรวจสอบว่า token ยังใช้ได้อยู่หรือไม่
+     * =========================
+     * ✅ VERIFY TOKEN
+     * =========================
      */
     async verifyToken(): Promise<boolean> {
       if (!this.token) return false
 
       try {
         const result = await authService.verifyToken(this.token)
-        
+
         if (result.valid && result.user) {
           this.user = result.user
           localStorage.setItem(LS_USER, JSON.stringify(result.user))
+
+          // ป้องกันกรณี refresh หน้า
+          axios.defaults.headers.common.Authorization = `Bearer ${this.token}`
+
           return true
         }
 
-        // Token ไม่ valid ให้ logout
         await this.logout()
         return false
-      } catch (error) {
+      } catch {
         await this.logout()
         return false
       }
     },
 
     /**
-     * ✅ Refresh User Data
+     * =========================
+     * ✅ REFRESH USER
+     * =========================
      */
     async refreshUser() {
       if (!this.token) return
@@ -127,26 +142,36 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * ✅ ใช้เช็ค role ได้ง่าย ๆ
+     * =========================
+     * ✅ CLEAR AUTH (internal)
+     * =========================
+     */
+    clearAuth() {
+      this.token = null
+      this.user = null
+
+      localStorage.removeItem(LS_TOKEN)
+      localStorage.removeItem(LS_USER)
+
+      // ⭐ ล้าง Authorization header
+      delete axios.defaults.headers.common.Authorization
+    },
+
+    /**
+     * =========================
+     * ✅ ROLE HELPERS
+     * =========================
      */
     isRole(...roles: roleType[]) {
       if (!this.user) return false
       return roles.includes(this.user.role)
     },
 
-    /**
-     * ✅ เช็ค affiliationId
-     */
     isAffiliation(...affIds: string[]) {
       if (!this.user) return false
       return affIds.includes(this.user.affiliationId)
     },
 
-    /**
-     * ✅ helper สำหรับ "กรองข้อมูลตาม affiliationId"
-     * - superadmin เห็นทั้งหมด
-     * - คนอื่นเห็นเฉพาะของตัวเอง
-     */
     filterByAffiliation<T extends { affiliationId?: string | null }>(rows: T[]) {
       if (!this.user) return []
       if (this.user.role === 'superadmin') return rows

@@ -1,5 +1,6 @@
-// src/services/ClearDebtor/clearSummaryDB.ts
+// // src/services/ClearDebtor/clearSummaryDB.ts
 
-import type { ClearSummary } from '@/types/summary'
+// import type { ClearSummary } from '@/types/summary'
 
-export let clearSummaryDB: ClearSummary[] = []
+// export let clearSummaryDB: ClearSummary[] = []
+

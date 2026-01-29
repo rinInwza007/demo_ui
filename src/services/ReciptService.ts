@@ -272,26 +272,48 @@ calculateStats(receipts: Receipt[]): {
   totalAmount: number
   pendingAmount: number
   approvedAmount: number
+  cancelledItemsCount: number
 } {
-  // กรอง receipts ที่ valid ก่อน
-  const validReceipts = receipts.filter(r => r && r.approvalStatus)
+   const validReceipts = receipts.filter(r => r && r.approvalStatus)
+
+  // ✅ นับรายการที่ยกเลิก
+  const cancelledItemsCount = validReceipts.reduce((count, r) => {
+    if (!r.receiptList || !Array.isArray(r.receiptList)) return count
+    return count + r.receiptList.filter(item => item.isCancelled).length
+  }, 0)
+
+  // ✅ คำนวณยอดเงิน (ไม่นับรายการที่ยกเลิก)
+  const calculateReceiptAmount = (receipt: Receipt): number => {
+    if (!receipt.receiptList || !Array.isArray(receipt.receiptList)) {
+      return Number(receipt.netTotalAmount) || 0
+    }
+
+    return receipt.receiptList.reduce((sum, item) => {
+      // ข้ามรายการที่ยกเลิก
+      if (item.isCancelled) return sum
+      
+      const amount = Number(item.amount) || 0
+      return sum + (item.type === 'expense' ? -amount : amount)
+    }, 0)
+  }
 
   return {
     total: validReceipts.length,
     pending: this.filterByStatus(validReceipts, 'pending').length,
     approved: this.filterByStatus(validReceipts, 'approved').length,
     totalAmount: validReceipts.reduce(
-      (sum, r) => sum + (Number(r.netTotalAmount) || 0),
+      (sum, r) => sum + calculateReceiptAmount(r),
       0
     ),
     pendingAmount: this.filterByStatus(validReceipts, 'pending').reduce(
-      (sum, r) => sum + (Number(r.netTotalAmount) || 0),
+      (sum, r) => sum + calculateReceiptAmount(r),
       0
     ),
     approvedAmount: this.filterByStatus(validReceipts, 'approved').reduce(
-      (sum, r) => sum + (Number(r.netTotalAmount) || 0),
+      (sum, r) => sum + calculateReceiptAmount(r),
       0
     ),
+    cancelledItemsCount
   }
 }
 

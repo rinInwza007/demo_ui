@@ -45,7 +45,7 @@ function defaultSeed(): Receipt[] {
           referenceNo: "INV-001",
           amount: 4500,
           type: "income",
-
+isCancelled: false,
           paymentTypes: {
             cash: true,
             transfer: false,
@@ -82,6 +82,10 @@ export function sanitizeItem(it: any): ReceiptItem {
     referenceNo: (it.referenceNo ?? '').trim(),
     amount: Number.isFinite(it.amount) ? it.amount : 0,
     type: it.type || 'income',
+    
+    // ✅ เพิ่มบรรทัดนี้
+    isCancelled: it.isCancelled || false,
+    
     paymentTypes: it.paymentTypes ? {
       cash: it.paymentTypes.cash || false,
       check: it.paymentTypes.check || false,

@@ -108,7 +108,7 @@ function calculatePaymentTypeTotals() {
   receiptData.value.receiptList.forEach((item) => {
     const cleanAmount = item.amount ? parseFloat(item.amount.toString().replace(/,/g, '')) : 0
     
-    // แยกจัดการเงินลบ
+    // ✅ แยกจัดการเงินลบทั้งหมด (ไม่สนใจ paymentTypes)
     if (cleanAmount < 0) {
       totals.negative += cleanAmount
       totals.negativeCount++
@@ -117,9 +117,12 @@ function calculatePaymentTypeTotals() {
         amount: cleanAmount,
         note: item.note || ''
       })
+      // ❌ ออกจาก forEach รอบนี้ ไม่ต้องตรวจสอบ paymentTypes
+      return
     }
-    // จัดการเงินบวกตามปกติ
-    else if (cleanAmount > 0 && item.paymentTypes) {
+    
+    // ✅ จัดการเงินบวกตามปกติ (เฉพาะรายการที่มี paymentTypes)
+    if (cleanAmount > 0 && item.paymentTypes) {
       // เงินสด
       if (item.paymentTypes.cash) {
         totals.cash += cleanAmount
@@ -268,7 +271,7 @@ function createDocDefinition() {
     : currentDate
 
   // ✅ คำนวณยอดรวมรายการนำส่ง (เงินโอน + เงินสด + เช็ค + เงินลบ) ไม่รวมลูกหนี้
-  const deliveryTotal = paymentTotals.transfer + paymentTotals.cash + paymentTotals.check - paymentTotals.negative
+  const deliveryTotal = paymentTotals.transfer + paymentTotals.cash + paymentTotals.check + paymentTotals.negative
 
   return {
     pageSize: 'A4',

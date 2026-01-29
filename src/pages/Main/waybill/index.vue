@@ -182,7 +182,8 @@
                       class="mr-1.5 text-sm"
                       :class="{
                         'ph ph-clock text-yellow-600': row.status === 'pending',
-                        'ph ph-check-circle text-green-600': row.status === 'approved'
+                        'ph ph-check-circle text-green-600': row.status === 'approved',
+                        'ph ph-x-circle text-red-600': row.status === 'rejected'
                       }"
                     ></i>
                     <span v-if="row.status === 'pending'">รอดำเนินการ</span>
@@ -228,6 +229,7 @@
                     @edit="edit"
                     @delete="removeItem"
                     @approve="approveItem"
+                    @reject="rejectItem"
                   />
                 </div>
               </div>
@@ -277,7 +279,7 @@ const selectedSub2 = ref('')
 const canCreateWaybill = computed(() => auth.isRole('user') && !dailyClose.isTodayClosed)
 const canApprove = computed(() => auth.isRole('treasury'))
 
-type ActionKey = 'view' | 'edit' | 'delete' | 'approve'
+type ActionKey = 'view' | 'edit' | 'delete' | 'approve' | 'reject'
 
 const formatThaiDateTime = (date: Date | null) => {
   if (!date || isNaN(date.getTime())) return '-'
@@ -487,12 +489,24 @@ function getReceiptKind(r: any): 'WAYBILL' | 'DEBT_NEW' | 'DEBT_CLEAR' | 'UNKNOW
 const rowPermissions = (row: TableRow): ActionKey[] => {
   const perms: ActionKey[] = ['view']
 
-  if (auth.isRole('user') && row.status === 'pending' && !row.isLocked) {
-    perms.push('edit', 'delete')
+  // ✅ User สามารถแก้ไขได้ทั้ง pending และ approved (แต่ approved จะแก้ไขแบบจำกัด)
+  if (auth.isRole('user') && !row.isLocked) {
+    if (row.status === 'pending') {
+      perms.push('edit', 'delete')
+    } else if (row.status === 'approved') {
+      perms.push('edit') // ✅ เพิ่ม: ให้แก้ไขได้แม้ approved
+    }
   }
 
-  if (canApprove.value && row.status === 'pending' && !row.isLocked) {
-    perms.push('approve')
+  if (canApprove.value && !row.isLocked) {
+    // ✅ ถ้า pending: แสดงปุ่มอนุมัติ
+    if (row.status === 'pending') {
+      perms.push('approve')
+    }
+    // ✅ ถ้า approved: แสดงปุ่มยกเลิกการอนุมัติ (reject)
+    else if (row.status === 'approved') {
+      perms.push('reject')
+    }
   }
 
   return perms
@@ -641,7 +655,6 @@ const approveItem = async (row: TableRow) => {
   if (!result.isConfirmed) return
 
   try {
-    // ⭐ ใช้ ApproveService
     const approverName = auth.user?.fullName || 'เจ้าหน้าที่การเงิน'
     await approveService.approve(row.id, approverName)
 
@@ -660,6 +673,73 @@ const approveItem = async (row: TableRow) => {
   } catch (error: any) {
     console.error('❌ Approve error:', error)
     Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถอนุมัติได้', 'error')
+    await loadData()
+  }
+}
+
+/**
+ * 🔄 ยกเลิกการอนุมัติใบนำส่ง (เปลี่ยนกลับเป็น pending)
+ */
+const rejectItem = async (row: TableRow) => {
+  if (!canApprove.value) {
+    Swal.fire('ไม่มีสิทธิ์', 'เฉพาะกองคลัง (treasury) เท่านั้นที่สามารถยกเลิกการอนุมัติได้', 'warning')
+    return
+  }
+
+  if (row.isLocked) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ไม่สามารถดำเนินการได้',
+      text: 'วันนี้ปิดยอดแล้ว ไม่สามารถเปลี่ยนแปลงสถานะได้',
+      confirmButtonText: 'รับทราบ',
+    })
+    return
+  }
+
+  // ✅ ยกเลิกการอนุมัติ = เปลี่ยนจาก approved กลับเป็น pending
+  if (row.status !== 'approved') {
+    Swal.fire('ไม่สามารถดำเนินการได้', 'สามารถยกเลิกการอนุมัติได้เฉพาะใบนำส่งที่มีสถานะ "อนุมัติแล้ว" เท่านั้น', 'info')
+    return
+  }
+
+  const result = await Swal.fire({
+    title: 'ยกเลิกการอนุมัติ?',
+    html: `
+      <div class="text-left">
+        <p class="mb-2"><strong>โครงการ:</strong> ${row.project}</p>
+        <p class="mb-2"><strong>หน่วยงาน:</strong> ${row.department}</p>
+        <p class="mb-2"><strong>จำนวนเงิน:</strong> ${formatCurrency(row.amount)} บาท</p>
+        <p class="mt-3 text-sm text-amber-600">⚠️ การดำเนินการนี้จะเปลี่ยนสถานะจาก "อนุมัติแล้ว" กลับเป็น "กำลังดำเนินการ"</p>
+      </div>
+    `,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: '🔄 ยกเลิกการอนุมัติ',
+    confirmButtonColor: '#F59E0B',
+    cancelButtonText: 'ยกเลิก',
+  })
+
+  if (!result.isConfirmed) return
+
+  try {
+    const approverName = auth.user?.fullName || 'เจ้าหน้าที่การเงิน'
+    await approveService.reject(row.id, approverName)
+
+    await loadData()
+
+    Swal.fire({
+      position: 'top-end',
+      icon: 'success',
+      title: 'ยกเลิกการอนุมัติสำเร็จ',
+      text: 'สถานะเปลี่ยนกลับเป็น "กำลังดำเนินการ"',
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+    })
+
+  } catch (error: any) {
+    console.error('❌ Reject error:', error)
+    Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถดำเนินการได้', 'error')
     await loadData()
   }
 }

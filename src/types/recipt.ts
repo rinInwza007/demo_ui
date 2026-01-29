@@ -39,6 +39,7 @@ export interface ReceiptItem {
   amount: number
   subtotal?: number
   type: ReceiptItemType
+  isCancelled?: boolean
   
   // ✅ เพิ่มฟิลด์สำหรับประเภทการชำระ
   paymentTypes?: {

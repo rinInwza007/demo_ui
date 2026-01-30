@@ -68,13 +68,16 @@ function separateDebtorItems() {
           ? parseFloat(row.amount.replace(/,/g, ''))
           : Number(row.amount)
 
-      debtors.push({
-        itemName: row.item,
-        amount: amount,
-        formattedAmount: amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
-      })
+      // ✅ เพิ่มเงื่อนไข: เฉพาะเงินบวกเท่านั้น
+      if (amount > 0) {
+        debtors.push({
+          itemName: row.item,
+          amount: amount,
+          formattedAmount: amount.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+        })
 
-      totalDebtor += amount
+        totalDebtor += amount
+      }
     } else {
       normalItems.push(row)
     }
@@ -108,25 +111,47 @@ function calculatePaymentTypeTotals() {
   receiptData.value.receiptList.forEach((item) => {
     const cleanAmount = item.amount ? parseFloat(item.amount.toString().replace(/,/g, '')) : 0
     
-    // ✅ แยกจัดการเงินลบทั้งหมด (ไม่สนใจ paymentTypes)
-    if (cleanAmount < 0) {
-      totals.negative += cleanAmount
+    // ✅ ตรวจสอบว่าเป็นค่าธรรมเนียมหรือไม่ (จากชื่อรายการ)
+    const isFeeItem = item.itemName && (
+      item.itemName.includes('ค่าธรรมเนียม') || 
+      item.itemName.includes('ส่วนลด') ||
+      item.itemName.includes('หัก')
+    )
+    
+    // ✅ จัดการเงินลบ หรือ รายการที่เป็นค่าธรรมเนียม
+    if (cleanAmount < 0 || (isFeeItem && cleanAmount > 0)) {
+      // ถ้าเป็นค่าธรรมเนียมแต่เป็นเงินบวก ให้เปลี่ยนเป็นลบ
+      const feeAmount = isFeeItem && cleanAmount > 0 ? -cleanAmount : cleanAmount
+      
+      totals.negative += feeAmount
       totals.negativeCount++
       totals.negativeDetails.push({
         itemName: item.itemName,
-        amount: cleanAmount,
-        note: item.note || ''
+        amount: feeAmount,
+        note: item.note || '',
+        referenceNo: item.referenceNo || ''
       })
-      // ❌ ออกจาก forEach รอบนี้ ไม่ต้องตรวจสอบ paymentTypes
+      
+      console.log(`  ✅ Detected fee item: ${item.itemName} = ${feeAmount}`)
+      return // ออกจาก forEach รอบนี้
+    }
+    
+    // ตรวจสอบว่าเป็นลูกหนี้หรือไม่
+    const isDebtor = isReceivableItem(item.itemName)
+    
+    // ✅ ถ้าเป็นลูกหนี้ ไม่ต้องนับใน payment types
+    if (isDebtor) {
+      console.log(`  ℹ️ Debtor item (skip payment): ${item.itemName}`)
       return
     }
     
-    // ✅ จัดการเงินบวกตามปกติ (เฉพาะรายการที่มี paymentTypes)
+    // ✅ จัดการเงินบวกตามปกติ (ไม่ใช่ลูกหนี้ และไม่ใช่ค่าธรรมเนียม)
     if (cleanAmount > 0 && item.paymentTypes) {
       // เงินสด
       if (item.paymentTypes.cash) {
         totals.cash += cleanAmount
         totals.cashCount++
+        console.log(`  💵 Cash: ${cleanAmount}`)
       }
       
       // เช็ค
@@ -142,6 +167,7 @@ function calculatePaymentTypeTotals() {
             amount: cleanAmount
           })
         }
+        console.log(`  📝 Check: ${cleanAmount}`)
       }
       
       // เงินโอน
@@ -166,10 +192,12 @@ function calculatePaymentTypeTotals() {
             })
           }
         }
+        console.log(`  🏦 Transfer: ${cleanAmount}`)
       }
     }
   })
 
+  console.log('💰 Payment Totals Calculated:', totals)
   return totals
 }
 
@@ -569,17 +597,6 @@ function createDocDefinition() {
       ...(paymentTotals.negativeDetails.length > 0
         ? [
             { text: '\n' },
-            {
-              columns: [
-                { ...createCheckbox(), margin: [100, 2, 0, 0] },
-                {
-                  text: 'รายการหักเงิน (ค่าธรรมเนียม/ส่วนลด)',
-                  fontSize: 13,
-                  margin: [110, 0, 0, 0],
-                },
-              ],
-              margin: [0, 0, 0, 5],
-            },
             ...paymentTotals.negativeDetails.map((neg) => ({
               columns: [
                 {
@@ -611,33 +628,6 @@ function createDocDefinition() {
                 },
               ],
             })),
-            {
-              columns: [
-                {
-                  text: 'รวมรายการหักเงิน',
-                  bold: true,
-                  margin: [120, 5, 0, 0],
-                  fontSize: 13,
-                  width: '*',
-                },
-                {
-                  text: `${paymentTotals.negative.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
-                  bold: true,
-                  margin: [15, 5, 0, 0],
-                  fontSize: 13,
-                  alignment: 'right',
-                  width: '30%',
-                },
-                {
-                  text: 'บาท',
-                  style: 'form',
-                  width: 'auto',
-                  noWrap: true,
-                  margin: [15, 5, 92, 0],
-                  alignment: 'left',
-                },
-              ],
-            },
           ]
         : []),
 
@@ -650,25 +640,25 @@ function createDocDefinition() {
                 {
                   text: 'ยอดรวมรายการนำส่ง',
                   bold: true,
-                  fontSize: 14,
-                  margin: [100, 5, 0, 0],
+                  fontSize: 13,
+                  margin: [120, 0, 0, 0],
                   width: '*',
                 },
                 {
                   text: `${deliveryTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
                   bold: true,
-                  fontSize: 14,
-                  margin: [15, 5, 0, 0],
+                  fontSize: 13,
+                  margin: [15, 0, 0, 0],
                   alignment: 'right',
                   width: '30%',
                 },
                 {
                   text: 'บาท',
                   bold: true,
-                  fontSize: 14,
+                  fontSize: 13,
                   width: 'auto',
                   noWrap: true,
-                  margin: [15, 5, 92, 0],
+                  margin: [15, 0, 92, 0],
                   alignment: 'left',
                 },
               ],
@@ -882,8 +872,16 @@ onMounted(() => {
       return
     }
 
-    console.log('✅ Found receipt:', foundReceipt.waybillNumber, foundReceipt.fullName)
+    console.log('✅ Found receipt:', foundReceipt)
     receiptData.value = foundReceipt
+
+    // ✅ Debug แต่ละรายการ
+    console.log('📋 Receipt items:')
+    receiptData.value.receiptList?.forEach((item, idx) => {
+      const amt = parseFloat(item.amount.toString().replace(/,/g, ''))
+      console.log(`  [${idx}] ${item.itemName}: ${amt} (${amt < 0 ? 'NEGATIVE' : 'POSITIVE'})`)
+      console.log(`      paymentTypes:`, item.paymentTypes)
+    })
 
     if (receiptData.value?.receiptList?.length > 0) {
       rows.splice(0, rows.length)
@@ -919,6 +917,15 @@ onMounted(() => {
       summary.text = 'ศูนย์บาทถ้วน'
       summary.total = '0.00'
     }
+
+    // ✅ ตรวจสอบการคำนวณ
+    const paymentTotals = calculatePaymentTypeTotals()
+    console.log('💰 Final Payment Totals:')
+    console.log('  Transfer:', paymentTotals.transfer)
+    console.log('  Cash:', paymentTotals.cash)
+    console.log('  Check:', paymentTotals.check)
+    console.log('  Negative:', paymentTotals.negative)
+    console.log('  Negative Details:', paymentTotals.negativeDetails)
 
     previewPdf()
     loading.value = false

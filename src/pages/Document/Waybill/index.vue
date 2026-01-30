@@ -466,7 +466,7 @@
           <div class="relative">
             <InputText
               v-model="row.referenceNo"
-              :placeholder="row.isCancelled ? '(ยกเลิก)' : '(เล่มที่/เลขที่ใบเสร็จ)'"
+              :placeholder="row.isCancelled ? 'ยกเลิก' : '(เล่มที่/เลขที่ใบเสร็จ)'"
               :disabled="isApprovedMode"
               @keypress="allowOnlyDigits"
               @input="() => clearRowError(index, 'referenceNo')"
@@ -2697,19 +2697,28 @@ const saveData = async () => {
 
   const currentDateTime = new Date().toISOString()
 
-  // ✅ สร้าง payload พร้อมสถานะการยกเลิก
+  // ✅ สร้าง payload พร้อมสถานะการยกเลิก และเพิ่ม "(ยกเลิก)" ในเลขที่ใบเสร็จ
   const validRows = morelist.value.map((row) => {
     const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
     const item = getItemByName(row.itemName)
+
+    // ✅ ถ้ารายการถูกยกเลิก ให้เพิ่ม "(ยกเลิก)" ต่อท้ายเลขที่ใบเสร็จ
+    let referenceNo = row.referenceNo || ''
+    if (row.isCancelled && referenceNo) {
+      // ตรวจสอบว่ายังไม่มีคำว่า "(ยกเลิก)" อยู่แล้ว
+      if (!referenceNo.includes('ยกเลิก')) {
+        referenceNo = `${referenceNo} ยกเลิก`
+      }
+    }
 
     return {
       itemName: row.itemName || '',
       itemId: item?.id,
       note: row.note || '',
-      referenceNo: row.referenceNo || '',
+      referenceNo: referenceNo, // ✅ ใช้ referenceNo ที่มี "(ยกเลิก)" แล้ว
       amount: cleanAmount,
       type: row.type || 'income',
-      isCancelled: row.isCancelled || false, // ✅ บันทึกสถานะการยกเลิก
+      isCancelled: row.isCancelled || false,
       paymentTypes: row.paymentTypes || {
         cash: false,
         check: false,
@@ -2747,11 +2756,11 @@ const saveData = async () => {
     moneyType: formData.value.sendmoney,
     projectCode: formData.value.projectCode,
     sendmoney: formData.value.sendmoney,
-    netTotalAmount: netTotalAmount.value, // ✅ ยอดสุทธิหลังหักรายการที่ยกเลิก
+    netTotalAmount: netTotalAmount.value,
     receiptList: validRows,
     affiliationId: authStore.user?.affiliationId || '',
     affiliationName: authStore.user?.affiliation || mainCategory.value,
-    approvalStatus: originalApprovalStatus.value, // ✅ เก็บสถานะเดิม
+    approvalStatus: originalApprovalStatus.value,
   }
 
   if (isEditMode.value) {

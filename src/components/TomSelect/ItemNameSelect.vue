@@ -60,6 +60,10 @@ const props = defineProps({
     type: String,
     default: 'all'
   },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
   placeholder: {
     type: String,
     default: 'ระบุรายการ'
@@ -176,8 +180,18 @@ const updateTomSelectOptions = () => {
 }
 
 /**
- * ✅ Watch
+ * ✅ Watch disabled prop - แค่ enable/disable ไม่เปลี่ยน style
  */
+watch(() => props.disabled, (newVal) => {
+  if (!tomSelectInstance) return
+  
+  if (newVal) {
+    tomSelectInstance.disable()
+  } else {
+    tomSelectInstance.enable()
+  }
+}, { immediate: true })
+ 
 watch(() => props.modelValue, (newVal) => {
   localValue.value = newVal
   if (tomSelectInstance && tomSelectInstance.getValue() !== newVal) {
@@ -282,6 +296,11 @@ onMounted(async () => {
       input.style.height = 'auto'
       input.style.padding = '0.25rem'
       input.style.color = '#334155'
+    }
+
+    // ✅ เช็คว่าควร disable ตั้งแต่เริ่มหรือไม่
+    if (props.disabled) {
+      tomSelectInstance.disable()
     }
 
     console.log('✅ TomSelect initialized')

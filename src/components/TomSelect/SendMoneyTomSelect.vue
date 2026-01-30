@@ -7,6 +7,7 @@
     <select
       ref="selectElement"
       :id="inputId"
+      :disabled="disabled || readonly"
       class="transition-all duration-200"
     >
       <option value="" disabled hidden>
@@ -25,7 +26,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, onMounted, watch, nextTick, onBeforeUnmount, computed } from 'vue'
 import TomSelect from 'tom-select'
 import 'tom-select/dist/css/tom-select.css'
 
@@ -60,6 +61,15 @@ const props = defineProps({
       { value: 'รายได้', text: 'รายได้' },
       { value: 'เงินโครงการ', text: 'เงินโครงการ' }
     ]
+  },
+  // ✅ เพิ่ม props
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  readonly: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -67,6 +77,9 @@ const emit = defineEmits(['update:modelValue', 'change'])
 
 const selectElement = ref(null)
 let tomSelectInstance = null
+
+// ✅ Computed สำหรับสถานะ disabled
+const isDisabled = computed(() => props.disabled || props.readonly)
 
 const applyCSSToTomSelect = (element) => {
   if (!element?.tomselect) return
@@ -84,9 +97,20 @@ const applyCSSToTomSelect = (element) => {
   control.style.cursor = 'pointer'
   control.style.transition = 'all .2s'
 
+  // ✅ ถ้า disabled ให้เปลี่ยน style
+  if (isDisabled.value) {
+    control.style.background = '#f3f4f6'
+    control.style.color = '#6b7280'
+    control.style.cursor = 'not-allowed'
+    control.style.opacity = '0.7'
+    control.style.pointerEvents = 'none'
+  }
+
   control.addEventListener('focus', () => {
-    control.style.boxShadow = '0 0 0 2px rgba(59,130,246,.35)'
-    control.style.borderColor = 'rgba(59,130,246,.5)'
+    if (!isDisabled.value) {
+      control.style.boxShadow = '0 0 0 2px rgba(59,130,246,.35)'
+      control.style.borderColor = 'rgba(59,130,246,.5)'
+    }
   })
 
   control.addEventListener('blur', () => {
@@ -105,13 +129,15 @@ const initTomSelect = async () => {
     create: false,
     allowEmptyOption: true,
     placeholder: props.placeholder,
-
-    // ⭐ สำคัญมาก แก้ dropdown โดนบัง
     dropdownParent: 'body',
+    // ✅ เพิ่ม: ปิดการใช้งานถ้า disabled
+    disabled: isDisabled.value,
 
     onChange(value) {
-      emit('update:modelValue', value)
-      emit('change', value)
+      if (!isDisabled.value) {
+        emit('update:modelValue', value)
+        emit('change', value)
+      }
     }
   })
 
@@ -121,9 +147,15 @@ const initTomSelect = async () => {
   if (props.modelValue) {
     tomSelectInstance.setValue(props.modelValue, false)
   }
+
+  // ✅ ปิดการใช้งานถ้า disabled
+  if (isDisabled.value) {
+    tomSelectInstance.disable()
+  }
 }
+
 const handleScroll = () => {
-  if (tomSelectInstance && tomSelectInstance.isOpen) {
+  if (tomSelectInstance && tomSelectInstance.isOpen && !isDisabled.value) {
     tomSelectInstance.positionDropdown()
   }
 }
@@ -135,6 +167,21 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll, true)
+  tomSelectInstance?.destroy()
+  tomSelectInstance = null
+})
+
+// ✅ Watch disabled prop
+watch(() => props.disabled || props.readonly, (newVal) => {
+  if (tomSelectInstance) {
+    if (newVal) {
+      tomSelectInstance.disable()
+      applyCSSToTomSelect(selectElement.value)
+    } else {
+      tomSelectInstance.enable()
+      applyCSSToTomSelect(selectElement.value)
+    }
+  }
 })
 
 watch(
@@ -148,13 +195,6 @@ watch(
   }
 )
 
-onMounted(initTomSelect)
-
-onBeforeUnmount(() => {
-  tomSelectInstance?.destroy()
-  tomSelectInstance = null
-})
-
 defineExpose({
   setValue: (v) => tomSelectInstance?.setValue(v, false),
   getInstance: () => tomSelectInstance
@@ -162,8 +202,6 @@ defineExpose({
 </script>
 
 <style scoped>
-
-
 /* dropdown style */
 :deep(.ts-dropdown) {
   border-radius: 0.75rem;
@@ -180,5 +218,14 @@ defineExpose({
 :deep(.ts-dropdown .option.active),
 :deep(.ts-dropdown .option:hover) {
   background-color: #eff6ff;
+}
+
+/* ✅ เพิ่ม style สำหรับ disabled */
+:deep(.ts-control.disabled) {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+  pointer-events: none;
 }
 </style>

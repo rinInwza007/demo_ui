@@ -48,13 +48,15 @@
                 </h2>
                 <!-- ปุ่ม Template -->
                 <div class="flex gap-2">
-                  <button
-                    @click="showLoadDialog = true"
-                    class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
-                  >
-                    <i class="ph ph-folder-open text-lg"></i>
-                    <span class="text-base font-medium">โหลด Template</span>
-                  </button>
+    <div v-if="!isApprovedMode" class="flex gap-2">
+      <button
+        @click="showLoadDialog = true"
+        class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+      >
+        <i class="ph ph-folder-open text-lg"></i>
+        <span class="text-base font-medium">โหลด Template</span>
+      </button>
+    </div>
                 </div>
               </div>
               <!-- แถวที่ 1: เลขที่นำส่ง | ชื่อ (แสดงเสมอ) -->
@@ -64,6 +66,8 @@
                     เลขที่นำส่ง <span class="text-red-500">*</span>
                   </label>
                   <InputText
+                  :disabled="isApprovedMode"
+                  
                     v-model="formData.waybillNumber"
                     placeholder="เลขที่นำส่ง"
                     class="transition-all duration-200"
@@ -79,6 +83,7 @@
                     ข้าพเจ้า <span class="text-red-500">*</span>
                   </label>
                   <InputText
+                  :disabled="isApprovedMode"
                     v-model="formData.fullName"
                     placeholder="กรอกชื่อ-นามสกุล"
                     class="transition-all duration-200"
@@ -96,6 +101,7 @@
                     เบอร์โทรติดต่อ <span class="text-red-500">*</span>
                   </label>
                   <InputText
+                  :disabled="isApprovedMode"
                     v-model="formData.phone"
                     placeholder="xxx-xxxx-xxx"
                     class="transition-all duration-200"
@@ -111,6 +117,8 @@
                     หน่วยงาน <span class="text-red-500">*</span>
                   </label>
                   <Selects
+                  :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     v-model="mainCategory"
                     :options="mainCategoryOptions"
                     placeholder="เลือกหน่วยงาน"
@@ -133,6 +141,8 @@
                       กองทุน <span class="text-red-500">*</span>
                     </label>
                     <Selects
+                                      :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                       v-model="formData.fundName"
                       :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
                       placeholder="เลือกกองทุน"
@@ -148,6 +158,8 @@
                       ขอนำส่งเงิน <span class="text-red-500">*</span>
                     </label>
                     <SendMoneySelect
+                                      :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                       ref="sendmoneySelectRef"
                       v-model="formData.sendmoney"
                       input-id="sendmoney"
@@ -176,6 +188,8 @@
                     <InputText
                       v-model="formData.projectCode"
                       placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
+                                        :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     />
                   </div>
                   <!-- คอลัมน์ว่าง -->
@@ -200,6 +214,8 @@
                       option-value="value"
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
+                                        :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     />
                     <span v-if="errors.subCategory" class="text-red-600 text-xs">
                       {{ errors.subCategory }}
@@ -215,6 +231,8 @@
                       :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
                       placeholder="เลือกกองทุน"
                       value-type="string"
+                                        :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     />
                     <span v-if="errors.fundName" class="text-red-600 text-xs">
                       {{ errors.fundName }}
@@ -242,6 +260,8 @@
                       :create-new-option="true"
                       @change="clearError('sendmoney')"
                       class="mt-[2.5px]"
+                                        :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"  
                     />
                     <span v-if="errors.sendmoney" class="text-red-600 text-xs">
                       {{ errors.sendmoney }}
@@ -255,6 +275,8 @@
                     <InputText
                       v-model="formData.projectCode"
                       placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
+                                        :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     />
                   </div>
                 </div>
@@ -277,6 +299,8 @@
                       option-value="value"
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
+                                        :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     />
                     <span v-if="errors.subCategory" class="text-red-600 text-xs">
                       {{ errors.subCategory }}
@@ -294,6 +318,8 @@
                       option-value="value"
                       placeholder="เลือกหน่วยงานย่อย"
                       value-type="string"
+                                        :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     />
                     <span v-if="errors.subCategory2" class="text-red-600 text-xs">
                       {{ errors.subCategory2 }}
@@ -312,6 +338,8 @@
                       :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
                       placeholder="เลือกกองทุน"
                       value-type="string"
+                                        :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     />
                     <span v-if="errors.fundName" class="text-red-600 text-xs">
                       {{ errors.fundName }}
@@ -335,6 +363,8 @@
                       ]"
                       :create-new-option="true"
                       @change="clearError('sendmoney')"
+                                        :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     />
                     <span v-if="errors.sendmoney" class="text-red-600 text-xs">
                       {{ errors.sendmoney }}
@@ -349,6 +379,8 @@
                     <InputText
                       v-model="formData.projectCode"
                       placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
+                  :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
                     />
                   </div>
                   <div></div>
@@ -456,7 +488,8 @@
             v-model="row.itemName"
             @input="(value) => handleItemNameChange(index, value)"
             :input-id="`itemName-${index}`"
-            :disabled="isApprovedMode"
+                                                    :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
             waybill-type="all"
             department="general"
           />
@@ -545,7 +578,87 @@
               <span class="text-sm text-gray-700">เงินโอน</span>
             </label>
           </div>
+<transition
+                        enter-active-class="transition-all duration-300 ease-out"
+                        leave-active-class="transition-all duration-200 ease-in"
+                        enter-from-class="opacity-0 max-h-0"
+                        enter-to-class="opacity-100 max-h-40"
+                        leave-from-class="opacity-100 max-h-40"
+                        leave-to-class="opacity-0 max-h-0"
+                      >
+                        <div
+                          v-if="row.paymentTypes?.check"
+                          class="mt-3 px-2 bg-blue-50 rounded-lg p-3 border border-blue-200"
+                        >
+                          <div class="grid grid-cols-3 gap-3">
+                            <!-- ธนาคาร -->
+                            <div class="flex flex-col gap-1">
+                              <label class="text-xs font-medium text-gray-600">ธนาคาร</label>
+                              <Selects
+                                v-model="row.checkDetails.bankName"
+                                :options="bankOptions"
+                                option-label="label"
+                                option-value="value"
+                                placeholder="เลือกธนาคาร"
+                                value-type="string"
+                                class="text-sm"
+                                                  :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
+                              />
+                            </div>
+                                                        <!-- เลขที่เช็ค -->
+                            <div class="flex flex-col gap-1">
+                              <label class="text-xs font-medium text-gray-600">เลขที่เช็ค</label>
+                              <InputText
+                                v-model="row.checkDetails.checkNumber"
+                                placeholder="ระบุเลขที่เช็ค"
+                                @keypress="allowOnlyDigits"
+                                class="text-sm"
+                                                  :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
+                              />
+                            </div>
+                                                        <div class="flex flex-col gap-1">
+                              <label class="text-xs font-medium text-gray-600">เลขที่ในเช็ค</label>
+                              <InputText
+                                v-model="row.checkDetails.numInCheck"
+                                placeholder="ระบุเลขที่ในเช็ค"
+                                class="text-sm"
+                                                  :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </transition>
 
+                      <!-- ✅ ฟิลด์เพิ่มเติมสำหรับเงินโอน (แสดงเมื่อ tick) -->
+                      <transition
+                        enter-active-class="transition-all duration-300 ease-out"
+                        leave-active-class="transition-all duration-200 ease-in"
+                        enter-from-class="opacity-0 max-h-0"
+                        enter-to-class="opacity-100 max-h-40"
+                        leave-from-class="opacity-100 max-h-40"
+                        leave-to-class="opacity-0 max-h-0"
+                      >
+                        <div
+                          v-if="row.paymentTypes?.transfer"
+                          class="mt-3 px-2 bg-purple-50 rounded-lg p-3 border border-purple-200"
+                        >
+                          <div class="flex flex-col gap-1">
+                            <label class="text-xs font-medium text-gray-600"
+                              >เลือกบัญชีธนาคาร</label
+                            >
+                            <BankAccountSelect
+                              v-model="row.transferDetails.accountData"
+                              :input-id="`transfer-bank-${index}`"
+                              placeholder="เลือกบัญชีธนาคาร"
+                                                :disabled="isApprovedMode"
+                  :readonly="isApprovedMode"
+                            />
+                          </div>
+                        </div>
+                      </transition>
           <!-- ฟิลด์เพิ่มเติมสำหรับเช็คและเงินโอน... (ทำแบบเดียวกัน) -->
         </div>
       </div>
@@ -688,12 +801,14 @@
                 </div>
               </div>
             </div>
-            <div class="bg-[#7E22CE] border rounded-lg py-6 px-3">
-              <div class="flex justify-between items-center">
-                <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด</span>
-                <span class="text-3xl font-bold text-white"> {{ formattedTotalAmount }} บาท </span>
-              </div>
-            </div>
+<div class="bg-[#7E22CE] border rounded-lg py-6 px-3">
+  <div class="flex justify-between items-center">
+    <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด</span>
+    <span class="text-3xl font-bold text-white">
+      {{ formattedNetTotal }} บาท
+    </span>
+  </div>
+</div>
 
             <div
               class="bg-yellow-50/80 backdrop-blur-sm border border-yellow-300 rounded-xl p-4 shadow-sm"
@@ -708,13 +823,14 @@
               </p>
             </div>
             <div class="flex justify-end gap-3 pb-4">
-              <button
-                @click="showSaveDialog = true"
-                class="flex items-center mr-[742px] gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
-              >
-                <i class="ph ph-floppy-disk text-lg"></i>
-                <span class="text-base font-medium">บันทึก Template</span>
-              </button>
+<button
+    v-if="!isApprovedMode"
+    @click="showSaveDialog = true"
+    class="flex items-center mr-[742px] gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+  >
+    <i class="ph ph-floppy-disk text-lg"></i>
+    <span class="text-base font-medium">บันทึก Template</span>
+  </button>
               <button
                 @click="gotomainpage"
                 class="px-6 py-3 rounded-xl bg-white/60 backdrop-blur-sm text-slate-700 hover:bg-white/80 border border-white/60 transition-all shadow-sm"
@@ -1237,7 +1353,9 @@ const form = reactive({
   sub2Id: '',
   sub2Name: '',
 })
-
+const formattedNetTotal = computed(() => {
+  return formatCurrency(netTotalAmount.value)
+})
 const sub1OptionsForSelect = computed(() =>
   sub1OptionsArray.value.map((opt) => ({
     label: opt.name, // โชว์
@@ -1684,7 +1802,7 @@ const handleCancelToggle = (index) => {
     return
   }
 
-  // ✅ ถ้ายกเลิก
+  // ✅ ถ้ากำลังจะยกเลิก (tick)
   if (row.isCancelled) {
     Swal.fire({
       title: 'ยืนยันการยกเลิกรายการ?',
@@ -1703,6 +1821,28 @@ const handleCancelToggle = (index) => {
     }).then((result) => {
       if (!result.isConfirmed) {
         row.isCancelled = false
+      }
+    })
+  } 
+  // ✅ ถ้ากำลังจะยกเลิกการยกเลิก (untick)
+  else {
+    Swal.fire({
+      title: 'ยกเลิกการยกเลิกรายการ?',
+      html: `
+        <div class="text-left">
+          <p class="mb-2"><strong>รายการ:</strong> ${row.itemName}</p>
+          <p class="mb-2"><strong>จำนวนเงิน:</strong> ${formatCurrency(parseFloat(String(row.amount || '0').replace(/,/g, '')))} บาท</p>
+          <p class="mt-3 text-sm text-blue-600">ℹ️ รายการนี้จะกลับมานับรวมในยอดเงินอีกครั้ง</p>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '✓ ยืนยัน',
+      confirmButtonColor: '#3B82F6',
+      cancelButtonText: 'ยกเลิก',
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        row.isCancelled = true // ✅ ให้กลับไปเป็น cancelled ถ้าไม่ confirm
       }
     })
   }
@@ -2454,13 +2594,23 @@ const saveData = async () => {
   if (isApprovedMode.value) {
     const hasCancelledItems = morelist.value.some(row => row.isCancelled)
     
-    if (!hasCancelledItems) {
-      Swal.fire({
-        icon: 'info',
-        title: 'ไม่มีการเปลี่ยนแปลง',
-        text: 'คุณยังไม่ได้ยกเลิกรายการใดๆ',
-        confirmButtonColor: '#3B82F6',
-      })
+    // ✅ ถามยืนยันก่อนบันทึก
+    const confirmResult = await Swal.fire({
+      title: hasCancelledItems ? 'ยืนยันการบันทึกการเปลี่ยนแปลง?' : 'ยืนยันการบันทึก?',
+      html: hasCancelledItems 
+        ? `<div class="text-left">
+            <p class="mb-2">คุณได้ยกเลิกรายการจำนวน <strong>${morelist.value.filter(r => r.isCancelled).length}</strong> รายการ</p>
+            <p class="text-sm text-gray-600">ยอดเงินสุทธิใหม่: <strong>${formatCurrency(netTotalAmount.value)}</strong> บาท</p>
+          </div>`
+        : '<p>ไม่มีการเปลี่ยนแปลงรายการ คุณต้องการบันทึกต่อหรือไม่?</p>',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'บันทึก',
+      confirmButtonColor: '#7E22CE',
+      cancelButtonText: 'ยกเลิก',
+    })
+    
+    if (!confirmResult.isConfirmed) {
       return
     }
   } else {

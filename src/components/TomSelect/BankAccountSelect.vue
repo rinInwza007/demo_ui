@@ -1,4 +1,3 @@
-// src/components/TomSelect/BankAccountSelect.vue
 <template>
   <div class="bank-account-select-container">
     <div class="flex gap-3">
@@ -11,6 +10,7 @@
             v-model="localAccountNumber"
             class="w-full px-2 text-sm"
             :placeholder="placeholder"
+            :disabled="disabled || readonly"
           >
             <option value=""></option>
             <option
@@ -33,8 +33,8 @@
         <input
           v-model="localBankName"
           type="text"
-          :readonly="isFromPredefinedOption"
-          :disabled="!localAccountNumber"
+          :readonly="isFromPredefinedOption || readonly"
+          :disabled="!localAccountNumber || disabled"
           :class="inputClasses"
           :placeholder="isFromPredefinedOption ? 'ชื่อธนาคารจะแสดงอัตโนมัติ' : 'กรอกชื่อธนาคาร'"
         />
@@ -46,8 +46,8 @@
         <input
           v-model="localAccountName"
           type="text"
-          :readonly="isFromPredefinedOption"
-          :disabled="!localAccountNumber"
+          :readonly="isFromPredefinedOption || readonly"
+          :disabled="!localAccountNumber || disabled"
           :class="inputClasses"
           :placeholder="isFromPredefinedOption ? 'ชื่อบัญชีจะแสดงอัตโนมัติ' : 'กรอกชื่อบัญชี'"
         />
@@ -62,17 +62,16 @@ import TomSelect from 'tom-select'
 import type { BankAccount, BankAccountData } from '@/types/BankTypes'
 import { bankService } from '@/services/BankService/BankService'
 
-// ==================== Props Interface ====================
 interface Props {
   modelValue?: BankAccountData
   inputId: string
   disabled?: boolean
+  readonly?: boolean
   placeholder?: string
   errorMessage?: string
   bankAccountOptions?: BankAccount[]
 }
 
-// ==================== Props & Emits ====================
 const props = withDefaults(defineProps<Props>(), {
   modelValue: () => ({
     accountNumber: '',
@@ -80,6 +79,7 @@ const props = withDefaults(defineProps<Props>(), {
     accountName: '',
   }),
   disabled: false,
+  readonly: false,
   placeholder: 'กรอกเลขบัญชี',
   errorMessage: '',
   bankAccountOptions: () => []
@@ -90,7 +90,6 @@ const emit = defineEmits<{
   (e: 'change', value: BankAccountData): void
 }>()
 
-// ==================== State ====================
 const localAccountNumber = ref<string>('')
 const localBankName = ref<string>(props.modelValue?.bankName || '')
 const localAccountName = ref<string>(props.modelValue?.accountName || '')
@@ -100,13 +99,13 @@ const isLoading = ref<boolean>(false)
 
 let tomSelectInstance: TomSelect | null = null
 
-// ==================== Computed ====================
+// ✅ Computed สำหรับสถานะ disabled
+const isDisabled = computed<boolean>(() => props.disabled || props.readonly)
+
 const activeAccounts = computed<BankAccount[]>(() => {
-  // ✅ ถ้ามี props.bankAccountOptions ให้ใช้อันนั้น
   if (props.bankAccountOptions && props.bankAccountOptions.length > 0) {
     return props.bankAccountOptions
   }
-  // ✅ ไม่เช่นนั้นใช้ข้อมูลจาก API
   return bankAccounts.value.filter(acc => acc.isActive === true)
 })
 
@@ -119,6 +118,11 @@ const inputClasses = computed<string[]>(() => {
   const baseClasses = [
     'w-full', 'px-3', 'py-2.5', 'text-sm', 'rounded-xl', 'border', 'transition-all'
   ]
+
+  // ✅ ถ้า disabled
+  if (isDisabled.value) {
+    return [...baseClasses, 'bg-gray-100', 'text-gray-600', 'cursor-not-allowed', 'opacity-70']
+  }
 
   if (isFromPredefinedOption.value) {
     return [...baseClasses, 'bg-white', 'font-medium', 'cursor-default']
@@ -138,7 +142,6 @@ const inputClasses = computed<string[]>(() => {
   ]
 })
 
-// ==================== Methods ====================
 const loadBankAccounts = async () => {
   try {
     isLoading.value = true
@@ -158,6 +161,8 @@ const getBankAccountByNumber = (accountNumber: string): BankAccount | undefined 
 }
 
 const emitChange = (): void => {
+  if (isDisabled.value) return // ✅ ถ้า disabled ไม่ emit
+
   const data: BankAccountData = {
     accountNumber: localAccountNumber.value,
     bankName: localBankName.value,
@@ -168,7 +173,7 @@ const emitChange = (): void => {
 }
 
 const handleAccountNumberChange = (accountNumber: string): void => {
-  if (syncingFromParent.value) return
+  if (syncingFromParent.value || isDisabled.value) return // ✅ เพิ่มเช็ค
 
   localAccountNumber.value = accountNumber
 
@@ -195,7 +200,11 @@ const initTomSelect = (): void => {
     create: true,
     allowEmptyOption: true,
     createOnBlur: true,
-    onChange: (value: string) => handleAccountNumberChange(value),
+    onChange: (value: string) => {
+      if (!isDisabled.value) {
+        handleAccountNumberChange(value)
+      }
+    },
   })
 
   tomSelectInstance.clear(true)
@@ -205,12 +214,7 @@ const initTomSelect = (): void => {
     input.placeholder = props.placeholder || 'กรอกเลขบัญชี'
   }
 
-  applyTomSelectStyles()
-}
-
-const applyTomSelectStyles = (): void => {
-  if (!tomSelectInstance) return
-
+  // Apply custom styles
   const control = tomSelectInstance.control
   Object.assign(control.style, {
     width: '100%',
@@ -228,18 +232,33 @@ const applyTomSelectStyles = (): void => {
     transition: 'all 0.2s'
   })
 
-  const input = control.querySelector('input')
-  if (input) {
-    Object.assign(input.style, {
+  const inputEl = control.querySelector('input')
+  if (inputEl) {
+    Object.assign(inputEl.style, {
       fontSize: '0.875rem',
       height: 'auto',
       padding: '0.25rem',
       color: '#334155'
     })
   }
+
+  // ✅ ถ้า disabled ตั้งแต่เริ่มต้น
+  if (isDisabled.value) {
+    tomSelectInstance.disable()
+  }
 }
 
-// ==================== Watchers ====================
+// ✅ Watch disabled state - แค่ enable/disable ไม่เปลี่ยน style
+watch(() => props.disabled || props.readonly, (newVal) => {
+  if (tomSelectInstance) {
+    if (newVal) {
+      tomSelectInstance.disable()
+    } else {
+      tomSelectInstance.enable()
+    }
+  }
+})
+
 watch(localAccountNumber, (newValue) => {
   if (!newValue) {
     localBankName.value = ''
@@ -248,7 +267,7 @@ watch(localAccountNumber, (newValue) => {
 })
 
 watch([localBankName, localAccountName], () => {
-  if (!isFromPredefinedOption.value && localAccountNumber.value) {
+  if (!isFromPredefinedOption.value && localAccountNumber.value && !isDisabled.value) {
     emitChange()
   }
 })
@@ -275,25 +294,14 @@ watch(
     setTimeout(() => {
       syncingFromParent.value = false
     }, 50)
-
-    console.log('🔄 BankAccountSelect updated:', {
-      accountNumber: localAccountNumber.value,
-      bankName: localBankName.value,
-      accountName: localAccountName.value
-    })
   },
   { deep: true, immediate: true }
 )
 
-// ==================== Lifecycle ====================
 onMounted(async () => {
-  // ✅ โหลดข้อมูลธนาคารจาก API
   await loadBankAccounts()
-  
-  // ✅ รอให้ข้อมูลโหลดเสร็จก่อน init TomSelect
   initTomSelect()
   
-  // ✅ ถ้ามีค่าตั้งต้น ให้ set ทันที
   if (props.modelValue?.accountNumber) {
     setTimeout(() => {
       if (tomSelectInstance) {
@@ -312,42 +320,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.tomselect-wrapper {
-  position: relative;
-}
+/* ... existing styles ... */
 
-:deep(.ts-dropdown) {
-  z-index: 9999 !important;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  border: 1px solid #e5e7eb;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-:deep(.ts-dropdown .option) {
-  font-size: 0.875rem;
-  color: #475569;
-  padding: 0.5rem 0.75rem;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-:deep(.ts-dropdown .option:hover),
-:deep(.ts-dropdown .option.active) {
-  background-color: #eff6ff;
-  color: #1e40af;
-}
-
-:deep(.ts-dropdown .create) {
-  font-size: 0.875rem;
-  color: #059669;
-  padding: 0.5rem 0.75rem;
-  font-weight: 500;
-  border-top: 1px solid #e5e7eb;
-}
-
-:deep(.ts-dropdown .create:hover) {
-  background-color: #d1fae5;
+input:read-only,
+input:disabled {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
 }
 </style>

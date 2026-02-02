@@ -1,11 +1,11 @@
 // src/services/Approve/ApproveService.ts
 import type { Receipt } from '@/types/recipt'
-import { approveReceipt } from './ApproveApi'
+import { approveReceipt, rejectReceipt } from './ApproveApi'
 
 /**
  * ============================================
  * 📝 Approve Service
- * - รับผิดชอบการอนุมัติ/ปฏิเสธใบนำส่ง
+ * - รับผิดชอบการอนุมัติ/ยกเลิกการอนุมัติใบนำส่ง
  * - ไม่แก้ไขข้อมูลอื่นๆ เปลี่ยนแค่สถานะ
  * - ใช้ ApproveApi เป็น API Client
  * ============================================
@@ -35,10 +35,39 @@ class ApproveService {
       console.error('❌ [Service] Approve error:', error)
       throw error
     }
-    }
+  }
 
   /**
-   * ✅ ตรวจสอบว่าสามารถอนุมัติ/ปฏิเสธได้หรือไม่
+   * 🔄 ยกเลิกการอนุมัติใบนำส่ง (เปลี่ยนกลับเป็น pending)
+   */
+  async reject(
+    waybillNumber: string,
+    approverName?: string,
+    reason?: string
+  ): Promise<Receipt> {
+    try {
+      console.log('🔄 [Service] Reverting receipt to pending:', waybillNumber)
+
+      const receipt = await rejectReceipt(waybillNumber, { 
+        approverName,
+        reason 
+      })
+
+      console.log('✅ [Service] Reverted to pending successfully:', waybillNumber)
+      
+      // แจ้งเตือนการอัปเดต
+      this.notifyUpdate('reject', waybillNumber)
+
+      return receipt
+
+    } catch (error: any) {
+      console.error('❌ [Service] Reject error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * ✅ ตรวจสอบว่าสามารถอนุมัติได้หรือไม่
    */
   canApprove(receipt: Receipt): { canApprove: boolean; reason?: string } {
     // ถ้าปิดยอดแล้ว
@@ -49,23 +78,38 @@ class ApproveService {
       }
     }
 
-    // ถ้าอนุมัติแล้ว
-    if (receipt.approvalStatus === 'approved') {
+    // ถ้าไม่ใช่สถานะ pending
+    if (receipt.approvalStatus !== 'pending') {
       return {
         canApprove: false,
-        reason: 'ใบนำส่งนี้ได้รับการอนุมัติแล้ว'
-      }
-    }
-
-    // ถ้าปฏิเสธแล้ว
-    if (receipt.approvalStatus === 'rejected') {
-      return {
-        canApprove: false,
-        reason: 'ใบนำส่งนี้ถูกปฏิเสธแล้ว'
+        reason: 'สามารถอนุมัติได้เฉพาะใบนำส่งที่มีสถานะ "รอดำเนินการ" เท่านั้น'
       }
     }
 
     return { canApprove: true }
+  }
+
+  /**
+   * 🔄 ตรวจสอบว่าสามารถยกเลิกการอนุมัติได้หรือไม่
+   */
+  canReject(receipt: Receipt): { canReject: boolean; reason?: string } {
+    // ถ้าปิดยอดแล้ว
+    if (receipt.isLocked) {
+      return {
+        canReject: false,
+        reason: 'ไม่สามารถดำเนินการได้ เนื่องจากวันนี้ปิดยอดแล้ว'
+      }
+    }
+
+    // ✅ สามารถยกเลิกได้เฉพาะสถานะ approved
+    if (receipt.approvalStatus !== 'approved') {
+      return {
+        canReject: false,
+        reason: 'สามารถยกเลิกการอนุมัติได้เฉพาะใบนำส่งที่มีสถานะ "อนุมัติแล้ว" เท่านั้น'
+      }
+    }
+
+    return { canReject: true }
   }
 
   /**
@@ -77,19 +121,22 @@ class ApproveService {
     approved: number
     rejected: number
     canApprove: number
+    canReject: number
   } {
     const total = receipts.length
     const pending = receipts.filter(r => r.approvalStatus === 'pending').length
     const approved = receipts.filter(r => r.approvalStatus === 'approved').length
     const rejected = receipts.filter(r => r.approvalStatus === 'rejected').length
     const canApprove = receipts.filter(r => this.canApprove(r).canApprove).length
+    const canReject = receipts.filter(r => this.canReject(r).canReject).length
 
     return {
       total,
       pending,
       approved,
       rejected,
-      canApprove
+      canApprove,
+      canReject
     }
   }
 

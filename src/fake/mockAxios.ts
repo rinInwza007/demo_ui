@@ -1637,77 +1637,77 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
    * - ปฏิเสธใบนำส่ง
    * - อัปเดตเฉพาะ approvalStatus เป็น 'rejected'
    */
-  mock.onPost(/\/receipts\/([^/]+)\/reject$/).reply((config) => {
-    const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/reject$/)?.[1]
+mock.onPost(/\/receipts\/([^/]+)\/reject$/).reply((config) => {
+  const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/reject$/)?.[1]
 
-    if (!waybillNumber) {
+  if (!waybillNumber) {
+    return [400, {
+      success: false,
+      message: 'waybillNumber is required'
+    }]
+  }
+
+  const decoded = decodeURIComponent(waybillNumber)
+  console.log('🔄 [Mock] POST /receipts/' + decoded + '/reject')  // ⬅️ เปลี่ยนจาก ❌ เป็น 🔄
+
+  try {
+    const { approverName, reason } = JSON.parse(config.data || '{}')
+
+    const db = loadReceipts().map(ensureReceiptFields)
+    const receiptIndex = db.findIndex(r => r.waybillNumber === decoded)
+
+    if (receiptIndex === -1) {
+      console.error('❌ Receipt not found:', decoded)
+      return [404, {
+        success: false,
+        message: 'Receipt not found'
+      }]
+    }
+
+    const receipt = db[receiptIndex]
+
+    // ตรวจสอบสถานะ
+    if (receipt.isLocked) {
       return [400, {
         success: false,
-        message: 'waybillNumber is required'
+        message: 'ไม่สามารถยกเลิกการอนุมัติได้ เนื่องจากวันนี้ปิดยอดแล้ว'  // ⬅️ เปลี่ยนข้อความ
       }]
     }
 
-    const decoded = decodeURIComponent(waybillNumber)
-    console.log('❌ [Mock] POST /receipts/' + decoded + '/reject')
-
-    try {
-      const { approverName, reason } = JSON.parse(config.data || '{}')
-
-      const db = loadReceipts().map(ensureReceiptFields)
-      const receiptIndex = db.findIndex(r => r.waybillNumber === decoded)
-
-      if (receiptIndex === -1) {
-        console.error('❌ Receipt not found:', decoded)
-        return [404, {
-          success: false,
-          message: 'Receipt not found'
-        }]
-      }
-
-      const receipt = db[receiptIndex]
-
-      // ตรวจสอบสถานะ
-      if (receipt.isLocked) {
-        return [400, {
-          success: false,
-          message: 'ไม่สามารถปฏิเสธได้ เนื่องจากวันนี้ปิดยอดแล้ว'
-        }]
-      }
-
-      // ❌ อัปเดตเฉพาะสถานะ
-      db[receiptIndex] = {
-        ...receipt,
-        approvalStatus: 'rejected',
-        updatedAt: new Date().toISOString()
-      }
-
-      saveReceipts(db)
-      saveToBothStorages(db[receiptIndex])
-
-      // Dispatch events
-      dispatchUpdateEvents({
-        action: 'update',
-        data: db[receiptIndex],
-        waybillNumber: decoded,
-        list: db
-      })
-
-      console.log('❌ [Mock] Rejected:', decoded, reason ? `(Reason: ${reason})` : '')
-
-      return [200, {
-        success: true,
-        data: serializeReceipt(normalizeBoth(db[receiptIndex])),
-        message: 'ปฏิเสธสำเร็จ'
-      }]
-
-    } catch (error) {
-      console.error('❌ [Mock] Reject error:', error)
-      return [500, {
-        success: false,
-        message: 'Internal server error'
-      }]
+    // 🔄 อัปเดตสถานะกลับเป็น pending (เดิมเป็น 'rejected')
+    db[receiptIndex] = {
+      ...receipt,
+      approvalStatus: 'pending',  // ⬅️ เปลี่ยนจาก 'rejected' เป็น 'pending'
+      updatedAt: new Date().toISOString()
     }
-  })
+
+    saveReceipts(db)
+    saveToBothStorages(db[receiptIndex])
+
+    // Dispatch events
+    dispatchUpdateEvents({
+      action: 'update',
+      data: db[receiptIndex],
+      waybillNumber: decoded,
+      list: db
+    })
+
+    console.log('🔄 [Mock] Reverted to pending:', decoded)  // ⬅️ เปลี่ยน log message
+
+    return [200, {
+      success: true,
+      data: serializeReceipt(normalizeBoth(db[receiptIndex])),
+      message: 'ยกเลิกการอนุมัติสำเร็จ'  // ⬅️ เปลี่ยนข้อความ
+    }]
+
+  } catch (error) {
+    console.error('❌ [Mock] Reject error:', error)
+    return [500, {
+      success: false,
+      message: 'Internal server error'
+    }]
+  }
+})
 
 
   mock.onGet(/\/getSummary(?:\?.*)?$/).reply((config) => {

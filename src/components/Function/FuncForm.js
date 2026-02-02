@@ -140,6 +140,25 @@ const totalAmount = computed(() => {
     return totals
   }
 
+
+  const expenseTotalAmount = computed(() => {
+  return morelist.value.reduce((sum, row) => {
+    if (row.isCancelled) return sum // ข้ามรายการที่ยกเลิก
+    if ((row.isExpense || row.type === 'expense') && row.amount) {
+      const amount = parseFloat(String(row.amount).replace(/,/g, ''))
+      return sum + (isNaN(amount) ? 0 : amount)
+    }
+    return sum
+  }, 0)
+})
+
+// ✅ นับจำนวนรายการรายจ่าย
+const expenseCount = computed(() => {
+  return morelist.value.filter((row) => 
+    !row.isCancelled && (row.isExpense || row.type === 'expense') && row.amount
+  ).length
+})
+
   return {
     updateItemId,
     formatAmount,
@@ -151,6 +170,8 @@ const totalAmount = computed(() => {
     addRow,
     removeRow,
     handleTypeChange,
-    calculatePaymentTypeTotals
+    calculatePaymentTypeTotals,
+    expenseCount,
+    expenseTotalAmount
   }
 }

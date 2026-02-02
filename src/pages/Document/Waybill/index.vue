@@ -462,25 +462,26 @@
         </div>
 
         <!-- เลขที่ใบเสร็จ -->
-        <div class="flex flex-col gap-1.5 mt-2 -mr-2 ml-2">
-          <div class="relative">
-            <InputText
-              v-model="row.referenceNo"
-              :placeholder="row.isCancelled ? 'ยกเลิก' : '(เล่มที่/เลขที่ใบเสร็จ)'"
-              :disabled="isApprovedMode"
-              @keypress="allowOnlyDigits"
-              @input="() => clearRowError(index, 'referenceNo')"
-              :class="row.isCancelled ? 'opacity-50' : ''"
-            />
-            <!-- ✅ แสดง "(ยกเลิก)" ต่อท้ายเลขที่ใบเสร็จ -->
-            <span
-              v-if="row.isCancelled && row.referenceNo"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-red-600 font-bold text-sm"
-            >
-              (ยกเลิก)
-            </span>
-          </div>
-        </div>
+<!-- เลขที่ใบเสร็จ -->
+<div class="flex flex-col gap-1.5 mt-2 -mr-2 ml-2">
+  <div class="relative">
+    <InputText
+      v-model="row.referenceNo"
+      :placeholder="row.isCancelled ? 'ยกเลิก' : '(เล่มที่/เลขที่ใบเสร็จ)'"
+      :disabled="isApprovedMode"
+      @keypress="allowOnlyDigits"
+      @input="() => clearRowError(index, 'referenceNo')"
+      :class="row.isCancelled ? 'opacity-50' : ''"
+    />
+    <!-- ✅ แสดง "(ยกเลิก)" แม้ว่าจะไม่มี referenceNo -->
+    <span
+      v-if="row.isCancelled"
+      class="absolute right-3 top-1/2 -translate-y-1/2 text-red-600 font-bold text-sm pointer-events-none"
+    >
+      {{ row.referenceNo ? '(ยกเลิก)' : 'ยกเลิก' }}
+    </span>
+  </div>
+</div>
 
         <!-- รายการ -->
         <div class="flex flex-col gap-2 mt-[13px]" :class="row.isCancelled ? 'opacity-50' : ''">
@@ -578,6 +579,11 @@
               <span class="text-sm text-gray-700">เงินโอน</span>
             </label>
           </div>
+            <div v-if="errors.rows?.[index]?.paymentTypes" class="px-2 mt-2">
+    <span class="text-red-600 text-xs ml-16">
+      {{ errors.rows[index].paymentTypes }}
+    </span>
+  </div>
 <transition
                         enter-active-class="transition-all duration-300 ease-out"
                         leave-active-class="transition-all duration-200 ease-in"
@@ -792,7 +798,26 @@
                     </div>
                   </div>
                 </div>
-
+    <div
+      v-if="expenseTotalAmount > 0"
+      class="bg-red-50 rounded-xl p-4 border border-red-200"
+    >
+      <div class="flex items-center gap-3">
+        <input
+          type="checkbox"
+          :checked="true"
+          disabled
+          class="w-5 h-5 rounded border-gray-300 text-red-600 opacity-60 cursor-not-allowed"
+        />
+        <div class="flex-1">
+          <div class="font-medium text-slate-800">💸 รายจ่าย (หักออก)</div>
+          <div class="text-sm text-slate-600 mt-1">รวมจาก {{ expenseCount }} รายการ</div>
+        </div>
+        <div class="text-xl font-bold text-red-600">
+          -{{ formatCurrency(expenseTotalAmount) }} บาท
+        </div>
+      </div>
+    </div>
                 <!-- ⚠️ แสดงเมื่อยังไม่มีข้อมูล -->
                 <div v-if="totalPaymentTypesCount === 0" class="text-center py-12 text-gray-400">
                   <i class="ph ph-wallet text-5xl mb-3 opacity-50"></i>
@@ -1316,6 +1341,8 @@ const {
   removeRow,
   handleTypeChange,
   formattedTotalAmount,
+      expenseCount,
+    expenseTotalAmount
 } = useRowManager()
 
 const {
@@ -1854,6 +1881,7 @@ const totalPaymentTypesCount = computed(() => {
   if (checkTotalAmount.value > 0) count++
   if (cashTotalAmount.value > 0) count++
   if (debtorTotalAmount.value > 0) count++
+  if (expenseTotalAmount.value > 0) count++
   return count
 })
 
@@ -2675,6 +2703,55 @@ const saveData = async () => {
       }
     })
 
+    errors.value.rows = {}
+    morelist.value.forEach((row, index) => {
+      const hasItemName = row.itemName && row.itemName.trim() !== ''
+      const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
+      const hasAmount = cleanAmount && cleanAmount > 0
+
+      // ข้ามแถวที่ไม่มีข้อมูล
+      if (!hasItemName && !hasAmount) {
+        return
+      }
+
+      const rowErrors = {}
+
+      // Validate ชื่อรายการ
+      if (!hasItemName) {
+        rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
+      }
+
+      // Validate จำนวนเงิน
+      if (!hasAmount) {
+        rowErrors.amount = 'กรุณากรอก "จำนวนเงิน"'
+      }
+
+      // ✅ Validate ช่องทางการชำระเงิน
+      // เงื่อนไข: ต้อง tick เฉพาะรายการที่เป็น "รายรับ" และ "ไม่ใช่ลูกหนี้"
+      const isReceivableRow = row.itemName && isReceivableItem(row.itemName)
+      const isExpenseRow = row.isExpense || row.type === 'expense'
+      const isIncomeRow = !isExpenseRow
+
+      // ต้องเช็คช่องทางเงินเฉพาะ: รายรับ + ไม่ใช่ลูกหนี้
+      const needsPaymentType = isIncomeRow && !isReceivableRow
+
+      if (needsPaymentType && hasItemName && hasAmount) {
+        const hasAnyPaymentType = 
+          row.paymentTypes?.cash || 
+          row.paymentTypes?.check || 
+          row.paymentTypes?.transfer
+
+        if (!hasAnyPaymentType) {
+          rowErrors.paymentTypes = 'กรุณาเลือกช่องทางการชำระเงินอย่างน้อย 1 ช่องทาง'
+        }
+      }
+
+      if (Object.keys(rowErrors).length > 0) {
+        errors.value.rows[index] = rowErrors
+        hasError = true
+      }
+    })
+
     if (hasError) {
       Swal.fire({
         icon: 'error',
@@ -2698,36 +2775,42 @@ const saveData = async () => {
   const currentDateTime = new Date().toISOString()
 
   // ✅ สร้าง payload พร้อมสถานะการยกเลิก และเพิ่ม "(ยกเลิก)" ในเลขที่ใบเสร็จ
-  const validRows = morelist.value.map((row) => {
-    const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
-    const item = getItemByName(row.itemName)
+const validRows = morelist.value.map((row) => {
+  const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
+  const item = getItemByName(row.itemName)
 
-    // ✅ ถ้ารายการถูกยกเลิก ให้เพิ่ม "(ยกเลิก)" ต่อท้ายเลขที่ใบเสร็จ
-    let referenceNo = row.referenceNo || ''
-    if (row.isCancelled && referenceNo) {
-      // ตรวจสอบว่ายังไม่มีคำว่า "(ยกเลิก)" อยู่แล้ว
+  // ✅ จัดการ referenceNo สำหรับรายการที่ยกเลิก
+  let referenceNo = row.referenceNo || ''
+  
+  if (row.isCancelled) {
+    if (referenceNo) {
+      // ถ้ามีเลขที่ใบเสร็จ ให้เพิ่ม "(ยกเลิก)" ต่อท้าย
       if (!referenceNo.includes('ยกเลิก')) {
-        referenceNo = `${referenceNo} ยกเลิก`
+        referenceNo = `${referenceNo} (ยกเลิก)`
       }
+    } else {
+      // ✅ ถ้าไม่มีเลขที่ใบเสร็จ ให้ใส่ "(ยกเลิก)" เป็นค่าเริ่มต้น
+      referenceNo = '(ยกเลิก)'
     }
+  }
 
-    return {
-      itemName: row.itemName || '',
-      itemId: item?.id,
-      note: row.note || '',
-      referenceNo: referenceNo, // ✅ ใช้ referenceNo ที่มี "(ยกเลิก)" แล้ว
-      amount: cleanAmount,
-      type: row.type || 'income',
-      isCancelled: row.isCancelled || false,
-      paymentTypes: row.paymentTypes || {
-        cash: false,
-        check: false,
-        transfer: false,
-      },
-      checkDetails: row.paymentTypes?.check ? row.checkDetails : undefined,
-      transferDetails: row.paymentTypes?.transfer ? row.transferDetails : undefined,
-    }
-  })
+  return {
+    itemName: row.itemName || '',
+    itemId: item?.id,
+    note: row.note || '',
+    referenceNo: referenceNo,
+    amount: cleanAmount,
+    type: row.type || 'income',
+    isCancelled: row.isCancelled || false,
+    paymentTypes: row.paymentTypes || {
+      cash: false,
+      check: false,
+      transfer: false,
+    },
+    checkDetails: row.paymentTypes?.check ? row.checkDetails : undefined,
+    transferDetails: row.paymentTypes?.transfer ? row.transferDetails : undefined,
+  }
+})
 
   const getSubName1 = () => {
     if (!subCategoryId.value) return ''

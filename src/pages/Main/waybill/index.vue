@@ -810,6 +810,48 @@ body {
   padding: 0;
 }
 
+.swal2-container {
+  z-index: 99999 !important;
+}
+
+.swal2-popup {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+/* ✅ Optional: ปรับแต่ง SweetAlert ให้สวยขึ้น */
+.swal2-popup {
+  border-radius: 20px !important;
+  padding: 2rem !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+}
+
+.swal2-title {
+  font-family: 'Prompt', 'Inter', sans-serif !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+}
+
+.swal2-html-container {
+  font-family: 'Prompt', 'Inter', sans-serif !important;
+  font-size: 0.95rem !important;
+}
+
+.swal2-confirm {
+  border-radius: 10px !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 500 !important;
+}
+
+.swal2-cancel {
+  border-radius: 10px !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 500 !important;
+}
+
 /* ✅ header divider */
 .header-divider {
   border-bottom: 1px solid rgba(255, 255, 255, 0.35);

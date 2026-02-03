@@ -506,6 +506,9 @@
                         waybill-type="all"
                         department="general"
                       />
+                        <span v-if="errors.rows?.[index]?.itemName" class="text-red-600 text-xs">
+    {{ errors.rows[index].itemName }}
+  </span>
                     </div>
 
                     <!-- ประเภท (รายจ่าย) -->
@@ -535,15 +538,18 @@
                       class="flex flex-col gap-1.5 mt-2"
                       :class="row.isCancelled ? 'opacity-50 line-through' : ''"
                     >
-  <InputText
-    :model-value="formatDisplayAmount(row.amount)"
-    @input="(e) => handleAmountInput(index, e)"
-    @blur="() => formatAmountOnBlur(index)"
-    :disabled="isApprovedMode || hasAnyPaymentType(index)"
-    :readonly="hasAnyPaymentType(index)"
-    placeholder="จำนวนเงิน"
-    :class="hasAnyPaymentType(index)"
-  />
+                      <InputText
+                        :model-value="formatDisplayAmount(row.amount)"
+                        @input="(e) => handleAmountInput(index, e)"
+                        @blur="() => formatAmountOnBlur(index)"
+                        :disabled="isApprovedMode || hasAnyPaymentType(index)"
+                        :readonly="hasAnyPaymentType(index)"
+                        placeholder="จำนวนเงิน"
+                        :class="hasAnyPaymentType(index)"
+                      />
+                        <span v-if="errors.rows?.[index]?.amount" class="text-red-600 text-xs">
+    {{ errors.rows[index].amount }}
+  </span>
                     </div>
 
                     <!-- ปุ่มลบ (ซ่อนใน approved mode) -->
@@ -675,30 +681,35 @@
                           {{ errors.rows[index].paymentTypes }}
                         </span>
                       </div>
-<transition
-    enter-active-class="transition-all duration-300 ease-out"
-    leave-active-class="transition-all duration-200 ease-in"
-    enter-from-class="opacity-0 max-h-0"
-    enter-to-class="opacity-100 max-h-32"
-    leave-from-class="opacity-100 max-h-32"
-    leave-to-class="opacity-0 max-h-0"
-  >
-<div v-if="row.paymentTypes?.cash"
-class="mt-3 px-2 bg-red-100 rounded-lg p-3 border border-blue-200">
-  <div class="flex items-center gap-[705px]">
-    <div class="text-sm font-medium ml-3">เงินสด</div>
-    <div class="w-52 ">
-      <InputText
-        :model-value="formatDisplayAmount(row.cashDetails?.amount || '')"
-        @input="(e) => handlePaymentAmountInput(index, 'cash', e)"
-        @blur="() => formatPaymentAmountOnBlur(index, 'cash')"
-        placeholder="จำนวนเงินสด"
-      />
-    </div>
-  </div>
-</div>
-
-  </transition>
+                      <transition
+                        enter-active-class="transition-all duration-300 ease-out"
+                        leave-active-class="transition-all duration-200 ease-in"
+                        enter-from-class="opacity-0 max-h-0"
+                        enter-to-class="opacity-100 max-h-32"
+                        leave-from-class="opacity-100 max-h-32"
+                        leave-to-class="opacity-0 max-h-0"
+                      >
+                        <div
+                          v-if="row.paymentTypes?.cash"
+                          class="mt-3 px-2 bg-red-100 rounded-lg p-3 border border-blue-200"
+                        >
+                          <div class="flex items-center gap-[705px]">
+                            <div class="text-sm font-medium ml-3">เงินสด</div>
+                            <div class="w-52">
+                              <InputText
+                                :model-value="formatDisplayAmount(row.cashDetails?.amount || '')"
+                                @input="(e) => handlePaymentAmountInput(index, 'cash', e)"
+                                @blur="() => formatPaymentAmountOnBlur(index, 'cash')"
+                                placeholder="จำนวนเงินสด"
+                                :disabled="isApprovedMode"
+                              />
+                                    <span v-if="errors.rows?.[index]?.cashAmount" class="text-red-600 text-xs mt-1 block">
+        {{ errors.rows[index].cashAmount }}
+      </span>
+                            </div>
+                          </div>
+                        </div>
+                      </transition>
                       <!-- ฟิลด์เพิ่มเติมสำหรับเช็ค (แสดงแต่ disable ถ้าเป็นลูกหนี้) -->
                       <transition
                         enter-active-class="transition-all duration-300 ease-out"
@@ -727,7 +738,11 @@ class="mt-3 px-2 bg-red-100 rounded-lg p-3 border border-blue-200">
                                 class="text-sm w-10"
                                 :disabled="isApprovedMode || isReceivableItem(row.itemName)"
                                 :readonly="isApprovedMode || isReceivableItem(row.itemName)"
+                                @change="() => clearRowError(index, 'checkBankName')"
                               />
+      <span v-if="errors.rows?.[index]?.checkBankName" class="text-red-600 text-xs">
+        {{ errors.rows[index].checkBankName }}
+      </span>
                             </div>
                             <!-- เลขที่เช็ค -->
                             <div class="flex flex-col gap-1 ml-2">
@@ -739,9 +754,13 @@ class="mt-3 px-2 bg-red-100 rounded-lg p-3 border border-blue-200">
                                 class="text-sm w-52"
                                 :disabled="isApprovedMode || isReceivableItem(row.itemName)"
                                 :readonly="isApprovedMode || isReceivableItem(row.itemName)"
+                                @input="() => clearRowError(index, 'checkNumber')"
                               />
+      <span v-if="errors.rows?.[index]?.checkNumber" class="text-red-600 text-xs">
+        {{ errors.rows[index].checkNumber }}
+      </span>
                             </div>
-                            <div class="flex flex-col gap-1 -ml-7 mr-12 ">
+                            <div class="flex flex-col gap-1 -ml-7 mr-12">
                               <label class="text-xs font-medium text-gray-600">เลขที่ในเช็ค</label>
                               <InputText
                                 v-model="row.checkDetails.numInCheck"
@@ -749,19 +768,26 @@ class="mt-3 px-2 bg-red-100 rounded-lg p-3 border border-blue-200">
                                 class="text-sm w-52"
                                 :disabled="isApprovedMode || isReceivableItem(row.itemName)"
                                 :readonly="isApprovedMode || isReceivableItem(row.itemName)"
+                                @input="() => clearRowError(index, 'checkNumInCheck')"
                               />
+      <span v-if="errors.rows?.[index]?.checkNumInCheck" class="text-red-600 text-xs">
+        {{ errors.rows[index].checkNumInCheck }}
+      </span>
                             </div>
-    <div class="flex flex-col gap-1 -ml-10">
-
-      <label class="text-xs font-medium text-gray-600 ">จำนวนเงิน</label>
-      <InputText
-        :model-value="formatDisplayAmount(row.checkDetails?.amount || '')"
-        @input="(e) => handlePaymentAmountInput(index, 'check', e)"
-        @blur="() => formatPaymentAmountOnBlur(index, 'check')"
-        placeholder="จำนวนเงิน"
-        class="w-52"
-      />
-    </div>
+                            <div class="flex flex-col gap-1 -ml-10">
+                              <label class="text-xs font-medium text-gray-600">จำนวนเงิน</label>
+                              <InputText
+                                :model-value="formatDisplayAmount(row.checkDetails?.amount || '')"
+                                @input="(e) => handlePaymentAmountInput(index, 'check', e)"
+                                @blur="() => formatPaymentAmountOnBlur(index, 'check')"
+                                placeholder="จำนวนเงิน"
+                                class="w-52"
+                                :disabled="isApprovedMode || isReceivableItem(row.itemName)"
+                              />
+     <span v-if="errors.rows?.[index]?.checkAmount" class="text-red-600 text-xs">
+        {{ errors.rows[index].checkAmount }}
+      </span>
+                            </div>
                           </div>
                         </div>
                       </transition>
@@ -775,39 +801,48 @@ class="mt-3 px-2 bg-red-100 rounded-lg p-3 border border-blue-200">
                         leave-from-class="opacity-100 max-h-40"
                         leave-to-class="opacity-0 max-h-0"
                       >
-<div
-  v-if="row.paymentTypes?.transfer"
-  class="mt-3 px-2 bg-purple-100 rounded-lg p-3 border border-purple-200"
-  :class="isReceivableItem(row.itemName) ? 'opacity-50' : ''"
->
-  <div class="flex gap-4 items-end">
-    <!-- เลือกบัญชีธนาคาร -->
-    <div class="flex flex-col gap-1 w-[740px]">
-      <label class="text-xs font-medium text-gray-600">
-        เลือกบัญชีธนาคาร
-      </label>
-      <BankAccountSelect
-        v-model="row.transferDetails.accountData"
-        :input-id="`transfer-bank-${index}`"
-        placeholder="เลือกบัญชีธนาคาร"
-        :disabled="isApprovedMode || isReceivableItem(row.itemName)"
-        :readonly="isApprovedMode || isReceivableItem(row.itemName)"
-      />
-    </div>
+                        <div
+                          v-if="row.paymentTypes?.transfer"
+                          class="mt-3 px-2 bg-purple-100 rounded-lg p-3 border border-purple-200"
+                          :class="isReceivableItem(row.itemName) ? 'opacity-50' : ''"
+                        >
+                          <div class="flex gap-4 items-end">
+                            <!-- เลือกบัญชีธนาคาร -->
+                            <div class="flex flex-col gap-1 w-[740px]">
+                              <label class="text-xs font-medium text-gray-600">
+                                เลือกบัญชีธนาคาร
+                              </label>
+                              <BankAccountSelect
+                                v-model="row.transferDetails.accountData"
+                                :input-id="`transfer-bank-${index}`"
+                                placeholder="เลือกบัญชีธนาคาร"
+                                :disabled="isApprovedMode || isReceivableItem(row.itemName)"
+                                :readonly="isApprovedMode || isReceivableItem(row.itemName)"
+                                @change="() => clearRowError(index, 'transferAccount')"
+                              />
+      <span v-if="errors.rows?.[index]?.transferAccount" class="text-red-600 text-xs">
+        {{ errors.rows[index].transferAccount }}
+      </span>
+                            </div>
 
-    <!-- จำนวนเงิน -->
-    <div class="w-52 -mb-2 ">
-      <label class="text-xs font-medium text-gray-600">จำนวนเงิน</label>
-      <InputText
-        :model-value="formatDisplayAmount(row.transferDetails?.amount || '')"
-        @input="(e) => handlePaymentAmountInput(index, 'transfer', e)"
-        @blur="() => formatPaymentAmountOnBlur(index, 'transfer')"
-        placeholder="จำนวนเงิน"
-      />
-    </div>
-  </div>
-</div>
-
+                            <!-- จำนวนเงิน -->
+                            <div class="w-52 -mb-2">
+                              <label class="text-xs font-medium text-gray-600">จำนวนเงิน</label>
+                              <InputText
+                                :model-value="
+                                  formatDisplayAmount(row.transferDetails?.amount || '')
+                                "
+                                @input="(e) => handlePaymentAmountInput(index, 'transfer', e)"
+                                @blur="() => formatPaymentAmountOnBlur(index, 'transfer')"
+                                placeholder="จำนวนเงิน"
+                                :disabled="isApprovedMode || isReceivableItem(row.itemName)"
+                              />
+      <span v-if="errors.rows?.[index]?.transferAmount" class="text-red-600 text-xs">
+        {{ errors.rows[index].transferAmount }}
+      </span>
+                            </div>
+                          </div>
+                        </div>
                       </transition>
                     </div>
                   </div>
@@ -1037,8 +1072,7 @@ class="mt-3 px-2 bg-red-100 rounded-lg p-3 border border-blue-200">
           <button
             @click="
               showSaveDialog = false;
-              templateName = ''
-            "
+              templateName = ''"
             class="text-slate-500 hover:text-slate-700"
           >
             <i class="ph ph-x text-2xl"></i>
@@ -1635,7 +1669,6 @@ const saveTemplate = () => {
     return
   }
 
-  // ✅ ตรวจสอบว่า Login อยู่หรือไม่
   if (!authStore.user) {
     Swal.fire({
       icon: 'error',
@@ -1645,45 +1678,38 @@ const saveTemplate = () => {
     return
   }
 
-  // ✅ เก็บเฉพาะชื่อรายการที่มีข้อมูล (ไม่เอาเลขที่อ้างอิงและจำนวนเงิน)
   const receiptItems = morelist.value
     .filter((row) => row.itemName && row.itemName.trim() !== '')
     .map((row) => ({
       itemName: row.itemName,
       isExpense: row.isExpense || false,
     }))
-  const savedBankTransfers = bankTransfers.value
-    .filter(
-      (bank) => bank.accountData.accountNumber && bank.accountData.accountNumber.trim() !== '',
-    )
-    .map((bank) => ({
-      accountData: {
-        accountNumber: bank.accountData.accountNumber,
-        bankName: bank.accountData.bankName,
-        accountName: bank.accountData.accountName,
-      },
-    }))
+
   const template = {
     id: Date.now(),
     name: templateName.value.trim(),
     data: {
+      // ✅ เก็บข้อมูลพื้นฐาน
       fullName: formData.value.fullName,
       phone: formData.value.phone,
+      fundName: formData.value.fundName,
+      sendmoney: formData.value.sendmoney,
+      projectCode: formData.value.projectCode,
+      
+      // ✅ เก็บข้อมูล Category
       mainCategoryId: mainCategoryId.value,
       mainCategory: mainCategory.value,
       subCategoryId: subCategoryId.value,
       subCategory: subCategory.value,
       subCategoryId2: subCategoryId2.value,
       subCategory2: subCategory2.value,
-      fundName: formData.value.fundName,
-      sendmoney: formData.value.sendmoney,
-      projectCode: formData.value.projectCode,
+      
+      // ✅ เก็บรายการ
       receiptItems: receiptItems.map((item) => ({
         itemId: getItemByName(item.itemName)?.id,
         itemName: item.itemName,
         isExpense: item.isExpense,
       })),
-      bankTransfers: savedBankTransfers,
     },
     userId: authStore.user.id,
     userName: authStore.user.fullName,
@@ -1694,7 +1720,6 @@ const saveTemplate = () => {
 
   templates.value.push(template)
 
-  // ✅ บันทึกลง localStorage ของ User นี้
   const storageKey = getTemplateStorageKey()
   if (storageKey) {
     localStorage.setItem(storageKey, JSON.stringify(templates.value))
@@ -1714,12 +1739,14 @@ const saveTemplate = () => {
 
 // ✅ โหลด Template (รวมรายการนำส่งเงิน)
 const loadTemplate = async (template) => {
+  // โหลดข้อมูลพื้นฐาน
   formData.value.fullName = template.data.fullName
   formData.value.phone = template.data.phone
   formData.value.fundName = template.data.fundName
   formData.value.sendmoney = template.data.sendmoney
   formData.value.projectCode = template.data.projectCode
 
+  // โหลด Categories
   if (template.data.mainCategoryId) {
     mainCategoryId.value = template.data.mainCategoryId
     mainCategory.value = template.data.mainCategory
@@ -1738,11 +1765,11 @@ const loadTemplate = async (template) => {
     await nextTick()
   }
 
-  // ✅ ล้าง morelist เก่าทิ้งก่อน
+  // ล้าง morelist เก่า
   morelist.value = []
   await nextTick()
 
-  // ✅ โหลดรายการนำส่งเงิน (เฉพาะชื่อรายการ)
+  // โหลดรายการ
   if (template.data.receiptItems && template.data.receiptItems.length > 0) {
     morelist.value = template.data.receiptItems.map((item, index) => {
       const itemData = item.itemId ? getItemById(item.itemId) : getItemByName(item.itemName)
@@ -1758,35 +1785,12 @@ const loadTemplate = async (template) => {
       }
     })
   } else {
-    // ✅ ถ้าไม่มีรายการใน template ให้สร้างแถวว่าง 2 แถว (เหมือนตอนเริ่มต้น)
     addRow()
     addRow()
   }
+  
   await nextTick()
 
-  // ✅ ส่วนที่ 3.1: โหลดรายการธนาคาร
-  if (template.data.bankTransfers && template.data.bankTransfers.length > 0) {
-    // ล้างรายการเดิม
-    bankTransfers.value = []
-    await nextTick()
-
-    // โหลดรายการจาก template (โดยไม่มี amount)
-    template.data.bankTransfers.forEach((savedBank) => {
-      const newBank = {
-        id: Date.now() + Math.random(),
-        accountData: {
-          accountNumber: savedBank.accountData.accountNumber || '',
-          bankName: savedBank.accountData.bankName || '',
-          accountName: savedBank.accountData.accountName || '',
-        },
-        amount: '', // ไม่โหลด amount
-      }
-      bankTransfers.value.push(newBank)
-    })
-
-    await nextTick()
-    console.log('✅ Loaded bank transfers from template:', bankTransfers.value)
-  }
   showLoadDialog.value = false
 
   Swal.fire({
@@ -2271,30 +2275,31 @@ const handlePaymentAmountInput = (index, type, event) => {
       morelist.value[index].cashDetails = { amount: '' }
     }
     morelist.value[index].cashDetails.amount = value
-  } 
-  else if (type === 'check') {
+    clearRowError(index, 'cashAmount') // ✅ เพิ่ม clear error
+  } else if (type === 'check') {
     if (!morelist.value[index].checkDetails) {
       morelist.value[index].checkDetails = {
         amount: '',
         bankName: '',
         checkNumber: '',
-        numInCheck: ''
+        numInCheck: '',
       }
     }
     morelist.value[index].checkDetails.amount = value
-  } 
-  else if (type === 'transfer') {
+    clearRowError(index, 'checkAmount') // ✅ เพิ่ม clear error
+  } else if (type === 'transfer') {
     if (!morelist.value[index].transferDetails) {
       morelist.value[index].transferDetails = {
         amount: '',
         accountData: {
           accountNumber: '',
           bankName: '',
-          accountName: ''
-        }
+          accountName: '',
+        },
       }
     }
     morelist.value[index].transferDetails.amount = value
+    clearRowError(index, 'transferAmount') // ✅ เพิ่ม clear error
   }
 }
 
@@ -2319,7 +2324,7 @@ const formatDisplayPaymentAmount = (value) => {
 
 const formatPaymentAmountOnBlur = (index, type) => {
   let value = ''
-  
+
   if (type === 'cash') {
     value = morelist.value[index].cashDetails?.amount
   } else if (type === 'check') {
@@ -2327,7 +2332,7 @@ const formatPaymentAmountOnBlur = (index, type) => {
   } else if (type === 'transfer') {
     value = morelist.value[index].transferDetails?.amount
   }
-  
+
   if (!value) return
 
   const cleanValue = value.toString().replace(/,/g, '')
@@ -2361,14 +2366,15 @@ const formatPaymentAmountOnBlur = (index, type) => {
 }
 const hasAnyPaymentType = (index) => {
   const row = morelist.value[index]
-  if (!row || !row.paymentTypes) return false
-  
-  // ถ้าเป็นลูกหนี้หรือรายจ่าย ถือว่าไม่มี payment type
+  if (!row) return true // ✅ default ให้ปิด
+
+  // ✅ ถ้าเป็นลูกหนี้หรือรายจ่าย → คืนค่า false (เปิดให้กรอก)
   if (isReceivableItem(row.itemName) || isExpenseRow(index)) {
     return false
   }
-  
-  return row.paymentTypes.cash || row.paymentTypes.check || row.paymentTypes.transfer
+
+  // ✅ รายการทั่วไป → คืนค่า true เสมอ (ปิดช่อง)
+  return true
 }
 
 // ✅ คำนวณยอดรวมจากประเภทการชำระ
@@ -2377,7 +2383,7 @@ const calculatePaymentTotal = (index) => {
   if (!row) return 0
 
   let total = 0
-  
+
   if (row.paymentTypes?.cash && row.cashDetails?.amount) {
     total += parseFloat(String(row.cashDetails.amount).replace(/,/g, '')) || 0
   }
@@ -2394,38 +2400,39 @@ const calculatePaymentTotal = (index) => {
 const calculateRowTotal = (index) => {
   const row = morelist.value[index]
   if (!row) return 0
-  
+
   let total = 0
-  
+
   // รวมจากเงินสด
   if (row.paymentTypes?.cash && row.cashDetails?.amount) {
     const cashAmount = parseFloat(String(row.cashDetails.amount).replace(/,/g, ''))
     if (!isNaN(cashAmount)) total += cashAmount
   }
-  
+
   // รวมจากเช็ค
   if (row.paymentTypes?.check && row.checkDetails?.amount) {
     const checkAmount = parseFloat(String(row.checkDetails.amount).replace(/,/g, ''))
     if (!isNaN(checkAmount)) total += checkAmount
   }
-  
+
   // รวมจากเงินโอน
   if (row.paymentTypes?.transfer && row.transferDetails?.amount) {
     const transferAmount = parseFloat(String(row.transferDetails.amount).replace(/,/g, ''))
     if (!isNaN(transferAmount)) total += transferAmount
   }
-  
+
   return total
 }
 
 // ✅ Watch เพื่ออัพเดทยอดรวมของแต่ละรายการเมื่อมีการเปลี่ยนแปลง
 watch(
-  () => morelist.value.map(row => ({
-    cashAmount: row.cashDetails?.amount,
-    checkAmount: row.checkDetails?.amount,
-    transferAmount: row.transferDetails?.amount,
-    paymentTypes: row.paymentTypes
-  })),
+  () =>
+    morelist.value.map((row) => ({
+      cashAmount: row.cashDetails?.amount,
+      checkAmount: row.checkDetails?.amount,
+      transferAmount: row.transferDetails?.amount,
+      paymentTypes: row.paymentTypes,
+    })),
   () => {
     morelist.value.forEach((row, index) => {
       // ✅ คำนวณเฉพาะรายการที่มี payment types
@@ -2443,16 +2450,15 @@ watch(
       // ✅ ถ้าไม่มี payment types (ลูกหนี้/รายจ่าย) ให้กรอกเองได้
     })
   },
-  { deep: true }
+  { deep: true },
 )
-
 
 const handleAmountInput = (index, event) => {
   // ✅ ถ้ามี payment types แล้ว ไม่ให้แก้ไขช่องนี้
   if (hasAnyPaymentType(index)) {
     return
   }
-  
+
   // อนุญาตเฉพาะตัวเลขและจุดทศนิยม
   const value = event.target.value.replace(/[^0-9.]/g, '')
 
@@ -2480,8 +2486,6 @@ const formatDisplayAmount = (value) => {
 
   return num.toLocaleString('en-US')
 }
-
-
 
 const formatAmountOnBlur = (index) => {
   const value = morelist.value[index].amount
@@ -2613,7 +2617,7 @@ const loadReceiptData = async () => {
   }
 
   isLoading.value = true
-  
+
   try {
     console.log('🔄 Loading receipt:', receiptId.value)
     const data = await reciptService.getById(receiptId.value)
@@ -2628,34 +2632,43 @@ const loadReceiptData = async () => {
     originalApprovalStatus.value = data.approvalStatus || 'pending'
     isApprovedMode.value = data.approvalStatus === 'approved'
 
-    // ✅ 2. โหลดข้อมูลพื้นฐาน
+    // ✅ 2. โหลดข้อมูลพื้นฐานจาก profile
     formData.value.waybillNumber = data.waybillNumber || data.id || ''
-    formData.value.fullName = data.fullName || ''
-    formData.value.phone = data.phone || ''
-    formData.value.fundName = data.fundName || ''
-    formData.value.projectCode = data.projectCode || ''
-    formData.value.sendmoney = data.sendmoney || data.moneyType || ''
+    
+    // ✅ อ่านจาก profile object (รองรับทั้งโครงสร้างเก่าและใหม่)
+    formData.value.fullName = data.profile?.fullName || data.fullName || ''
+    formData.value.phone = data.profile?.phone || data.phone || ''
+    formData.value.fundName = data.profile?.fundName || data.fundName || ''
+    formData.value.projectCode = data.profile?.projectCode || data.projectCode || ''
+    formData.value.sendmoney = data.profile?.sendmoney || data.profile?.moneyType || data.sendmoney || data.moneyType || ''
 
     // ✅ 3. โหลด Main Category
-    if (data.mainAffiliationId && data.mainAffiliationName) {
-      mainCategoryId.value = data.mainAffiliationId
-      mainCategory.value = data.mainAffiliationName
+    const mainAffId = data.profile?.mainAffiliationId || data.mainAffiliationId
+    const mainAffName = data.profile?.mainAffiliationName || data.mainAffiliationName
+    
+    if (mainAffId && mainAffName) {
+      mainCategoryId.value = mainAffId
+      mainCategory.value = mainAffName
       await nextTick()
       console.log('✅ Loaded main category:', mainCategory.value)
     }
 
     // ✅ 4. โหลด Sub Category 1
-    if (data.subAffiliationId1) {
-      subCategoryId.value = data.subAffiliationId1
-      subCategory.value = data.subAffiliationId1
+    const subAffId1 = data.profile?.subAffiliationId1 || data.subAffiliationId1
+    
+    if (subAffId1) {
+      subCategoryId.value = subAffId1
+      subCategory.value = subAffId1
       await nextTick()
       console.log('✅ Loaded sub category 1:', subCategory.value)
     }
 
     // ✅ 5. โหลด Sub Category 2
-    if (data.subAffiliationId2) {
-      subCategoryId2.value = data.subAffiliationId2
-      subCategory2.value = data.subAffiliationId2
+    const subAffId2 = data.profile?.subAffiliationId2 || data.subAffiliationId2
+    
+    if (subAffId2) {
+      subCategoryId2.value = subAffId2
+      subCategory2.value = subAffId2
       await nextTick()
       console.log('✅ Loaded sub category 2:', subCategory2.value)
     }
@@ -2663,9 +2676,8 @@ const loadReceiptData = async () => {
     // ✅ 6. โหลด receiptList พร้อมการจัดการข้อมูลครบถ้วน
     if (data.receiptList && Array.isArray(data.receiptList) && data.receiptList.length > 0) {
       console.log('📋 Raw receiptList from service:', JSON.stringify(data.receiptList, null, 2))
-      
+
       morelist.value = data.receiptList.map((item, index) => {
-        // ✅ หา itemData จาก itemId หรือ itemName
         let itemData = null
         if (item.itemId) {
           itemData = getItemById(item.itemId)
@@ -2674,7 +2686,6 @@ const loadReceiptData = async () => {
           itemData = getItemByName(item.itemName)
         }
 
-        // ✅ ตรวจสอบว่าเป็นลูกหนี้หรือรายจ่าย
         const itemName = itemData?.name || item.itemName || ''
         const isReceivable = isReceivableItem(itemName)
         const isExpense = item.type === 'expense'
@@ -2683,10 +2694,9 @@ const loadReceiptData = async () => {
           isReceivable,
           isExpense,
           amount: item.amount,
-          paymentTypes: item.paymentTypes
+          paymentTypes: item.paymentTypes,
         })
 
-        // ✅ สร้าง row object
         const row = {
           id: index + 1,
           referenceNo: item.referenceNo || '',
@@ -2697,28 +2707,24 @@ const loadReceiptData = async () => {
           type: item.type || 'income',
           isExpense: isExpense,
           isCancelled: item.isCancelled || false,
-          
-          // ✅ paymentTypes
+
           paymentTypes: {
             cash: item.paymentTypes?.cash || false,
             check: item.paymentTypes?.check || false,
             transfer: item.paymentTypes?.transfer || false,
           },
-          
-          // ✅ cashDetails
+
           cashDetails: {
             amount: item.cashDetails?.amount || '',
           },
-          
-          // ✅ checkDetails
+
           checkDetails: {
             amount: item.checkDetails?.amount || '',
             bankName: item.checkDetails?.bankName || '',
             checkNumber: item.checkDetails?.checkNumber || '',
             numInCheck: item.checkDetails?.numInCheck || '',
           },
-          
-          // ✅ transferDetails
+
           transferDetails: {
             amount: item.transferDetails?.amount || '',
             accountData: {
@@ -2742,100 +2748,120 @@ const loadReceiptData = async () => {
       })
 
       await nextTick()
-// ✅ 7. Format amount สำหรับทุกช่องทาง
-morelist.value.forEach((row, index) => {
-  const isReceivable = isReceivableItem(row.itemName)
-  const isExpense = row.isExpense
+      
+      // ✅ 7. Format amount สำหรับทุกช่องทาง
+      morelist.value.forEach((row, index) => {
+        const isReceivable = isReceivableItem(row.itemName)
+        const isExpense = row.isExpense
 
-  console.log(`🔍 Before format row ${index + 1}:`, {
-    itemName: row.itemName,
-    isReceivable,
-    isExpense,
-    rawAmount: row.amount,  // ✅ เพิ่ม log
-    cashAmount: row.cashDetails?.amount,
-    checkAmount: row.checkDetails?.amount,
-    transferAmount: row.transferDetails?.amount,
-    paymentTypes: row.paymentTypes,
-  })
+        console.log(`🔍 Before format row ${index + 1}:`, {
+          itemName: row.itemName,
+          isReceivable,
+          isExpense,
+          rawAmount: row.amount,
+          cashAmount: row.cashDetails?.amount,
+          checkAmount: row.checkDetails?.amount,
+          transferAmount: row.transferDetails?.amount,
+          paymentTypes: row.paymentTypes,
+        })
 
-  // ✅ Format amount หลัก - สำหรับ **ทุกประเภท** (ไม่มีเงื่อนไข isReceivable หรือ isExpense)
-  if (row.amount !== undefined && row.amount !== null && row.amount !== '') {
-    const numAmount = typeof row.amount === 'string'
-      ? parseFloat(row.amount.replace(/,/g, ''))
-      : Number(row.amount)
+        // Format amount หลัก
+        if (row.amount !== undefined && row.amount !== null && row.amount !== '') {
+          const numAmount =
+            typeof row.amount === 'string'
+              ? parseFloat(row.amount.replace(/,/g, ''))
+              : Number(row.amount)
 
-    if (!isNaN(numAmount)) {  // ✅ ลบเงื่อนไข > 0 ออก
-      row.amount = numAmount.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+          if (!isNaN(numAmount)) {
+            row.amount = numAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+            console.log(`💰 Main amount formatted: ${numAmount} → ${row.amount}`)
+          } else {
+            row.amount = '0.00'
+          }
+        }
+
+        // Format cashDetails.amount
+        if (
+          !isReceivable &&
+          !isExpense &&
+          row.cashDetails?.amount !== undefined &&
+          row.cashDetails?.amount !== ''
+        ) {
+          const cashAmount =
+            typeof row.cashDetails.amount === 'string'
+              ? parseFloat(String(row.cashDetails.amount).replace(/,/g, ''))
+              : Number(row.cashDetails.amount)
+
+          if (!isNaN(cashAmount)) {
+            row.cashDetails.amount = cashAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+            console.log(`💵 Cash formatted: ${cashAmount} → ${row.cashDetails.amount}`)
+          } else {
+            row.cashDetails.amount = ''
+          }
+        }
+
+        // Format checkDetails.amount
+        if (
+          !isReceivable &&
+          !isExpense &&
+          row.checkDetails?.amount !== undefined &&
+          row.checkDetails?.amount !== ''
+        ) {
+          const checkAmount =
+            typeof row.checkDetails.amount === 'string'
+              ? parseFloat(String(row.checkDetails.amount).replace(/,/g, ''))
+              : Number(row.checkDetails.amount)
+
+          if (!isNaN(checkAmount)) {
+            row.checkDetails.amount = checkAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+            console.log(`📝 Check formatted: ${checkAmount} → ${row.checkDetails.amount}`)
+          } else {
+            row.checkDetails.amount = ''
+          }
+        }
+
+        // Format transferDetails.amount
+        if (
+          !isReceivable &&
+          !isExpense &&
+          row.transferDetails?.amount !== undefined &&
+          row.transferDetails?.amount !== ''
+        ) {
+          const transferAmount =
+            typeof row.transferDetails.amount === 'string'
+              ? parseFloat(String(row.transferDetails.amount).replace(/,/g, ''))
+              : Number(row.transferDetails.amount)
+
+          if (!isNaN(transferAmount)) {
+            row.transferDetails.amount = transferAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+            console.log(`🏦 Transfer formatted: ${transferAmount} → ${row.transferDetails.amount}`)
+          } else {
+            row.transferDetails.amount = ''
+          }
+        }
+
+        console.log(`✅ After format row ${index + 1}:`, {
+          itemName: row.itemName,
+          isReceivable,
+          isExpense,
+          amount: row.amount,
+          cashAmount: row.cashDetails?.amount,
+          checkAmount: row.checkDetails?.amount,
+          transferAmount: row.transferDetails?.amount,
+        })
       })
-      console.log(`💰 Main amount formatted: ${numAmount} → ${row.amount}`)
-    } else {
-      row.amount = '0.00'  // ✅ เปลี่ยนจาก '' เป็น '0.00'
-    }
-  }
-
-  // ✅ Format cashDetails.amount (เฉพาะรายการที่ไม่ใช่ลูกหนี้และไม่ใช่รายจ่าย)
-  if (!isReceivable && !isExpense && row.cashDetails?.amount !== undefined && row.cashDetails?.amount !== '') {
-    const cashAmount = typeof row.cashDetails.amount === 'string'
-      ? parseFloat(String(row.cashDetails.amount).replace(/,/g, ''))
-      : Number(row.cashDetails.amount)
-
-    if (!isNaN(cashAmount)) {
-      row.cashDetails.amount = cashAmount.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-      console.log(`💵 Cash formatted: ${cashAmount} → ${row.cashDetails.amount}`)
-    } else {
-      row.cashDetails.amount = ''
-    }
-  }
-
-  // ✅ Format checkDetails.amount (เฉพาะรายการที่ไม่ใช่ลูกหนี้และไม่ใช่รายจ่าย)
-  if (!isReceivable && !isExpense && row.checkDetails?.amount !== undefined && row.checkDetails?.amount !== '') {
-    const checkAmount = typeof row.checkDetails.amount === 'string'
-      ? parseFloat(String(row.checkDetails.amount).replace(/,/g, ''))
-      : Number(row.checkDetails.amount)
-
-    if (!isNaN(checkAmount)) {
-      row.checkDetails.amount = checkAmount.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-      console.log(`📝 Check formatted: ${checkAmount} → ${row.checkDetails.amount}`)
-    } else {
-      row.checkDetails.amount = ''
-    }
-  }
-
-  // ✅ Format transferDetails.amount (เฉพาะรายการที่ไม่ใช่ลูกหนี้และไม่ใช่รายจ่าย)
-  if (!isReceivable && !isExpense && row.transferDetails?.amount !== undefined && row.transferDetails?.amount !== '') {
-    const transferAmount = typeof row.transferDetails.amount === 'string'
-      ? parseFloat(String(row.transferDetails.amount).replace(/,/g, ''))
-      : Number(row.transferDetails.amount)
-
-    if (!isNaN(transferAmount)) {
-      row.transferDetails.amount = transferAmount.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-      console.log(`🏦 Transfer formatted: ${transferAmount} → ${row.transferDetails.amount}`)
-    } else {
-      row.transferDetails.amount = ''
-    }
-  }
-
-  console.log(`✅ After format row ${index + 1}:`, {
-    itemName: row.itemName,
-    isReceivable,
-    isExpense,
-    amount: row.amount,
-    cashAmount: row.cashDetails?.amount,
-    checkAmount: row.checkDetails?.amount,
-    transferAmount: row.transferDetails?.amount,
-  })
-})
 
       await nextTick()
 
@@ -2846,7 +2872,6 @@ morelist.value.forEach((row, index) => {
 
       console.log('✅ Loaded morelist:', morelist.value.length, 'items')
     } else {
-      // ✅ ถ้าไม่มี receiptList ให้เพิ่มแถวว่าง
       console.log('ℹ️ No receipt items, adding empty row')
       addRow()
     }
@@ -2865,10 +2890,8 @@ morelist.value.forEach((row, index) => {
           <div class="text-left">
             <p class="mb-2">ใบนำส่งนี้ได้รับการอนุมัติแล้ว</p>
             <p class="mb-2 font-semibold text-blue-600">คุณสามารถยกเลิกรายการได้เท่านั้น</p>
-            <ul class="list-disc pl-5 space-y-1 text-sm">
-              <li>ไม่สามารถแก้ไขข้อมูลพื้นฐานได้</li>
-              <li>ไม่สามารถเพิ่ม/ลบรายการได้</li>
-              <li>✅ สามารถ tick "ยกเลิก" เพื่อยกเลิกรายการได้</li>
+            <p class="mb-2 text-red-500">* เนื่องจากใบนำส่งนี้ได้รับการอนุมัติแล้วจึงไม่สามารถแก้ไขข้อมูลผู้บันทึกหรือข้อมูลรายการใดๆได้ทั้งนั้น
+               นอกจากการยกเลิกรายการเท่านั้น</p>
             </ul>
           </div>
         `,
@@ -2887,20 +2910,17 @@ morelist.value.forEach((row, index) => {
     })
 
     console.log('✅ Load receipt completed successfully')
-
   } catch (err) {
     console.error('❌ Load error:', err)
-    
+
     await Swal.fire({
       icon: 'error',
       title: 'ไม่สามารถโหลดข้อมูลได้',
       text: err.message || 'กรุณาลองใหม่อีกครั้ง',
       confirmButtonColor: '#DC2626',
     })
-    
-    // กลับไปหน้ารายการ
+
     router.push('/indexwaybill')
-    
   } finally {
     isLoading.value = false
   }
@@ -3069,6 +3089,7 @@ const saveData = async () => {
   errors.value = {
     paymentMethods: {},
     bankTransfers: {},
+    rows: {}
   }
   let hasError = false
 
@@ -3076,7 +3097,6 @@ const saveData = async () => {
   if (isApprovedMode.value) {
     const hasCancelledItems = morelist.value.some((row) => row.isCancelled)
 
-    // ✅ ถามยืนยันก่อนบันทึก
     const confirmResult = await Swal.fire({
       title: hasCancelledItems ? 'ยืนยันการบันทึกการเปลี่ยนแปลง?' : 'ยืนยันการบันทึก?',
       html: hasCancelledItems
@@ -3096,7 +3116,9 @@ const saveData = async () => {
       return
     }
   } else {
-    // ✅ โหมดปกติ: validate ทุกอย่าง
+    // ========================================
+    // ✅ Validate ส่วนที่ 1: ข้อมูลพื้นฐาน
+    // ========================================
     if (!formData.value.fullName) {
       errors.value.fullName = 'กรุณากรอก "ชื่อ"'
       hasError = true
@@ -3130,71 +3152,52 @@ const saveData = async () => {
       hasError = true
     }
 
-    // Validate rows
-errors.value.rows = {}
-morelist.value.forEach((row, index) => {
-  const rowErrors = {}
-  
-  // ตรวจเงินสด
-  if (row.paymentTypes?.cash) {
-    const cashAmount = parseFloat(String(row.cashDetails?.amount || '0').replace(/,/g, ''))
-    if (!cashAmount || cashAmount <= 0) {
-      rowErrors.cashAmount = 'กรุณากรอกจำนวนเงินสด'
-    }
-  }
-  
-  // ตรวจเช็ค
-  if (row.paymentTypes?.check) {
-    const checkAmount = parseFloat(String(row.checkDetails?.amount || '0').replace(/,/g, ''))
-    if (!checkAmount || checkAmount <= 0) {
-      rowErrors.checkAmount = 'กรุณากรอกจำนวนเงินเช็ค'
-    }
-  }
-  
-  // ตรวจเงินโอน
-  if (row.paymentTypes?.transfer) {
-    const transferAmount = parseFloat(String(row.transferDetails?.amount || '0').replace(/,/g, ''))
-    if (!transferAmount || transferAmount <= 0) {
-      rowErrors.transferAmount = 'กรุณากรอกจำนวนเงินโอน'
-    }
-  }
-  
-  if (Object.keys(rowErrors).length > 0) {
-    errors.value.rows[index] = rowErrors
-    hasError = true
-  }
-})
-
+    // ========================================
+    // ✅ Validate ส่วนที่ 2: รายการนำส่งเงิน
+    // ========================================
     errors.value.rows = {}
+    
+    // นับจำนวนรายการที่มีข้อมูล
+    const validRowsCount = morelist.value.filter(row => {
+      const hasItemName = row.itemName && row.itemName.trim() !== ''
+      const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
+      const hasAmount = cleanAmount && cleanAmount > 0
+      return hasItemName || hasAmount
+    }).length
+
+    // ✅ ตรวจสอบว่ามีรายการอย่างน้อย 1 รายการ
+    if (validRowsCount === 0) {
+      errors.value.noItems = 'กรุณาเพิ่มรายการนำส่งเงินอย่างน้อย 1 รายการ'
+      hasError = true
+    }
+
+    // ✅ Validate แต่ละรายการ (ไม่ return ทันที)
     morelist.value.forEach((row, index) => {
       const hasItemName = row.itemName && row.itemName.trim() !== ''
       const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
       const hasAmount = cleanAmount && cleanAmount > 0
 
-      // ข้ามแถวที่ไม่มีข้อมูล
+      // ข้ามแถวที่ไม่มีข้อมูลเลย
       if (!hasItemName && !hasAmount) {
         return
       }
 
       const rowErrors = {}
 
-      // Validate ชื่อรายการ
+      // 1. Validate ชื่อรายการ
       if (!hasItemName) {
         rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
       }
 
-      // Validate จำนวนเงิน
+      // 2. Validate จำนวนเงิน
       if (!hasAmount) {
         rowErrors.amount = 'กรุณากรอก "จำนวนเงิน"'
       }
 
-      // ✅ Validate ช่องทางการชำระเงิน
-      // เงื่อนไข: ต้อง tick เฉพาะรายการที่เป็น "รายรับ" และ "ไม่ใช่ลูกหนี้"
+      // 3. Validate ช่องทางการชำระเงิน
       const isReceivableRow = row.itemName && isReceivableItem(row.itemName)
-      const isIncomeRow = !isExpenseRow
-
-      // ต้องเช็คช่องทางเงินเฉพาะ: รายรับ + ไม่ใช่ลูกหนี้
-      const needsPaymentType = isIncomeRow && !isReceivableRow
+      const isExpense = isExpenseRow(index)
+      const needsPaymentType = !isExpense && !isReceivableRow
 
       if (needsPaymentType && hasItemName && hasAmount) {
         const hasAnyPaymentType =
@@ -3202,27 +3205,150 @@ morelist.value.forEach((row, index) => {
 
         if (!hasAnyPaymentType) {
           rowErrors.paymentTypes = 'กรุณาเลือกช่องทางการชำระเงินอย่างน้อย 1 ช่องทาง'
+        } else {
+          // 4. Validate จำนวนเงินในแต่ละช่องทาง
+          
+          // 4.1 เงินสด
+          if (row.paymentTypes?.cash) {
+            const cashAmount = parseFloat(String(row.cashDetails?.amount || '0').replace(/,/g, ''))
+            if (!cashAmount || cashAmount <= 0) {
+              rowErrors.cashAmount = 'กรุณากรอกจำนวนเงินสด'
+            }
+          }
+
+          // 4.2 เช็ค
+          if (row.paymentTypes?.check) {
+            const checkAmount = parseFloat(String(row.checkDetails?.amount || '0').replace(/,/g, ''))
+            if (!checkAmount || checkAmount <= 0) {
+              rowErrors.checkAmount = 'กรุณากรอกจำนวนเงินเช็ค'
+            }
+            if (!row.checkDetails?.bankName || row.checkDetails.bankName.trim() === '') {
+              rowErrors.checkBankName = 'กรุณาเลือกธนาคาร'
+            }
+            if (!row.checkDetails?.checkNumber || row.checkDetails.checkNumber.trim() === '') {
+              rowErrors.checkNumber = 'กรุณากรอกเลขที่เช็ค'
+            }
+            if (!row.checkDetails?.numInCheck || row.checkDetails.numInCheck.trim() === '') {
+              rowErrors.checkNumInCheck = 'กรุณากรอกเลขที่ในเช็ค'
+            }
+          }
+
+          // 4.3 เงินโอน
+          if (row.paymentTypes?.transfer) {
+            const transferAmount = parseFloat(String(row.transferDetails?.amount || '0').replace(/,/g, ''))
+            if (!transferAmount || transferAmount <= 0) {
+              rowErrors.transferAmount = 'กรุณากรอกจำนวนเงินโอน'
+            }
+            if (!row.transferDetails?.accountData?.accountNumber || 
+                row.transferDetails.accountData.accountNumber.trim() === '') {
+              rowErrors.transferAccount = 'กรุณาเลือกบัญชีธนาคาร'
+            }
+          }
+
+          // 5. Validate ยอดรวมจากช่องทางการชำระ
+          const totalPaymentAmount = calculatePaymentTotal(index)
+          const mainAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
+          
+          if (Math.abs(totalPaymentAmount - mainAmount) > 0.01) {
+            rowErrors.paymentMismatch = `ยอดรวมจากช่องทางการชำระ (${formatCurrency(totalPaymentAmount)} บาท) ไม่ตรงกับจำนวนเงินรวม (${formatCurrency(mainAmount)} บาท)`
+          }
         }
       }
 
+      // ✅ เก็บ errors ของรายการนี้
       if (Object.keys(rowErrors).length > 0) {
         errors.value.rows[index] = rowErrors
         hasError = true
       }
     })
 
+    // ========================================
+    // ✅ แสดง Error Message รวม (ถ้ามี error)
+    // ========================================
     if (hasError) {
-      Swal.fire({
+      const section1Errors = []
+      const section2ErrorCount = Object.keys(errors.value.rows || {}).length
+      
+      // รวบรวม error ส่วนที่ 1
+      if (errors.value.waybillNumber) section1Errors.push('เลขที่นำส่ง')
+      if (errors.value.fullName) section1Errors.push('ชื่อ-นามสกุล')
+      if (errors.value.phone) section1Errors.push('เบอร์โทรติดต่อ')
+      if (errors.value.mainCategory) section1Errors.push('หน่วยงาน')
+      if (errors.value.subCategory) section1Errors.push('หน่วยงานรอง')
+      if (errors.value.subCategory2) section1Errors.push('หน่วยงานย่อย')
+      if (errors.value.fundName) section1Errors.push('กองทุน')
+      if (errors.value.sendmoney) section1Errors.push('ขอนำส่งเงิน')
+
+      // รวบรวม error รายการในส่วนที่ 2
+      const section2Details = []
+      Object.entries(errors.value.rows || {}).forEach(([index, rowErrors]) => {
+        const rowNum = parseInt(index) + 1
+        const errorList = Object.values(rowErrors)
+        section2Details.push(`
+          <li class="mb-2">
+            <strong class="text-red-600">รายการที่ ${rowNum}:</strong>
+            <ul class="list-disc pl-5 mt-1">
+              ${errorList.map(err => `<li class="text-sm">${err}</li>`).join('')}
+            </ul>
+          </li>
+        `)
+      })
+
+      let errorHTML = '<div class="text-left">'
+      
+      // แสดง error ส่วนที่ 1
+      if (section1Errors.length > 0) {
+        errorHTML += `
+          <div class="mb-4">
+            <p class="font-semibold text-red-600 mb-2">📝 ส่วนที่ 1: ข้อมูลผู้บันทึก (${section1Errors.length} ข้อผิดพลาด)</p>
+            <ul class="list-disc pl-5 text-sm space-y-1">
+              ${section1Errors.map(field => `<li>กรุณากรอก "${field}"</li>`).join('')}
+            </ul>
+          </div>
+        `
+      }
+
+      // แสดง error ส่วนที่ 2
+      if (errors.value.noItems) {
+        errorHTML += `
+          <div class="mb-4">
+            <p class="font-semibold text-red-600 mb-2">💰 ส่วนที่ 2: รายการนำส่งเงิน</p>
+            <p class="text-sm text-red-600">${errors.value.noItems}</p>
+          </div>
+        `
+      } else if (section2ErrorCount > 0) {
+        errorHTML += `
+          <div class="mb-4">
+            <p class="font-semibold text-red-600 mb-2">💰 ส่วนที่ 2: รายการนำส่งเงิน (${section2ErrorCount} รายการมีข้อผิดพลาด)</p>
+            <ul class="space-y-2">
+              ${section2Details.join('')}
+            </ul>
+          </div>
+        `
+      }
+
+      errorHTML += '<p class="mt-4 text-xs text-gray-600 border-t pt-3">💡 กรุณาตรวจสอบและแก้ไขข้อมูลที่แสดงข้อผิดพลาด (ข้อความสีแดงใต้ช่องกรอก)</p>'
+      errorHTML += '</div>'
+
+      await Swal.fire({
         icon: 'error',
         title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
-        text: 'มีข้อมูลบางช่องที่ยังไม่ได้กรอกหรือกรอกไม่ถูกต้อง',
+        html: errorHTML,
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#7E22CE',
+        width: '700px',
+        customClass: {
+          htmlContainer: 'text-left'
+        }
       })
+      
       return
     }
   }
 
+  // ========================================
+  // ✅ ดำเนินการบันทึกข้อมูล
+  // ========================================
   Swal.fire({
     title: 'กำลังบันทึกการเปลี่ยนแปลง...',
     allowOutsideClick: false,
@@ -3266,27 +3392,33 @@ morelist.value.forEach((row, index) => {
         check: false,
         transfer: false,
       },
-    cashDetails: row.paymentTypes?.cash ? {
-      amount: parseFloat(String(row.cashDetails?.amount || '0').replace(/,/g, ''))
-    } : undefined,
-    
-    checkDetails: row.paymentTypes?.check ? {
-      amount: parseFloat(String(row.checkDetails?.amount || '0').replace(/,/g, '')),
-      bankName: row.checkDetails?.bankName || '',
-      checkNumber: row.checkDetails?.checkNumber || '',
-      numInCheck: row.checkDetails?.numInCheck || ''
-    } : undefined,
-    
-    transferDetails: row.paymentTypes?.transfer ? {
-      amount: parseFloat(String(row.transferDetails?.amount || '0').replace(/,/g, '')),
-      accountData: row.transferDetails?.accountData || {
-        accountNumber: '',
-        bankName: '',
-        accountName: ''
-      }
-    } : undefined
-  }
-})
+      cashDetails: row.paymentTypes?.cash
+        ? {
+            amount: parseFloat(String(row.cashDetails?.amount || '0').replace(/,/g, '')),
+          }
+        : undefined,
+
+      checkDetails: row.paymentTypes?.check
+        ? {
+            amount: parseFloat(String(row.checkDetails?.amount || '0').replace(/,/g, '')),
+            bankName: row.checkDetails?.bankName || '',
+            checkNumber: row.checkDetails?.checkNumber || '',
+            numInCheck: row.checkDetails?.numInCheck || '',
+          }
+        : undefined,
+
+      transferDetails: row.paymentTypes?.transfer
+        ? {
+            amount: parseFloat(String(row.transferDetails?.amount || '0').replace(/,/g, '')),
+            accountData: row.transferDetails?.accountData || {
+              accountNumber: '',
+              bankName: '',
+              accountName: '',
+            },
+          }
+        : undefined,
+    }
+  })
 
   const getSubName1 = () => {
     if (!subCategoryId.value) return ''
@@ -3302,23 +3434,25 @@ morelist.value.forEach((row, index) => {
 
   const payload = {
     waybillNumber: formData.value.waybillNumber,
-    fullName: formData.value.fullName,
-    moneyTypeNote: 'Waybill',
-    phone: formData.value.phone,
-    mainAffiliationId: mainCategoryId.value,
-    mainAffiliationName: mainCategory.value,
-    subAffiliationId1: subCategoryId.value,
-    subAffiliationName1: getSubName1(),
-    subAffiliationId2: subCategoryId2.value,
-    subAffiliationName2: getSubName2(),
-    fundName: formData.value.fundName,
-    moneyType: formData.value.sendmoney,
-    projectCode: formData.value.projectCode,
-    sendmoney: formData.value.sendmoney,
+    profile: {
+      fullName: formData.value.fullName,
+      phone: formData.value.phone,
+      fundName: formData.value.fundName,
+      projectCode: formData.value.projectCode,
+      moneyType: formData.value.sendmoney,
+      sendmoney: formData.value.sendmoney,
+      affiliationId: authStore.user?.affiliationId || '',
+      affiliationName: authStore.user?.affiliation || mainCategory.value,
+      mainAffiliationId: mainCategoryId.value,
+      mainAffiliationName: mainCategory.value,
+      subAffiliationId1: subCategoryId.value,
+      subAffiliationName1: getSubName1(),
+      subAffiliationId2: subCategoryId2.value,
+      subAffiliationName2: getSubName2(),
+    },
+
     netTotalAmount: netTotalAmount.value,
     receiptList: validRows,
-    affiliationId: authStore.user?.affiliationId || '',
-    affiliationName: authStore.user?.affiliation || mainCategory.value,
     approvalStatus: originalApprovalStatus.value,
   }
 

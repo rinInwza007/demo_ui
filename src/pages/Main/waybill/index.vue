@@ -156,7 +156,7 @@
 
             <div class="flex-1 overflow-y-auto px-2">
               <div
-                v-for="(row, index) in items"
+                v-for="(row, index) in paginatedItems"
                 :key="row.id ?? index"
                 class="group grid grid-cols-12 gap-3 px-4 py-4 mb-2 items-center rounded-xl hover:bg-white/50 transition-all duration-200 cursor-default border border-transparent hover:border-white/50 hover:shadow-sm"
               >
@@ -239,9 +239,47 @@
               </div>
             </div>
 
-            <div class="px-6 py-3 border-t border-white/40 bg-white/10 flex items-center justify-between flex-shrink-0">
-              <div class="text-xs text-slate-500">แสดง {{ items.length }} รายการ</div>
-            </div>
+<div v-if="totalPages > 1" class="px-6 py-3 border-t border-white/40 bg-white/5 flex items-center justify-center flex-shrink-0">
+  <div class="flex items-center gap-2">
+    <!-- Previous Button -->
+    <button
+      @click="prevPage"
+      :disabled="currentPage === 1"
+      class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+    >
+      <i class="ph ph-caret-left text-lg"></i>
+    </button>
+
+    <!-- Page Numbers -->
+    <template v-for="page in totalPages" :key="page">
+      <button
+        v-if="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
+        @click="goToPage(page)"
+        class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
+        :class="currentPage === page
+          ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md'
+          : 'glass-input text-slate-600 hover:text-purple-600'"
+      >
+        {{ page }}
+      </button>
+      <span 
+        v-else-if="page === currentPage - 2 || page === currentPage + 2" 
+        class="text-slate-400 px-1"
+      >
+        ...
+      </span>
+    </template>
+
+    <!-- Next Button -->
+    <button
+      @click="nextPage"
+      :disabled="currentPage === totalPages"
+      class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+    >
+      <i class="ph ph-caret-right text-lg"></i>
+    </button>
+  </div>
+</div>
           </div>
         </div>
       </main>
@@ -250,7 +288,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed , watch } from 'vue'
 import Swal from 'sweetalert2'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -262,7 +300,7 @@ import CascadingSelect from '@/components/input/select/CascadingSelect.vue'
 import { departmentOptions } from '@/components/data/TSdepartments'
 import { reciptService } from '@/services/ReciptService'
 import { approveService } from '@/services/Apporve_service/ApproveService'
-
+import type { Profile } from '@/types/Profile'
 
 const isLoading = ref(false)
 const router = useRouter()
@@ -340,15 +378,27 @@ function mapReceiptToRow(r: any): TableRow {
   const updatedAt = r.updatedAt ? new Date(r.updatedAt) : null
   const lastDate = getLastDate(createdAt, updatedAt)
 
+  // ✅ เพิ่ม type assertion
+  const profile = (r.profile || {}) as Partial<Profile>
+  
   return {
     id: r.waybillNumber || r.projectCode || r.id,
     status: r.approvalStatus || 'pending',
-    department: r.mainAffiliationName || r.affiliationName || '-',
-    subDepartment: [r.subAffiliationName1, r.subAffiliationName2].filter(Boolean).join(' / ') || '-',
+    
+    // ✅ ใช้ Optional chaining
+    department: profile.mainAffiliationName || r.mainAffiliationName || profile.affiliationName || r.affiliationName || '-',
+    
+    subDepartment: [
+      profile.subAffiliationName1 || r.subAffiliationName1,
+      profile.subAffiliationName2 || r.subAffiliationName2
+    ].filter(Boolean).join(' / ') || '-',
+    
     time: formatThaiDateTime(lastDate),
     lastTimeMs: lastDate?.getTime() || 0,
-    project: r.fundName || '-',
-    responsible: r.fullName || '-',
+    
+    project: profile.fundName || r.fundName || '-',
+    responsible: profile.fullName || r.fullName || '-',
+    
     amount: Number(r.netTotalAmount ?? 0),
     createdAt,
     updatedAt,
@@ -357,7 +407,9 @@ function mapReceiptToRow(r: any): TableRow {
   }
 }
 
-
+/**
+ * ✅ 2. แก้ไข loadData() - เพิ่ม type assertion
+ */
 const loadData = async () => {
   isLoading.value = true
   try {
@@ -368,15 +420,23 @@ const loadData = async () => {
         const kind = getReceiptKind(r)
         if (kind !== 'WAYBILL') return null
 
+        // ✅ เพิ่ม type assertion
+        const profile = (r.profile || {}) as Partial<Profile>
+        
         return {
           ...r,
 
-          // 🔒 normalize field ที่ UI ใช้แน่ ๆ
-          affiliationId: r.affiliationId ?? '',
-          affiliationName: r.affiliationName ?? '',
-          mainAffiliationName: r.mainAffiliationName ?? r.affiliationName ?? '',
-          subAffiliationName1: r.subAffiliationName1 ?? '',
-          subAffiliationName2: r.subAffiliationName2 ?? '',
+          // ✅ Normalize fields จาก profile สำหรับ UI
+          affiliationId: profile.affiliationId || r.affiliationId || '',
+          affiliationName: profile.affiliationName || r.affiliationName || '',
+          mainAffiliationId: profile.mainAffiliationId || r.mainAffiliationId || '',
+          mainAffiliationName: profile.mainAffiliationName || r.mainAffiliationName || profile.affiliationName || r.affiliationName || '',
+          subAffiliationId1: profile.subAffiliationId1 || r.subAffiliationId1 || '',
+          subAffiliationName1: profile.subAffiliationName1 || r.subAffiliationName1 || '',
+          subAffiliationId2: profile.subAffiliationId2 || r.subAffiliationId2 || '',
+          subAffiliationName2: profile.subAffiliationName2 || r.subAffiliationName2 || '',
+          fullName: profile.fullName || r.fullName || '',
+          fundName: profile.fundName || r.fundName || '',
 
           __kind: kind,
         }
@@ -392,36 +452,67 @@ const loadData = async () => {
   }
 }
 
-
-
+/**
+ * ✅ 3. แก้ไข items computed property - เพิ่ม type assertion
+ */
+const currentPage = ref(1)
+const itemsPerPage = ref(5)
 const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
   if (!auth.user) return []
 
+  // ✅ Filter by role
   if (auth.user.role === 'user') {
-    filtered = filtered.filter((r) => r.affiliationId === auth.user!.affiliationId)
+    filtered = filtered.filter((r) => {
+      const profile = (r.profile || {}) as Partial<Profile>
+      const affId = profile.affiliationId 
+      return affId === auth.user!.affiliationId
+    })
   }
 
+  // ✅ Filter by main category
   if (selectedMain.value) {
     filtered = filtered.filter((r) => {
-      const main = (r.mainAffiliationName || r.affiliationName || '').trim()
+      const profile = (r.profile || {}) as Partial<Profile>
+      const main = (
+        profile.mainAffiliationName || 
+        profile.affiliationName || 
+        ''
+      ).trim()
       return main === selectedMain.value.trim()
     })
   }
+
+  // ✅ Filter by sub category 1
   if (selectedSub1.value) {
-    filtered = filtered.filter((r) => (r.subAffiliationName1 || '').trim() === selectedSub1.value.trim())
+    filtered = filtered.filter((r) => {
+      const profile = (r.profile || {}) as Partial<Profile>
+      const sub1 = (profile.subAffiliationName1 || '').trim()
+      return sub1 === selectedSub1.value.trim()
+    })
   }
+
+  // ✅ Filter by sub category 2
   if (selectedSub2.value) {
-    filtered = filtered.filter((r) => (r.subAffiliationName2 || '').trim() === selectedSub2.value.trim())
+    filtered = filtered.filter((r) => {
+      const profile = (r.profile || {}) as Partial<Profile>
+      const sub2 = (profile.subAffiliationName2 || '').trim()
+      return sub2 === selectedSub2.value.trim()
+    })
   }
 
   // ✅ Filter by search text
   if (searchText.value.trim()) {
     const s = searchText.value.toLowerCase()
     filtered = filtered.filter((r) => {
-      const main = (r.mainAffiliationName || r.affiliationName || '').toLowerCase()
-      const sub1 = (r.subAffiliationName1 || '').toLowerCase()
-      const sub2 = (r.subAffiliationName2 || '').toLowerCase()
+      const profile = (r.profile || {}) as Partial<Profile>
+      const main = (
+        profile.mainAffiliationName || 
+        profile.affiliationName || 
+        ''
+      ).toLowerCase()
+      const sub1 = (profile.subAffiliationName1 || '').toLowerCase()
+      const sub2 = (profile.subAffiliationName2 || '').toLowerCase()
       return main.includes(s) || sub1.includes(s) || sub2.includes(s)
     })
   }
@@ -434,16 +525,57 @@ const items = computed<TableRow[]>(() => {
     return 2
   }
 
+  // ✅ แก้ไขการ sort ให้ approved ล่าสุดอยู่ข้างบนสุด
   rows.sort((a, b) => {
     const byStatus = rank(a.status) - rank(b.status)
     if (byStatus !== 0) return byStatus
+    
+    // ✅ สำหรับ pending: เรียงจากใหม่ไปเก่า (updatedAt ล่าสุดก่อน)
     if (a.status === 'pending') {
       return (b.lastTimeMs ?? 0) - (a.lastTimeMs ?? 0)
     }
+    
+    // ✅ สำหรับ approved: เรียงจากใหม่ไปเก่า (approvedAt ล่าสุดก่อน)
+    if (a.status === 'approved') {
+      return (b.lastTimeMs ?? 0) - (a.lastTimeMs ?? 0)
+    }
+    
+    // ✅ rejected: เรียงจากเก่าไปใหม่
     return (a.lastTimeMs ?? 0) - (b.lastTimeMs ?? 0)
   })
 
   return rows
+})
+const totalPages = computed(() => {
+  return Math.ceil(items.value.length / itemsPerPage.value)
+})
+
+const paginatedItems = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return items.value.slice(start, end)
+})
+
+// ✅ 4. เพิ่มฟังก์ชัน pagination
+const goToPage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
+watch([selectedMain, selectedSub1, selectedSub2, searchText], () => {
+  currentPage.value = 1
 })
 
 const headerStats = computed(() => {
@@ -659,7 +791,7 @@ const approveItem = async (row: TableRow) => {
     await approveService.approve(row.id, approverName)
 
     await loadData()
-
+currentPage.value = 1
     Swal.fire({
       position: 'top-end',
       icon: 'success',
@@ -726,7 +858,7 @@ const rejectItem = async (row: TableRow) => {
     await approveService.reject(row.id, approverName)
 
     await loadData()
-
+currentPage.value = 1
     Swal.fire({
       position: 'top-end',
       icon: 'success',

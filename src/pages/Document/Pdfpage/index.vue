@@ -301,594 +301,613 @@ const transferAmount = Number(item.transferDetails?.amount || 0)
     width: 10,
   });
 
-  function createDocDefinition() {
-    deleteRowEmpty()
+// ===============================================
+// ✅ แก้ไข pdfpage/index.vue
+// ===============================================
+// แทนที่ส่วน createDocDefinition() และ onMounted()
+// ===============================================
 
-    const receipt = receiptData.value || {}
-    const paymentTotals = calculatePaymentTypeTotals()
-    const { debtors, totalDebtor, hasDebtor } = separateDebtorItems()
+function createDocDefinition() {
+  deleteRowEmpty()
 
-    const isApproved = receipt.approvalStatus === 'approved'
-    const approverName = receipt.approverName || 'เจ้าหน้าที่การเงิน'
-    const approvalDate = receipt.approvedAt
-      ? new Date(receipt.approvedAt).toLocaleDateString('th-TH', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
-      : currentDate
+  const receipt = receiptData.value || {}
+  
+  // ✅ อ่านจาก profile object (รองรับทั้งโครงสร้างเก่าและใหม่)
+  const profile = receipt.profile || {}
+  
+  const paymentTotals = calculatePaymentTypeTotals()
+  const { debtors, totalDebtor, hasDebtor } = separateDebtorItems()
 
-    // ✅ คำนวณยอดรวมรายการนำส่ง (เงินโอน + เงินสด + เช็ค + เงินลบ) ไม่รวมลูกหนี้
-    const deliveryTotal = paymentTotals.transfer + paymentTotals.cash + paymentTotals.check + paymentTotals.negative
+  const isApproved = receipt.approvalStatus === 'approved'
+  const approverName = receipt.approverName || 'เจ้าหน้าที่การเงิน'
+  const approvalDate = receipt.approvedAt
+    ? new Date(receipt.approvedAt).toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : currentDate
 
-    return {
-      pageSize: 'A4',
-      pageMargins: [20, 30, 20, 0],
-      defaultStyle: { font: 'THSarabun', fontSize: 13 },
-      content: [
-        // ========== ส่วนหัวเอกสาร ==========
-        {
-          stack: [
-            {
-              text: `${receipt.waybillNumber || ''}`,
-              absolutePosition: { x: 530, y: 13 },
-              fontSize: 13,
-            },
-            {
-              text: 'เลขที่นำส่ง ...........................',
-              absolutePosition: { x: 0, y: 15 },
-              margin: [0, 0, 0, 0],
-              lineHeight: 1,
-              alignment: 'right',
-            },
-          ],
-        },
-        {
-          text: 'มหาวิทยาลัยพะเยา \n ใบนำส่งเงิน\n',
-          style: 'header',
-          alignment: 'center',
-          margin: [0, -20, 0, 0],
-          bold: true,
-          fontSize: 15,
-        },
-        { text: '\n' },
-        { text: '\n' },
-        {
-          stack: [
-            {
-              text: `${currentDate}`,
-              absolutePosition: { x: 440, y: 65 },
-              fontSize: 13,
-            },
-            {
-              text: 'วันที่............................................................................\n',
-              absolutePosition: { x: 400, y: 66.5 },
-            },
-          ],
-        },
-        {
-          stack: [
-            {
-              text: `${receipt.fullName || ''}`,
-              absolutePosition: { x: 95, y: 81.5 },
-              fontSize: 13,
-            },
-            {
-              text: `${receipt.phone || ''}`,
-              absolutePosition: { x: 270, y: 81.5 },
-              fontSize: 13,
-            },
-            {
-              text: `${receipt.mainAffiliationName || ''}`,
-              absolutePosition: { x: 370, y: 81.5 },
-              fontSize: 13,
-            },
-            {
-              text: 'ข้าพเจ้า........................................................เบอร์โทรติดต่อ.............................................สังกัด....................................................................................................\n',
-              margin: [35, 0, 0, 0],
-            },
-          ],
-        },
-        {
-          stack: [
-            {
-              text: `${receipt.sendmoney || ''}`,
-              absolutePosition: { x: 110, y: 98.5 },
-              fontSize: 13,
-            },
-            {
-              text: `${receipt.fundName || ''}`,
-              absolutePosition: { x: 350, y: 98.5 },
-              fontSize: 13,
-            },
-            {
-              text: 'ใบนำส่งรายได้/เงินโครงการ................................................................................................กองทุน....................................................................................................................\n',
-              margin: [-10, 0, 0, 0],
-            },
-          ],
-        },
-        {
-          stack: [
-            {
-              text: `${receipt.projectCode || '- '}`,
-              absolutePosition: { x: 240, y: 115 },
-              fontSize: 13,
-            },
-            {
-              text: 'รหัสโครงการ(กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ)............................................................. ',
-              margin: [-10, 0, 0, 0],
-            },
-          ],
-        },
+  // ✅ คำนวณยอดรวมรายการนำส่ง (เงินโอน + เงินสด + เช็ค + เงินลบ) ไม่รวมลูกหนี้
+  const deliveryTotal = paymentTotals.transfer + paymentTotals.cash + paymentTotals.check + paymentTotals.negative
 
-        // ========== ตารางหลัก ==========
-        {
-          table: {
-            widths: ['8%', '15%', '*', '12%', '20%'],
-            body: [
-              [
-                { text: '\n  ลำดับที่', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
-                {
-                  text: 'เลขที่\nเอกสารอ้างอิง\n(เล่มที่/เลขที่\nใบเสร็จรับเงิน)',
-                  alignment: 'center',
-                  bold: true,
-                },
-                { text: '\nรายการ', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
-                { text: '\nจำนวน/บาท', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
-                { text: '\nหมายเหตุ', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
-              ],
-              ...rows.map((r) => [
-                { text: r.id ?? '', alignment: 'center' },
-                { text: r.ref ?? '', alignment: 'center' },
-                { text: r.item ?? ' ', alignment: 'left' },
-                { text: r.amount ?? '', alignment: 'right' },
-                { text: r.note ?? '', alignment: 'center' },
-              ]),
-              [
-                { text: summary.text, colSpan: 3, alignment: 'center', bold: true },
-                '',
-                '',
-                { text: summary.total || '', alignment: 'right', bold: true },
-                { text: '', alignment: 'center', bold: true, border: [true, true, false, false] },
-              ],
-            ],
-          },
-          margin: [-10, 0, -10, 0],
-        },
-        { text: '\n' },
-
-        // ========== ส่วนรายละเอียดการชำระเงิน ==========
-
-  // ✅ เงินโอน - ห้ามแยกข้ามหน้า (แต่ละบัญชีเป็นกลุ่มเดียวกัน)
-  ...(paymentTotals.transferDetails.length > 0
-    ? paymentTotals.transferDetails.map((transfer) => ({
-        unbreakable: true, // ✅ ห้ามแยกข้ามหน้า
+  return {
+    pageSize: 'A4',
+    pageMargins: [20, 30, 20, 0],
+    defaultStyle: { font: 'THSarabun', fontSize: 13 },
+    content: [
+      // ========== ส่วนหัวเอกสาร ==========
+      {
         stack: [
           {
-            columns: [
-              { ...createCheckbox(), margin: [100, 12, 0, 0] },
-              {
-                text: `นำฝากบัญชี ${transfer.bankName} เลขที่ ${transfer.accountNumber}`,
-                margin: [110, 10, 0, 0],
-              },
-            ],
+            text: `${receipt.waybillNumber || ''}`,
+            absolutePosition: { x: 530, y: 13 },
+            fontSize: 13,
           },
           {
-            columns: [
-              {
-                text: `ชื่อบัญชี ${transfer.accountName}`,
-                margin: [120, 0, 0, 0],
-                width: 200,
-                noWrap: true,
-              },
-              {
-                text: 'จำนวน',
-                width: 50,
-                margin: [163, 0, 0, 0],
-                noWrap: true,
-              },
-              {
-                text: transfer.amount.toLocaleString('th-TH', {
-                  minimumFractionDigits: 2,
-                }),
-                width: 80,
-                margin: [155, 0, 0, 0],
-                noWrap: true,
-              },
-              {
-                text: 'บาท',
-                width: 30,
-                noWrap: true,
-                margin: [120, 0, 0, 0],
-              },
-            ],
+            text: 'เลขที่นำส่ง ...........................',
+            absolutePosition: { x: 0, y: 15 },
+            margin: [0, 0, 0, 0],
+            lineHeight: 1,
+            alignment: 'right',
           },
-        ]
-      }))
-    : []),
-
-  // ✅ เงินสด - ห้ามแยกข้ามหน้า
-  ...(paymentTotals.cash > 0
-    ? [{
-        unbreakable: true, // ✅ ห้ามแยกข้ามหน้า
+        ],
+      },
+      {
+        text: 'มหาวิทยาลัยพะเยา \n ใบนำส่งเงิน\n',
+        style: 'header',
+        alignment: 'center',
+        margin: [0, -20, 0, 0],
+        bold: true,
+        fontSize: 15,
+      },
+      { text: '\n' },
+      { text: '\n' },
+      {
         stack: [
           {
-            columns: [
+            text: `${currentDate}`,
+            absolutePosition: { x: 440, y: 65 },
+            fontSize: 13,
+          },
+          {
+            text: 'วันที่............................................................................\n',
+            absolutePosition: { x: 400, y: 66.5 },
+          },
+        ],
+      },
+      {
+        stack: [
+          {
+            // ✅ อ่านจาก profile
+            text: `${profile.fullName || receipt.fullName || ''}`,
+            absolutePosition: { x: 95, y: 81.5 },
+            fontSize: 13,
+          },
+          {
+            // ✅ อ่านจาก profile
+            text: `${profile.phone || receipt.phone || ''}`,
+            absolutePosition: { x: 270, y: 81.5 },
+            fontSize: 13,
+          },
+          {
+            // ✅ อ่านจาก profile
+            text: `${profile.mainAffiliationName || receipt.mainAffiliationName || ''}`,
+            absolutePosition: { x: 370, y: 81.5 },
+            fontSize: 13,
+          },
+          {
+            text: 'ข้าพเจ้า........................................................เบอร์โทรติดต่อ.............................................สังกัด....................................................................................................\n',
+            margin: [35, 0, 0, 0],
+          },
+        ],
+      },
+      {
+        stack: [
+          {
+            // ✅ อ่านจาก profile
+            text: `${profile.sendmoney || profile.moneyType || receipt.sendmoney || receipt.moneyType || ''}`,
+            absolutePosition: { x: 110, y: 98.5 },
+            fontSize: 13,
+          },
+          {
+            // ✅ อ่านจาก profile
+            text: `${profile.fundName || receipt.fundName || ''}`,
+            absolutePosition: { x: 350, y: 98.5 },
+            fontSize: 13,
+          },
+          {
+            text: 'ใบนำส่งรายได้/เงินโครงการ................................................................................................กองทุน....................................................................................................................\n',
+            margin: [-10, 0, 0, 0],
+          },
+        ],
+      },
+      {
+        stack: [
+          {
+            // ✅ อ่านจาก profile
+            text: `${profile.projectCode || receipt.projectCode || '- '}`,
+            absolutePosition: { x: 240, y: 115 },
+            fontSize: 13,
+          },
+          {
+            text: 'รหัสโครงการ(กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ)............................................................. ',
+            margin: [-10, 0, 0, 0],
+          },
+        ],
+      },
+
+      // ========== ตารางหลัก ==========
+      {
+        table: {
+          widths: ['8%', '15%', '*', '12%', '20%'],
+          body: [
+            [
+              { text: '\n  ลำดับที่', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
+              {
+                text: 'เลขที่\nเอกสารอ้างอิง\n(เล่มที่/เลขที่\nใบเสร็จรับเงิน)',
+                alignment: 'center',
+                bold: true,
+              },
+              { text: '\nรายการ', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
+              { text: '\nจำนวน/บาท', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
+              { text: '\nหมายเหตุ', alignment: 'center', bold: true, margin: [0, 10, 0, 0] },
+            ],
+            ...rows.map((r) => [
+              { text: r.id ?? '', alignment: 'center' },
+              { text: r.ref ?? '', alignment: 'center' },
+              { text: r.item ?? ' ', alignment: 'left' },
+              { text: r.amount ?? '', alignment: 'right' },
+              { text: r.note ?? '', alignment: 'center' },
+            ]),
+            [
+              { text: summary.text, colSpan: 3, alignment: 'center', bold: true },
+              '',
+              '',
+              { text: summary.total || '', alignment: 'right', bold: true },
+              { text: '', alignment: 'center', bold: true, border: [true, true, false, false] },
+            ],
+          ],
+        },
+        margin: [-10, 0, -10, 0],
+      },
+      { text: '\n' },
+
+      // ========== ส่วนรายละเอียดการชำระเงิน ==========
+
+      // ✅ เงินโอน - ห้ามแยกข้ามหน้า
+      ...(paymentTotals.transferDetails.length > 0
+        ? paymentTotals.transferDetails.map((transfer) => ({
+            unbreakable: true,
+            stack: [
+              {
+                columns: [
+                  { ...createCheckbox(), margin: [100, 12, 0, 0] },
+                  {
+                    text: `นำฝากบัญชี ${transfer.bankName} เลขที่ ${transfer.accountNumber}`,
+                    margin: [110, 10, 0, 0],
+                  },
+                ],
+              },
+              {
+                columns: [
+                  {
+                    text: `ชื่อบัญชี ${transfer.accountName}`,
+                    margin: [120, 0, 0, 0],
+                    width: 200,
+                    noWrap: true,
+                  },
+                  {
+                    text: 'จำนวน',
+                    width: 50,
+                    margin: [163, 0, 0, 0],
+                    noWrap: true,
+                  },
+                  {
+                    text: transfer.amount.toLocaleString('th-TH', {
+                      minimumFractionDigits: 2,
+                    }),
+                    width: 80,
+                    margin: [155, 0, 0, 0],
+                    noWrap: true,
+                  },
+                  {
+                    text: 'บาท',
+                    width: 30,
+                    noWrap: true,
+                    margin: [120, 0, 0, 0],
+                  },
+                ],
+              },
+            ]
+          }))
+        : []),
+
+      // ✅ เงินสด
+      ...(paymentTotals.cash > 0
+        ? [{
+            unbreakable: true,
+            stack: [
+              {
+                columns: [
+                  {
+                    columns: [
+                      { ...createCheckbox(), margin: [100, 7, 0, 0] },
+                      {
+                        text: 'เงินสด',
+                        style: 'form',
+                        margin: [110, 5, 0, 0],
+                        noWrap: true,
+                        width: 'auto',
+                      },
+                      {
+                        text: 'จำนวน',
+                        width: 'auto',
+                        margin: [220, 5, 0, 0],
+                        noWrap: true,
+                      },
+                      {
+                        stack: [
+                          {
+                            text: paymentTotals.cash.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
+                            alignment: 'center',
+                            lineHeight: 1.2,
+                          },
+                        ],
+                        width: 80,
+                        margin: [0, 5, 9.5, 0],
+                      },
+                      {
+                        text: 'บาท',
+                        width: 'auto',
+                        noWrap: true,
+                        margin: [-16, 5, 0, 0],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ]
+          }]
+        : []),
+
+      // ✅ เช็ค
+      ...(paymentTotals.checkDetails.length > 0
+        ? paymentTotals.checkDetails.map((check) => ({
+            unbreakable: true,
+            stack: [
               {
                 columns: [
                   { ...createCheckbox(), margin: [100, 7, 0, 0] },
                   {
-                    text: 'เงินสด',
+                    text: 'เช็ค',
                     style: 'form',
+                    width: 'auto',
+                    noWrap: true,
                     margin: [110, 5, 0, 0],
-                    noWrap: true,
-                    width: 'auto',
                   },
                   {
-                    text: 'จำนวน',
-                    width: 'auto',
-                    margin: [220, 5, 0, 0],
-                    noWrap: true,
-                  },
-                  {
-                    stack: [
-                      {
-                        text: paymentTotals.cash.toLocaleString('th-TH', { minimumFractionDigits: 2 }),
-                        alignment: 'center',
-                        lineHeight: 1.2,
-                      },
-                    ],
-                    width: 80,
-                    margin: [0, 5, 9.5, 0],
-                  },
-                  {
-                    text: 'บาท',
-                    width: 'auto',
-                    noWrap: true,
-                    margin: [-16, 5, 0, 0],
+                    text: `ธนาคาร${check.bankName || ''}`,
+                    style: 'form',
+                    margin: [5, 5, 0, 0],
                   },
                 ],
-              },
-            ],
-          },
-        ]
-      }]
-    : []),
-
-  // ✅ เช็ค - ห้ามแยกข้ามหน้า (แต่ละใบเช็คเป็นกลุ่มเดียวกัน)
-  ...(paymentTotals.checkDetails.length > 0
-    ? paymentTotals.checkDetails.map((check) => ({
-        unbreakable: true, // ✅ ห้ามแยกข้ามหน้า
-        stack: [
-          {
-            columns: [
-              { ...createCheckbox(), margin: [100, 7, 0, 0] },
-              {
-                text: 'เช็ค',
-                style: 'form',
-                width: 'auto',
-                noWrap: true,
-                margin: [110, 5, 0, 0],
-              },
-              {
-                text: `ธนาคาร${check.bankName || ''}`,
-                style: 'form',
-                margin: [5, 5, 0, 0],
-              },
-            ],
-          },
-          {
-            columns: [
-              {
-                text: [
-                  check.checkNumber ? `เลขที่เช็ค ${check.checkNumber}   ` : '',
-                  check.numInCheck ? `เลขที่ในเช็ค ${check.numInCheck}` : '',
-                ].join(''),
-                style: 'form',
-                alignment: 'left',
-                noWrap: true,
-                margin: [-10, 0, 0, 0],
               },
               {
                 columns: [
                   {
-                    text: 'จำนวน',
+                    text: [
+                      check.checkNumber ? `เลขที่เช็ค ${check.checkNumber}   ` : '',
+                      check.numInCheck ? `เลขที่ในเช็ค ${check.numInCheck}` : '',
+                    ].join(''),
+                    style: 'form',
+                    alignment: 'left',
                     noWrap: true,
-                    width: 'auto',
+                    margin: [-10, 0, 0, 0],
                   },
                   {
-                    text: check.amount.toLocaleString('th-TH', {
-                      minimumFractionDigits: 2,
-                    }),
+                    columns: [
+                      {
+                        text: 'จำนวน',
+                        noWrap: true,
+                        width: 'auto',
+                      },
+                      {
+                        text: check.amount.toLocaleString('th-TH', {
+                          minimumFractionDigits: 2,
+                        }),
+                        alignment: 'right',
+                        width: 'auto',
+                        noWrap: true,
+                        margin: [18.5, 0, 0, 0],
+                      },
+                      {
+                        text: 'บาท',
+                        noWrap: true,
+                        width: 'auto',
+                        margin: [12, 0, -3, 0],
+                      },
+                    ],
                     alignment: 'right',
                     width: 'auto',
+                  },
+                ],
+                margin: [130, 0, 92.5, 0],
+              },
+            ]
+          }))
+        : []),
+
+      // ✅ รายการเงินลบ
+      ...(paymentTotals.negativeDetails.length > 0
+        ? [{
+            unbreakable: true,
+            stack: [
+              { text: '\n' },
+              ...paymentTotals.negativeDetails.map((neg) => ({
+                columns: [
+                  {
+                    text: neg.itemName,
+                    margin: [120, -10, 0, 0],
+                    fontSize: 13,
+                    width: '*',
+                  },
+                  {
+                    text: 'จำนวน',
+                    width: 'auto',
+                    margin: [0, -10, -119.5, 0],
                     noWrap: true,
-                    margin: [18.5, 0, 0, 0],
+                    alignment: 'right',
+                  },
+                  {
+                    text: `${neg.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
+                    margin: [0, -10, 0, 0],
+                    fontSize: 13,
+                    alignment: 'right',
+                    width: '30%',
                   },
                   {
                     text: 'บาท',
-                    noWrap: true,
                     width: 'auto',
-                    margin: [12, 0, -3, 0],
+                    noWrap: true,
+                    margin: [12, -12, 89.5, 0],
+                    alignment: 'left',
                   },
                 ],
-                alignment: 'right',
-                width: 'auto',
-              },
-            ],
-            margin: [130, 0, 92.5, 0],
-          },
-        ]
-      }))
-    : []),
+              })),
+            ]
+          }]
+        : []),
 
-  // ✅ รายการเงินลบ (ค่าธรรมเนียม) - แสดงก่อนยอดรวม - ห้ามแยกข้ามหน้า
-  ...(paymentTotals.negativeDetails.length > 0
-    ? [{
-        unbreakable: true, // ✅ ห้ามแยกข้ามหน้า
+      // ✅ แสดงยอดรวมรายการนำส่ง
+      ...(deliveryTotal !== 0
+        ? [{
+            unbreakable: true,
+            stack: [
+              { text: '\n' },
+              {
+                columns: [
+                  {
+                    text: 'ยอดรวมรายการนำส่ง',
+                    bold: true,
+                    fontSize: 13,
+                    margin: [120, -10, 0, 0],
+                    width: '*',
+                  },
+                  {
+                    text: `${deliveryTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
+                    bold: true,
+                    fontSize: 13,
+                    margin: [50, -10, -2.5, 0],
+                    alignment: 'right',
+                    width: '30%',
+                    noWrap:true,
+                  },
+                  {
+                    text: 'บาท',
+                    bold: true,
+                    fontSize: 13,
+                    width: 'auto',
+                    noWrap: true,
+                    margin: [12, -10, 89.5, 0],
+                    alignment: 'left',
+                  },
+                ],
+              },
+              { text: '\n' },
+            ]
+          }]
+        : []),
+
+      // ✅ ลูกหนี้ทั้งหมด
+      ...(hasDebtor
+        ? [{
+            unbreakable: true,
+            stack: [
+              { text: '\n' },
+              {
+                columns: [
+                  { ...createCheckbox(), margin: [100, 2, 0, 0] },
+                  {
+                    text: 'ลูกหนี้',
+                    fontSize: 13,
+                    margin: [110, 0, 0, 0],
+                  },
+                ],
+                margin: [0, 0, 0, 5],
+              },
+              ...debtors.map((d) => ({
+                columns: [
+                  {
+                    text: d.itemName,
+                    margin: [120, 2, 0, 0],
+                    fontSize: 13,
+                    width: '*',
+                  },
+                  {
+                    text: 'จำนวน',
+                    width: 'auto',
+                    margin: [0, 2, -119.5, 0],
+                    noWrap: true,
+                    alignment: 'right',
+                  },
+                  {
+                    text: `${d.formattedAmount}`,
+                    margin: [0, 2, 0, 0],
+                    fontSize: 13,
+                    alignment: 'right',
+                    width: '30%',
+                  },
+                  {
+                    text: 'บาท',
+                    width: 'auto',
+                    noWrap: true,
+                    margin: [15.8, 2, 92, 0],
+                    alignment: 'left',
+                  },
+                ],
+              })),
+              {
+                columns: [
+                  {
+                    text: 'รวมยอดลูกหนี้ทั้งหมด',
+                    bold: true,
+                    margin: [120, 5, 0, 0],
+                    fontSize: 13,
+                    width: '*',
+                  },
+                  {
+                    text: `${totalDebtor.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
+                    bold: true,
+                    margin: [15, 5, 0, 0],
+                    fontSize: 13,
+                    alignment: 'right',
+                    width: '30%',
+                  },
+                  {
+                    text: 'บาท',
+                    style: 'form',
+                    width: 'auto',
+                    noWrap: true,
+                    margin: [15, 5, 92, 0],
+                    alignment: 'left',
+                  },
+                ],
+              },
+              { text: '\n' },
+            ]
+          }]
+        : []),
+
+      // ========== ลายเซ็น ==========
+      {
+        unbreakable: true,
         stack: [
           { text: '\n' },
-          ...paymentTotals.negativeDetails.map((neg) => ({
-            columns: [
-              {
-                text: neg.itemName,
-                margin: [120, -10, 0, 0],
-                fontSize: 13,
-                width: '*',
-              },
-              {
-                text: 'จำนวน',
-                width: 'auto',
-                margin: [0, -10, -119.5, 0],
-                noWrap: true,
-                alignment: 'right',
-              },
-              {
-                text: `${neg.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
-                margin: [0, -10, 0, 0],
-                fontSize: 13,
-                alignment: 'right',
-                width: '30%',
-              },
-              {
-                text: 'บาท',
-                width: 'auto',
-                noWrap: true,
-                margin: [12, -12, 89.5, 0],
-                alignment: 'left',
-              },
-            ],
-          })),
-        ]
-      }]
-    : []),
-
-  // ✅ แสดงยอดรวมรายการนำส่ง - ห้ามแยกข้ามหน้า
-  ...(deliveryTotal !== 0
-    ? [{
-        unbreakable: true, // ✅ ห้ามแยกข้ามหน้า
-        stack: [
           { text: '\n' },
           {
             columns: [
               {
-                text: 'ยอดรวมรายการนำส่ง',
-                bold: true,
-                fontSize: 13,
-                margin: [120, -10, 0, 0],
-                width: '*',
+                stack: [
+                  {
+                    style: 'form',
+                    text: 'ลงชื่อ',
+                    margin: [40, 0, 0, 0],
+                    alignment: 'left',
+                  },
+                  {
+                    // ✅ อ่านจาก profile
+                    text: profile.fullName || receipt.fullName || '',
+                    alignment: 'center',
+                    margin: [40, 0, 0, -15],
+                    fontSize: 13,
+                  },
+                  {
+                    style: 'form',
+                    text: '(........................................................................)',
+                    alignment: 'center',
+                    margin: [40, 0, 0,0],
+                  },
+                  {
+                    style: 'form',
+                    text: 'ผู้นำส่งเงิน',
+                    alignment: 'center',
+                    margin: [40, 0, 0, 0],
+                  },
+                  {
+                    text: currentDate,
+                    alignment: 'center',
+                    margin: [40, 0, 0, -15],
+                    fontSize: 13,
+                  },
+                  {
+                    style: 'form',
+                    text: 'ลงวันที่.......................................................',
+                    alignment: 'center',
+                    margin: [40, 0, 0, 0],
+                  },
+                ],
               },
               {
-                text: `${deliveryTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
-                bold: true,
-                fontSize: 13,
-                margin: [50, -10, -2.5, 0],
-                alignment: 'right',
-                width: '30%',
-                noWrap:true,
-              },
-              {
-                text: 'บาท',
-                bold: true,
-                fontSize: 13,
-                width: 'auto',
-                noWrap: true,
-                margin: [12, -10, 89.5, 0],
-                alignment: 'left',
+                stack: [
+                  {
+                    style: 'form',
+                    text: 'ลงชื่อ',
+                    margin: [0, 0, 225, 0],
+                    alignment: 'center',
+                  },
+                  ...(isApproved
+                    ? [
+                        {
+                          text: approverName,
+                          alignment: 'center',
+                          margin: [0, 0, 0, -15],
+                          fontSize: 13,
+                        },
+                      ]
+                    : []),
+                  {
+                    style: 'form',
+                    text: '(........................................................................)',
+                    alignment: 'center',
+                    margin: [0, 0, 0, 0],
+                  },
+                  {
+                    style: 'form',
+                    text: 'ผู้รับเงิน',
+                    alignment: 'center',
+                  },
+                  ...(isApproved
+                    ? [
+                        {
+                          text: approvalDate,
+                          alignment: 'center',
+                          margin: [0, 0, 0, -15],
+                          fontSize: 13,
+                        },
+                      ]
+                    : []),
+                  {
+                    style: 'form',
+                    text: 'ลงวันที่.......................................................',
+                    alignment: 'center',
+                    margin: [0, 0, 0, 0],
+                  },
+                ],
               },
             ],
+            widths: ['50%', '50%'],
           },
-          { text: '\n' },
-        ]
-      }]
-    : []),
-
-  // ✅ ลูกหนี้ทั้งหมด - ห้ามแยกข้ามหน้า
-  ...(hasDebtor
-    ? [{
-        unbreakable: true, // ✅ ห้ามแยกข้ามหน้า - ทั้งส่วนลูกหนี้จะไปด้วยกัน
-        stack: [
-          { text: '\n' },
-          {
-            columns: [
-              { ...createCheckbox(), margin: [100, 2, 0, 0] },
-              {
-                text: 'ลูกหนี้',
-                fontSize: 13,
-                margin: [110, 0, 0, 0],
-              },
-            ],
-            margin: [0, 0, 0, 5],
-          },
-          ...debtors.map((d) => ({
-            columns: [
-              {
-                text: d.itemName,
-                margin: [120, 2, 0, 0],
-                fontSize: 13,
-                width: '*',
-              },
-              {
-                text: 'จำนวน',
-                width: 'auto',
-                margin: [0, 2, -119.5, 0],
-                noWrap: true,
-                alignment: 'right',
-              },
-              {
-                text: `${d.formattedAmount}`,
-                margin: [0, 2, 0, 0],
-                fontSize: 13,
-                alignment: 'right',
-                width: '30%',
-              },
-              {
-                text: 'บาท',
-                width: 'auto',
-                noWrap: true,
-                margin: [15.8, 2, 92, 0],
-                alignment: 'left',
-              },
-            ],
-          })),
-          {
-            columns: [
-              {
-                text: 'รวมยอดลูกหนี้ทั้งหมด',
-                bold: true,
-                margin: [120, 5, 0, 0],
-                fontSize: 13,
-                width: '*',
-              },
-              {
-                text: `${totalDebtor.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`,
-                bold: true,
-                margin: [15, 5, 0, 0],
-                fontSize: 13,
-                alignment: 'right',
-                width: '30%',
-              },
-              {
-                text: 'บาท',
-                style: 'form',
-                width: 'auto',
-                noWrap: true,
-                margin: [15, 5, 92, 0],
-                alignment: 'left',
-              },
-            ],
-          },
-          { text: '\n' },
-        ]
-      }]
-    : []),
-
-        // ========== ลายเซ็น ==========
-        {
-          unbreakable: true,
-          stack: [
-            { text: '\n' },
-            { text: '\n' },
-            {
-              columns: [
-                {
-                  stack: [
-                    {
-                      style: 'form',
-                      text: 'ลงชื่อ',
-                      margin: [40, 0, 0, 0],
-                      alignment: 'left',
-                    },
-                    {
-                      text: receipt.fullName || '',
-                      alignment: 'center',
-                      margin: [40, 0, 0, -15],
-                      fontSize: 13,
-                    },
-                    {
-                      style: 'form',
-                      text: '(........................................................................)',
-                      alignment: 'center',
-                      margin: [40, 0, 0,0],
-                    },
-                    {
-                      style: 'form',
-                      text: 'ผู้นำส่งเงิน',
-                      alignment: 'center',
-                      margin: [40, 0, 0, 0],
-                    },
-                    {
-                      text: currentDate,
-                      alignment: 'center',
-                      margin: [40, 0, 0, -15],
-                      fontSize: 13,
-                    },
-                    {
-                      style: 'form',
-                      text: 'ลงวันที่.......................................................',
-                      alignment: 'center',
-                      margin: [40, 0, 0, 0],
-                    },
-                  ],
-                },
-                {
-                  stack: [
-                    {
-                      style: 'form',
-                      text: 'ลงชื่อ',
-                      margin: [0, 0, 225, 0],
-                      alignment: 'center',
-                    },
-                    ...(isApproved
-                      ? [
-                          {
-                            text: approverName,
-                            alignment: 'center',
-                            margin: [0, 0, 0, -15],
-                            fontSize: 13,
-                          },
-                        ]
-                      : []),
-                    {
-                      style: 'form',
-                      text: '(........................................................................)',
-                      alignment: 'center',
-                      margin: [0, 0, 0, 0],
-                    },
-                    {
-                      style: 'form',
-                      text: 'ผู้รับเงิน',
-                      alignment: 'center',
-                    },
-                    ...(isApproved
-                      ? [
-                          {
-                            text: approvalDate,
-                            alignment: 'center',
-                            margin: [0, 0, 0, -15],
-                            fontSize: 13,
-                          },
-                        ]
-                      : []),
-                    {
-                      style: 'form',
-                      text: 'ลงวันที่.......................................................',
-                      alignment: 'center',
-                      margin: [0, 0, 0, 0],
-                    },
-                  ],
-                },
-              ],
-              widths: ['50%', '50%'],
-            },
-          ],
-          styles: {
-            form: { bold: true },
-          },
+        ],
+        styles: {
+          form: { bold: true },
         },
-      ],
-    }
+      },
+    ],
   }
+}
+
+// ✅ ส่วน onMounted ไม่ต้องแก้ไข (เพราะใช้ receiptData.value.receiptList ซึ่งไม่เปลี่ยน)
 
   function previewPdf() {
     const docDefinition = createDocDefinition()

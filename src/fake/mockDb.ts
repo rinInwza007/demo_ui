@@ -11,33 +11,28 @@ function defaultSeed(): Receipt[] {
       createdAt: "2025-10-05T14:22:10.000Z",
       updatedAt: "2025-10-05T14:22:10.000Z",
 
-      fullName: "จตุพล สิงห์คำ",
-      phone: "0869988776",
-
-      fundName: "กองทุนพิเศษ",
-      projectCode: "DEN-001",
-
-      moneyTypeNote: "Waybill",
-      sendmoney: "รายได้",
-      moneyType: "รายได้",
+      // ✅ ย้ายข้อมูลเข้า profile
+      profile: {
+        fullName: "จตุพล สิงห์คำ",
+        phone: "0869988776",
+        fundName: "กองทุนพิเศษ",
+        projectCode: "DEN-001",
+        moneyType: "รายได้",
+        sendmoney: "รายได้",
+        affiliationId: "DEN",
+        affiliationName: "คณะทันตแพทยศาสตร์",
+        mainAffiliationId: "DEN",
+        mainAffiliationName: "คณะทันตแพทยศาสตร์",
+        subAffiliationId1: "",
+        subAffiliationName1: "",
+        subAffiliationId2: "",
+        subAffiliationName2: "",
+      },
 
       netTotalAmount: 4500,
 
-      affiliationId: "DEN",
-      affiliationName: "คณะทันตแพทยศาสตร์",
-
       approvalStatus: "pending",
 
-      mainAffiliationId: "DEN",
-      mainAffiliationName: "คณะทันตแพทยศาสตร์",
-
-      subAffiliationId1: "",
-      subAffiliationName1: "",
-
-      subAffiliationId2: "",
-      subAffiliationName2: "",
-
-      // ✅ ใช้ paymentTypes ที่ระดับ item แทน
       receiptList: [
         {
           itemName: "ลูกหนี้ค่ารักษาทันตกรรม",
@@ -45,20 +40,23 @@ function defaultSeed(): Receipt[] {
           referenceNo: "INV-001",
           amount: 4500,
           type: "income",
-isCancelled: false,
+          isCancelled: false,
           paymentTypes: {
             cash: true,
             transfer: false,
             check: false
           },
-
+          cashDetails: {
+            amount: 4500
+          },
           checkDetails: {
+            amount: "",
             bankName: "",
             checkNumber: "",
             numInCheck: ""
           },
-
           transferDetails: {
+            amount: "",
             accountData: {
               accountNumber: "",
               bankName: "",
@@ -72,7 +70,6 @@ isCancelled: false,
     }
   ]
 }
-
 
 export function sanitizeItem(it: any): ReceiptItem {
   return {
@@ -94,14 +91,12 @@ export function sanitizeItem(it: any): ReceiptItem {
       transfer: false
     },
     
-    // ✅ เพิ่ม cashDetails
     cashDetails: it.cashDetails ? {
       amount: it.cashDetails.amount || ''
     } : {
       amount: ''
     },
     
-    // ✅ เพิ่ม checkDetails พร้อม amount
     checkDetails: it.checkDetails ? {
       amount: it.checkDetails.amount || '',
       bankName: String(it.checkDetails.bankName || '').trim(),
@@ -114,7 +109,6 @@ export function sanitizeItem(it: any): ReceiptItem {
       numInCheck: ''
     },
     
-    // ✅ เพิ่ม transferDetails พร้อม amount
     transferDetails: it.transferDetails ? {
       amount: it.transferDetails.amount || '',
       accountData: {
@@ -132,20 +126,29 @@ export function sanitizeItem(it: any): ReceiptItem {
     }
   }
 }
+
 export function sanitizeReceipt(r: any): Receipt {
   return {
     id: r.waybillNumber || r.id,
     waybillNumber: r.waybillNumber || r.id,
 
-    fullName: String(r.fullName || '').trim(),
-    phone: String(r.phone || '').trim(),
-
-    fundName: String(r.fundName || '').trim(),
-    projectCode: r.projectCode ? String(r.projectCode).trim() : null,
-
-    moneyType: String(r.moneyType || '').trim(),
-    sendmoney: String(r.sendmoney || '').trim(),
-    moneyTypeNote: String(r.moneyTypeNote || '').trim(),
+    // ✅ สร้าง profile object
+    profile: {
+      fullName: String(r.profile?.fullName || r.fullName || '').trim(),
+      phone: String(r.profile?.phone || r.phone || '').trim(),
+      fundName: String(r.profile?.fundName || r.fundName || '').trim(),
+      projectCode: r.profile?.projectCode || r.projectCode ? String(r.profile?.projectCode || r.projectCode).trim() : null,
+      moneyType: String(r.profile?.moneyType || r.moneyType || '').trim(),
+      sendmoney: String(r.profile?.sendmoney || r.sendmoney || '').trim(),
+      affiliationId: String(r.profile?.affiliationId || r.affiliationId || '').trim(),
+      affiliationName: String(r.profile?.affiliationName || r.affiliationName || '').trim(),
+      mainAffiliationId: String(r.profile?.mainAffiliationId || r.mainAffiliationId || '').trim(),
+      mainAffiliationName: String(r.profile?.mainAffiliationName || r.mainAffiliationName || '').trim(),
+      subAffiliationId1: String(r.profile?.subAffiliationId1 || r.subAffiliationId1 || '').trim(),
+      subAffiliationName1: String(r.profile?.subAffiliationName1 || r.subAffiliationName1 || '').trim(),
+      subAffiliationId2: String(r.profile?.subAffiliationId2 || r.subAffiliationId2 || '').trim(),
+      subAffiliationName2: String(r.profile?.subAffiliationName2 || r.subAffiliationName2 || '').trim(),
+    },
 
     netTotalAmount: Number(r.netTotalAmount) || 0,
 
@@ -158,22 +161,9 @@ export function sanitizeReceipt(r: any): Receipt {
       ? r.receiptList.map(sanitizeItem)
       : [],
 
-    affiliationId: String(r.affiliationId || '').trim(),
-    affiliationName: String(r.affiliationName || '').trim(),
-
-    mainAffiliationId: String(r.mainAffiliationId || '').trim(),
-    mainAffiliationName: String(r.mainAffiliationName || '').trim(),
-
-    subAffiliationId1: String(r.subAffiliationId1 || '').trim(),
-    subAffiliationName1: String(r.subAffiliationName1 || '').trim(),
-
-    subAffiliationId2: String(r.subAffiliationId2 || '').trim(),
-    subAffiliationName2: String(r.subAffiliationName2 || '').trim(),
-
     isLocked: r.isLocked ?? false,
   }
 }
-
 
 export function loadReceipts(): Receipt[] {
   try {

@@ -1,13 +1,10 @@
 // src/types/recipt.ts
 import { User } from './user'
 import { Affiliation } from './affiliation'
-// ✅ Import Types ของธนาคารจากไฟล์เดียว
-import type { BankAccountData, BankTransfer } from './BankTypes'
-
+import {Profile} from './Profile'
 export type moneySource = 'นำส่ง' | 'ลูกหนี้' | 'วิจัย'
 
 export type nagativeMoneyType = 'add' | 'other'
-
 export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other'
 export type ItemType = 'income' | 'receivable' | 'research'
 export type ReceiptItemType = 'income' | 'expense'
@@ -48,15 +45,21 @@ export interface ReceiptItem {
     transfer: boolean
   }
   
-  // ✅ เพิ่มฟิลด์สำหรับข้อมูลเช็ค
+ cashDetails?: {
+    amount: string | number
+  }
+  
+  // ✅ แก้ไข checkDetails ให้มี amount
   checkDetails?: {
+    amount: string | number
     bankName: string
     checkNumber: string
     numInCheck: string
   }
   
-  // ✅ เพิ่มฟิลด์สำหรับข้อมูลเงินโอน
+  // ✅ แก้ไข transferDetails ให้มี amount
   transferDetails?: {
+    amount: string | number
     accountData: {
       accountNumber: string
       bankName: string
@@ -81,36 +84,14 @@ export interface PaymentMethods {
   other?: PaymentMethod
 }
 
-
-// ✅ ลบ BankAccountData และ BankTransfer ออก (ใช้จาก BankTypes แทน)
-
 export interface Receipt {
   id: string
+  profile:Profile
   waybillNumber: string
-  fullName: string
-  phone: string
-  fundName: string
-  projectCode: string | null
-  mainAffiliationId?: string
-  mainAffiliationName?: string
-  subAffiliationId1?: string
-  subAffiliationName1?: string
-  subAffiliationId2?: string
-  subAffiliationName2?: string
-  affiliationId: string
-  affiliationName: string
   approvalStatus?: ApprovalStatus
-  moneyType: string
-  sendmoney?: string
-  moneyTypeNote?: string
   netTotalAmount: number
   receiptList: ReceiptItem[]
   isLocked?: boolean
   createdAt: string
   updatedAt: string
 }
-
-
-
-// ✅ Re-export เพื่อความสะดวก
-export type { BankAccountData, BankTransfer } from './BankTypes'

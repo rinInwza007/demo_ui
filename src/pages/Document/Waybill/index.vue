@@ -48,15 +48,15 @@
                 </h2>
                 <!-- ปุ่ม Template -->
                 <div class="flex gap-2">
-    <div v-if="!isApprovedMode" class="flex gap-2">
-      <button
-        @click="showLoadDialog = true"
-        class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
-      >
-        <i class="ph ph-folder-open text-lg"></i>
-        <span class="text-base font-medium">โหลด Template</span>
-      </button>
-    </div>
+                  <div v-if="!isApprovedMode" class="flex gap-2">
+                    <button
+                      @click="showLoadDialog = true"
+                      class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+                    >
+                      <i class="ph ph-folder-open text-lg"></i>
+                      <span class="text-base font-medium">โหลด Template</span>
+                    </button>
+                  </div>
                 </div>
               </div>
               <!-- แถวที่ 1: เลขที่นำส่ง | ชื่อ (แสดงเสมอ) -->
@@ -66,8 +66,7 @@
                     เลขที่นำส่ง <span class="text-red-500">*</span>
                   </label>
                   <InputText
-                  :disabled="isApprovedMode"
-                  
+                    :disabled="isApprovedMode"
                     v-model="formData.waybillNumber"
                     placeholder="เลขที่นำส่ง"
                     class="transition-all duration-200"
@@ -83,7 +82,7 @@
                     ข้าพเจ้า <span class="text-red-500">*</span>
                   </label>
                   <InputText
-                  :disabled="isApprovedMode"
+                    :disabled="isApprovedMode"
                     v-model="formData.fullName"
                     placeholder="กรอกชื่อ-นามสกุล"
                     class="transition-all duration-200"
@@ -101,7 +100,7 @@
                     เบอร์โทรติดต่อ <span class="text-red-500">*</span>
                   </label>
                   <InputText
-                  :disabled="isApprovedMode"
+                    :disabled="isApprovedMode"
                     v-model="formData.phone"
                     placeholder="xxx-xxxx-xxx"
                     class="transition-all duration-200"
@@ -117,8 +116,8 @@
                     หน่วยงาน <span class="text-red-500">*</span>
                   </label>
                   <Selects
-                  :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                    :disabled="isApprovedMode"
+                    :readonly="isApprovedMode"
                     v-model="mainCategory"
                     :options="mainCategoryOptions"
                     placeholder="เลือกหน่วยงาน"
@@ -141,8 +140,8 @@
                       กองทุน <span class="text-red-500">*</span>
                     </label>
                     <Selects
-                                      :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                       v-model="formData.fundName"
                       :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
                       placeholder="เลือกกองทุน"
@@ -158,8 +157,8 @@
                       ขอนำส่งเงิน <span class="text-red-500">*</span>
                     </label>
                     <SendMoneySelect
-                                      :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                       ref="sendmoneySelectRef"
                       v-model="formData.sendmoney"
                       input-id="sendmoney"
@@ -188,8 +187,8 @@
                     <InputText
                       v-model="formData.projectCode"
                       placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
-                                        :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                   </div>
                   <!-- คอลัมน์ว่าง -->
@@ -214,8 +213,8 @@
                       option-value="value"
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
-                                        :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                     <span v-if="errors.subCategory" class="text-red-600 text-xs">
                       {{ errors.subCategory }}
@@ -231,8 +230,8 @@
                       :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
                       placeholder="เลือกกองทุน"
                       value-type="string"
-                                        :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                     <span v-if="errors.fundName" class="text-red-600 text-xs">
                       {{ errors.fundName }}
@@ -260,8 +259,8 @@
                       :create-new-option="true"
                       @change="clearError('sendmoney')"
                       class="mt-[2.5px]"
-                                        :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"  
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                     <span v-if="errors.sendmoney" class="text-red-600 text-xs">
                       {{ errors.sendmoney }}
@@ -275,8 +274,8 @@
                     <InputText
                       v-model="formData.projectCode"
                       placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
-                                        :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                   </div>
                 </div>
@@ -299,8 +298,8 @@
                       option-value="value"
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
-                                        :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                     <span v-if="errors.subCategory" class="text-red-600 text-xs">
                       {{ errors.subCategory }}
@@ -318,8 +317,8 @@
                       option-value="value"
                       placeholder="เลือกหน่วยงานย่อย"
                       value-type="string"
-                                        :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                     <span v-if="errors.subCategory2" class="text-red-600 text-xs">
                       {{ errors.subCategory2 }}
@@ -338,8 +337,8 @@
                       :options="['กองทุนทั่วไป', 'กองทุนพิเศษ']"
                       placeholder="เลือกกองทุน"
                       value-type="string"
-                                        :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                     <span v-if="errors.fundName" class="text-red-600 text-xs">
                       {{ errors.fundName }}
@@ -363,8 +362,8 @@
                       ]"
                       :create-new-option="true"
                       @change="clearError('sendmoney')"
-                                        :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                     <span v-if="errors.sendmoney" class="text-red-600 text-xs">
                       {{ errors.sendmoney }}
@@ -379,8 +378,8 @@
                     <InputText
                       v-model="formData.projectCode"
                       placeholder="กรณีเงินโครงการจากแหล่งทุนภายนอก/ศูนย์ต่างๆ"
-                  :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                      :disabled="isApprovedMode"
+                      :readonly="isApprovedMode"
                     />
                   </div>
                   <div></div>
@@ -388,197 +387,331 @@
               </template>
             </div>
 
-<!-- 3. ส่วนที่ 2: เพิ่ม checkbox ยกเลิกและ disable การเพิ่ม/ลบ -->
-<div class="glass-panel rounded-2xl p-6 shadow-lg space-y-4">
-  <div class="flex items-center justify-between">
-    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
-      <span class="w-1 h-6 bg-green-500 rounded-full"></span>
-      ส่วนที่ 2: รายการนำส่งเงิน
-      <!-- ✅ แจ้งเตือนถ้าเป็น approved mode -->
-      <span v-if="isApprovedMode" class="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-medium">
-        <i class="ph ph-info text-sm mr-1"></i>
-        สามารถยกเลิกรายการได้
+            <!-- 3. ส่วนที่ 2: เพิ่ม checkbox ยกเลิกและ disable การเพิ่ม/ลบ -->
+            <div class="glass-panel rounded-2xl p-6 shadow-lg space-y-4">
+              <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                  <span class="w-1 h-6 bg-green-500 rounded-full"></span>
+                  ส่วนที่ 2: รายการนำส่งเงิน
+                  <!-- ✅ แจ้งเตือนถ้าเป็น approved mode -->
+                  <span
+                    v-if="isApprovedMode"
+                    class="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-medium"
+                  >
+                    <i class="ph ph-info text-sm mr-1"></i>
+                    สามารถยกเลิกรายการได้
+                  </span>
+                </h2>
+                <span class="text-xs text-slate-600 bg-white/60 px-3 py-1 rounded-full">
+                  {{ morelist.filter((r) => !r.isCancelled).length }} รายการ
+                </span>
+              </div>
+
+              <!-- Header ของตาราง -->
+              <div
+                class="hidden sm:grid gap-3 px-2 pb-2 border-b border-white/40 items-center text-center"
+                :class="
+                  isApprovedMode
+                    ? 'sm:grid-cols-[0.15fr_0.3fr_0.6fr_1.5fr_0.7fr_0.6fr_0.2fr]'
+                    : 'sm:grid-cols-[0.3fr_0.6fr_1.5fr_0.7fr_0.6fr_0.2fr]'
+                "
+              >
+                <!-- ✅ คอลัมน์ checkbox ยกเลิก (แสดงเฉพาะ approved mode) -->
+                <div v-if="isApprovedMode" class="text-base font-semibold text-slate-600 uppercase">
+                  ยกเลิก
+                </div>
+                <div class="text-base font-semibold text-slate-600 uppercase">ลำดับ</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">
+                  เล่มที่/เลขที่ใบเสร็จ
+                </div>
+                <div class="text-base font-semibold text-slate-600 uppercase">รายการ</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">ประเภท</div>
+                <div class="text-base font-semibold text-slate-600 uppercase">จำนวนเงิน</div>
+              </div>
+
+              <!-- รายการ -->
+              <div class="space-y-4">
+                <div
+                  v-for="(row, index) in morelist"
+                  :key="row.id"
+                  class="bg-white/20 rounded-xl p-4 border transition-all"
+                  :class="{
+                    'border-red-300 bg-red-50/30': row.isCancelled,
+                    'border-white/50': !row.isCancelled,
+                  }"
+                >
+                  <div
+                    class="grid grid-cols-1 gap-3 items-start"
+                    :class="
+                      isApprovedMode
+                        ? 'sm:grid-cols-[0.15fr_0.2fr_1fr_2.5fr_1fr_1fr_auto]'
+                        : 'sm:grid-cols-[0.2fr_1fr_2.5fr_1fr_1fr_auto]'
+                    "
+                  >
+                    <!-- ✅ Checkbox ยกเลิก (แสดงเฉพาะ approved mode) -->
+                    <div v-if="isApprovedMode" class="flex items-center justify-center">
+                      <label class="flex items-center justify-center cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          v-model="row.isCancelled"
+                          @change="() => handleCancelToggle(index)"
+                          class="w-5 h-5 rounded border-2 border-red-300 text-red-600 focus:ring-red-500 focus:ring-2 cursor-pointer transition-all"
+                        />
+                      </label>
+                    </div>
+
+                    <!-- ลำดับ -->
+                    <div class="flex items-center justify-center ml-2 mr-5">
+                      <span
+                        class="-mr-3 text-white rounded-full text-lg font-bold mt-3 w-10 h-10 flex items-center justify-center"
+                        :class="row.isCancelled ? 'bg-gray-400' : 'bg-purple-500'"
+                      >
+                        {{ index + 1 }}
+                      </span>
+                    </div>
+
+                    <!-- เลขที่ใบเสร็จ -->
+                    <!-- เลขที่ใบเสร็จ -->
+                    <div class="flex flex-col gap-1.5 mt-2 -mr-2 ml-2">
+                      <div class="relative">
+                        <InputText
+                          v-model="row.referenceNo"
+                          :placeholder="row.isCancelled ? 'ยกเลิก' : '(เล่มที่/เลขที่ใบเสร็จ)'"
+                          :disabled="isApprovedMode"
+                          @keypress="allowOnlyDigits"
+                          @input="() => clearRowError(index, 'referenceNo')"
+                          :class="row.isCancelled ? 'opacity-50' : ''"
+                        />
+                        <!-- ✅ แสดง "(ยกเลิก)" แม้ว่าจะไม่มี referenceNo -->
+                        <span
+                          v-if="row.isCancelled"
+                          class="-mt-1 absolute right-3 top-1/2 -translate-y-1/2 text-red-600 font-bold text-sm pointer-events-none"
+                        >
+                          {{ row.referenceNo ? '(ยกเลิก)' : 'ยกเลิก' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- รายการ -->
+                    <div
+                      class="flex flex-col gap-2 mt-[13px]"
+                      :class="row.isCancelled ? 'opacity-50' : ''"
+                    >
+                      <ItemNameSelect
+                        v-model="row.itemName"
+                        @input="(value) => handleItemNameChange(index, value)"
+                        :input-id="`itemName-${index}`"
+                        :disabled="isApprovedMode"
+                        :readonly="isApprovedMode"
+                        waybill-type="all"
+                        department="general"
+                      />
+                        <span v-if="errors.rows?.[index]?.itemName" class="text-red-600 text-xs">
+    {{ errors.rows[index].itemName }}
+  </span>
+                    </div>
+
+                    <!-- ประเภท (รายจ่าย) -->
+                    <div
+                      class="flex items-center justify-center mt-6 -ml-5"
+                      :class="row.isCancelled ? 'opacity-50' : ''"
+                    >
+                      <label class="flex items-center gap-2 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          v-model="row.isExpense"
+                          :disabled="isApprovedMode"
+                          @change="() => handleExpenseToggle(index)"
+                          class="w-5 h-5 rounded border-2 border-gray-300 text-red-600 focus:ring-red-500 focus:ring-2 transition-all"
+                        />
+                        <span
+                          class="text-sm font-medium transition-colors"
+                          :class="row.isExpense ? 'text-red-600' : 'text-gray-500'"
+                        >
+                          รายจ่าย
+                        </span>
+                      </label>
+                    </div>
+
+                    <!-- จำนวนเงิน -->
+                    <div
+                      class="flex flex-col gap-1.5 mt-2"
+                      :class="row.isCancelled ? 'opacity-50 line-through' : ''"
+                    >
+                      <InputText
+                        :model-value="formatDisplayAmount(row.amount)"
+                        @input="(e) => handleAmountInput(index, e)"
+                        @blur="() => formatAmountOnBlur(index)"
+                        :disabled="isApprovedMode || hasAnyPaymentType(index)"
+                        :readonly="hasAnyPaymentType(index)"
+                        placeholder="จำนวนเงิน"
+                        :class="hasAnyPaymentType(index)"
+                      />
+                        <span v-if="errors.rows?.[index]?.amount" class="text-red-600 text-xs">
+    {{ errors.rows[index].amount }}
+  </span>
+                    </div>
+
+                    <!-- ปุ่มลบ (ซ่อนใน approved mode) -->
+                    <button
+                      v-if="morelist.length > 1 && !isApprovedMode"
+                      @click="removeRow(index)"
+                      class="mt-0 sm:mt-0 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start sm:self-center"
+                      title="ลบรายการ"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+
+                    <!-- ส่วนประเภทการชำระ (disabled ใน approved mode) -->
+                    <div
+                      class="col-span-full mt-2 mb-1"
+                      :class="row.isCancelled ? 'opacity-30 pointer-events-none' : ''"
+                    >
+                      <div class="flex gap-4 items-center px-2">
+                        <span class="text-sm font-medium text-gray-600 ml-16">ประเภทการชำระ:</span>
+
+                        <!-- เงินสด -->
+                        <label
+                          class="flex items-center gap-2"
+                          :class="
+                            isReceivableItem(row.itemName)
+                              ? 'cursor-not-allowed opacity-50'
+                              : 'cursor-pointer'
+                          "
+                        >
+                          <input
+                            type="checkbox"
+                            :checked="row.paymentTypes?.cash"
+                            :disabled="
+                              isApprovedMode ||
+                              row.isCancelled ||
+                              isReceivableItem(row.itemName) ||
+                              isExpenseRow(index)
+                            "
+                            @change="
+                              (e) => handlePaymentTypeChange(index, 'cash', e.target.checked)
+                            "
+                            class="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          />
+                          <span class="text-sm text-gray-700">เงินสด</span>
+                        </label>
+
+                        <!-- เช็ค -->
+                        <label
+                          class="flex items-center gap-2"
+                          :class="
+                            isReceivableItem(row.itemName)
+                              ? 'cursor-not-allowed opacity-50'
+                              : 'cursor-pointer'
+                          "
+                        >
+                          <input
+                            type="checkbox"
+                            :checked="row.paymentTypes?.check"
+                            :disabled="
+                              isApprovedMode ||
+                              row.isCancelled ||
+                              isReceivableItem(row.itemName) ||
+                              isExpenseRow(index)
+                            "
+                            @change="
+                              (e) => handlePaymentTypeChange(index, 'check', e.target.checked)
+                            "
+                            class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span class="text-sm text-gray-700">เช็ค</span>
+                        </label>
+
+                        <!-- เงินโอน -->
+                        <label
+                          class="flex items-center gap-2"
+                          :class="
+                            isReceivableItem(row.itemName)
+                              ? 'cursor-not-allowed opacity-50'
+                              : 'cursor-pointer'
+                          "
+                        >
+                          <input
+                            type="checkbox"
+                            :checked="row.paymentTypes?.transfer"
+                            :disabled="
+                              isApprovedMode ||
+                              row.isCancelled ||
+                              isReceivableItem(row.itemName) ||
+                              isExpenseRow(index)
+                            "
+                            @change="
+                              (e) => handlePaymentTypeChange(index, 'transfer', e.target.checked)
+                            "
+                            class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                          />
+                          <span class="text-sm text-gray-700">เงินโอน</span>
+                        </label>
+
+                        <!-- ✅ แสดงไอคอนแจ้งเตือนเมื่อเป็นลูกหนี้ -->
+                        <span
+                          v-if="isReceivableItem(row.itemName)"
+                          class="text-xs text-orange-600 font-medium ml-2"
+                        >
+                          <i class="ph ph-info text-sm"></i>
+                          (รายการลูกหนี้)
+                        </span>
+                        <span
+                          v-else-if="isExpenseRow(index)"
+                          class="text-xs text-red-600 font-medium ml-2"
+                        >
+                          <i class="ph ph-info text-sm"></i>
+                          (รายจ่าย ไม่ต้องระบุช่องทาง)
+                        </span>
+                      </div>
+
+                      <!-- แสดง error เฉพาะรายการที่ไม่ใช่ลูกหนี้ -->
+                      <div
+                        v-if="errors.rows?.[index]?.paymentTypes && !isReceivableItem(row.itemName)"
+                        class="px-2 mt-2"
+                      >
+                        <span class="text-red-600 text-xs ml-16">
+                          {{ errors.rows[index].paymentTypes }}
+                        </span>
+                      </div>
+                      <transition
+                        enter-active-class="transition-all duration-300 ease-out"
+                        leave-active-class="transition-all duration-200 ease-in"
+                        enter-from-class="opacity-0 max-h-0"
+                        enter-to-class="opacity-100 max-h-32"
+                        leave-from-class="opacity-100 max-h-32"
+                        leave-to-class="opacity-0 max-h-0"
+                      >
+                        <div
+                          v-if="row.paymentTypes?.cash"
+                          class="mt-3 px-2 bg-red-100 rounded-lg p-3 border border-blue-200"
+                        >
+                          <div class="flex items-center gap-[705px]">
+                            <div class="text-sm font-medium ml-3">เงินสด</div>
+                            <div class="w-52">
+                              <InputText
+                                :model-value="formatDisplayAmount(row.cashDetails?.amount || '')"
+                                @input="(e) => handlePaymentAmountInput(index, 'cash', e)"
+                                @blur="() => formatPaymentAmountOnBlur(index, 'cash')"
+                                placeholder="จำนวนเงินสด"
+                                :disabled="isApprovedMode"
+                              />
+                                    <span v-if="errors.rows?.[index]?.cashAmount" class="text-red-600 text-xs mt-1 block">
+        {{ errors.rows[index].cashAmount }}
       </span>
-    </h2>
-    <span class="text-xs text-slate-600 bg-white/60 px-3 py-1 rounded-full">
-      {{ morelist.filter(r => !r.isCancelled).length }} / {{ morelist.length }} รายการ
-    </span>
-  </div>
-
-  <!-- Header ของตาราง -->
-  <div class="hidden sm:grid gap-3 px-2 pb-2 border-b border-white/40 items-center text-center"
-       :class="isApprovedMode 
-         ? 'sm:grid-cols-[0.15fr_0.3fr_0.6fr_1.5fr_0.7fr_0.6fr_0.2fr]'
-         : 'sm:grid-cols-[0.3fr_0.6fr_1.5fr_0.7fr_0.6fr_0.2fr]'
-       ">
-    <!-- ✅ คอลัมน์ checkbox ยกเลิก (แสดงเฉพาะ approved mode) -->
-    <div v-if="isApprovedMode" class="text-base font-semibold text-slate-600 uppercase">
-      ยกเลิก
-    </div>
-    <div class="text-base font-semibold text-slate-600 uppercase">ลำดับ</div>
-    <div class="text-base font-semibold text-slate-600 uppercase">เล่มที่/เลขที่ใบเสร็จ</div>
-    <div class="text-base font-semibold text-slate-600 uppercase">รายการ</div>
-    <div class="text-base font-semibold text-slate-600 uppercase">ประเภท</div>
-    <div class="text-base font-semibold text-slate-600 uppercase">จำนวนเงิน</div>
-  </div>
-
-  <!-- รายการ -->
-  <div class="space-y-4">
-    <div
-      v-for="(row, index) in morelist"
-      :key="row.id"
-      class="bg-white/20 rounded-xl p-4 border transition-all"
-      :class="{
-        'border-red-300 bg-red-50/30': row.isCancelled,
-        'border-white/50': !row.isCancelled
-      }"
-    >
-      <div class="grid grid-cols-1 gap-3 items-start"
-           :class="isApprovedMode
-             ? 'sm:grid-cols-[0.15fr_0.2fr_1fr_2.5fr_1fr_1fr_auto]'
-             : 'sm:grid-cols-[0.2fr_1fr_2.5fr_1fr_1fr_auto]'
-           ">
-        
-        <!-- ✅ Checkbox ยกเลิก (แสดงเฉพาะ approved mode) -->
-        <div v-if="isApprovedMode" class="flex items-center justify-center">
-          <label class="flex items-center justify-center cursor-pointer group">
-            <input
-              type="checkbox"
-              v-model="row.isCancelled"
-              @change="() => handleCancelToggle(index)"
-              class="w-5 h-5 rounded border-2 border-red-300 text-red-600 focus:ring-red-500 focus:ring-2 cursor-pointer transition-all"
-            />
-          </label>
-        </div>
-
-        <!-- ลำดับ -->
-        <div class="flex items-center justify-center ml-2 mr-5">
-          <span
-            class="-mr-3 text-white rounded-full text-lg font-bold mt-3 w-10 h-10 flex items-center justify-center"
-            :class="row.isCancelled ? 'bg-gray-400' : 'bg-purple-500'"
-          >
-            {{ index + 1 }}
-          </span>
-        </div>
-
-        <!-- เลขที่ใบเสร็จ -->
-        <div class="flex flex-col gap-1.5 mt-2 -mr-2 ml-2">
-          <div class="relative">
-            <InputText
-              v-model="row.referenceNo"
-              :placeholder="row.isCancelled ? 'ยกเลิก' : '(เล่มที่/เลขที่ใบเสร็จ)'"
-              :disabled="isApprovedMode"
-              @keypress="allowOnlyDigits"
-              @input="() => clearRowError(index, 'referenceNo')"
-              :class="row.isCancelled ? 'opacity-50' : ''"
-            />
-            <!-- ✅ แสดง "(ยกเลิก)" ต่อท้ายเลขที่ใบเสร็จ -->
-            <span
-              v-if="row.isCancelled && row.referenceNo"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-red-600 font-bold text-sm"
-            >
-              (ยกเลิก)
-            </span>
-          </div>
-        </div>
-
-        <!-- รายการ -->
-        <div class="flex flex-col gap-2 mt-[13px]" :class="row.isCancelled ? 'opacity-50' : ''">
-          <ItemNameSelect
-            v-model="row.itemName"
-            @input="(value) => handleItemNameChange(index, value)"
-            :input-id="`itemName-${index}`"
-                                                    :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
-            waybill-type="all"
-            department="general"
-          />
-        </div>
-
-        <!-- ประเภท (รายจ่าย) -->
-        <div class="flex items-center justify-center mt-6 -ml-5" :class="row.isCancelled ? 'opacity-50' : ''">
-          <label class="flex items-center gap-2 cursor-pointer group">
-            <input
-              type="checkbox"
-              v-model="row.isExpense"
-              :disabled="isApprovedMode"
-              @change="() => handleExpenseToggle(index)"
-              class="w-5 h-5 rounded border-2 border-gray-300 text-red-600 focus:ring-red-500 focus:ring-2 transition-all"
-            />
-            <span
-              class="text-sm font-medium transition-colors"
-              :class="row.isExpense ? 'text-red-600' : 'text-gray-500'"
-            >
-              รายจ่าย
-            </span>
-          </label>
-        </div>
-
-        <!-- จำนวนเงิน -->
-        <div class="flex flex-col gap-1.5 mt-2" :class="row.isCancelled ? 'opacity-50 line-through' : ''">
-          <InputText
-            :model-value="formatDisplayAmount(row.amount)"
-            @input="(e) => handleAmountInput(index, e)"
-            @blur="() => formatAmountOnBlur(index)"
-            :disabled="isApprovedMode"
-            placeholder="จำนวนเงิน"
-          />
-        </div>
-
-        <!-- ปุ่มลบ (ซ่อนใน approved mode) -->
-        <button
-          v-if="morelist.length > 1 && !isApprovedMode"
-          @click="removeRow(index)"
-          class="mt-0 sm:mt-0 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 self-start sm:self-center"
-          title="ลบรายการ"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-          </svg>
-        </button>
-
-        <!-- ส่วนประเภทการชำระ (disabled ใน approved mode) -->
-        <div class="col-span-full mt-2 mb-1" :class="row.isCancelled ? 'opacity-30 pointer-events-none' : ''">
-          <div class="flex gap-4 items-center px-2">
-            <span class="text-sm font-medium text-gray-600 ml-16">ประเภทการชำระ:</span>
-
-            <!-- เงินสด -->
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                :checked="row.paymentTypes?.cash"
-                :disabled="isApprovedMode || row.isCancelled"
-                @change="(e) => handlePaymentTypeChange(index, 'cash', e.target.checked)"
-                class="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-              />
-              <span class="text-sm text-gray-700">เงินสด</span>
-            </label>
-
-            <!-- เช็ค -->
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                :checked="row.paymentTypes?.check"
-                :disabled="isApprovedMode || row.isCancelled"
-                @change="(e) => handlePaymentTypeChange(index, 'check', e.target.checked)"
-                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span class="text-sm text-gray-700">เช็ค</span>
-            </label>
-
-            <!-- เงินโอน -->
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                :checked="row.paymentTypes?.transfer"
-                :disabled="isApprovedMode || row.isCancelled"
-                @change="(e) => handlePaymentTypeChange(index, 'transfer', e.target.checked)"
-                class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-              />
-              <span class="text-sm text-gray-700">เงินโอน</span>
-            </label>
-          </div>
-<transition
+                            </div>
+                          </div>
+                        </div>
+                      </transition>
+                      <!-- ฟิลด์เพิ่มเติมสำหรับเช็ค (แสดงแต่ disable ถ้าเป็นลูกหนี้) -->
+                      <transition
                         enter-active-class="transition-all duration-300 ease-out"
                         leave-active-class="transition-all duration-200 ease-in"
                         enter-from-class="opacity-0 max-h-0"
@@ -588,9 +721,10 @@
                       >
                         <div
                           v-if="row.paymentTypes?.check"
-                          class="mt-3 px-2 bg-blue-50 rounded-lg p-3 border border-blue-200"
+                          class="mt-3 px-2 bg-blue-100 rounded-lg p-3 border border-blue-200"
+                          :class="isReceivableItem(row.itemName) ? 'opacity-50' : ''"
                         >
-                          <div class="grid grid-cols-3 gap-3">
+                          <div class="grid grid-cols-4 gap-3">
                             <!-- ธนาคาร -->
                             <div class="flex flex-col gap-1">
                               <label class="text-xs font-medium text-gray-600">ธนาคาร</label>
@@ -601,38 +735,64 @@
                                 option-value="value"
                                 placeholder="เลือกธนาคาร"
                                 value-type="string"
-                                class="text-sm"
-                                                  :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                                class="text-sm w-10"
+                                :disabled="isApprovedMode || isReceivableItem(row.itemName)"
+                                :readonly="isApprovedMode || isReceivableItem(row.itemName)"
+                                @change="() => clearRowError(index, 'checkBankName')"
                               />
+      <span v-if="errors.rows?.[index]?.checkBankName" class="text-red-600 text-xs">
+        {{ errors.rows[index].checkBankName }}
+      </span>
                             </div>
-                                                        <!-- เลขที่เช็ค -->
-                            <div class="flex flex-col gap-1">
+                            <!-- เลขที่เช็ค -->
+                            <div class="flex flex-col gap-1 ml-2">
                               <label class="text-xs font-medium text-gray-600">เลขที่เช็ค</label>
                               <InputText
                                 v-model="row.checkDetails.checkNumber"
                                 placeholder="ระบุเลขที่เช็ค"
                                 @keypress="allowOnlyDigits"
-                                class="text-sm"
-                                                  :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                                class="text-sm w-52"
+                                :disabled="isApprovedMode || isReceivableItem(row.itemName)"
+                                :readonly="isApprovedMode || isReceivableItem(row.itemName)"
+                                @input="() => clearRowError(index, 'checkNumber')"
                               />
+      <span v-if="errors.rows?.[index]?.checkNumber" class="text-red-600 text-xs">
+        {{ errors.rows[index].checkNumber }}
+      </span>
                             </div>
-                                                        <div class="flex flex-col gap-1">
+                            <div class="flex flex-col gap-1 -ml-7 mr-12">
                               <label class="text-xs font-medium text-gray-600">เลขที่ในเช็ค</label>
                               <InputText
                                 v-model="row.checkDetails.numInCheck"
                                 placeholder="ระบุเลขที่ในเช็ค"
-                                class="text-sm"
-                                                  :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
+                                class="text-sm w-52"
+                                :disabled="isApprovedMode || isReceivableItem(row.itemName)"
+                                :readonly="isApprovedMode || isReceivableItem(row.itemName)"
+                                @input="() => clearRowError(index, 'checkNumInCheck')"
                               />
+      <span v-if="errors.rows?.[index]?.checkNumInCheck" class="text-red-600 text-xs">
+        {{ errors.rows[index].checkNumInCheck }}
+      </span>
+                            </div>
+                            <div class="flex flex-col gap-1 -ml-10">
+                              <label class="text-xs font-medium text-gray-600">จำนวนเงิน</label>
+                              <InputText
+                                :model-value="formatDisplayAmount(row.checkDetails?.amount || '')"
+                                @input="(e) => handlePaymentAmountInput(index, 'check', e)"
+                                @blur="() => formatPaymentAmountOnBlur(index, 'check')"
+                                placeholder="จำนวนเงิน"
+                                class="w-52"
+                                :disabled="isApprovedMode || isReceivableItem(row.itemName)"
+                              />
+     <span v-if="errors.rows?.[index]?.checkAmount" class="text-red-600 text-xs">
+        {{ errors.rows[index].checkAmount }}
+      </span>
                             </div>
                           </div>
                         </div>
                       </transition>
 
-                      <!-- ✅ ฟิลด์เพิ่มเติมสำหรับเงินโอน (แสดงเมื่อ tick) -->
+                      <!-- ฟิลด์เพิ่มเติมสำหรับเงินโอน (แสดงแต่ disable ถ้าเป็นลูกหนี้) -->
                       <transition
                         enter-active-class="transition-all duration-300 ease-out"
                         leave-active-class="transition-all duration-200 ease-in"
@@ -643,59 +803,91 @@
                       >
                         <div
                           v-if="row.paymentTypes?.transfer"
-                          class="mt-3 px-2 bg-purple-50 rounded-lg p-3 border border-purple-200"
+                          class="mt-3 px-2 bg-purple-100 rounded-lg p-3 border border-purple-200"
+                          :class="isReceivableItem(row.itemName) ? 'opacity-50' : ''"
                         >
-                          <div class="flex flex-col gap-1">
-                            <label class="text-xs font-medium text-gray-600"
-                              >เลือกบัญชีธนาคาร</label
-                            >
-                            <BankAccountSelect
-                              v-model="row.transferDetails.accountData"
-                              :input-id="`transfer-bank-${index}`"
-                              placeholder="เลือกบัญชีธนาคาร"
-                                                :disabled="isApprovedMode"
-                  :readonly="isApprovedMode"
-                            />
+                          <div class="flex gap-4 items-end">
+                            <!-- เลือกบัญชีธนาคาร -->
+                            <div class="flex flex-col gap-1 w-[740px]">
+                              <label class="text-xs font-medium text-gray-600">
+                                เลือกบัญชีธนาคาร
+                              </label>
+                              <BankAccountSelect
+                                v-model="row.transferDetails.accountData"
+                                :input-id="`transfer-bank-${index}`"
+                                placeholder="เลือกบัญชีธนาคาร"
+                                :disabled="isApprovedMode || isReceivableItem(row.itemName)"
+                                :readonly="isApprovedMode || isReceivableItem(row.itemName)"
+                                @change="() => clearRowError(index, 'transferAccount')"
+                              />
+      <span v-if="errors.rows?.[index]?.transferAccount" class="text-red-600 text-xs">
+        {{ errors.rows[index].transferAccount }}
+      </span>
+                            </div>
+
+                            <!-- จำนวนเงิน -->
+                            <div class="w-52 -mb-2">
+                              <label class="text-xs font-medium text-gray-600">จำนวนเงิน</label>
+                              <InputText
+                                :model-value="
+                                  formatDisplayAmount(row.transferDetails?.amount || '')
+                                "
+                                @input="(e) => handlePaymentAmountInput(index, 'transfer', e)"
+                                @blur="() => formatPaymentAmountOnBlur(index, 'transfer')"
+                                placeholder="จำนวนเงิน"
+                                :disabled="isApprovedMode || isReceivableItem(row.itemName)"
+                              />
+      <span v-if="errors.rows?.[index]?.transferAmount" class="text-red-600 text-xs">
+        {{ errors.rows[index].transferAmount }}
+      </span>
+                            </div>
                           </div>
                         </div>
                       </transition>
-          <!-- ฟิลด์เพิ่มเติมสำหรับเช็คและเงินโอน... (ทำแบบเดียวกัน) -->
-        </div>
-      </div>
-    </div>
-  </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-  <!-- ปุ่มเพิ่มรายการ (ซ่อนใน approved mode) -->
-  <button
-    v-if="!isApprovedMode"
-    @click="addRow"
-    class="w-full h-14 border-2 border-dashed text-xl border-[#7E22CE] rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
-  >
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-    </svg>
-    เพิ่มรายการ
-  </button>
+              <!-- ปุ่มเพิ่มรายการ (ซ่อนใน approved mode) -->
+              <button
+                v-if="!isApprovedMode"
+                @click="addRow"
+                class="w-full h-14 border-2 border-dashed text-xl border-[#7E22CE] rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                เพิ่มรายการ
+              </button>
 
-  <!-- ✅ แสดงข้อความแจ้งเตือนใน approved mode -->
-  <div
-    v-if="isApprovedMode"
-    class="bg-blue-50/80 backdrop-blur-sm border border-blue-300 rounded-xl p-4 shadow-sm"
-  >
-    <p class="text-sm text-blue-900 m-0 flex items-start gap-2">
-      <i class="ph ph-info text-xl flex-shrink-0 mt-0.5"></i>
-      <span>
-        <strong>โหมดแก้ไขแบบจำกัด:</strong> 
-        ใบนำส่งนี้ได้รับการอนุมัติแล้ว คุณสามารถยกเลิกรายการได้โดย tick ช่อง "ยกเลิก" 
-        รายการที่ยกเลิกจะไม่นับรวมในยอดเงินสุทธิ
-      </span>
-    </p>
-  </div>
-</div>
+              <!-- ✅ แสดงข้อความแจ้งเตือนใน approved mode -->
+              <div
+                v-if="isApprovedMode"
+                class="bg-blue-50/80 backdrop-blur-sm border border-blue-300 rounded-xl p-4 shadow-sm"
+              >
+                <p class="text-sm text-blue-900 m-0 flex items-start gap-2">
+                  <i class="ph ph-info text-xl flex-shrink-0 mt-0.5"></i>
+                  <span class="mt-1">
+                    <strong>โหมดแก้ไขแบบจำกัด:</strong>
+                    ใบนำส่งนี้ได้รับการอนุมัติเรียบร้อยแล้ว
+                    ท่านสามารถยกเลิกรายการได้โดยทำเครื่องหมายถูกในช่อง “ยกเลิก”
+                    รายการที่ถูกยกเลิกจะไม่นำมาคำนวณรวมในยอดเงินสุทธิ
+                    และเมื่อดำเนินการยกเลิกรายการแล้ว จะไม่สามารถยกเลิกการยกเลิกได้อีก
+                  </span>
+                </p>
+              </div>
+            </div>
             <div class="glass-panel rounded-2xl p-6 shadow-lg space-y-4">
               <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                  <span class="w-1 h-6 bg-red-500 rounded-full"></span>ส่วนที่ 3: การนำส่งเงิน
+                  <span class="w-1 h-6 bg-red-500 rounded-full"></span>ส่วนที่ 3:
+                  รายละเอียดประเภทการชำระ
                 </h2>
                 <span class="text-xs text-slate-600 bg-white/60 px-3 py-1 rounded-full">
                   {{ totalPaymentTypesCount }} ประเภท
@@ -716,7 +908,7 @@
                       class="w-5 h-5 rounded border-gray-300 text-purple-600 opacity-60 cursor-not-allowed"
                     />
                     <div class="flex-1">
-                      <div class="font-medium text-slate-800">🏦 เงินโอน</div>
+                      <div class="font-medium text-slate-800">เงินโอน</div>
                       <div class="text-sm text-slate-600 mt-1">
                         รวมจาก {{ transferCount }} รายการ
                       </div>
@@ -740,7 +932,7 @@
                       class="w-5 h-5 rounded border-gray-300 text-blue-600 opacity-60 cursor-not-allowed"
                     />
                     <div class="flex-1">
-                      <div class="font-medium text-slate-800">📝 เช็ค</div>
+                      <div class="font-medium text-slate-800">เช็ค</div>
                       <div class="text-sm text-slate-600 mt-1">รวมจาก {{ checkCount }} รายการ</div>
                     </div>
                     <div class="text-xl font-bold text-blue-600">
@@ -762,7 +954,7 @@
                       class="w-5 h-5 rounded border-gray-300 text-green-600 opacity-60 cursor-not-allowed"
                     />
                     <div class="flex-1">
-                      <div class="font-medium text-slate-800">💵 เงินสด</div>
+                      <div class="font-medium text-slate-800">เงินสด</div>
                       <div class="text-sm text-slate-600 mt-1">รวมจาก {{ cashCount }} รายการ</div>
                     </div>
                     <div class="text-xl font-bold text-green-600">
@@ -785,14 +977,35 @@
                     />
                     <div class="flex-1">
                       <div class="font-medium text-slate-800">📋 ลูกหนี้</div>
-                      <div class="text-sm text-slate-600 mt-1">คำนวณอัตโนมัติจากรายการลูกหนี้</div>
+                      <div class="text-sm text-slate-600 mt-1">ผลรวมรายการลูกหนี้ทั้งหมด</div>
                     </div>
                     <div class="text-xl font-bold text-orange-600">
                       {{ formatCurrency(debtorTotalAmount) }} บาท
                     </div>
                   </div>
                 </div>
-
+                <div
+                  v-if="expenseTotalAmount > 0"
+                  class="bg-red-50 rounded-xl p-4 border border-red-200"
+                >
+                  <div class="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      :checked="true"
+                      disabled
+                      class="w-5 h-5 rounded border-gray-300 text-red-600 opacity-60 cursor-not-allowed"
+                    />
+                    <div class="flex-1">
+                      <div class="font-medium text-slate-800">รายจ่าย (หักออก)</div>
+                      <div class="text-sm text-slate-600 mt-1">
+                        รวมจาก {{ expenseCount }} รายการ
+                      </div>
+                    </div>
+                    <div class="text-xl font-bold text-red-600">
+                      -{{ formatCurrency(expenseTotalAmount) }} บาท
+                    </div>
+                  </div>
+                </div>
                 <!-- ⚠️ แสดงเมื่อยังไม่มีข้อมูล -->
                 <div v-if="totalPaymentTypesCount === 0" class="text-center py-12 text-gray-400">
                   <i class="ph ph-wallet text-5xl mb-3 opacity-50"></i>
@@ -801,14 +1014,12 @@
                 </div>
               </div>
             </div>
-<div class="bg-[#7E22CE] border rounded-lg py-6 px-3">
-  <div class="flex justify-between items-center">
-    <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด</span>
-    <span class="text-3xl font-bold text-white">
-      {{ formattedNetTotal }} บาท
-    </span>
-  </div>
-</div>
+            <div class="bg-[#7E22CE] border rounded-lg py-6 px-3">
+              <div class="flex justify-between items-center">
+                <span class="text-2xl font-bold text-white">ยอดสุทธิทั้งหมด</span>
+                <span class="text-3xl font-bold text-white"> {{ formattedNetTotal }} บาท </span>
+              </div>
+            </div>
 
             <div
               class="bg-yellow-50/80 backdrop-blur-sm border border-yellow-300 rounded-xl p-4 shadow-sm"
@@ -823,14 +1034,14 @@
               </p>
             </div>
             <div class="flex justify-end gap-3 pb-4">
-<button
-    v-if="!isApprovedMode"
-    @click="showSaveDialog = true"
-    class="flex items-center mr-[742px] gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
-  >
-    <i class="ph ph-floppy-disk text-lg"></i>
-    <span class="text-base font-medium">บันทึก Template</span>
-  </button>
+              <button
+                v-if="!isApprovedMode"
+                @click="showSaveDialog = true"
+                class="flex items-center mr-[742px] gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+              >
+                <i class="ph ph-floppy-disk text-lg"></i>
+                <span class="text-base font-medium">บันทึก Template</span>
+              </button>
               <button
                 @click="gotomainpage"
                 class="px-6 py-3 rounded-xl bg-white/60 backdrop-blur-sm text-slate-700 hover:bg-white/80 border border-white/60 transition-all shadow-sm"
@@ -859,7 +1070,9 @@
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-xl font-bold text-slate-800">บันทึก Template</h3>
           <button
-            @click="showSaveDialog = false; templateName = ''"
+            @click="
+              showSaveDialog = false;
+              templateName = ''"
             class="text-slate-500 hover:text-slate-700"
           >
             <i class="ph ph-x text-2xl"></i>
@@ -900,7 +1113,10 @@
 
           <div class="flex gap-3">
             <button
-              @click="showSaveDialog = false; templateName = ''"
+              @click="
+                showSaveDialog = false;
+                templateName = ''
+              "
               class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all"
             >
               ยกเลิก
@@ -928,7 +1144,7 @@
           <h3 class="text-xl font-bold text-slate-800">โหลด Template</h3>
           <button
             @click="
-              showLoadDialog = false ;
+              showLoadDialog = false;
               searchTerm = ''
               expandedTemplates = {}
             "
@@ -1316,6 +1532,8 @@ const {
   removeRow,
   handleTypeChange,
   formattedTotalAmount,
+  expenseCount,
+  expenseTotalAmount,
 } = useRowManager()
 
 const {
@@ -1451,7 +1669,6 @@ const saveTemplate = () => {
     return
   }
 
-  // ✅ ตรวจสอบว่า Login อยู่หรือไม่
   if (!authStore.user) {
     Swal.fire({
       icon: 'error',
@@ -1461,45 +1678,38 @@ const saveTemplate = () => {
     return
   }
 
-  // ✅ เก็บเฉพาะชื่อรายการที่มีข้อมูล (ไม่เอาเลขที่อ้างอิงและจำนวนเงิน)
   const receiptItems = morelist.value
     .filter((row) => row.itemName && row.itemName.trim() !== '')
     .map((row) => ({
       itemName: row.itemName,
       isExpense: row.isExpense || false,
     }))
-  const savedBankTransfers = bankTransfers.value
-    .filter(
-      (bank) => bank.accountData.accountNumber && bank.accountData.accountNumber.trim() !== '',
-    )
-    .map((bank) => ({
-      accountData: {
-        accountNumber: bank.accountData.accountNumber,
-        bankName: bank.accountData.bankName,
-        accountName: bank.accountData.accountName,
-      },
-    }))
+
   const template = {
     id: Date.now(),
     name: templateName.value.trim(),
     data: {
+      // ✅ เก็บข้อมูลพื้นฐาน
       fullName: formData.value.fullName,
       phone: formData.value.phone,
+      fundName: formData.value.fundName,
+      sendmoney: formData.value.sendmoney,
+      projectCode: formData.value.projectCode,
+      
+      // ✅ เก็บข้อมูล Category
       mainCategoryId: mainCategoryId.value,
       mainCategory: mainCategory.value,
       subCategoryId: subCategoryId.value,
       subCategory: subCategory.value,
       subCategoryId2: subCategoryId2.value,
       subCategory2: subCategory2.value,
-      fundName: formData.value.fundName,
-      sendmoney: formData.value.sendmoney,
-      projectCode: formData.value.projectCode,
+      
+      // ✅ เก็บรายการ
       receiptItems: receiptItems.map((item) => ({
         itemId: getItemByName(item.itemName)?.id,
         itemName: item.itemName,
         isExpense: item.isExpense,
       })),
-      bankTransfers: savedBankTransfers,
     },
     userId: authStore.user.id,
     userName: authStore.user.fullName,
@@ -1510,7 +1720,6 @@ const saveTemplate = () => {
 
   templates.value.push(template)
 
-  // ✅ บันทึกลง localStorage ของ User นี้
   const storageKey = getTemplateStorageKey()
   if (storageKey) {
     localStorage.setItem(storageKey, JSON.stringify(templates.value))
@@ -1530,12 +1739,14 @@ const saveTemplate = () => {
 
 // ✅ โหลด Template (รวมรายการนำส่งเงิน)
 const loadTemplate = async (template) => {
+  // โหลดข้อมูลพื้นฐาน
   formData.value.fullName = template.data.fullName
   formData.value.phone = template.data.phone
   formData.value.fundName = template.data.fundName
   formData.value.sendmoney = template.data.sendmoney
   formData.value.projectCode = template.data.projectCode
 
+  // โหลด Categories
   if (template.data.mainCategoryId) {
     mainCategoryId.value = template.data.mainCategoryId
     mainCategory.value = template.data.mainCategory
@@ -1554,11 +1765,11 @@ const loadTemplate = async (template) => {
     await nextTick()
   }
 
-  // ✅ ล้าง morelist เก่าทิ้งก่อน
+  // ล้าง morelist เก่า
   morelist.value = []
   await nextTick()
 
-  // ✅ โหลดรายการนำส่งเงิน (เฉพาะชื่อรายการ)
+  // โหลดรายการ
   if (template.data.receiptItems && template.data.receiptItems.length > 0) {
     morelist.value = template.data.receiptItems.map((item, index) => {
       const itemData = item.itemId ? getItemById(item.itemId) : getItemByName(item.itemName)
@@ -1574,35 +1785,12 @@ const loadTemplate = async (template) => {
       }
     })
   } else {
-    // ✅ ถ้าไม่มีรายการใน template ให้สร้างแถวว่าง 2 แถว (เหมือนตอนเริ่มต้น)
     addRow()
     addRow()
   }
+  
   await nextTick()
 
-  // ✅ ส่วนที่ 3.1: โหลดรายการธนาคาร
-  if (template.data.bankTransfers && template.data.bankTransfers.length > 0) {
-    // ล้างรายการเดิม
-    bankTransfers.value = []
-    await nextTick()
-
-    // โหลดรายการจาก template (โดยไม่มี amount)
-    template.data.bankTransfers.forEach((savedBank) => {
-      const newBank = {
-        id: Date.now() + Math.random(),
-        accountData: {
-          accountNumber: savedBank.accountData.accountNumber || '',
-          bankName: savedBank.accountData.bankName || '',
-          accountName: savedBank.accountData.accountName || '',
-        },
-        amount: '', // ไม่โหลด amount
-      }
-      bankTransfers.value.push(newBank)
-    })
-
-    await nextTick()
-    console.log('✅ Loaded bank transfers from template:', bankTransfers.value)
-  }
   showLoadDialog.value = false
 
   Swal.fire({
@@ -1667,6 +1855,32 @@ const isTemplateExpanded = (templateId) => {
 const handleExpenseToggle = (index) => {
   // เมื่อ toggle checkbox จะเปลี่ยน type
   morelist.value[index].type = morelist.value[index].isExpense ? 'expense' : 'income'
+
+  // ✅ ถ้าเป็นรายจ่าย ให้ล้างข้อมูลการชำระเงินทั้งหมด
+  if (morelist.value[index].isExpense) {
+    morelist.value[index].paymentTypes = {
+      cash: false,
+      check: false,
+      transfer: false,
+    }
+    morelist.value[index].checkDetails = {
+      bankName: '',
+      checkNumber: '',
+      numInCheck: '',
+    }
+    morelist.value[index].transferDetails = {
+      accountData: {
+        accountNumber: '',
+        bankName: '',
+        accountName: '',
+      },
+    }
+  }
+}
+
+const isExpenseRow = (index) => {
+  if (!morelist.value[index]) return false
+  return morelist.value[index].isExpense === true || morelist.value[index].type === 'expense'
 }
 
 // ✅ ฟังก์ชันจัดการเมื่อเปลี่ยนประเภทการชำระเงิน
@@ -1722,14 +1936,13 @@ const handlePaymentTypeChange = (index, type, checked) => {
       }
     }
   }
-
 }
 
 const transferTotalAmount = computed(() => {
   return morelist.value.reduce((sum, row) => {
-    if (row.isCancelled) return sum // ✅ ข้ามรายการที่ยกเลิก
-    if (row.paymentTypes?.transfer && row.amount) {
-      const amount = parseFloat(String(row.amount).replace(/,/g, ''))
+    if (row.isCancelled) return sum
+    if (row.paymentTypes?.transfer && row.transferDetails?.amount) {
+      const amount = parseFloat(String(row.transferDetails.amount).replace(/,/g, ''))
       return sum + (isNaN(amount) ? 0 : amount)
     }
     return sum
@@ -1744,9 +1957,9 @@ const transferCount = computed(() => {
 // ✅ คำนวณยอดรวมเช็ค
 const checkTotalAmount = computed(() => {
   return morelist.value.reduce((sum, row) => {
-    if (row.isCancelled) return sum // ✅ ข้ามรายการที่ยกเลิก
-    if (row.paymentTypes?.check && row.amount) {
-      const amount = parseFloat(String(row.amount).replace(/,/g, ''))
+    if (row.isCancelled) return sum
+    if (row.paymentTypes?.check && row.checkDetails?.amount) {
+      const amount = parseFloat(String(row.checkDetails.amount).replace(/,/g, ''))
       return sum + (isNaN(amount) ? 0 : amount)
     }
     return sum
@@ -1761,9 +1974,9 @@ const checkCount = computed(() => {
 // ✅ คำนวณยอดรวมเงินสด
 const cashTotalAmount = computed(() => {
   return morelist.value.reduce((sum, row) => {
-    if (row.isCancelled) return sum // ✅ ข้ามรายการที่ยกเลิก
-    if (row.paymentTypes?.cash && row.amount) {
-      const amount = parseFloat(String(row.amount).replace(/,/g, ''))
+    if (row.isCancelled) return sum
+    if (row.paymentTypes?.cash && row.cashDetails?.amount) {
+      const amount = parseFloat(String(row.cashDetails.amount).replace(/,/g, ''))
       return sum + (isNaN(amount) ? 0 : amount)
     }
     return sum
@@ -1790,7 +2003,7 @@ const debtorTotalAmount = computed(() => {
 // ✅ 5. ฟังก์ชันจัดการการยกเลิกรายการ
 const handleCancelToggle = (index) => {
   const row = morelist.value[index]
-  
+
   if (!isApprovedMode.value) {
     Swal.fire({
       icon: 'warning',
@@ -1823,7 +2036,7 @@ const handleCancelToggle = (index) => {
         row.isCancelled = false
       }
     })
-  } 
+  }
   // ✅ ถ้ากำลังจะยกเลิกการยกเลิก (untick)
   else {
     Swal.fire({
@@ -1854,6 +2067,7 @@ const totalPaymentTypesCount = computed(() => {
   if (checkTotalAmount.value > 0) count++
   if (cashTotalAmount.value > 0) count++
   if (debtorTotalAmount.value > 0) count++
+  if (expenseTotalAmount.value > 0) count++
   return count
 })
 
@@ -2050,13 +2264,43 @@ const loadUserTemplates = () => {
 }
 
 // ฟังก์ชันจัดการ input จำนวนเงินส่วนที่ 3
-const handlePaymentAmountInput = (method, event) => {
+const handlePaymentAmountInput = (index, type, event) => {
   const value = event.target.value.replace(/[^0-9.]/g, '')
   const parts = value.split('.')
   if (parts.length > 2) return
 
-  // ✅ แก้ไขตรงนี้ - เพิ่ม .value
-  paymentMethods.value[method].amount = value
+  // อัพเดทค่าตาม type
+  if (type === 'cash') {
+    if (!morelist.value[index].cashDetails) {
+      morelist.value[index].cashDetails = { amount: '' }
+    }
+    morelist.value[index].cashDetails.amount = value
+    clearRowError(index, 'cashAmount') // ✅ เพิ่ม clear error
+  } else if (type === 'check') {
+    if (!morelist.value[index].checkDetails) {
+      morelist.value[index].checkDetails = {
+        amount: '',
+        bankName: '',
+        checkNumber: '',
+        numInCheck: '',
+      }
+    }
+    morelist.value[index].checkDetails.amount = value
+    clearRowError(index, 'checkAmount') // ✅ เพิ่ม clear error
+  } else if (type === 'transfer') {
+    if (!morelist.value[index].transferDetails) {
+      morelist.value[index].transferDetails = {
+        amount: '',
+        accountData: {
+          accountNumber: '',
+          bankName: '',
+          accountName: '',
+        },
+      }
+    }
+    morelist.value[index].transferDetails.amount = value
+    clearRowError(index, 'transferAmount') // ✅ เพิ่ม clear error
+  }
 }
 
 const formatDisplayPaymentAmount = (value) => {
@@ -2078,33 +2322,150 @@ const formatDisplayPaymentAmount = (value) => {
   return formattedInteger
 }
 
-const formatPaymentAmountOnBlur = (method) => {
-  // ✅ แก้ไขตรงนี้ - เพิ่ม .value
-  const value = paymentMethods.value[method].amount
+const formatPaymentAmountOnBlur = (index, type) => {
+  let value = ''
+
+  if (type === 'cash') {
+    value = morelist.value[index].cashDetails?.amount
+  } else if (type === 'check') {
+    value = morelist.value[index].checkDetails?.amount
+  } else if (type === 'transfer') {
+    value = morelist.value[index].transferDetails?.amount
+  }
+
   if (!value) return
 
   const cleanValue = value.toString().replace(/,/g, '')
   const numValue = parseFloat(cleanValue)
 
   if (isNaN(numValue)) {
-    paymentMethods.value[method].amount = ''
+    // ล้างค่าถ้าไม่ใช่ตัวเลข
+    if (type === 'cash' && morelist.value[index].cashDetails) {
+      morelist.value[index].cashDetails.amount = ''
+    } else if (type === 'check' && morelist.value[index].checkDetails) {
+      morelist.value[index].checkDetails.amount = ''
+    } else if (type === 'transfer' && morelist.value[index].transferDetails) {
+      morelist.value[index].transferDetails.amount = ''
+    }
     return
   }
 
-  // ✅ แก้ไขตรงนี้ - เพิ่ม .value
-  paymentMethods.value[method].amount = numValue.toLocaleString('en-US', {
+  const formatted = numValue.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+
+  // อัพเดทค่า formatted
+  if (type === 'cash' && morelist.value[index].cashDetails) {
+    morelist.value[index].cashDetails.amount = formatted
+  } else if (type === 'check' && morelist.value[index].checkDetails) {
+    morelist.value[index].checkDetails.amount = formatted
+  } else if (type === 'transfer' && morelist.value[index].transferDetails) {
+    morelist.value[index].transferDetails.amount = formatted
+  }
 }
+const hasAnyPaymentType = (index) => {
+  const row = morelist.value[index]
+  if (!row) return true // ✅ default ให้ปิด
+
+  // ✅ ถ้าเป็นลูกหนี้หรือรายจ่าย → คืนค่า false (เปิดให้กรอก)
+  if (isReceivableItem(row.itemName) || isExpenseRow(index)) {
+    return false
+  }
+
+  // ✅ รายการทั่วไป → คืนค่า true เสมอ (ปิดช่อง)
+  return true
+}
+
+// ✅ คำนวณยอดรวมจากประเภทการชำระ
+const calculatePaymentTotal = (index) => {
+  const row = morelist.value[index]
+  if (!row) return 0
+
+  let total = 0
+
+  if (row.paymentTypes?.cash && row.cashDetails?.amount) {
+    total += parseFloat(String(row.cashDetails.amount).replace(/,/g, '')) || 0
+  }
+  if (row.paymentTypes?.check && row.checkDetails?.amount) {
+    total += parseFloat(String(row.checkDetails.amount).replace(/,/g, '')) || 0
+  }
+  if (row.paymentTypes?.transfer && row.transferDetails?.amount) {
+    total += parseFloat(String(row.transferDetails.amount).replace(/,/g, '')) || 0
+  }
+
+  return total
+}
+// ✅ คำนวณยอดรวมของแต่ละรายการจากประเภทการชำระ
+const calculateRowTotal = (index) => {
+  const row = morelist.value[index]
+  if (!row) return 0
+
+  let total = 0
+
+  // รวมจากเงินสด
+  if (row.paymentTypes?.cash && row.cashDetails?.amount) {
+    const cashAmount = parseFloat(String(row.cashDetails.amount).replace(/,/g, ''))
+    if (!isNaN(cashAmount)) total += cashAmount
+  }
+
+  // รวมจากเช็ค
+  if (row.paymentTypes?.check && row.checkDetails?.amount) {
+    const checkAmount = parseFloat(String(row.checkDetails.amount).replace(/,/g, ''))
+    if (!isNaN(checkAmount)) total += checkAmount
+  }
+
+  // รวมจากเงินโอน
+  if (row.paymentTypes?.transfer && row.transferDetails?.amount) {
+    const transferAmount = parseFloat(String(row.transferDetails.amount).replace(/,/g, ''))
+    if (!isNaN(transferAmount)) total += transferAmount
+  }
+
+  return total
+}
+
+// ✅ Watch เพื่ออัพเดทยอดรวมของแต่ละรายการเมื่อมีการเปลี่ยนแปลง
+watch(
+  () =>
+    morelist.value.map((row) => ({
+      cashAmount: row.cashDetails?.amount,
+      checkAmount: row.checkDetails?.amount,
+      transferAmount: row.transferDetails?.amount,
+      paymentTypes: row.paymentTypes,
+    })),
+  () => {
+    morelist.value.forEach((row, index) => {
+      // ✅ คำนวณเฉพาะรายการที่มี payment types
+      if (hasAnyPaymentType(index)) {
+        const total = calculatePaymentTotal(index)
+        if (total > 0) {
+          row.amount = total.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        } else {
+          row.amount = ''
+        }
+      }
+      // ✅ ถ้าไม่มี payment types (ลูกหนี้/รายจ่าย) ให้กรอกเองได้
+    })
+  },
+  { deep: true },
+)
+
 const handleAmountInput = (index, event) => {
+  // ✅ ถ้ามี payment types แล้ว ไม่ให้แก้ไขช่องนี้
+  if (hasAnyPaymentType(index)) {
+    return
+  }
+
   // อนุญาตเฉพาะตัวเลขและจุดทศนิยม
   const value = event.target.value.replace(/[^0-9.]/g, '')
 
   // ป้องกันจุดทศนิยมมากกว่า 1 จุด
   const parts = value.split('.')
   if (parts.length > 2) {
-    return // ไม่อนุญาตให้มี . มากกว่า 1 ตัว
+    return
   }
 
   morelist.value[index].amount = value
@@ -2113,27 +2474,17 @@ const handleAmountInput = (index, event) => {
 }
 
 const formatDisplayAmount = (value) => {
-  if (!value) return ''
+  if (value === null || value === undefined || value === '') return ''
 
-  // ลบ comma ทั้งหมด
-  const cleanValue = value.toString().replace(/,/g, '')
+  const clean = String(value).replace(/,/g, '').trim()
 
-  // แยกส่วนจำนวนเต็มกับทศนิยม
-  const parts = cleanValue.split('.')
-  const integerPart = parts[0]
-  const decimalPart = parts[1]
+  if (clean === '') return ''
 
-  if (!integerPart) return ''
+  const num = Number(clean)
 
-  // Format ส่วนจำนวนเต็มด้วย comma
-  const formattedInteger = Number(integerPart).toLocaleString('en-US')
+  if (isNaN(num)) return ''
 
-  // รวมกับส่วนทศนิยม (ถ้ามี)
-  if (decimalPart !== undefined) {
-    return `${formattedInteger}.${decimalPart}`
-  }
-
-  return formattedInteger
+  return num.toLocaleString('en-US')
 }
 
 const formatAmountOnBlur = (index) => {
@@ -2256,134 +2607,281 @@ const gotomainpage = () => {
   router.push('/indexwaybill')
 }
 // ========================================
-// loadReceiptData()
+// ✅ loadReceiptData() - เวอร์ชันสุดท้ายที่รองรับลูกหนี้และรายจ่าย
 // ========================================
 
 const loadReceiptData = async () => {
-  if (!receiptId.value) return
+  if (!receiptId.value) {
+    console.warn('⚠️ No receipt ID provided')
+    return
+  }
 
   isLoading.value = true
+
   try {
+    console.log('🔄 Loading receipt:', receiptId.value)
     const data = await reciptService.getById(receiptId.value)
 
-    if (!data) throw new Error('Receipt not found')
+    if (!data) {
+      throw new Error('ไม่พบข้อมูลใบนำส่ง')
+    }
 
     console.log('📦 Loaded receipt data:', data)
 
-    // ✅ เก็บสถานะเดิม
+    // ✅ 1. เก็บสถานะเดิม
     originalApprovalStatus.value = data.approvalStatus || 'pending'
     isApprovedMode.value = data.approvalStatus === 'approved'
 
-    // โหลดข้อมูลพื้นฐาน
-    formData.value.waybillNumber = data.waybillNumber || ''
-    formData.value.fullName = data.fullName || ''
-    formData.value.phone = data.phone || ''
-    formData.value.fundName = data.fundName || ''
-    formData.value.projectCode = data.projectCode || ''
-    formData.value.sendmoney = data.sendmoney || data.moneyType || ''
+    // ✅ 2. โหลดข้อมูลพื้นฐานจาก profile
+    formData.value.waybillNumber = data.waybillNumber || data.id || ''
+    
+    // ✅ อ่านจาก profile object (รองรับทั้งโครงสร้างเก่าและใหม่)
+    formData.value.fullName = data.profile?.fullName || data.fullName || ''
+    formData.value.phone = data.profile?.phone || data.phone || ''
+    formData.value.fundName = data.profile?.fundName || data.fundName || ''
+    formData.value.projectCode = data.profile?.projectCode || data.projectCode || ''
+    formData.value.sendmoney = data.profile?.sendmoney || data.profile?.moneyType || data.sendmoney || data.moneyType || ''
 
-    // โหลด categories
-    if (data.mainAffiliationId && data.mainAffiliationName) {
-      mainCategoryId.value = data.mainAffiliationId
-      mainCategory.value = data.mainAffiliationName
+    // ✅ 3. โหลด Main Category
+    const mainAffId = data.profile?.mainAffiliationId || data.mainAffiliationId
+    const mainAffName = data.profile?.mainAffiliationName || data.mainAffiliationName
+    
+    if (mainAffId && mainAffName) {
+      mainCategoryId.value = mainAffId
+      mainCategory.value = mainAffName
       await nextTick()
+      console.log('✅ Loaded main category:', mainCategory.value)
     }
 
-    if (data.subAffiliationId1) {
-      subCategoryId.value = data.subAffiliationId1
-      subCategory.value = data.subAffiliationId1
+    // ✅ 4. โหลด Sub Category 1
+    const subAffId1 = data.profile?.subAffiliationId1 || data.subAffiliationId1
+    
+    if (subAffId1) {
+      subCategoryId.value = subAffId1
+      subCategory.value = subAffId1
       await nextTick()
+      console.log('✅ Loaded sub category 1:', subCategory.value)
     }
 
-    if (data.subAffiliationId2) {
-      subCategoryId2.value = data.subAffiliationId2
-      subCategory2.value = data.subAffiliationId2
+    // ✅ 5. โหลด Sub Category 2
+    const subAffId2 = data.profile?.subAffiliationId2 || data.subAffiliationId2
+    
+    if (subAffId2) {
+      subCategoryId2.value = subAffId2
+      subCategory2.value = subAffId2
       await nextTick()
+      console.log('✅ Loaded sub category 2:', subCategory2.value)
     }
 
-    // ✅ โหลด receiptList พร้อมสถานะการยกเลิก
+    // ✅ 6. โหลด receiptList พร้อมการจัดการข้อมูลครบถ้วน
     if (data.receiptList && Array.isArray(data.receiptList) && data.receiptList.length > 0) {
+      console.log('📋 Raw receiptList from service:', JSON.stringify(data.receiptList, null, 2))
+
       morelist.value = data.receiptList.map((item, index) => {
-        let itemData
+        let itemData = null
         if (item.itemId) {
           itemData = getItemById(item.itemId)
-        } else if (item.itemName) {
+        }
+        if (!itemData && item.itemName) {
           itemData = getItemByName(item.itemName)
         }
 
-        return {
+        const itemName = itemData?.name || item.itemName || ''
+        const isReceivable = isReceivableItem(itemName)
+        const isExpense = item.type === 'expense'
+
+        console.log(`🔍 Item ${index + 1}: "${itemName}"`, {
+          isReceivable,
+          isExpense,
+          amount: item.amount,
+          paymentTypes: item.paymentTypes,
+        })
+
+        const row = {
           id: index + 1,
           referenceNo: item.referenceNo || '',
-          itemId: itemData?.id || item.itemId,
-          itemName: itemData?.name || item.itemName || '',
+          itemId: itemData?.id || item.itemId || null,
+          itemName: itemName,
           note: item.note || '',
           amount: item.amount || 0,
           type: item.type || 'income',
-          isExpense: item.type === 'expense',
-          isCancelled: item.isCancelled || false, // ✅ เพิ่ม
-          paymentTypes: item.paymentTypes ? {
-            cash: item.paymentTypes.cash || false,
-            check: item.paymentTypes.check || false,
-            transfer: item.paymentTypes.transfer || false,
-          } : {
-            cash: false,
-            check: false,
-            transfer: false,
+          isExpense: isExpense,
+          isCancelled: item.isCancelled || false,
+
+          paymentTypes: {
+            cash: item.paymentTypes?.cash || false,
+            check: item.paymentTypes?.check || false,
+            transfer: item.paymentTypes?.transfer || false,
           },
-          checkDetails: item.checkDetails ? {
-            bankName: item.checkDetails.bankName || '',
-            checkNumber: item.checkDetails.checkNumber || '',
-            numInCheck: item.checkDetails.numInCheck || '',
-          } : {
-            bankName: '',
-            checkNumber: '',
-            numInCheck: '',
+
+          cashDetails: {
+            amount: item.cashDetails?.amount || '',
           },
-          transferDetails: item.transferDetails ? {
+
+          checkDetails: {
+            amount: item.checkDetails?.amount || '',
+            bankName: item.checkDetails?.bankName || '',
+            checkNumber: item.checkDetails?.checkNumber || '',
+            numInCheck: item.checkDetails?.numInCheck || '',
+          },
+
+          transferDetails: {
+            amount: item.transferDetails?.amount || '',
             accountData: {
-              accountNumber: item.transferDetails.accountData?.accountNumber || '',
-              bankName: item.transferDetails.accountData?.bankName || '',
-              accountName: item.transferDetails.accountData?.accountName || '',
-            },
-          } : {
-            accountData: {
-              accountNumber: '',
-              bankName: '',
-              accountName: '',
+              accountNumber: item.transferDetails?.accountData?.accountNumber || '',
+              bankName: item.transferDetails?.accountData?.bankName || '',
+              accountName: item.transferDetails?.accountData?.accountName || '',
             },
           },
         }
+
+        console.log(`📝 Created row ${index + 1}:`, {
+          itemName: row.itemName,
+          itemId: row.itemId,
+          amount: row.amount,
+          isReceivable,
+          isExpense,
+          paymentTypes: row.paymentTypes,
+        })
+
+        return row
+      })
+
+      await nextTick()
+      
+      // ✅ 7. Format amount สำหรับทุกช่องทาง
+      morelist.value.forEach((row, index) => {
+        const isReceivable = isReceivableItem(row.itemName)
+        const isExpense = row.isExpense
+
+        console.log(`🔍 Before format row ${index + 1}:`, {
+          itemName: row.itemName,
+          isReceivable,
+          isExpense,
+          rawAmount: row.amount,
+          cashAmount: row.cashDetails?.amount,
+          checkAmount: row.checkDetails?.amount,
+          transferAmount: row.transferDetails?.amount,
+          paymentTypes: row.paymentTypes,
+        })
+
+        // Format amount หลัก
+        if (row.amount !== undefined && row.amount !== null && row.amount !== '') {
+          const numAmount =
+            typeof row.amount === 'string'
+              ? parseFloat(row.amount.replace(/,/g, ''))
+              : Number(row.amount)
+
+          if (!isNaN(numAmount)) {
+            row.amount = numAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+            console.log(`💰 Main amount formatted: ${numAmount} → ${row.amount}`)
+          } else {
+            row.amount = '0.00'
+          }
+        }
+
+        // Format cashDetails.amount
+        if (
+          !isReceivable &&
+          !isExpense &&
+          row.cashDetails?.amount !== undefined &&
+          row.cashDetails?.amount !== ''
+        ) {
+          const cashAmount =
+            typeof row.cashDetails.amount === 'string'
+              ? parseFloat(String(row.cashDetails.amount).replace(/,/g, ''))
+              : Number(row.cashDetails.amount)
+
+          if (!isNaN(cashAmount)) {
+            row.cashDetails.amount = cashAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+            console.log(`💵 Cash formatted: ${cashAmount} → ${row.cashDetails.amount}`)
+          } else {
+            row.cashDetails.amount = ''
+          }
+        }
+
+        // Format checkDetails.amount
+        if (
+          !isReceivable &&
+          !isExpense &&
+          row.checkDetails?.amount !== undefined &&
+          row.checkDetails?.amount !== ''
+        ) {
+          const checkAmount =
+            typeof row.checkDetails.amount === 'string'
+              ? parseFloat(String(row.checkDetails.amount).replace(/,/g, ''))
+              : Number(row.checkDetails.amount)
+
+          if (!isNaN(checkAmount)) {
+            row.checkDetails.amount = checkAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+            console.log(`📝 Check formatted: ${checkAmount} → ${row.checkDetails.amount}`)
+          } else {
+            row.checkDetails.amount = ''
+          }
+        }
+
+        // Format transferDetails.amount
+        if (
+          !isReceivable &&
+          !isExpense &&
+          row.transferDetails?.amount !== undefined &&
+          row.transferDetails?.amount !== ''
+        ) {
+          const transferAmount =
+            typeof row.transferDetails.amount === 'string'
+              ? parseFloat(String(row.transferDetails.amount).replace(/,/g, ''))
+              : Number(row.transferDetails.amount)
+
+          if (!isNaN(transferAmount)) {
+            row.transferDetails.amount = transferAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+            console.log(`🏦 Transfer formatted: ${transferAmount} → ${row.transferDetails.amount}`)
+          } else {
+            row.transferDetails.amount = ''
+          }
+        }
+
+        console.log(`✅ After format row ${index + 1}:`, {
+          itemName: row.itemName,
+          isReceivable,
+          isExpense,
+          amount: row.amount,
+          cashAmount: row.cashDetails?.amount,
+          checkAmount: row.checkDetails?.amount,
+          transferAmount: row.transferDetails?.amount,
+        })
       })
 
       await nextTick()
 
-      // Format amount
-      morelist.value.forEach((row) => {
-        if (row.amount && row.amount > 0) {
-          const numAmount = typeof row.amount === 'string'
-            ? parseFloat(row.amount.toString().replace(/,/g, ''))
-            : Number(row.amount)
-
-          row.amount = numAmount.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        }
-      })
-
-      await nextTick()
-
-      // Init TomSelect
+      // ✅ 8. Init TomSelect สำหรับแต่ละแถว
       morelist.value.forEach((_, i) => {
         initItemNameTomSelect(i)
       })
 
-      console.log('✅ Loaded morelist with payment types:', morelist.value)
+      console.log('✅ Loaded morelist:', morelist.value.length, 'items')
     } else {
+      console.log('ℹ️ No receipt items, adding empty row')
       addRow()
     }
 
-    // ✅ แสดง alert ถ้าเป็นโหมด approved
+    await nextTick()
+
+    // ✅ 9. อัพเดทยอดลูกหนี้
+    updateDebtorAmount()
+
+    // ✅ 10. แสดง alert ถ้าเป็นโหมด approved
     if (isApprovedMode.value) {
       await Swal.fire({
         icon: 'info',
@@ -2392,10 +2890,8 @@ const loadReceiptData = async () => {
           <div class="text-left">
             <p class="mb-2">ใบนำส่งนี้ได้รับการอนุมัติแล้ว</p>
             <p class="mb-2 font-semibold text-blue-600">คุณสามารถยกเลิกรายการได้เท่านั้น</p>
-            <ul class="list-disc pl-5 space-y-1 text-sm">
-              <li>ไม่สามารถแก้ไขข้อมูลพื้นฐานได้</li>
-              <li>ไม่สามารถเพิ่ม/ลบรายการได้</li>
-              <li>✅ สามารถ tick "ยกเลิก" เพื่อยกเลิกรายการได้</li>
+            <p class="mb-2 text-red-500">* เนื่องจากใบนำส่งนี้ได้รับการอนุมัติแล้วจึงไม่สามารถแก้ไขข้อมูลผู้บันทึกหรือข้อมูลรายการใดๆได้ทั้งนั้น
+               นอกจากการยกเลิกรายการเท่านั้น</p>
             </ul>
           </div>
         `,
@@ -2404,22 +2900,27 @@ const loadReceiptData = async () => {
       })
     }
 
-    Swal.fire({
+    // ✅ 11. แสดงข้อความสำเร็จ
+    await Swal.fire({
       icon: 'success',
       title: 'โหลดข้อมูลสำเร็จ',
+      text: `ใบนำส่งเลขที่ ${formData.value.waybillNumber}`,
       timer: 1500,
       showConfirmButton: false,
     })
+
+    console.log('✅ Load receipt completed successfully')
   } catch (err) {
     console.error('❌ Load error:', err)
-    Swal.fire({
+
+    await Swal.fire({
       icon: 'error',
-      title: 'ไม่พบข้อมูล',
-      text: err.message || 'ไม่สามารถโหลดข้อมูลใบนำส่งได้',
+      title: 'ไม่สามารถโหลดข้อมูลได้',
+      text: err.message || 'กรุณาลองใหม่อีกครั้ง',
       confirmButtonColor: '#DC2626',
-    }).then(() => {
-      router.push('/indexwaybill')
     })
+
+    router.push('/indexwaybill')
   } finally {
     isLoading.value = false
   }
@@ -2476,7 +2977,8 @@ const clearRowError = (rowIndex, field) => {
         delete errors.value.rows[rowIndex]
       }
     }
-  }}
+  }
+}
 const netTotalAmount = computed(() => {
   let total = 0
   morelist.value.forEach((row) => {
@@ -2587,19 +3089,19 @@ const saveData = async () => {
   errors.value = {
     paymentMethods: {},
     bankTransfers: {},
+    rows: {}
   }
   let hasError = false
 
   // ✅ โหมด approved: validate แค่การยกเลิก
   if (isApprovedMode.value) {
-    const hasCancelledItems = morelist.value.some(row => row.isCancelled)
-    
-    // ✅ ถามยืนยันก่อนบันทึก
+    const hasCancelledItems = morelist.value.some((row) => row.isCancelled)
+
     const confirmResult = await Swal.fire({
       title: hasCancelledItems ? 'ยืนยันการบันทึกการเปลี่ยนแปลง?' : 'ยืนยันการบันทึก?',
-      html: hasCancelledItems 
+      html: hasCancelledItems
         ? `<div class="text-left">
-            <p class="mb-2">คุณได้ยกเลิกรายการจำนวน <strong>${morelist.value.filter(r => r.isCancelled).length}</strong> รายการ</p>
+            <p class="mb-2">คุณได้ยกเลิกรายการจำนวน <strong>${morelist.value.filter((r) => r.isCancelled).length}</strong> รายการ</p>
             <p class="text-sm text-gray-600">ยอดเงินสุทธิใหม่: <strong>${formatCurrency(netTotalAmount.value)}</strong> บาท</p>
           </div>`
         : '<p>ไม่มีการเปลี่ยนแปลงรายการ คุณต้องการบันทึกต่อหรือไม่?</p>',
@@ -2609,12 +3111,14 @@ const saveData = async () => {
       confirmButtonColor: '#7E22CE',
       cancelButtonText: 'ยกเลิก',
     })
-    
+
     if (!confirmResult.isConfirmed) {
       return
     }
   } else {
-    // ✅ โหมดปกติ: validate ทุกอย่าง
+    // ========================================
+    // ✅ Validate ส่วนที่ 1: ข้อมูลพื้นฐาน
+    // ========================================
     if (!formData.value.fullName) {
       errors.value.fullName = 'กรุณากรอก "ชื่อ"'
       hasError = true
@@ -2648,45 +3152,203 @@ const saveData = async () => {
       hasError = true
     }
 
-    // Validate rows
+    // ========================================
+    // ✅ Validate ส่วนที่ 2: รายการนำส่งเงิน
+    // ========================================
     errors.value.rows = {}
+    
+    // นับจำนวนรายการที่มีข้อมูล
+    const validRowsCount = morelist.value.filter(row => {
+      const hasItemName = row.itemName && row.itemName.trim() !== ''
+      const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
+      const hasAmount = cleanAmount && cleanAmount > 0
+      return hasItemName || hasAmount
+    }).length
+
+    // ✅ ตรวจสอบว่ามีรายการอย่างน้อย 1 รายการ
+    if (validRowsCount === 0) {
+      errors.value.noItems = 'กรุณาเพิ่มรายการนำส่งเงินอย่างน้อย 1 รายการ'
+      hasError = true
+    }
+
+    // ✅ Validate แต่ละรายการ (ไม่ return ทันที)
     morelist.value.forEach((row, index) => {
       const hasItemName = row.itemName && row.itemName.trim() !== ''
       const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
       const hasAmount = cleanAmount && cleanAmount > 0
 
+      // ข้ามแถวที่ไม่มีข้อมูลเลย
       if (!hasItemName && !hasAmount) {
         return
       }
 
       const rowErrors = {}
 
+      // 1. Validate ชื่อรายการ
       if (!hasItemName) {
         rowErrors.itemName = 'กรุณากรอก "ชื่อรายการ"'
       }
 
+      // 2. Validate จำนวนเงิน
       if (!hasAmount) {
         rowErrors.amount = 'กรุณากรอก "จำนวนเงิน"'
       }
 
+      // 3. Validate ช่องทางการชำระเงิน
+      const isReceivableRow = row.itemName && isReceivableItem(row.itemName)
+      const isExpense = isExpenseRow(index)
+      const needsPaymentType = !isExpense && !isReceivableRow
+
+      if (needsPaymentType && hasItemName && hasAmount) {
+        const hasAnyPaymentType =
+          row.paymentTypes?.cash || row.paymentTypes?.check || row.paymentTypes?.transfer
+
+        if (!hasAnyPaymentType) {
+          rowErrors.paymentTypes = 'กรุณาเลือกช่องทางการชำระเงินอย่างน้อย 1 ช่องทาง'
+        } else {
+          // 4. Validate จำนวนเงินในแต่ละช่องทาง
+          
+          // 4.1 เงินสด
+          if (row.paymentTypes?.cash) {
+            const cashAmount = parseFloat(String(row.cashDetails?.amount || '0').replace(/,/g, ''))
+            if (!cashAmount || cashAmount <= 0) {
+              rowErrors.cashAmount = 'กรุณากรอกจำนวนเงินสด'
+            }
+          }
+
+          // 4.2 เช็ค
+          if (row.paymentTypes?.check) {
+            const checkAmount = parseFloat(String(row.checkDetails?.amount || '0').replace(/,/g, ''))
+            if (!checkAmount || checkAmount <= 0) {
+              rowErrors.checkAmount = 'กรุณากรอกจำนวนเงินเช็ค'
+            }
+            if (!row.checkDetails?.bankName || row.checkDetails.bankName.trim() === '') {
+              rowErrors.checkBankName = 'กรุณาเลือกธนาคาร'
+            }
+            if (!row.checkDetails?.checkNumber || row.checkDetails.checkNumber.trim() === '') {
+              rowErrors.checkNumber = 'กรุณากรอกเลขที่เช็ค'
+            }
+            if (!row.checkDetails?.numInCheck || row.checkDetails.numInCheck.trim() === '') {
+              rowErrors.checkNumInCheck = 'กรุณากรอกเลขที่ในเช็ค'
+            }
+          }
+
+          // 4.3 เงินโอน
+          if (row.paymentTypes?.transfer) {
+            const transferAmount = parseFloat(String(row.transferDetails?.amount || '0').replace(/,/g, ''))
+            if (!transferAmount || transferAmount <= 0) {
+              rowErrors.transferAmount = 'กรุณากรอกจำนวนเงินโอน'
+            }
+            if (!row.transferDetails?.accountData?.accountNumber || 
+                row.transferDetails.accountData.accountNumber.trim() === '') {
+              rowErrors.transferAccount = 'กรุณาเลือกบัญชีธนาคาร'
+            }
+          }
+
+          // 5. Validate ยอดรวมจากช่องทางการชำระ
+          const totalPaymentAmount = calculatePaymentTotal(index)
+          const mainAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
+          
+          if (Math.abs(totalPaymentAmount - mainAmount) > 0.01) {
+            rowErrors.paymentMismatch = `ยอดรวมจากช่องทางการชำระ (${formatCurrency(totalPaymentAmount)} บาท) ไม่ตรงกับจำนวนเงินรวม (${formatCurrency(mainAmount)} บาท)`
+          }
+        }
+      }
+
+      // ✅ เก็บ errors ของรายการนี้
       if (Object.keys(rowErrors).length > 0) {
         errors.value.rows[index] = rowErrors
         hasError = true
       }
     })
 
+    // ========================================
+    // ✅ แสดง Error Message รวม (ถ้ามี error)
+    // ========================================
     if (hasError) {
-      Swal.fire({
+      const section1Errors = []
+      const section2ErrorCount = Object.keys(errors.value.rows || {}).length
+      
+      // รวบรวม error ส่วนที่ 1
+      if (errors.value.waybillNumber) section1Errors.push('เลขที่นำส่ง')
+      if (errors.value.fullName) section1Errors.push('ชื่อ-นามสกุล')
+      if (errors.value.phone) section1Errors.push('เบอร์โทรติดต่อ')
+      if (errors.value.mainCategory) section1Errors.push('หน่วยงาน')
+      if (errors.value.subCategory) section1Errors.push('หน่วยงานรอง')
+      if (errors.value.subCategory2) section1Errors.push('หน่วยงานย่อย')
+      if (errors.value.fundName) section1Errors.push('กองทุน')
+      if (errors.value.sendmoney) section1Errors.push('ขอนำส่งเงิน')
+
+      // รวบรวม error รายการในส่วนที่ 2
+      const section2Details = []
+      Object.entries(errors.value.rows || {}).forEach(([index, rowErrors]) => {
+        const rowNum = parseInt(index) + 1
+        const errorList = Object.values(rowErrors)
+        section2Details.push(`
+          <li class="mb-2">
+            <strong class="text-red-600">รายการที่ ${rowNum}:</strong>
+            <ul class="list-disc pl-5 mt-1">
+              ${errorList.map(err => `<li class="text-sm">${err}</li>`).join('')}
+            </ul>
+          </li>
+        `)
+      })
+
+      let errorHTML = '<div class="text-left">'
+      
+      // แสดง error ส่วนที่ 1
+      if (section1Errors.length > 0) {
+        errorHTML += `
+          <div class="mb-4">
+            <p class="font-semibold text-red-600 mb-2">📝 ส่วนที่ 1: ข้อมูลผู้บันทึก (${section1Errors.length} ข้อผิดพลาด)</p>
+            <ul class="list-disc pl-5 text-sm space-y-1">
+              ${section1Errors.map(field => `<li>กรุณากรอก "${field}"</li>`).join('')}
+            </ul>
+          </div>
+        `
+      }
+
+      // แสดง error ส่วนที่ 2
+      if (errors.value.noItems) {
+        errorHTML += `
+          <div class="mb-4">
+            <p class="font-semibold text-red-600 mb-2">💰 ส่วนที่ 2: รายการนำส่งเงิน</p>
+            <p class="text-sm text-red-600">${errors.value.noItems}</p>
+          </div>
+        `
+      } else if (section2ErrorCount > 0) {
+        errorHTML += `
+          <div class="mb-4">
+            <p class="font-semibold text-red-600 mb-2">💰 ส่วนที่ 2: รายการนำส่งเงิน (${section2ErrorCount} รายการมีข้อผิดพลาด)</p>
+            <ul class="space-y-2">
+              ${section2Details.join('')}
+            </ul>
+          </div>
+        `
+      }
+
+      errorHTML += '<p class="mt-4 text-xs text-gray-600 border-t pt-3">💡 กรุณาตรวจสอบและแก้ไขข้อมูลที่แสดงข้อผิดพลาด (ข้อความสีแดงใต้ช่องกรอก)</p>'
+      errorHTML += '</div>'
+
+      await Swal.fire({
         icon: 'error',
         title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
-        text: 'มีข้อมูลบางช่องที่ยังไม่ได้กรอกหรือกรอกไม่ถูกต้อง',
+        html: errorHTML,
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#7E22CE',
+        width: '700px',
+        customClass: {
+          htmlContainer: 'text-left'
+        }
       })
+      
       return
     }
   }
 
+  // ========================================
+  // ✅ ดำเนินการบันทึกข้อมูล
+  // ========================================
   Swal.fire({
     title: 'กำลังบันทึกการเปลี่ยนแปลง...',
     allowOutsideClick: false,
@@ -2702,12 +3364,18 @@ const saveData = async () => {
     const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
     const item = getItemByName(row.itemName)
 
-    // ✅ ถ้ารายการถูกยกเลิก ให้เพิ่ม "(ยกเลิก)" ต่อท้ายเลขที่ใบเสร็จ
+    // ✅ จัดการ referenceNo สำหรับรายการที่ยกเลิก
     let referenceNo = row.referenceNo || ''
-    if (row.isCancelled && referenceNo) {
-      // ตรวจสอบว่ายังไม่มีคำว่า "(ยกเลิก)" อยู่แล้ว
-      if (!referenceNo.includes('ยกเลิก')) {
-        referenceNo = `${referenceNo} ยกเลิก`
+
+    if (row.isCancelled) {
+      if (referenceNo) {
+        // ถ้ามีเลขที่ใบเสร็จ ให้เพิ่ม "(ยกเลิก)" ต่อท้าย
+        if (!referenceNo.includes('ยกเลิก')) {
+          referenceNo = `${referenceNo} (ยกเลิก)`
+        }
+      } else {
+        // ✅ ถ้าไม่มีเลขที่ใบเสร็จ ให้ใส่ "(ยกเลิก)" เป็นค่าเริ่มต้น
+        referenceNo = '(ยกเลิก)'
       }
     }
 
@@ -2715,7 +3383,7 @@ const saveData = async () => {
       itemName: row.itemName || '',
       itemId: item?.id,
       note: row.note || '',
-      referenceNo: referenceNo, // ✅ ใช้ referenceNo ที่มี "(ยกเลิก)" แล้ว
+      referenceNo: referenceNo,
       amount: cleanAmount,
       type: row.type || 'income',
       isCancelled: row.isCancelled || false,
@@ -2724,8 +3392,31 @@ const saveData = async () => {
         check: false,
         transfer: false,
       },
-      checkDetails: row.paymentTypes?.check ? row.checkDetails : undefined,
-      transferDetails: row.paymentTypes?.transfer ? row.transferDetails : undefined,
+      cashDetails: row.paymentTypes?.cash
+        ? {
+            amount: parseFloat(String(row.cashDetails?.amount || '0').replace(/,/g, '')),
+          }
+        : undefined,
+
+      checkDetails: row.paymentTypes?.check
+        ? {
+            amount: parseFloat(String(row.checkDetails?.amount || '0').replace(/,/g, '')),
+            bankName: row.checkDetails?.bankName || '',
+            checkNumber: row.checkDetails?.checkNumber || '',
+            numInCheck: row.checkDetails?.numInCheck || '',
+          }
+        : undefined,
+
+      transferDetails: row.paymentTypes?.transfer
+        ? {
+            amount: parseFloat(String(row.transferDetails?.amount || '0').replace(/,/g, '')),
+            accountData: row.transferDetails?.accountData || {
+              accountNumber: '',
+              bankName: '',
+              accountName: '',
+            },
+          }
+        : undefined,
     }
   })
 
@@ -2743,23 +3434,25 @@ const saveData = async () => {
 
   const payload = {
     waybillNumber: formData.value.waybillNumber,
-    fullName: formData.value.fullName,
-    moneyTypeNote: 'Waybill',
-    phone: formData.value.phone,
-    mainAffiliationId: mainCategoryId.value,
-    mainAffiliationName: mainCategory.value,
-    subAffiliationId1: subCategoryId.value,
-    subAffiliationName1: getSubName1(),
-    subAffiliationId2: subCategoryId2.value,
-    subAffiliationName2: getSubName2(),
-    fundName: formData.value.fundName,
-    moneyType: formData.value.sendmoney,
-    projectCode: formData.value.projectCode,
-    sendmoney: formData.value.sendmoney,
+    profile: {
+      fullName: formData.value.fullName,
+      phone: formData.value.phone,
+      fundName: formData.value.fundName,
+      projectCode: formData.value.projectCode,
+      moneyType: formData.value.sendmoney,
+      sendmoney: formData.value.sendmoney,
+      affiliationId: authStore.user?.affiliationId || '',
+      affiliationName: authStore.user?.affiliation || mainCategory.value,
+      mainAffiliationId: mainCategoryId.value,
+      mainAffiliationName: mainCategory.value,
+      subAffiliationId1: subCategoryId.value,
+      subAffiliationName1: getSubName1(),
+      subAffiliationId2: subCategoryId2.value,
+      subAffiliationName2: getSubName2(),
+    },
+
     netTotalAmount: netTotalAmount.value,
     receiptList: validRows,
-    affiliationId: authStore.user?.affiliationId || '',
-    affiliationName: authStore.user?.affiliation || mainCategory.value,
     approvalStatus: originalApprovalStatus.value,
   }
 
@@ -2785,12 +3478,12 @@ const saveData = async () => {
       }),
     )
 
-    const cancelledCount = validRows.filter(r => r.isCancelled).length
-    
+    const cancelledCount = validRows.filter((r) => r.isCancelled).length
+
     await Swal.fire({
       icon: 'success',
       title: 'บันทึกการเปลี่ยนแปลงสำเร็จ!',
-      html: isApprovedMode.value 
+      html: isApprovedMode.value
         ? `ยกเลิกรายการจำนวน ${cancelledCount} รายการ<br>ยอดเงินสุทธิใหม่: ${formatCurrency(netTotalAmount.value)} บาท`
         : `${isEditMode.value ? 'อัพเดต' : 'บันทึก'}ใบนำส่งเงินเลขที่ ${formData.value.waybillNumber} เรียบร้อยแล้ว`,
       confirmButtonText: 'ตกลง',
@@ -2842,7 +3535,12 @@ watch(
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
-
+input:disabled.bg-gray-100 {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
+  border-color: #d1d5db !important;
+}
 /* ✅ ซ่อน scrollbar ใน transition */
 .max-h-0 {
   overflow: hidden;

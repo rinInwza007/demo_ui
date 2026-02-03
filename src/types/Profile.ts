@@ -1,11 +1,12 @@
 //Profile.ts
-import { roleType } from "./user"
+import { roleType  } from "./user"
 
 export interface Profile {
   fullName: string
   phone: string
   role:roleType
   fundName: string
+  role :roleType
   projectCode: string | null
   mainAffiliationId?: string
   mainAffiliationName?: string

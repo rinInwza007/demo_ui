@@ -136,34 +136,49 @@ export const useSummaryStore = defineStore('summary', {
       this.rebuildLedger(docKey)
     },
 
-    /* =========================
-       Build debtor ครั้งแรกจาก receipt
-    ========================= */
+/**
+ * Build debtor ครั้งแรกจาก receipt
+ */
+buildInitialDebtors(receipt: Receipt): Debtor[] {
+  const list: Debtor[] = []
 
-    buildInitialDebtors(receipt: Receipt): Debtor[] {
-      const list: Debtor[] = []
+  receipt.receiptList?.forEach((item) => {
+    // filter เฉพาะ income ที่เป็นลูกหนี้
+    if (item.type !== 'income') return
+    if (!item.itemName.includes('ลูกหนี้')) return
 
-      receipt.receiptList.forEach((item) => {
-        // filter ตามระบบมึง
-        if (item.type !== 'income') return
-        if (!item.itemName.includes('ลูกหนี้')) return
+    // ✅ ตรวจสอบว่ามีข้อมูลการชำระใน note หรือไม่
+    let paidAmount = 0
+    let balance = item.amount
+    let isCleared = false
+    let history: any[] = []
 
-        list.push({
-          itemName: item.itemName,
+    try {
+      if (item.note) {
+        const parsed = JSON.parse(item.note)
+        if (parsed.paidAmount !== undefined) {
+          paidAmount = parsed.paidAmount || 0
+          balance = parsed.balance || 0
+          isCleared = parsed.isCleared || false
+          history = parsed.history || []
+        }
+      }
+    } catch (e) {
+      // ignore parse error
+    }
 
-          originalAmount: item.amount,
-          paidAmount: 0,
-          balance: item.amount,
+    list.push({
+      itemName: item.itemName,
+      originalAmount: item.amount,
+      paidAmount,
+      balance,
+      isCleared,
+      history
+    })
+  })
 
-          isCleared: false,
-
-          history: []
-        })
-      })
-
-      return list
-    },
-
+  return list
+},
     /* =========================
        Apply Clear Debt
     ========================= */

@@ -1,44 +1,50 @@
 // src/services/ClearDebtor/clearSummaryService.ts
 
 import axios from 'axios'
-import type { ClearSummary, DebtorItem } from '@/types/summary'
+import type { ClearSummary } from '@/types/summary'
+
+/**
+ * รายการหนี้แต่ละรายการ
+ */
+export interface DebtorItem {
+  waybillNumber: string
+  itemName: string
+  amount: number
+  isCleared: boolean
+  note?: string
+  receiptNumber?: string
+}
+
+/**
+ * รายละเอียดการชำระเงิน
+ */
+export interface PaymentDetail {
+  type: 'transfer' | 'cash' | 'check'
+  bankName?: string
+  accountName?: string
+  accountNumber?: string
+  amount: number
+  checkNumber?: string
+  referenceId?: string
+}
 
 /**
  * Payload สำหรับสร้างรายการล้างหนี้ใหม่
  */
 export interface CreateClearSummaryPayload {
-  // ข้อมูลผู้ทำรายการ
   fullName: string
   phone: string
-
-  // ข้อมูลหน่วยงาน
   mainAffiliationId: string
   mainAffiliationName: string
   subAffiliationId1?: string
   subAffiliationName1?: string
   subAffiliationId2?: string
   subAffiliationName2?: string
-
-  // ข้อมูลกองทุน/โครงการ
   fundName?: string
   sendmoney?: string
   projectCode?: string
-
-  // รายการหนี้ที่ล้าง
   debtorList: DebtorItem[]
-
-  // การชำระเงิน
-  payments: Array<{
-    type: 'transfer' | 'cash' | 'check'
-    bankName?: string
-    accountName?: string
-    accountNumber?: string
-    amount: number
-    checkNumber?: string
-    referenceId?: string
-  }>
-
-  // ยอดรวม
+  payments: PaymentDetail[]
   totalAmount: number
 }
 
@@ -53,10 +59,8 @@ export const clearSummaryService = {
     console.log('📝 Creating clear summary:', data)
 
     try {
-      // สร้าง referenceId ที่ unique
       const referenceId = `CLEAR-${Date.now()}`
 
-      // รวม waybillNumbers จาก debtorList
       const waybillNumbers = Array.from(
         new Set(data.debtorList.map(item => item.waybillNumber))
       )
@@ -65,34 +69,22 @@ export const clearSummaryService = {
         id: referenceId,
         referenceId,
         createdAt: new Date().toISOString(),
-
-        // ข้อมูลผู้ทำรายการ
         fullName: data.fullName,
         phone: data.phone,
-
-        // ข้อมูลหน่วยงาน
         mainAffiliationId: data.mainAffiliationId,
         mainAffiliationName: data.mainAffiliationName,
         subAffiliationId1: data.subAffiliationId1,
         subAffiliationName1: data.subAffiliationName1,
         subAffiliationId2: data.subAffiliationId2,
         subAffiliationName2: data.subAffiliationName2,
-
-        // ข้อมูลกองทุน
         fundName: data.fundName,
         sendmoney: data.sendmoney,
         projectCode: data.projectCode,
-
-        // รายการหนี้
         waybillNumbers,
         debtorList: data.debtorList,
         totalItems: data.debtorList.length,
         totalAmount: data.totalAmount,
-
-        // การชำระเงิน
         payments: data.payments,
-
-        // สถานะ
         status: 'completed'
       }
 
@@ -107,7 +99,6 @@ export const clearSummaryService = {
 
       console.log('✅ Clear summary created:', response.data.data.id)
 
-      // แจ้งเตือนการอัปเดต
       this.notifyUpdate('create', response.data.data)
 
       return response.data.data
@@ -211,7 +202,6 @@ export const clearSummaryService = {
         throw new Error('Failed to update clear summary')
       }
 
-      // แจ้งเตือนการอัปเดต
       this.notifyUpdate('update', response.data.data)
 
       return response.data.data
@@ -231,7 +221,6 @@ export const clearSummaryService = {
       )
 
       if (response.data.success && response.data.deleted > 0) {
-        // แจ้งเตือนการอัปเดต
         this.notifyUpdate('delete', { id } as any)
         return true
       }
@@ -244,16 +233,14 @@ export const clearSummaryService = {
   },
 
   /**
-   * แจ้งเตือนการอัปเดตข้อมูล (สำหรับ sync ระหว่างหน้า)
+   * แจ้งเตือนการอัปเดตข้อมูล
    */
   notifyUpdate(
     action: 'create' | 'update' | 'delete',
     data: ClearSummary
   ): void {
-    // อัปเดต localStorage timestamp
     localStorage.setItem('clear_summaries_last_update', Date.now().toString())
 
-    // Dispatch custom event
     window.dispatchEvent(
       new CustomEvent('clear-summaries-updated', {
         detail: { action, data },
@@ -275,7 +262,6 @@ export const clearSummaryService = {
 
     window.addEventListener('clear-summaries-updated', handler)
 
-    // Return cleanup function
     return () => {
       window.removeEventListener('clear-summaries-updated', handler)
     }

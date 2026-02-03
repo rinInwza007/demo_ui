@@ -44,29 +44,31 @@
 
               <!-- แถวที่ 1: เลขที่นำส่ง | ชื่อ -->
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                <div class="flex flex-col gap-2">
-                  <label class="text-sm font-medium text-gray-700">
-                    เลขที่นำส่ง <span class="text-red-500">*</span>
-                  </label>
-                  <InputText
-                    v-model="formData.waybillNumber"
-                    placeholder="เลขที่นำส่ง"
-                    readonly
-                    class="transition-all duration-200 "
-                  />
-                </div>
+  <div class="flex flex-col gap-2">
+    <label class="text-sm font-medium text-gray-700">
+      เลขที่นำส่ง <span class="text-red-500">*</span>
+    </label>
+    <InputText
+      v-model="formData.waybillNumber"
+      placeholder="เลขที่นำส่ง"
+      readonly
+      class="transition-all duration-200"
+    />
+  </div>
 
-                <div class="flex flex-col gap-2">
-                  <label class="text-sm font-medium text-gray-700">
-                    ข้าพเจ้า <span class="text-red-500">*</span>
-                  </label>
-                  <InputText
-                    v-model="formData.fullName"
-                    placeholder="กรอกชื่อ-นามสกุล"
-                    class="transition-all duration-200"
-                  />
-                </div>
-              </div>
+  <div class="flex flex-col gap-2">
+    <label class="text-sm font-medium text-gray-700">
+      ข้าพเจ้า <span class="text-red-500">*</span>
+    </label>
+    <InputText
+      v-model="formData.fullName"
+      placeholder="กรอกชื่อ-นามสกุล"
+      class="transition-all duration-200"
+      @blur="() => validateField('fullName')"
+    />
+    <p v-if="formErrors.fullName" class="text-xs text-red-500 mt-1">{{ formErrors.fullName }}</p>
+  </div>
+</div>
 
               <!-- แถวที่ 2: เบอร์โทรศัพท์ | หน่วยงาน -->
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
@@ -79,8 +81,9 @@
                     placeholder="xxx-xxxx-xxx"
                     maxlength="12"
                     class="transition-all duration-200"
-                    @keypress="allowOnlyDigits"
-                  />
+                     @blur="() => validateField('phone')"
+                     />
+                     <p v-if="formErrors.phone" class="text-xs text-red-500 mt-1">{{ formErrors.phone }}</p>
                 </div>
 
                 <div class="flex flex-col gap-2">
@@ -92,7 +95,9 @@
                     :options="mainCategoryOptions"
                     placeholder="เลือกหน่วยงาน"
                     value-type="string"
-                  />
+                  @update:modelValue="() => validateField('mainCategory')"
+                    />
+                  <p v-if="formErrors.mainCategory" class="text-xs text-red-500 mt-1">{{ formErrors.mainCategory }}</p>
                 </div>
               </div>
 
@@ -913,14 +918,74 @@ const clearBankError = (index, field) => {
   }
 }
 
+const formErrors = ref({
+  fullName: '',
+  phone: '',
+  mainCategory: '',
+  subCategory: '',
+  subCategory2: '',
+  fundName: '',
+  sendmoney: ''
+})
+
+const requiredFields = ['fullName', 'phone', 'mainCategory', 'subCategory', 'subCategory2', 'fundName', 'sendmoney']
+
+const fieldLabelMap = {
+  fullName: 'ข้าพเจ้า',
+  phone: 'เบอร์โทรติดต่อ',
+  mainCategory: 'หน่วยงาน',
+  subCategory: 'หน่วยงานรอง',
+  subCategory2: 'หน่วยงานย่อย',
+  fundName: 'กองทุน',
+  sendmoney: 'ขอนำส่งเงิน'
+}
+
+const getFieldValue = (field) => {
+  if (field === 'mainCategory') return mainCategory.value
+  if (field === 'subCategory') return subCategory.value
+  if (field === 'subCategory2') return subCategory2.value
+  return formData.value[field]
+}
+
+const validateField = (field) => {
+  const value = getFieldValue(field)
+  if (!value || String(value).trim() === '') {
+    formErrors.value[field] = `กรุณากรอก${fieldLabelMap[field]}`
+  } else {
+    formErrors.value[field] = ''
+  }
+}
+
+const validateAllFields = () => {
+  const fieldsToValidate = ['fullName', 'phone', 'mainCategory']
+
+  if (hasAnySub.value) fieldsToValidate.push('subCategory')
+  if (hasSub2.value) fieldsToValidate.push('subCategory2')
+
+  fieldsToValidate.push('fundName', 'sendmoney')
+
+  fieldsToValidate.forEach(f => validateField(f))
+
+  return fieldsToValidate.every(f => !formErrors.value[f])
+}
+
+
 // ส่วนที่ต้องแก้ไขในไฟล์ cleardebtor.vue
 // แทนที่ฟังก์ชัน clearAllDebts() เดิมด้วยโค้ดนี้
-
 async function clearAllDebts() {
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
 
+if (!validateAllFields()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'กรุณากรอกข้อมูลที่จำเป็น',
+      text: 'มีบางช่องที่ยังไม่ได้กรอก กรุณาตรวจสอบ',
+      confirmButtonColor: '#F59E0B'
+    })
+    return
+  }
   // ✅ 1. รวบรวมรายการที่จะล้างหนี้
   const itemsToMark: Array<{
     waybillNumber: string

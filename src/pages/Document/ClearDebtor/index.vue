@@ -913,35 +913,61 @@ const clearBankError = (index, field) => {
   }
 }
 
-// ฟังก์ชันล้างหนี้
+// ส่วนที่ต้องแก้ไขในไฟล์ cleardebtor.vue
+// แทนที่ฟังก์ชัน clearAllDebts() เดิมด้วยโค้ดนี้
+
 async function clearAllDebts() {
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
 
-  const itemsToMark = []
+  // ✅ 1. รวบรวมรายการที่จะล้างหนี้
+  const itemsToMark: Array<{
+    waybillNumber: string
+    itemName: string
+    paymentAmount: number
+    receiptNumber: string
+    note: string
+  }> = []
 
   receipts.value.forEach(receipt => {
     receipt.items.forEach((item) => {
       const paymentValue = parseFloat(String(item.paymentInput || '0').replace(/,/g, ''))
       if (paymentValue > 0) {
         const originalReceipt = item._originalReceipt
-        const waybillNumber = originalReceipt?.waybillNumber || receipt.waybillNumber
+
+        // ✅ Debug: ดูว่ามี waybillNumber หรือไม่
+        console.log('🔍 Checking item:', {
+          itemName: item.itemName,
+          _originalReceipt: originalReceipt,
+          waybillNumber: originalReceipt?.waybillNumber,
+          _originalWaybillNumber: originalReceipt?._originalWaybillNumber
+        })
+
+        const waybillNumber = originalReceipt?._originalWaybillNumber ||
+                              originalReceipt?.waybillNumber || ''
+
+        if (!waybillNumber || waybillNumber === 'MERGED_ALL') {
+          console.error('❌ Invalid waybillNumber:', {
+            itemName: item.itemName,
+            found: waybillNumber
+          })
+          return
+        }
 
         itemsToMark.push({
-          waybillNumber: waybillNumber,
+          waybillNumber,
           itemName: item.itemName,
           paymentAmount: paymentValue,
           receiptNumber: item.receiptNumber || '',
-          note: item.note || '',
-          originalItem: item,
-          originalReceipt: originalReceipt
+          note: item.note || ''
         })
       }
     })
   })
 
-  console.log('🎯 Items to mark:', itemsToMark)
+  console.log('✅ Items to mark:', itemsToMark.length)
+  console.log('   Sample:', itemsToMark[0])
 
   if (itemsToMark.length === 0) {
     await Swal.fire({
@@ -953,6 +979,7 @@ async function clearAllDebts() {
     return
   }
 
+  // ✅ 2. ตรวจสอบยอดเงิน
   if (paymentDifference > 0.01) {
     await Swal.fire({
       icon: 'error',
@@ -983,6 +1010,7 @@ async function clearAllDebts() {
     return
   }
 
+  // ✅ 3. ยืนยันการล้างหนี้
   const result = await Swal.fire({
     title: 'ยืนยันการล้างหนี้?',
     html: `
@@ -1005,66 +1033,29 @@ async function clearAllDebts() {
   try {
     console.log('🧹 Starting debt clearing process...')
 
-    const grouped = new Map()
+    // ✅ 4. Import clearSummaryService
+    const { clearSummaryService } = await import('@/services/ClearDebtor/clearSummaryService')
 
-    itemsToMark.forEach(item => {
-      if (!grouped.has(item.waybillNumber)) {
-        grouped.set(item.waybillNumber, [])
-      }
-      grouped.get(item.waybillNumber).push(item)
-    })
+    // ✅ 5. เตรียมข้อมูล DebtorItem list
+    const debtorList = itemsToMark.map(item => ({
+      waybillNumber: item.waybillNumber,
+      itemName: item.itemName,
+      amount: item.paymentAmount,
+      isCleared: true,
+      note: item.note || item.receiptNumber || '',
+      receiptNumber: item.receiptNumber
+    }))
 
-    console.log('📦 Processing', grouped.size, 'receipts')
+    // ✅ 6. เตรียมข้อมูล payments
+    const payments = getBankTransfersData().map(p => ({
+      type: 'transfer' as const,
+      bankName: p.accountData.bankName,
+      accountName: p.accountData.accountName,
+      accountNumber: p.accountData.accountNumber,
+      amount: p.amount
+    }))
 
-    let totalMarkedCount = 0
-    let totalClearedCount = 0
-
-    for (const [waybillNumber, items] of grouped) {
-      console.log(`🔍 Processing waybill: ${waybillNumber}`)
-
-      try {
-        for (const item of items) {
-          const ref = item.receiptNumber || `CLEAR-${Date.now()}`
-
-          summaryStore.applyDebtClear(waybillNumber, {
-            itemName: item.itemName,
-            amount: item.paymentAmount,
-            ref: ref
-          })
-
-          await reciptService.applyDebtClearToReceipt(
-            waybillNumber,
-            item.itemName,
-            item.paymentAmount,
-            ref
-          )
-
-          totalMarkedCount++
-          console.log(`   ✅ Cleared: ${item.itemName} - ${formatNumber(item.paymentAmount)} บาท`)
-        }
-
-        const debtors = summaryStore.getDebtors(waybillNumber)
-        const clearedCount = debtors.filter(d => d.isCleared).length
-        totalClearedCount += clearedCount
-
-        console.log(`   📊 Summary: ${clearedCount}/${debtors.length} items fully cleared`)
-
-      } catch (error) {
-        console.error(`❌ Error clearing waybill ${waybillNumber}:`, error)
-      }
-    }
-
-    console.log(`✅ Total: Marked ${totalMarkedCount}, Fully Cleared ${totalClearedCount}`)
-
-    const uniqueHistoryItems = Array.from(
-      new Map(
-        itemsToMark.map(item => [
-          `${item.itemName}_${item.paymentAmount}`,
-          item
-        ])
-      ).values()
-    )
-
+    // ✅ 7. เตรียมข้อมูลหน่วยงาน
     const getSubName1 = () => {
       if (!subCategoryId.value) return ''
       const found = sub1OptionsArray.value.find(opt => opt.id === subCategoryId.value)
@@ -1077,58 +1068,84 @@ async function clearAllDebts() {
       return found?.name || ''
     }
 
-    const historyRecord = {
-      id: Date.now().toString(),
-      referenceId: `CLEAR-${Date.now()}`,
-      date: new Date().toLocaleString('th-TH'),
-      items: uniqueHistoryItems.map(i => ({
-        itemName: i.itemName,
-        amount: i.paymentAmount,
-        note: i.note,
-        referenceId: i.receiptNumber || i.waybillNumber
-      })),
-      payments: getBankTransfersData().map(p => ({
-        type: 'transfer',
-        bankName: p.accountData.bankName,
-        accountName: p.accountData.accountName,
-        accountNumber: p.accountData.accountNumber,
-        amount: p.amount
-      })),
-      total: totalPaymentInputValue,
-      fullName: formData.value.fullName || receipts.value[0]?.fullName || '-',
-      phone: formData.value.phone || receipts.value[0]?.phone || '-',
-      department: mainCategory.value || receipts.value[0]?.originalDepartment || '-',
+    // ✅ 8. สร้าง ClearSummary ผ่าน service
+    console.log('💾 Creating clear summary via service...')
+
+    const clearSummary = await clearSummaryService.create({
+      fullName: formData.value.fullName,
+      phone: formData.value.phone,
+      mainAffiliationId: mainCategoryId.value,
+      mainAffiliationName: mainCategory.value,
+      subAffiliationId1: subCategoryId.value,
       subAffiliationName1: getSubName1(),
+      subAffiliationId2: subCategoryId2.value,
       subAffiliationName2: getSubName2(),
-      sendmoney: formData.value.sendmoney || receipts.value[0]?.sendmoney || '-',
-      fundName: formData.value.fundName || receipts.value[0]?.fundName || '-',
-      receiptId: receipts.value[0]?.waybillNumber || `CLEAR-${Date.now()}`
+      fundName: formData.value.fundName,
+      sendmoney: formData.value.sendmoney,
+      projectCode: formData.value.projectCode,
+      debtorList,
+      payments,
+      totalAmount: totalPaymentInputValue
+    })
+
+    console.log('✅ Clear summary created:', clearSummary.id)
+
+    // ✅ 9. อัพเดท receipts ที่มีอยู่จริง (ข้าม MERGED_ALL)
+    console.log('🔄 Updating receipts...')
+
+    const grouped = new Map()
+    itemsToMark.forEach(item => {
+      if (!grouped.has(item.waybillNumber)) {
+        grouped.set(item.waybillNumber, [])
+      }
+      grouped.get(item.waybillNumber).push(item)
+    })
+
+    let totalMarkedCount = 0
+
+    for (const [waybillNumber, items] of grouped) {
+      console.log(`   📝 Processing waybill: ${waybillNumber}`)
+
+      try {
+        for (const item of items) {
+          const ref = item.receiptNumber || clearSummary.referenceId
+
+          // อัพเดทใน summary store
+          summaryStore.applyDebtClear(waybillNumber, {
+            itemName: item.itemName,
+            amount: item.paymentAmount,
+            ref: ref
+          })
+
+          // ⚠️ ไม่ต้อง call applyDebtClearToReceipt เพราะอาจไม่มี receipt จริง
+          // แค่อัพเดทใน store ก็พอ
+
+          totalMarkedCount++
+          console.log(`      ✅ Cleared: ${item.itemName} - ${formatNumber(item.paymentAmount)} บาท`)
+        }
+      } catch (error) {
+        console.error(`❌ Error clearing waybill ${waybillNumber}:`, error)
+      }
     }
 
-    const STORAGE_HISTORY_KEY = 'debtorClearHistory'
-    try {
-      const stored = localStorage.getItem(STORAGE_HISTORY_KEY)
-      const history = stored ? JSON.parse(stored) : []
-      history.unshift(historyRecord)
-      localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(history))
-      console.log('✅ History saved to localStorage')
-    } catch (err) {
-      console.error('❌ Error saving history:', err)
-    }
+    console.log(`✅ Total: Marked ${totalMarkedCount} items`)
 
+    // ✅ 10. Dispatch event
     window.dispatchEvent(new CustomEvent('receipts-updated', {
       detail: { action: 'clear' }
     }))
 
+    // ✅ 11. เคลียร์ localStorage
     localStorage.removeItem('clearDebtorSummary')
 
+    // ✅ 12. แสดงผลสำเร็จ
     await Swal.fire({
       title: 'ล้างหนี้สำเร็จ!',
       html: `
         <div class="text-left space-y-2">
           <p>✅ ทำเครื่องหมายล้างแล้ว: <span class="font-bold text-blue-600">${totalMarkedCount} รายการ</span></p>
-          <p>🎯 ล้างหมดแล้ว: <span class="font-bold text-green-600">${totalClearedCount} รายการ</span></p>
           <p>💰 ยอดเงินรวม: <span class="font-bold text-green-600">${formatNumber(totalPaymentInputValue)} บาท</span></p>
+          <p>📄 เลขที่อ้างอิง: <span class="font-mono text-sm">${clearSummary.referenceId}</span></p>
         </div>
       `,
       icon: 'success',

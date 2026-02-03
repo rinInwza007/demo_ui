@@ -138,15 +138,22 @@ function createDocDefinition() {
     pageMargins: [20, 30, 20, 20],
     defaultStyle: { font: 'THSarabun', fontSize: 13 },
     content: [
-      {
-        stack: [
-          {
-            text: 'เลขที่นำส่ง ..................../..................',
-            absolutePosition: { x: 0, y: 15 },
-            alignment: 'right',
-          },
-        ],
-      },
+  {
+  stack: [
+    {
+      text: receipt.waybillNumber || receipt.referenceId || '',
+      absolutePosition: { x: 445, y: 15 }, // ตำแหน่งที่แสดง
+      alignment: 'center',
+      fontSize: 13,
+      bold: true,
+    },
+    {
+      text: 'เลขที่นำส่ง ..................../..................', // เส้นประ
+      absolutePosition: { x: 0, y: 15 },
+      alignment: 'right',
+    },
+  ],
+},
       {
         text: 'มหาวิทยาลัยพะเยา \n ใบนำส่งเงิน\n',
         style: 'header',
@@ -489,70 +496,71 @@ function previewPdf() {
   })
 }
 
-onMounted(() => {
+// ✅ เปลี่ยนมาใช้ clearSummaryService แทน localStorage
+onMounted(async () => {
   try {
     loading.value = true
     const referenceId = route.params.id as string
     console.log('🔍 Looking for referenceId:', referenceId)
 
-    const historyData = localStorage.getItem('debtorClearHistory')
-    if (!historyData) {
-      console.error('❌ No history data found')
-      loading.value = false
-      return
-    }
+    // ✅ Import service
+    const { clearSummaryService } = await import('@/services/ClearDebtor/clearSummaryService')
 
-    const history = JSON.parse(historyData)
-    console.log('📚 Total history records:', history.length)
-
-    const foundHistory = history.find((h: any) => h.referenceId === referenceId)
+    // ✅ ดึงข้อมูลจาก service
+    const foundHistory = await clearSummaryService.getByReferenceId(referenceId)
 
     if (!foundHistory) {
-      console.error('❌ History item not found:', referenceId)
-      console.log('Available IDs:', history.map((h: any) => h.referenceId))
+      console.error('❌ Clear summary not found:', referenceId)
       loading.value = false
       return
     }
 
-    console.log('✅ Found history item:', foundHistory)
-    console.log('📋 Items array:', foundHistory.items)
+    console.log('✅ Found clear summary:', foundHistory)
+    console.log('📋 DebtorList:', foundHistory.debtorList)
 
-    // ✅ โหลดข้อมูลผู้ทำรายการแบบเต็ม
+    // ✅ โหลดข้อมูลผู้ทำรายการ (รูปแบบใหม่จาก ClearSummary)
     receiptData.value = {
+        waybillNumber: foundHistory.waybillNumbers?.[0] || foundHistory.referenceId,
+        waybillNumbers: foundHistory.waybillNumbers || [],
       referenceId: foundHistory.referenceId,
       fullName: foundHistory.fullName || 'ไม่ระบุ',
       phone: foundHistory.phone || '-',
-      mainAffiliationName: foundHistory.department || 'ไม่ระบุ',
+      mainAffiliationName: foundHistory.mainAffiliationName || 'ไม่ระบุ',
       subAffiliationName1: foundHistory.subAffiliationName1 || '',
       subAffiliationName2: foundHistory.subAffiliationName2 || '',
       sendmoney: foundHistory.sendmoney || '-',
       fundName: foundHistory.fundName || '-',
-      projectCode: foundHistory.receiptId || foundHistory.referenceId,
-      date: foundHistory.date,
+      projectCode: foundHistory.projectCode || foundHistory.referenceId,
+      date: new Date(foundHistory.createdAt).toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
       payments: foundHistory.payments || []
     }
 
-    // ✅ ล้าง rows และเติมข้อมูลใหม่ (ไม่มีคอลัมน์ผู้ทำรายการ)
+    // ✅ ล้าง rows และเติมข้อมูลใหม่จาก debtorList
     rows.splice(0, rows.length)
 
-    if (Array.isArray(foundHistory.items) && foundHistory.items.length > 0) {
-      console.log('✅ Processing', foundHistory.items.length, 'items')
+    if (Array.isArray(foundHistory.debtorList) && foundHistory.debtorList.length > 0) {
+      console.log('✅ Processing', foundHistory.debtorList.length, 'items')
 
-      foundHistory.items.forEach((item: any) => {
+      foundHistory.debtorList.forEach((item: any) => {
         rows.push({
-          item: item.itemName || item.name || '',
+          item: item.itemName || '',
           amount: (item.amount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 }),
-          ref: item.referenceId || item.id || '',
+          ref: item.receiptNumber || item.waybillNumber || '',
           note: item.note || '',
         })
       })
 
       console.log('✅ Created', rows.length, 'rows')
     } else {
-      console.error('❌ items is not a valid array')
+      console.error('❌ debtorList is not a valid array')
     }
 
-    const total = foundHistory.total || 0
+    // ✅ คำนวณยอดรวม
+    const total = foundHistory.totalAmount || 0
     summary.text = convertNumberToThaiText(total)
     summary.total = total.toLocaleString('th-TH', { minimumFractionDigits: 2 })
 

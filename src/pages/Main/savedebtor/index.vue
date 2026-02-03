@@ -455,17 +455,46 @@ const formatCurrency = (amount: number | string) => {
 }
 
 /* =========================
- * ✅ Load Data from Summary Store
+ * ✅ Load Data from Summary Store - แก้ไขให้ filter ตาม affiliationId
  * ========================= */
 const loadDataFromStore = async () => {
   console.log('📥 Loading data from summaryStore...')
   isLoading.value = true
 
   try {
-    const receipts = await reciptService.getAll()
-    console.log('📦 Total receipts loaded:', receipts.length)
+    // ✅ ดึง affiliationId ของ user ที่ login
+    const userAffiliationId = auth.user?.affiliationId
 
-    receipts.forEach(receipt => {
+    if (!userAffiliationId) {
+      console.warn('⚠️ No user affiliationId found')
+      isLoading.value = false
+      return
+    }
+
+    console.log('👤 User affiliationId:', userAffiliationId)
+    console.log('👤 User info:', auth.user)
+
+    // ✅ ดึงข้อมูล receipts ทั้งหมด
+    const allReceipts = await reciptService.getAll()
+    console.log('📦 Total receipts loaded:', allReceipts.length)
+
+    // ✅ Filter เฉพาะ receipts ที่ตรงกับหน่วยงานของ user
+    const userReceipts = allReceipts.filter(receipt => {
+      // ตรวจสอบทั้ง affiliationId, mainAffiliationId
+      const receiptAffId = receipt.affiliationId || receipt.mainAffiliationId
+      const matches = receiptAffId === userAffiliationId
+
+      if (matches) {
+        console.log('✅ Matched receipt:', receipt.waybillNumber, receiptAffId)
+      }
+
+      return matches
+    })
+
+    console.log('🔍 Filtered receipts for user affiliation:', userReceipts.length)
+
+    // ✅ Ingest เฉพาะ receipts ของหน่วยงานนี้
+    userReceipts.forEach(receipt => {
       summaryStore.ingestUpsert(receipt)
     })
 
@@ -484,65 +513,76 @@ const loadDataFromStore = async () => {
 }
 
 /* =========================
- * Load History
+ * Load History - แก้ไขให้ดึงจาก clearSummaryService
  * ========================= */
-const loadHistory = () => {
+const loadHistory = async () => {
   try {
-    const stored = localStorage.getItem(STORAGE_HISTORY_KEY)
-    const parsed = stored ? JSON.parse(stored) : []
+    // ✅ ดึงข้อมูลจาก clearSummaryService แทน localStorage
+    const { clearSummaryService } = await import('@/services/ClearDebtor/clearSummaryService')
 
-    // ✅ กรองและประมวลผลประวัติ
-    const processedHistory = parsed
-      .filter((h: any) => h.referenceId && (typeof h.items === 'string' || Array.isArray(h.items)))
-      .map((h: any) => {
-        // ✅ แปลง items เป็น array ถ้ายังไม่ใช่
-        let items = Array.isArray(h.items) ? h.items : []
+    // ✅ ดึง affiliationId ของ user
+    const userAffiliationId = auth.user?.affiliationId
 
-        // ✅ รวมรายการที่ชื่อเหมือนกัน
-        const mergedItemsMap = new Map()
+    // กรองตามหน่วยงาน (ถ้ามี)
+    const filters = userAffiliationId ? { affiliationId: userAffiliationId } : undefined
 
-        items.forEach((item: any) => {
-          const itemName = item.itemName || item.name || 'ไม่ระบุ'
+    const summaries = await clearSummaryService.getAll(filters)
 
-          if (mergedItemsMap.has(itemName)) {
-            // รวมยอดเงิน
-            const existing = mergedItemsMap.get(itemName)
-            existing.amount += (item.amount || 0)
-            existing.count += 1
-          } else {
-            mergedItemsMap.set(itemName, {
-              itemName,
-              amount: item.amount || 0,
-              note: item.note || '',
-              referenceId: item.referenceId || '',
-              count: 1
-            })
-          }
-        })
+    console.log('📦 Loaded clear summaries:', summaries.length)
 
-        // ✅ แปลงกลับเป็น array และสร้างข้อความแสดง
-        const mergedItems = Array.from(mergedItemsMap.values())
-        const itemsText = mergedItems.map(item =>
-          item.count > 1 ? `${item.itemName} (${item.count} รายการ)` : item.itemName
-        ).join(', ')
+    // ✅ แปลงให้ตรงกับ format ที่ UI ต้องการ
+    historyItems.value = summaries.map(summary => {
+      // สร้างข้อความแสดงรายการ
+      const debtorListGrouped = new Map()
 
-        return {
-          ...h,
-          items: mergedItems,
-          itemsText: itemsText || 'ไม่ระบุรายการ',
-          displayText: itemsText // เพิ่มฟิลด์นี้สำหรับแสดงผล
+      summary.debtorList.forEach(debtor => {
+        const itemName = debtor.itemName
+        if (debtorListGrouped.has(itemName)) {
+          const existing = debtorListGrouped.get(itemName)
+          existing.amount += debtor.amount
+          existing.count += 1
+        } else {
+          debtorListGrouped.set(itemName, {
+            itemName,
+            amount: debtor.amount,
+            count: 1
+          })
         }
       })
 
-    historyItems.value = processedHistory
+      const mergedItems = Array.from(debtorListGrouped.values())
+      const itemsText = mergedItems.map(item =>
+        item.count > 1 ? `${item.itemName} (${item.count} รายการ)` : item.itemName
+      ).join(', ')
 
-    console.log('✅ Loaded history (items merged):', {
+      return {
+        id: summary.id,
+        referenceId: summary.referenceId,
+        date: new Date(summary.createdAt).toLocaleString('th-TH'),
+        items: mergedItems,
+        itemsText: itemsText || 'ไม่ระบุรายการ',
+        displayText: itemsText,
+        payments: summary.payments || [],
+        total: summary.totalAmount,
+        fullName: summary.fullName,
+        phone: summary.phone,
+        department: summary.mainAffiliationName,
+        subAffiliationName1: summary.subAffiliationName1,
+        subAffiliationName2: summary.subAffiliationName2,
+        fundName: summary.fundName,
+        sendmoney: summary.sendmoney,
+        affiliationId: summary.mainAffiliationId
+      }
+    })
+
+    console.log('✅ Loaded history from clearSummaryService:', {
       total: historyItems.value.length,
+      userAffiliation: auth.user?.affiliation,
       sample: historyItems.value[0]
     })
 
   } catch (error) {
-    console.error('❌ Error loading history:', error)
+    console.error('❌ Error loading history from clearSummaryService:', error)
     historyItems.value = []
   }
 }
@@ -675,7 +715,9 @@ const selectedTotal = computed(() =>
 )
 
 /* =========================
- * ✅ Clear Selected Debtors - แยกรายการออกก่อนส่งไปหน้าถัดไป
+ * ✅ Clear Selected Debtors - แก้ไขให้ไม่ auto-fill ข้อมูลส่วนตัว + เลขนำส่ง
+ * เก็บเฉพาะ: หน่วยงาน, หน่วยงานรอง, กองทุน
+ * เอาออก: ชื่อ, เบอร์, รหัสโครงการ, ประเภทส่งเงิน, เลขนำส่ง
  * ========================= */
 const clearSelectedDebtors = async () => {
   console.log('🚀 clearSelectedDebtors called')
@@ -697,7 +739,7 @@ const clearSelectedDebtors = async () => {
 
   console.log('🎯 Selected merged items:', selectedMerged.length)
 
-  // ✅ แยกรายการออกและจัดกลุ่มตาม waybillNumber
+  // ✅ แยกรายการออกและจัดกลุ่มตาม waybillNumber เดิม (เพื่อรวมรายการ)
   const receiptMap = new Map()
 
   selectedMerged.forEach(merged => {
@@ -708,23 +750,34 @@ const clearSelectedDebtors = async () => {
 
       if (!receiptMap.has(docKey)) {
         receiptMap.set(docKey, {
+          // ❌ เอา waybillNumber ออก - ให้ผู้ใช้กรอกเอง
           waybillNumber: receipt.waybillNumber,
-          receiptId: receipt.id,
-          projectCode: receipt.waybillNumber,
-          fullName: receipt.fullName,
-          phone: receipt.phone || '-',
+          receiptId: receipt.id, // เก็บ ID เดิมไว้สำหรับอ้างอิง
+
+          // ❌ ไม่ auto-fill ข้อมูลส่วนตัว - ให้ผู้ใช้กรอกเอง
+          projectCode: '',
+          fullName: '',
+          phone: '',
+          sendmoney: '',
+
+          // ✅ เก็บเฉพาะข้อมูลหน่วยงานและกองทุน
           department: sourceItem.department,
           subDepartment: sourceItem.subDepartment,
           mainAffiliationName: receipt.affiliationName,
           mainAffiliationId: receipt.mainAffiliationId,
           affiliationName: receipt.affiliationName,
-          subAffiliationName1: receipt.subAffiliationName1,
-          subAffiliationId1: receipt.subAffiliationId1,
-          subAffiliationName2: receipt.subAffiliationName2,
-          subAffiliationId2: receipt.subAffiliationId2,
-          sendmoney: receipt.sendmoney || '-',
-          fundName: receipt.fundName || '-',
+          subAffiliationName1: receipt.subAffiliationName1 || '',
+          subAffiliationId1: receipt.subAffiliationId1 || '',
+          subAffiliationName2: receipt.subAffiliationName2 || '',
+          subAffiliationId2: receipt.subAffiliationId2 || '',
+          fundName: receipt.fundName || '',
+
           createdAt: receipt.createdAt || new Date().toISOString(),
+
+          // ✅ เก็บข้อมูลอ้างอิงเดิมไว้ (ไม่แสดงให้ user แต่ใช้ในระบบ)
+          _originalWaybillNumber: receipt.waybillNumber,
+          _originalReceiptId: receipt.id,
+
           items: []
         })
       }
@@ -756,6 +809,16 @@ const clearSelectedDebtors = async () => {
 
   console.log('📦 Prepared receipts:', receipts.length)
   console.log('📝 Total items (separated):', receipts.reduce((sum, r) => sum + r.items.length, 0))
+  console.log('🔍 Sample receipt (ALL personal data cleared):')
+  console.log('   - waybillNumber:', receipts[0]?.waybillNumber || '(empty)') // ต้องเป็น empty
+  console.log('   - fullName:', receipts[0]?.fullName || '(empty)')
+  console.log('   - phone:', receipts[0]?.phone || '(empty)')
+  console.log('   - projectCode:', receipts[0]?.projectCode || '(empty)')
+  console.log('   - sendmoney:', receipts[0]?.sendmoney || '(empty)')
+  console.log('   ✅ mainAffiliationName:', receipts[0]?.mainAffiliationName)
+  console.log('   ✅ subAffiliationName1:', receipts[0]?.subAffiliationName1)
+  console.log('   ✅ fundName:', receipts[0]?.fundName)
+  console.log('   📋 _originalWaybillNumber:', receipts[0]?._originalWaybillNumber, '(for reference only)')
 
   // ✅ บันทึกลง localStorage
   const summaryData = {
@@ -767,7 +830,8 @@ const clearSelectedDebtors = async () => {
 
   try {
     localStorage.setItem(STORAGE_SUMMARY_KEY, JSON.stringify(summaryData))
-    console.log('✅ Saved to localStorage (items separated)')
+    console.log('✅ Saved to localStorage (ALL personal data + waybillNumber cleared)')
+    console.log('   User must fill: waybillNumber, fullName, phone, projectCode, sendmoney')
 
     router.push('/cleardebtor/multi')
 
@@ -781,7 +845,6 @@ const clearSelectedDebtors = async () => {
     })
   }
 }
-
 /* =========================
  * Actions
  * ========================= */
@@ -900,6 +963,7 @@ if (DEBUG && typeof window !== 'undefined') {
     totals,
     mergedItems,
     loadDataFromStore,
+    auth: auth.user
   }
 }
 </script>

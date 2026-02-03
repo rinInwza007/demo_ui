@@ -48,15 +48,21 @@ export interface ReceiptItem {
     transfer: boolean
   }
   
-  // ✅ เพิ่มฟิลด์สำหรับข้อมูลเช็ค
+ cashDetails?: {
+    amount: string | number
+  }
+  
+  // ✅ แก้ไข checkDetails ให้มี amount
   checkDetails?: {
+    amount: string | number
     bankName: string
     checkNumber: string
     numInCheck: string
   }
   
-  // ✅ เพิ่มฟิลด์สำหรับข้อมูลเงินโอน
+  // ✅ แก้ไข transferDetails ให้มี amount
   transferDetails?: {
+    amount: string | number
     accountData: {
       accountNumber: string
       bankName: string

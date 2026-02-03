@@ -82,8 +82,6 @@ export function sanitizeItem(it: any): ReceiptItem {
     referenceNo: (it.referenceNo ?? '').trim(),
     amount: Number.isFinite(it.amount) ? it.amount : 0,
     type: it.type || 'income',
-    
-    // ✅ เพิ่มบรรทัดนี้
     isCancelled: it.isCancelled || false,
     
     paymentTypes: it.paymentTypes ? {
@@ -95,22 +93,37 @@ export function sanitizeItem(it: any): ReceiptItem {
       check: false,
       transfer: false
     },
+    
+    // ✅ เพิ่ม cashDetails
+    cashDetails: it.cashDetails ? {
+      amount: it.cashDetails.amount || ''
+    } : {
+      amount: ''
+    },
+    
+    // ✅ เพิ่ม checkDetails พร้อม amount
     checkDetails: it.checkDetails ? {
+      amount: it.checkDetails.amount || '',
       bankName: String(it.checkDetails.bankName || '').trim(),
       checkNumber: String(it.checkDetails.checkNumber || '').trim(),
       numInCheck: String(it.checkDetails.numInCheck || '').trim()
     } : {
+      amount: '',
       bankName: '',
       checkNumber: '',
       numInCheck: ''
     },
+    
+    // ✅ เพิ่ม transferDetails พร้อม amount
     transferDetails: it.transferDetails ? {
+      amount: it.transferDetails.amount || '',
       accountData: {
         accountNumber: String(it.transferDetails.accountData?.accountNumber || '').trim(),
         bankName: String(it.transferDetails.accountData?.bankName || '').trim(),
         accountName: String(it.transferDetails.accountData?.accountName || '').trim()
       }
     } : {
+      amount: '',
       accountData: {
         accountNumber: '',
         bankName: '',
@@ -119,7 +132,6 @@ export function sanitizeItem(it: any): ReceiptItem {
     }
   }
 }
-
 export function sanitizeReceipt(r: any): Receipt {
   return {
     id: r.waybillNumber || r.id,

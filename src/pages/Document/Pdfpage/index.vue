@@ -125,8 +125,12 @@ function calculatePaymentTypeTotals() {
       console.log(`  🚫 Cancelled item (skip): ${item.itemName}`)
       return // ข้ามรายการที่ยกเลิก
     }
-
-    const cleanAmount = item.amount ? parseFloat(item.amount.toString().replace(/,/g, '')) : 0
+const cleanAmount = Number(
+  item.amount?.toString().replace(/,/g, '') || 0
+)
+  const cashAmount = Number(item.cashDetails?.amount || 0)
+const checkAmount = Number(item.checkDetails?.amount || 0)
+const transferAmount = Number(item.transferDetails?.amount || 0)
     
     // ✅ ตรวจสอบว่าเป็นค่าธรรมเนียมหรือไม่ (จากชื่อรายการ)
     const isFeeItem = item.itemName && (
@@ -164,15 +168,15 @@ function calculatePaymentTypeTotals() {
     // ✅ จัดการเงินบวกตามปกติ (ไม่ใช่ลูกหนี้ และไม่ใช่ค่าธรรมเนียม)
     if (cleanAmount > 0 && item.paymentTypes) {
       // เงินสด
-      if (item.paymentTypes.cash) {
-        totals.cash += cleanAmount
+      if (item.paymentTypes.cash && cashAmount > 0) {
+        totals.cash += cashAmount
         totals.cashCount++
         console.log(`  💵 Cash: ${cleanAmount}`)
       }
       
       // เช็ค
-      if (item.paymentTypes.check) {
-        totals.check += cleanAmount
+      if (item.paymentTypes.check && checkAmount > 0) {
+        totals.check += checkAmount
         totals.checkCount++
         
         if (item.checkDetails && item.checkDetails.bankName) {
@@ -180,15 +184,15 @@ function calculatePaymentTypeTotals() {
             bankName: item.checkDetails.bankName,
             checkNumber: item.checkDetails.checkNumber,
             numInCheck: item.checkDetails.numInCheck,
-            amount: cleanAmount
+            amount: checkAmount
           })
         }
         console.log(`  📝 Check: ${cleanAmount}`)
       }
       
       // เงินโอน
-      if (item.paymentTypes.transfer) {
-        totals.transfer += cleanAmount
+      if (item.paymentTypes.transfer && transferAmount > 0) {
+        totals.transfer += transferAmount
         totals.transferCount++
         
         if (item.transferDetails?.accountData?.accountNumber) {
@@ -198,13 +202,13 @@ function calculatePaymentTypeTotals() {
           )
           
           if (existingIndex >= 0) {
-            totals.transferDetails[existingIndex].amount += cleanAmount
+            totals.transferDetails[existingIndex].amount += transferAmount
           } else {
             totals.transferDetails.push({
               accountNumber: account.accountNumber,
               bankName: account.bankName,
               accountName: account.accountName,
-              amount: cleanAmount
+              amount: transferAmount
             })
           }
         }
@@ -605,7 +609,7 @@ function calculatePaymentTypeTotals() {
                     text: 'บาท',
                     noWrap: true,
                     width: 'auto',
-                    margin: [16.5, 0, 0, 0],
+                    margin: [12, 0, -3, 0],
                   },
                 ],
                 alignment: 'right',
@@ -650,7 +654,7 @@ function calculatePaymentTypeTotals() {
                 text: 'บาท',
                 width: 'auto',
                 noWrap: true,
-                margin: [15.8, -10, 92, 0],
+                margin: [12, -12, 89.5, 0],
                 alignment: 'left',
               },
             ],
@@ -689,7 +693,7 @@ function calculatePaymentTypeTotals() {
                 fontSize: 13,
                 width: 'auto',
                 noWrap: true,
-                margin: [15, -10, 89, 0],
+                margin: [12, -10, 89.5, 0],
                 alignment: 'left',
               },
             ],

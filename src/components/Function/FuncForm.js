@@ -16,20 +16,23 @@ const morelist = ref([
       check: false,
       transfer: false
     },
-    // ✅ เพิ่มฟิลด์สำหรับข้อมูลเช็ค
-    checkDetails: {
-      bankName: '',
-      checkNumber: '',
-      numInCheck: ''
-    },
-    // ✅ เพิ่มฟิลด์สำหรับข้อมูลเงินโอน
-    transferDetails: {
-      accountData: {
-        accountNumber: '',
+cashDetails: {
+        amount: '',
+      },
+      checkDetails: {
+        amount: '',
         bankName: '',
-        accountName: ''
-      }
-    }
+        checkNumber: '',
+        numInCheck: '',
+      },
+      transferDetails: {
+        amount: '',
+        accountData: {
+          accountNumber: '',
+          bankName: '',
+          accountName: '',
+        },
+      },
   },
 ])
 

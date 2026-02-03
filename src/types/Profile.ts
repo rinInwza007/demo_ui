@@ -4,6 +4,7 @@ import { roleType  } from "./user"
 export interface Profile {
   fullName: string
   phone: string
+  role:roleType
   fundName: string
   role :roleType
   projectCode: string | null

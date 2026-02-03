@@ -14,6 +14,11 @@ export interface ApprovePayload {
   approverName: string
 }
 
+export interface RejectPayload {
+  approverName?: string
+  reason?: string
+}
+
 export interface ApproveResponse {
   success: boolean
   data?: Receipt
@@ -65,10 +70,54 @@ export const approveReceipt = async (
 }
 
 /**
+ * 🔄 POST /receipts/:waybillNumber/reject - ยกเลิกการอนุมัติ (เปลี่ยนกลับเป็น pending)
+ */
+export const rejectReceipt = async (
+  waybillNumber: string,
+  payload?: RejectPayload
+): Promise<Receipt> => {
+  try {
+    const encodedWaybillNumber = encodeURIComponent(waybillNumber)
+    
+    console.log('📡 [API] POST /receipts/' + waybillNumber + '/reject', payload)
+    
+    const response = await axios.post<ApproveResponse>(
+      `/receipts/${encodedWaybillNumber}/reject`,
+      payload || {}
+    )
+    
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || 'ไม่สามารถยกเลิกการอนุมัติได้')
+    }
+    
+    console.log('✅ [API] Reverted to pending:', waybillNumber)
+    
+    return response.data.data
+  } catch (error: any) {
+    console.error('❌ [API] Error reverting receipt:', error)
+    
+    // Handle specific error cases
+    if (error.response?.status === 404) {
+      throw new Error('ไม่พบใบนำส่งที่ต้องการยกเลิก')
+    }
+    
+    if (error.response?.status === 400) {
+      throw new Error(error.response.data.message || 'ไม่สามารถยกเลิกการอนุมัติได้')
+    }
+    
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message)
+    }
+    
+    throw error
+  }
+}
+
+/**
  * 🔄 GET /receipts/:waybillNumber/approval-status - ดึงสถานะการอนุมัติ (Optional)
  */
 export const getApprovalStatus = async (waybillNumber: string): Promise<{
-  status: 'pending' | 'approved' 
+  status: 'pending' | 'approved' | 'rejected'
   canApprove: boolean
   reason?: string
 }> => {
@@ -80,7 +129,7 @@ export const getApprovalStatus = async (waybillNumber: string): Promise<{
     const response = await axios.get<{
       success: boolean
       data: {
-        status: 'pending' | 'approved' 
+        status: 'pending' | 'approved' | 'rejected'
         canApprove: boolean
         reason?: string
       }

@@ -1,82 +1,10 @@
 // src/fake/api/clearSummaryApi.ts
 
 import type { ClearSummary } from '@/types/summary'
-
-const STORAGE_KEY = 'clearSummaryDB'
-
-/**
- * Load from localStorage
- */
-function loadDB(): ClearSummary[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY)
-    return data ? JSON.parse(data) : []
-  } catch (error) {
-    console.error('❌ Error loading clearSummaryDB:', error)
-    return []
-  }
-}
-
-/**
- * Save to localStorage
- */
-function saveDB(data: ClearSummary[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-    console.log('💾 Saved clearSummaryDB:', data.length, 'items')
-  } catch (error) {
-    console.error('❌ Error saving clearSummaryDB:', error)
-  }
-}
-
-/**
- * Create new clear summary
- */
-export function createClearSummary(data: Partial<ClearSummary>) {
-  console.log('📝 Creating clear summary:', data)
-
-  const db = loadDB()
-
-  const newSummary: ClearSummary = {
-    // IDs
-    id: data.id || `CS-${Date.now()}`,
-    referenceId: data.referenceId || data.id || `CLEAR-${Date.now()}`,
-    createdAt: data.createdAt || new Date().toISOString(),
-
-    // ข้อมูลผู้ทำรายการ
-    fullName: data.fullName || '',
-    phone: data.phone || '',
-
-    // ข้อมูลหน่วยงาน
-    mainAffiliationId: data.mainAffiliationId || '',
-    mainAffiliationName: data.mainAffiliationName || '',
-    subAffiliationId1: data.subAffiliationId1,
-    subAffiliationName1: data.subAffiliationName1,
-    subAffiliationId2: data.subAffiliationId2,
-    subAffiliationName2: data.subAffiliationName2,
-
-    // ข้อมูลกองทุน
-    fundName: data.fundName,
-    sendmoney: data.sendmoney,
-    projectCode: data.projectCode,
-
-    // รายการ
-    waybillNumbers: data.waybillNumbers || [],
-    debtorList: data.debtorList || [],
-    totalItems: data.totalItems || (data.debtorList?.length ?? 0),
-    totalAmount: data.totalAmount || 0,
-
-    // การชำระเงิน
-    payments: data.payments || [],
-
-    // สถานะ
-    status: data.status || 'completed'
-  }
-
-  db.unshift(newSummary)
-  saveDB(db)
-
-  console.log('✅ Clear summary created:', newSummary.id)
+export let clearSummaryDB: ClearSummary[] = []
+/* Create */
+export function createClearSummary(data: ClearSummary) {
+  clearSummaryDB.push(data)
 
   return {
     success: true,

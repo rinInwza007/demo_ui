@@ -7,48 +7,31 @@ function defaultSeed(): Receipt[] {
     {
       id: "WB-001",
       waybillNumber: "WB-001",
+
       createdAt: "2025-10-05T14:22:10.000Z",
       updatedAt: "2025-10-05T14:22:10.000Z",
-      fullName: "จตุพล สิงห์คำ",
-      phone: "0869988776",
-      fundName: "กองทุนพิเศษ",
-      projectCode: "DEN-001",
-      moneyTypeNote: "Waybill",
-      sendmoney: "รายได้",
-      moneyType: "รายได้",
-      netTotalAmount: 4500,
-      totalPaymentAmount: 4500,
-      affiliationId: "DEN",
-      affiliationName: "คณะทันตแพทยศาสตร์",
-      
-      // ✅ เพิ่มบรรทัดนี้
-      approvalStatus: "pending",
-      
-      mainAffiliationId: "DEN",
-      mainAffiliationName: "คณะทันตแพทยศาสตร์",
-      subAffiliationId1: "",
-      subAffiliationName1: "",
-      subAffiliationId2: "",
-      subAffiliationName2: "",
 
-      paymentMethods: {
-        cash: {
-          checked: true,
-          amount: 1500
-        }
+      // ✅ ย้ายข้อมูลเข้า profile
+      profile: {
+        fullName: "จตุพล สิงห์คำ",
+        phone: "0869988776",
+        fundName: "กองทุนพิเศษ",
+        projectCode: "DEN-001",
+        moneyType: "รายได้",
+        sendmoney: "รายได้",
+        affiliationId: "DEN",
+        affiliationName: "คณะทันตแพทยศาสตร์",
+        mainAffiliationId: "DEN",
+        mainAffiliationName: "คณะทันตแพทยศาสตร์",
+        subAffiliationId1: "",
+        subAffiliationName1: "",
+        subAffiliationId2: "",
+        subAffiliationName2: "",
       },
 
-      bankTransfers: [
-        {
-          id: 1,
-          accountData: {
-            accountNumber: "671-2-90667-9",
-            bankName: "ธนาคารกรุงไทย",
-            accountName: "โรงพยาบาลมหาวิทยาลัยพะเยา"
-          },
-          amount: 3000
-        }
-      ],
+      netTotalAmount: 4500,
+
+      approvalStatus: "pending",
 
       receiptList: [
         {
@@ -56,12 +39,36 @@ function defaultSeed(): Receipt[] {
           note: "รอบไตรมาสสุดท้าย",
           referenceNo: "INV-001",
           amount: 4500,
-          type: "income"
+          type: "income",
+          isCancelled: false,
+          paymentTypes: {
+            cash: true,
+            transfer: false,
+            check: false
+          },
+          cashDetails: {
+            amount: 4500
+          },
+          checkDetails: {
+            amount: "",
+            bankName: "",
+            checkNumber: "",
+            numInCheck: ""
+          },
+          transferDetails: {
+            amount: "",
+            accountData: {
+              accountNumber: "",
+              bankName: "",
+              accountName: ""
+            }
+          }
         }
       ],
+
       isLocked: false
     }
-  ];
+  ]
 }
 
 export function sanitizeItem(it: any): ReceiptItem {
@@ -72,6 +79,51 @@ export function sanitizeItem(it: any): ReceiptItem {
     referenceNo: (it.referenceNo ?? '').trim(),
     amount: Number.isFinite(it.amount) ? it.amount : 0,
     type: it.type || 'income',
+    isCancelled: it.isCancelled || false,
+    
+    paymentTypes: it.paymentTypes ? {
+      cash: it.paymentTypes.cash || false,
+      check: it.paymentTypes.check || false,
+      transfer: it.paymentTypes.transfer || false
+    } : {
+      cash: false,
+      check: false,
+      transfer: false
+    },
+    
+    cashDetails: it.cashDetails ? {
+      amount: it.cashDetails.amount || ''
+    } : {
+      amount: ''
+    },
+    
+    checkDetails: it.checkDetails ? {
+      amount: it.checkDetails.amount || '',
+      bankName: String(it.checkDetails.bankName || '').trim(),
+      checkNumber: String(it.checkDetails.checkNumber || '').trim(),
+      numInCheck: String(it.checkDetails.numInCheck || '').trim()
+    } : {
+      amount: '',
+      bankName: '',
+      checkNumber: '',
+      numInCheck: ''
+    },
+    
+    transferDetails: it.transferDetails ? {
+      amount: it.transferDetails.amount || '',
+      accountData: {
+        accountNumber: String(it.transferDetails.accountData?.accountNumber || '').trim(),
+        bankName: String(it.transferDetails.accountData?.bankName || '').trim(),
+        accountName: String(it.transferDetails.accountData?.accountName || '').trim()
+      }
+    } : {
+      amount: '',
+      accountData: {
+        accountNumber: '',
+        bankName: '',
+        accountName: ''
+      }
+    }
   }
 }
 
@@ -79,63 +131,36 @@ export function sanitizeReceipt(r: any): Receipt {
   return {
     id: r.waybillNumber || r.id,
     waybillNumber: r.waybillNumber || r.id,
-    fullName: String(r.fullName || '').trim(),
-    phone: String(r.phone || '').trim(),
-    fundName: String(r.fundName || '').trim(),
-    projectCode: r.projectCode ? String(r.projectCode).trim() : null,
-    moneyType: String(r.moneyType || '').trim(),
-    sendmoney: String(r.sendmoney || '').trim(),
-    moneyTypeNote: String(r.moneyTypeNote || '').trim(),
+
+    // ✅ สร้าง profile object
+    profile: {
+      fullName: String(r.profile?.fullName || r.fullName || '').trim(),
+      phone: String(r.profile?.phone || r.phone || '').trim(),
+      fundName: String(r.profile?.fundName || r.fundName || '').trim(),
+      projectCode: r.profile?.projectCode || r.projectCode ? String(r.profile?.projectCode || r.projectCode).trim() : null,
+      moneyType: String(r.profile?.moneyType || r.moneyType || '').trim(),
+      sendmoney: String(r.profile?.sendmoney || r.sendmoney || '').trim(),
+      affiliationId: String(r.profile?.affiliationId || r.affiliationId || '').trim(),
+      affiliationName: String(r.profile?.affiliationName || r.affiliationName || '').trim(),
+      mainAffiliationId: String(r.profile?.mainAffiliationId || r.mainAffiliationId || '').trim(),
+      mainAffiliationName: String(r.profile?.mainAffiliationName || r.mainAffiliationName || '').trim(),
+      subAffiliationId1: String(r.profile?.subAffiliationId1 || r.subAffiliationId1 || '').trim(),
+      subAffiliationName1: String(r.profile?.subAffiliationName1 || r.subAffiliationName1 || '').trim(),
+      subAffiliationId2: String(r.profile?.subAffiliationId2 || r.subAffiliationId2 || '').trim(),
+      subAffiliationName2: String(r.profile?.subAffiliationName2 || r.subAffiliationName2 || '').trim(),
+    },
+
     netTotalAmount: Number(r.netTotalAmount) || 0,
-    totalPaymentAmount: Number(r.totalPaymentAmount) || 0,
+
     createdAt: r.createdAt ?? new Date().toISOString(),
     updatedAt: r.updatedAt ?? new Date().toISOString(),
+
     approvalStatus: r.approvalStatus ?? 'pending',
+
     receiptList: Array.isArray(r.receiptList)
       ? r.receiptList.map(sanitizeItem)
       : [],
 
-    affiliationId: String(r.affiliationId || '').trim(),
-    affiliationName: String(r.affiliationName || '').trim(),
-    mainAffiliationId: String(r.mainAffiliationId || '').trim(),
-    mainAffiliationName: String(r.mainAffiliationName || '').trim(),
-    subAffiliationId1: String(r.subAffiliationId1 || '').trim(),
-    subAffiliationName1: String(r.subAffiliationName1 || '').trim(),
-    subAffiliationId2: String(r.subAffiliationId2 || '').trim(),
-    subAffiliationName2: String(r.subAffiliationName2 || '').trim(),
-    paymentMethods: r.paymentMethods ? {
-      cash: r.paymentMethods.cash ? {
-        checked: r.paymentMethods.cash.checked || false,
-        amount: r.paymentMethods.cash.amount || 0,
-      } : undefined,
-      check: r.paymentMethods.check ? {
-        checked: r.paymentMethods.check.checked || false,
-        amount: r.paymentMethods.check.amount || '',
-        bankName: r.paymentMethods.check.bankName || '',
-        checkNumber: r.paymentMethods.check.checkNumber || '',
-        NumIncheck: r.paymentMethods.check.NumIncheck || ''
-      } : undefined,
-      debtor: r.paymentMethods.debtor ? {
-        checked: r.paymentMethods.debtor.checked || false,
-        amount: r.paymentMethods.debtor.amount || 0,
-      } : undefined,
-      other: r.paymentMethods.other ? {
-        checked: r.paymentMethods.other.checked || false,
-        amount: r.paymentMethods.other.amount || 0,
-        name: r.paymentMethods.other.name || '',
-      } : undefined,
-    } : {},
-    bankTransfers: Array.isArray(r.bankTransfers)
-      ? r.bankTransfers.map((bank: any) => ({
-          id: bank.id || Date.now(),
-          accountData: {
-            accountNumber: String(bank.accountData?.accountNumber || '').trim(),
-            bankName: String(bank.accountData?.bankName || '').trim(),
-            accountName: String(bank.accountData?.accountName || '').trim(),
-          },
-          amount: Number(bank.amount) || 0,
-        }))
-      : [],
     isLocked: r.isLocked ?? false,
   }
 }

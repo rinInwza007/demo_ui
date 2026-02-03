@@ -6,11 +6,33 @@ const morelist = ref([
   {
     id: 1,
     itemId: null,
-    type: 'income', // ✅
+    type: 'income',
     itemName: null,
     referenceNo: '',
     note: '',
     amount: '',
+    paymentTypes: {
+      cash: false,
+      check: false,
+      transfer: false
+    },
+cashDetails: {
+        amount: '',
+      },
+      checkDetails: {
+        amount: '',
+        bankName: '',
+        checkNumber: '',
+        numInCheck: '',
+      },
+      transferDetails: {
+        amount: '',
+        accountData: {
+          accountNumber: '',
+          bankName: '',
+          accountName: '',
+        },
+      },
   },
 ])
 
@@ -24,12 +46,30 @@ const addRow = () => {
   morelist.value.push({
     id: morelist.value.length + 1,
     itemId: null,
-    type: 'income', // ✅
+    type: 'income',
     isExpense: false,
     itemName: null,
     referenceNo: '',
     note: '',
     amount: '',
+    paymentTypes: {
+      cash: false,
+      check: false,
+      transfer: false
+    },
+    // ✅ เพิ่มฟิลด์เริ่มต้นสำหรับแถวใหม่
+    checkDetails: {
+      bankName: '',
+      checkNumber: '',
+      numInCheck: ''
+    },
+    transferDetails: {
+      accountData: {
+        accountNumber: '',
+        bankName: '',
+        accountName: ''
+      }
+    }
   })
 }
 
@@ -52,19 +92,18 @@ const addRow = () => {
     }
   }
 
-
 const handleTypeChange = (index) => {
-  // Optional: แสดง confirmation หรือ feedback
   const type = morelist.value[index].type
   console.log(`รายการที่ ${index + 1} เปลี่ยนเป็น: ${type === 'income' ? 'รายรับ' : 'รายจ่าย'}`)
 }
+
   const rowItems = ref([])
 
 const totalAmount = computed(() => {
   return morelist.value.reduce((sum, row) => {
     const cleanAmount = String(row.amount || '0').replace(/,/g, '')
     const amount = Number(cleanAmount) || 0
-    return row.type === 'expense' ? sum - amount : sum + amount // ✅
+    return row.type === 'expense' ? sum - amount : sum + amount
   }, 0)
 })
 
@@ -74,12 +113,55 @@ const totalAmount = computed(() => {
       maximumFractionDigits: 2,
     })
   })
+
   const updateItemId = (index, itemId) => {
     if (morelist.value[index]) {
       morelist.value[index].itemId = itemId
       console.log(`✅ Updated itemId at index ${index}:`, itemId)
     }
   }
+
+  // ✅ ฟังก์ชันคำนวณยอดรวมตามประเภทการชำระ
+  const calculatePaymentTypeTotals = () => {
+    const totals = {
+      cash: 0,
+      check: 0,
+      transfer: 0
+    }
+
+    morelist.value.forEach(row => {
+      const cleanAmount = String(row.amount || '0').replace(/,/g, '')
+      const amount = Number(cleanAmount) || 0
+
+      if (amount > 0 && row.paymentTypes) {
+        if (row.paymentTypes.cash) totals.cash += amount
+        if (row.paymentTypes.check) totals.check += amount
+        if (row.paymentTypes.transfer) totals.transfer += amount
+      }
+    })
+
+    return totals
+  }
+
+
+  const expenseTotalAmount = computed(() => {
+  return morelist.value.reduce((sum, row) => {
+    if (row.isCancelled) return sum // ข้ามรายการที่ยกเลิก
+    if ((row.isExpense || row.type === 'expense') && row.amount) {
+      const amount = parseFloat(String(row.amount).replace(/,/g, ''))
+      return sum + (isNaN(amount) ? 0 : amount)
+    }
+    return sum
+  }, 0)
+})
+
+// ✅ นับจำนวนรายการรายจ่าย
+const expenseCount = computed(() => {
+  return morelist.value.filter((row) => 
+    !row.isCancelled && (row.isExpense || row.type === 'expense') && row.amount
+  ).length
+})
+
   return {
     updateItemId,
     formatAmount,
@@ -90,6 +172,9 @@ const totalAmount = computed(() => {
     rowItems,
     addRow,
     removeRow,
-    handleTypeChange
+    handleTypeChange,
+    calculatePaymentTypeTotals,
+    expenseCount,
+    expenseTotalAmount
   }
 }

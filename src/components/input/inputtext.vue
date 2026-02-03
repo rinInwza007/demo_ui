@@ -8,28 +8,35 @@
     <input
       v-if="type !== 'textarea'"
       type="text"
+      :readonly="readonly"
+      :disabled="disabled"
       :placeholder="placeholder"
       v-model="modelValueLocal"
       @input="$emit('update:modelValue', modelValueLocal)"
-      class="glass-input w-full text-sm text-slate-700 appearance-none cursor-pointer
-             py-2.5 rounded-xl pr-10 focus:outline-none
-             focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30
-             hover:shadow-md transition-all px-2 "
+      :class="[
+        'glass-input w-full text-sm text-slate-700 appearance-none cursor-pointer',
+        'py-2.5 rounded-xl pr-10 focus:outline-none',
+        'focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/30',
+        'hover:shadow-md transition-all px-2',
+        inputStateClass
+      ]"
     />
 
     <!-- textarea -->
     <textarea
       v-else
+      :readonly="readonly"
+      :disabled="disabled"
       :placeholder="placeholder"
       v-model="modelValueLocal"
       @input="$emit('update:modelValue', modelValueLocal)"
-      :class="[glassInputClass, 'h-36 resize-vertical py-3']"
+      :class="[glassInputClass, 'h-36 resize-vertical py-3', inputStateClass]"
     ></textarea>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -37,6 +44,9 @@ const props = defineProps({
   placeholder: { type: String, default: '' },
   type: { type: String, default: 'text' },
   classes: { type: [String, Array, Object], default: '' },
+  // ✅ เพิ่ม prop readonly และ disabled
+  readonly: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -48,6 +58,14 @@ watch(
   () => props.modelValue,
   (v) => (modelValueLocal.value = v ?? '')
 )
+
+// ✅ Class สำหรับสถานะ readonly/disabled
+const inputStateClass = computed(() => {
+  if (props.readonly || props.disabled) {
+    return '!bg-gray-100 !text-gray-600 !cursor-not-allowed !pointer-events-none !opacity-70'
+  }
+  return ''
+})
 
 const glassInputClass =
   `
@@ -68,3 +86,23 @@ const glassInputClass =
   focus:ring-2 focus:ring-blue-400/25 dark:focus:ring-blue-300/20
   `
 </script>
+
+<style scoped>
+/* ✅ เพิ่ม style สำหรับ readonly/disabled */
+input:read-only,
+textarea:read-only {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+input:disabled,
+textarea:disabled {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  opacity: 0.7;
+}
+</style>

@@ -14,7 +14,8 @@ import {
   getClearSummaries,
   getClearSummaryById,
   updateClearSummary,
-  deleteClearSummary
+  deleteClearSummary,
+  getClearSummariesByWaybill
 } from '@/services/ClearDebtor/clearSummaryApi'
 /**
  * ==========================================================
@@ -526,7 +527,6 @@ export function setupAxiosMock() {
 //===============================================
 mock.onPost('/clear-summaries').reply(config => {
   const body = JSON.parse(config.data)
-
   return [200, createClearSummary(body)]
 })
 
@@ -536,22 +536,29 @@ mock.onGet('/clear-summaries').reply(() => {
 
 mock.onGet(/\/clear-summaries\/\w+/).reply(config => {
   const id = config.url!.split('/').pop()!
+  console.log(`🔍 [Mock] GET /clear-summaries/${id}`)
 
   return [200, getClearSummaryById(id)]
 })
-mock.onPut(/\/clear-summaries\/\w+/).reply(config => {
+
+// PUT /clear-summaries/:id
+mock.onPut(/\/clear-summaries\/[^/]+$/).reply(config => {
   const id = config.url!.split('/').pop()!
   const body = JSON.parse(config.data)
 
+  console.log(`✏️ [Mock] PUT /clear-summaries/${id}`)
+
   return [200, updateClearSummary(id, body)]
 })
-mock.onDelete(/\/clear-summaries\/\w+/).reply(config => {
+
+// DELETE /clear-summaries/:id
+mock.onDelete(/\/clear-summaries\/[^/]+$/).reply(config => {
   const id = config.url!.split('/').pop()!
+
+  console.log(`🗑️ [Mock] DELETE /clear-summaries/${id}`)
 
   return [200, deleteClearSummary(id)]
 })
-
-
   // ============================================
   // 🔐 Auth Endpoints
   // ============================================

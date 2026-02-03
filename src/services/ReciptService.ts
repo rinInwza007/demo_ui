@@ -275,6 +275,49 @@ class ReciptService {
     }
   }
 
+/**
+ * 📊 ดึงข้อมูลลูกหนี้จาก receipt (แปลงจาก receiptList)
+ */
+getDebtorsFromReceipt(receipt: Receipt): Array<{
+  itemName: string
+  originalAmount: number
+  paidAmount: number
+  balance: number
+  isCleared: boolean
+  history: Array<{
+    amount: number
+    date: string
+    ref?: string
+  }>
+}> {
+  if (!receipt.receiptList) return []
+
+  return receipt.receiptList
+    .filter(item => item.type === 'income' && item.itemName.includes('ลูกหนี้'))
+    .map(item => {
+      // ✅ พยายามแปลง note เป็น debt data
+      try {
+        if (item.note) {
+          const parsed = JSON.parse(item.note)
+          if (parsed.originalAmount !== undefined) {
+            return parsed
+          }
+        }
+      } catch (e) {
+        // ignore parse error
+      }
+
+      // ✅ ถ้าไม่มี note หรือ parse ไม่ได้ → สร้างใหม่
+      return {
+        itemName: item.itemName,
+        originalAmount: item.amount,
+        paidAmount: 0,
+        balance: item.amount,
+        isCleared: false,
+        history: []
+      }
+    })
+}
   /**
    * 🔔 แจ้งเตือนการอัปเดตข้อมูล
    */
@@ -310,3 +353,4 @@ class ReciptService {
 
 export const reciptService = new ReciptService()
 export default ReciptService
+

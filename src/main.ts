@@ -11,13 +11,13 @@ import { VueDatePicker } from "@vuepic/vue-datepicker"
 import '@vuepic/vue-datepicker/dist/main.css'
 import "hover.css"
 import VueApexCharts from "vue3-apexcharts"
-import Swal from 'sweetalert2'
+
 
 async function bootstrap() {
   // ===================================
   // ✅ ตั้งค่า Axios BaseURL สำหรับ Backend
   // ===================================
-  const apiBaseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+  const apiBaseURL = import.meta.env.VITE_API_BASE_URL || "'http://localhost:3000/api'"
   axios.defaults.baseURL = apiBaseURL
   axios.defaults.timeout = 10000
 

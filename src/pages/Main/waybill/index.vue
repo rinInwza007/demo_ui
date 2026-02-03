@@ -398,9 +398,11 @@ const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
   if (!auth.user) return []
 
-  if (auth.user.role === 'user') {
-    filtered = filtered.filter((r) => r.affiliationId === auth.user!.affiliationId)
-  }
+ if (auth.user.role === 'user') {
+  if (!auth.user.affiliationId) return []
+  filtered = filtered.filter(r => r.affiliationId === auth.user.affiliationId)
+}
+
 
   if (selectedMain.value) {
     filtered = filtered.filter((r) => {
@@ -457,6 +459,7 @@ const headerStats = computed(() => {
     totalAmount: stats.totalAmount
   }
 })
+
 
 const activeFiltersText = computed(() => {
   const parts: string[] = []

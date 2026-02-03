@@ -2,14 +2,13 @@
 import axios from 'axios'
 import AxiosMockAdapter from 'axios-mock-adapter'
 import { loadReceipts, saveReceipts, sanitizeReceipt } from './mockDb'
-import type { Receipt } from '@/types/recipt'
-import { useSummaryStore } from '@/stores/summary'
 import { bankAccountOptions } from '@/components/data/BankOptions'
 import type { BankAccount } from '@/types/BankTypes'
 import { getAllOptions, getItemById, getItemByName } from '@/components/data/ItemNameOption'
 import type { Item } from '@/types/recipt'
 import { defaultAffiliation } from '@/components/data/Affiliation'
 import type { Affiliation } from '@/types/affiliation'
+
 import {
   createClearSummary,
   getClearSummaries,
@@ -426,8 +425,6 @@ const dispatchUpdateEvents = (payload: {
   )
 }
 
-const Number = (v: unknown) => Number(v ?? 0)
-
 function isDebtorNew(r: any) {
   return r.moneyTypeNote === 'DEBTOR_NEW'
 }
@@ -533,6 +530,10 @@ mock.onPost('/clear-summaries').reply(config => {
   return [200, createClearSummary(body)]
 })
 
+mock.onGet('/clear-summaries').reply(() => {
+  return [200, getClearSummaries()]
+})
+
 mock.onGet(/\/clear-summaries\/\w+/).reply(config => {
   const id = config.url!.split('/').pop()!
 
@@ -557,58 +558,59 @@ mock.onDelete(/\/clear-summaries\/\w+/).reply(config => {
 
   // POST /auth/login
   mock.onPost('/auth/login').reply((config) => {
-    console.log('🔐 [Mock] POST /auth/login')
+  console.log('🔐 [Mock] POST /auth/login')
 
-    try {
-      const { email, password } = JSON.parse(config.data)
+  try {
+    const { email, password } = JSON.parse(config.data)
 
-      if (!email || !password) {
-        return [400, {
-          success: false,
-          message: 'กรุณากรอก email และ password'
-        }]
-      }
-
-      const found = MOCK_USERS.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-      )
-
-      if (!found) {
-        console.log('❌ [Mock] Login failed: Invalid credentials')
-        return [401, {
-          success: false,
-          message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
-        }]
-      }
-
-      const token = `mock_${found.id}_${Date.now()}`
-
-      const user = {
-        id: found.id,
-        fullName: found.fullName,
-        affiliation: found.affiliation,
-        affiliationId: found.affiliationId,
-        role: found.role,
-        email: found.email,
-        phone: found.phone,
-      }
-
-      console.log('✅ [Mock] Login successful:', user.email)
-
-      return [200, {
-        success: true,
-        token,
-        user,
-        message: 'เข้าสู่ระบบสำเร็จ'
-      }]
-    } catch (error) {
-      console.error('❌ [Mock] Login error:', error)
-      return [500, {
+    if (!email || !password) {
+      return [400, {
         success: false,
-        message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+        message: 'กรุณากรอก email และ password'
       }]
     }
-  })
+
+    const found = MOCK_USERS.find(
+      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+    )
+
+    if (!found) {
+      console.log('❌ [Mock] Login failed: Invalid credentials')
+      return [401, {
+        success: false,
+        message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
+      }]
+    }
+
+    const token = `mock_${found.id}_${Date.now()}`
+
+    const user = {
+      id: found.id,
+      fullName: found.fullName,
+      affiliation: found.affiliation,
+      affiliationId: found.affiliationId,
+      role: found.role,
+      email: found.email,
+      phone: found.phone,
+    }
+
+    console.log('✅ [Mock] Login successful:', user.email)
+
+    return [200, {
+      success: true,
+      access_token: token,  // ✅ เพิ่ม access_token
+      user,
+      message: 'เข้าสู่ระบบสำเร็จ'
+    }]
+  } catch (error) {
+    console.error('❌ [Mock] Login error:', error)
+    return [500, {
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+    }]
+  }
+})
+
 
   // POST /auth/logout
   mock.onPost('/auth/logout').reply(() => {
@@ -1348,77 +1350,49 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
     return [200, { exists, waybillNumber: decoded }]
   })
 
-  mock.onGet(/\/getReceipt\/([^?]+)$/).reply((config) => {
-    const url = config.url || ''
-    const match = url.match(/\/getReceipt\/([^?]+)$/)
-    const waybillNumber = match?.[1]
+  mock.onGet(/\/receipts\/([^/?]+)(?:\?.*)?$/).reply((config) => {
+  const url = config.url || ''
+  const match = url.match(/\/receipts\/([^/?]+)/)
+  const waybillNumber = match?.[1]
 
-    if (!waybillNumber) {
-      console.error('❌ getReceipt - No waybillNumber provided')
-      return [400, { message: 'waybillNumber required' }]
-    }
+  if (!waybillNumber) {
+    return [400, { message: 'waybillNumber required' }]
+  }
 
-    const decoded = decodeURIComponent(waybillNumber)
-    const db = loadReceipts().map(ensureReceiptFields)
-    const found = findReceiptByWaybillNumber(db, decoded)
+  const decoded = decodeURIComponent(waybillNumber)
+  const db = loadReceipts().map(ensureReceiptFields)
+  const found = findReceiptByWaybillNumber(db, decoded)
 
-    if (!found) {
-      console.warn('❌ getReceipt - Not found:', decoded)
-      return [
-        404,
-        {
-          message: 'Receipt not found',
-          requestedWaybillNumber: decoded,
-          availableWaybillNumbers: db.map(r => r.waybillNumber).filter(Boolean),
-        },
-      ]
-    }
+  if (!found) {
+    return [404, {
+      message: 'Receipt not found',
+      requestedWaybillNumber: decoded,
+    }]
+  }
 
-    console.log('✅ getReceipt - Found:', found.waybillNumber)
-    return [200, serializeReceipt(normalizeBoth(found))]
-  })
+  console.log('✅ receipts (single) - Found:', found.waybillNumber)
+  return [200, serializeReceipt(normalizeBoth(found))]
+})
 
-  mock.onGet(/\/getReceipt(?:\?.*)?$/).reply((config) => {
-    const db = loadReceipts().map(ensureReceiptFields)
+// ✅ สำหรับดึงทั้งหมด (ไม่มี path parameter)
+mock.onGet(/\/receipts(?:\?.*)?$/).reply((config) => {
+  const params = config.params || {}
+  const db = loadReceipts().map(ensureReceiptFields)
 
-    const url = new URL(config.url!, window.location.origin)
-    const fullName = url.searchParams.get('fullName')
-    const waybillNumber = url.searchParams.get('waybillNumber')
-    const affiliationId = url.searchParams.get('affiliationId')
-    const q = url.searchParams.get('q')
+  let result = db
 
-    let list: any[] = db
+  if (params.q) {
+    result = result.filter(r =>
+      r.fullName?.includes(params.q) ||
+      r.waybillNumber?.includes(params.q)
+    )
+  }
 
-    if (fullName) {
-      list = list.filter((r) =>
-        (r.fullName || '').toLowerCase().includes(fullName.toLowerCase())
-      )
-    }
+  console.log('✅ receipts (list) - Found:', result.length)
+  return [200, result.map(r => serializeReceipt(normalizeBoth(r)))]
+})
 
-    if (waybillNumber) {
-      list = list.filter((r) => r.waybillNumber === waybillNumber)
-    }
-
-    if (affiliationId) {
-      list = list.filter((r) => String(r.affiliationId) === String(affiliationId))
-    }
-
-    if (q) {
-      const s = q.toLowerCase()
-      list = list.filter(
-        (r) =>
-          (r.fullName || '').toLowerCase().includes(s) ||
-          (r.waybillNumber || '').toLowerCase().includes(s) ||
-          (r.affiliationName || '').toLowerCase().includes(s) ||
-          (r.mainAffiliationName || '').toLowerCase().includes(s)
-      )
-    }
-
-    console.log(`✅ getReceipt query - Found ${list.length} receipts`)
-    return [200, list.map((r) => serializeReceipt(normalizeBoth(r)))]
-  })
-
-  mock.onPost('/saveReceipt').reply((config) => {
+  mock.onPost('/receipts/save').reply((config) => {
     console.log('💾 POST /saveReceipt called')
 
     const incoming = ensureReceiptFields(JSON.parse(config.data || '{}'))
@@ -1552,6 +1526,23 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
     return [200, { success: deleted > 0, deletedCount: deleted }]
   })
 
+  mock.onGet('/receipts').reply((config) => {
+  const params = config.params || {}
+  const db = loadReceipts().map(ensureReceiptFields)
+
+  // ตัวอย่างรองรับ search
+  let result = db
+
+  if (params.q) {
+    result = result.filter(r =>
+      r.fullName?.includes(params.q) ||
+      r.waybillNumber?.includes(params.q)
+    )
+  }
+
+  console.log('✅ receipts (list):', result.length)
+  return [200, result.map(r => serializeReceipt(normalizeBoth(r)))]
+})
 
   mock.onPost(/\/receipts\/([^/]+)\/approve$/).reply((config) => {
     const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/approve$/)?.[1]
@@ -1637,6 +1628,7 @@ mock.onDelete(/\/affiliations\/[^/]+$/).reply((config) => {
    * - ปฏิเสธใบนำส่ง
    * - อัปเดตเฉพาะ approvalStatus เป็น 'rejected'
    */
+
 mock.onPost(/\/receipts\/([^/]+)\/reject$/).reply((config) => {
   const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/reject$/)?.[1]
 
@@ -2003,7 +1995,7 @@ mock.onPost('/debtors/clear').reply((config) => {
   }
 })
 
-//debtorlsit update
+
 mock.onPatch(/\/receipts\/([^/]+)\/debtor-list$/).reply((config) => {
   const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/debtor-list$/)?.[1]
 
@@ -2077,6 +2069,9 @@ mock.onPatch(/\/receipts\/([^/]+)\/debtor-list$/).reply((config) => {
     }]
   }
 })
+
+
+
 
 
   console.log('✅ Axios Mock Setup Complete')

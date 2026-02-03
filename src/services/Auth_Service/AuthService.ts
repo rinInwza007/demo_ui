@@ -1,27 +1,83 @@
 // src/services/AuthService/AuthService.ts
 import { AuthAPI, type LoginRequest, type LoginResponse } from './AuthApi'
 import type { User } from '@/stores/auth'
+import http from '@/lib/http'
 
 /**
  * AuthService - จัดการ Authentication
- * 
+ *
  * ✅ ระบบจะตรวจสอบ mode อัตโนมัติ:
  * - Mock Mode (DEV + VITE_USE_FAKE_API=true): ใช้ Mock Users จาก mockAxios
  * - Real API Mode: เรียก Backend API จริง
- * 
+ *
  * ⚠️ ไม่ต้องมี if-else เช็ค Mock ใน Service
  * เพราะ Axios Mock Adapter จะจัดการให้อัตโนมัติ
  */
 class AuthService {
-  
+
   /**
    * Login - เข้าสู่ระบบ
    * @param credentials - email และ password
    * @returns Token และข้อมูล User
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    return await AuthAPI.login(credentials)
+  try {
+    console.log('📤 Sending login request:', {
+      url: `${import.meta.env.VITE_API_BASE_URL}/auth/login`,
+      payload: credentials
+    })
+
+    const res = await http.post('/auth/login', credentials)
+    const data = res.data
+
+    console.log('📥 Login response:', data)
+
+    // ❌ Backend ส่ง error มาแบบ 2xx status
+    if (data?.error || data?.message?.includes('Invalid')) {
+      throw new Error(data.error || data.message || 'Invalid credentials')
+    }
+
+    // ✅ ตรวจสอบว่ามี access_token
+    const token = data.access_token || data.token
+    if (!token) {
+      console.error('❌ No token in response:', data)
+      throw new Error('No token received from server')
+    }
+
+    // ✅ ตรวจสอบว่ามี user
+    if (!data.user) {
+      console.error('❌ No user in response:', data)
+      throw new Error('No user data received from server')
+    }
+
+    console.log('✅ Login successful:', {
+      token: token.substring(0, 20) + '...',
+      user: data.user.email
+    })
+
+    return {
+      success: true,
+      token,
+      user: data.user,
+      message: data.message || 'เข้าสู่ระบบสำเร็จ',
+    }
+  } catch (err: any) {
+    console.error('❌ Login error:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status
+    })
+
+    const errorMessage =
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      err.message ||
+      'เข้าสู่ระบบไม่สำเร็จ'
+
+    throw new Error(errorMessage)
   }
+}
+
 
   /**
    * Logout - ออกจากระบบ

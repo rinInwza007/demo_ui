@@ -114,7 +114,7 @@ class ReciptService {
         isLocked: false,
       }
 
-      const res = await http.post<Receipt>('/saveReceipt', receipt)
+      const res = await http.post<Receipt>('/receipts/save', receipt)
 
       this.notifyUpdate('create')
       return res.data

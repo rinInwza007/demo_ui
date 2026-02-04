@@ -68,22 +68,6 @@ export interface ReceiptItem {
   }
 }
 
-export interface PaymentMethod {
-  checked: boolean
-  amount: number | string
-  bankName?: string
-  checkNumber?: string
-  NumIncheck?: string
-  name?: string
-}
-
-export interface PaymentMethods {
-  cash?: PaymentMethod
-  check?: PaymentMethod
-  debtor?: PaymentMethod
-  other?: PaymentMethod
-}
-
 export interface Receipt {
   id: string
   profile:Profile

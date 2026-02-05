@@ -19,3 +19,4 @@ export interface Profile {
   affiliationName: string
   sendmoney?: sendmoney
 }
+

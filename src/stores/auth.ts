@@ -1,3 +1,4 @@
+// src/stores/auth.ts
 import { defineStore } from 'pinia'
 import { authService } from '@/services/Auth_Service/AuthService'
 
@@ -16,6 +17,7 @@ export interface User {
 type AuthState = {
   token: string | null
   user: User | null
+  isVerifying: boolean  // ✅ เพิ่ม flag สำหรับป้องกัน concurrent verification
 }
 
 const LS_TOKEN = 'access_token'
@@ -34,6 +36,7 @@ export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     token: localStorage.getItem(LS_TOKEN),
     user: safeJsonParse<User>(localStorage.getItem(LS_USER)),
+    isVerifying: false,
   }),
 
   getters: {
@@ -66,19 +69,43 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // ✅ ตรวจสอบ Token ว่ายังใช้งานได้หรือไม่
     async verifyToken(): Promise<boolean> {
-      if (!this.token) return false
+      // ✅ ถ้าไม่มี Token ให้ return false ทันที
+      if (!this.token) {
+        console.warn('⚠️ No token to verify')
+        return false
+      }
 
-      const result = await authService.verifyToken(this.token)
-
-      if (result.valid && result.user) {
-        this.user = result.user
-        localStorage.setItem(LS_USER, JSON.stringify(result.user))
+      // ✅ ป้องกันการเรียก verifyToken หลายครั้งพร้อมกัน
+      if (this.isVerifying) {
+        console.log('🔄 Already verifying token...')
         return true
       }
 
-      await this.logout()
-      return false
+      this.isVerifying = true
+
+      try {
+        console.log('🔍 Verifying token...')
+        const result = await authService.verifyToken(this.token)
+
+        if (result.valid && result.user) {
+          console.log('✅ Token valid')
+          this.user = result.user
+          localStorage.setItem(LS_USER, JSON.stringify(result.user))
+          return true
+        }
+
+        console.error('❌ Token invalid')
+        await this.logout()
+        return false
+      } catch (error) {
+        console.error('❌ Token verification failed:', error)
+        await this.logout()
+        return false
+      } finally {
+        this.isVerifying = false
+      }
     },
 
     async refreshUser() {

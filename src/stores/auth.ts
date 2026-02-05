@@ -1,19 +1,10 @@
 import { defineStore } from 'pinia'
 import { authService } from '@/services/Auth_Service/AuthService'
+import { User } from '@/types/user'
 
 export type roleType = 'user' | 'treasury' | 'admin' | 'superadmin'
 
-export interface User {
-  id: string
-  fullName: string
-  affiliation: string
-  affiliationId: string
-  role: roleType
-  email: string
-  phone: string
-}
-
-type AuthState = {
+interface AuthState {
   token: string | null
   user: User | null
 }
@@ -38,12 +29,17 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isLoggedIn: (s) => !!s.token && !!s.user,
-    role: (s) => s.user?.role ?? null,
-    affiliationId: (s) => s.user?.affiliationId ?? null,
+    role: (s) => (s.user?.userProfile?.role?.name as roleType) ?? null,
+    affiliationId: (s) => s.user?.userProfile?.affiliation?.id ?? null,
+    fullName: (s) => s.user?.userProfile?.fullName ?? null,
+    phone: (s) => s.user?.userProfile?.phone ?? null,
+    affiliation: (s) => s.user?.userProfile?.affiliation ?? null,
   },
 
   actions: {
     async login(payload: { email: string; password: string }) {
+      console.log('🔐 [Auth Store] Starting login...')
+
       const response = await authService.login(payload)
 
       this.token = response.token
@@ -51,6 +47,18 @@ export const useAuthStore = defineStore('auth', {
 
       localStorage.setItem(LS_TOKEN, response.token)
       localStorage.setItem(LS_USER, JSON.stringify(response.user))
+
+      console.log('✅ [Auth Store] Login successful, token saved')
+
+      // ✅ เรียก /auth/me เพื่อดึงข้อมูล user ล่าสุดจาก Backend
+      try {
+        console.log('📤 [Auth Store] Fetching user profile from /auth/me...')
+        await this.refreshUser()
+        console.log('✅ [Auth Store] User profile refreshed')
+      } catch (error) {
+        console.warn('⚠️ [Auth Store] Failed to refresh user after login:', error)
+        // ไม่ throw error เพราะ login สำเร็จแล้ว แค่ไม่ได้ข้อมูลเพิ่มเติม
+      }
 
       return response
     },
@@ -82,26 +90,41 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async refreshUser() {
-      if (!this.token) return
+      if (!this.token) {
+        console.warn('⚠️ [Auth Store] No token available for refreshUser')
+        return
+      }
+
+      console.log('📤 [Auth Store] Calling getCurrentUser()...')
       const user = await authService.getCurrentUser()
+
+      console.log('📥 [Auth Store] Received user data:', user)
+
       this.user = user
       localStorage.setItem(LS_USER, JSON.stringify(user))
+
+      console.log('✅ [Auth Store] User data saved to localStorage')
     },
 
     isRole(...roles: roleType[]) {
-      return !!this.user && roles.includes(this.user.role)
+      const userRole = this.user?.userProfile?.role?.name as roleType
+      return !!userRole && roles.includes(userRole)
     },
 
     isAffiliation(...affIds: string[]) {
-      return !!this.user && affIds.includes(this.user.affiliationId)
+      const userAffId = this.user?.userProfile?.affiliation?.id
+      return !!userAffId && affIds.includes(userAffId)
     },
 
     filterByAffiliation<T extends { affiliationId?: string | null }>(rows: T[]) {
       if (!this.user) return []
-      if (this.user.role === 'superadmin') return rows
-      return rows.filter(
-        (r) => r.affiliationId === this.user!.affiliationId
-      )
+
+      const userRole = this.user.userProfile?.role?.name as roleType
+      const userAffId = this.user.userProfile?.affiliation?.id
+
+      if (userRole === 'superadmin') return rows
+
+      return rows.filter((r) => r.affiliationId === userAffId)
     },
   },
 })

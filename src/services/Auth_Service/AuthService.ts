@@ -1,6 +1,6 @@
 // src/services/AuthService/AuthService.ts
-import { AuthAPI, type LoginRequest, type LoginResponse } from './AuthApi'
-import type { User } from '@/stores/auth'
+import { AuthAPI, type LoginRequest, type LoginResponse } from './auth.api'
+import  { User } from '@/types/user'
 import http from '@/lib/http'
 
 /**

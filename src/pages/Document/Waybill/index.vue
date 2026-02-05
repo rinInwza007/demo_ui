@@ -3439,7 +3439,6 @@ const saveData = async () => {
       phone: formData.value.phone,
       fundName: formData.value.fundName,
       projectCode: formData.value.projectCode,
-      moneyType: formData.value.sendmoney,
       sendmoney: formData.value.sendmoney,
       affiliationId: authStore.user?.affiliationId || '',
       affiliationName: authStore.user?.affiliation || mainCategory.value,

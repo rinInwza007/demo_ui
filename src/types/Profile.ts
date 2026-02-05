@@ -1,4 +1,5 @@
 //Profile.ts
+export type sendmoney = 'รายได้' | 'เงินโครงการ'
 export interface Profile {
   fullName: string
   phone: string
@@ -12,6 +13,5 @@ export interface Profile {
   subAffiliationName2?: string
   affiliationId: string
   affiliationName: string
-    moneyType: string
-  sendmoney?: string
+  sendmoney?: sendmoney
 }

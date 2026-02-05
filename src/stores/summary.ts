@@ -136,16 +136,41 @@ export const useSummaryStore = defineStore('summary', {
       this.rebuildLedger(docKey)
     },
 
-/**
- * Build debtor ครั้งแรกจาก receipt
- */
+// ✅ แก้ไข Summary Store (summary.ts) ให้รองรับ Receipt structure ใหม่
+
+// เพิ่มใน buildInitialDebtors()
 buildInitialDebtors(receipt: Receipt): Debtor[] {
   const list: Debtor[] = []
 
-  receipt.receiptList?.forEach((item) => {
-    // filter เฉพาะ income ที่เป็นลูกหนี้
-    if (item.type !== 'income') return
-    if (!item.itemName.includes('ลูกหนี้')) return
+  // ✅ Debug: แสดง receiptList
+  console.log('🔍 Building debtors for receipt:', receipt.waybillNumber)
+  console.log('   receiptList length:', receipt.receiptList?.length || 0)
+
+  if (!receipt.receiptList || !Array.isArray(receipt.receiptList)) {
+    console.warn('⚠️ No receiptList found in receipt:', receipt.waybillNumber)
+    return []
+  }
+
+  receipt.receiptList.forEach((item, index) => {
+    console.log(`   Item ${index}:`, {
+      type: item.type,
+      itemName: item.itemName,
+      amount: item.amount,
+      isDebtor: item.type === 'income' && item.itemName.includes('ลูกหนี้')
+    })
+
+    // ✅ filter เฉพาะ income ที่เป็นลูกหนี้
+    if (item.type !== 'income') {
+      console.log(`     → Skipped (not income)`)
+      return
+    }
+    
+    if (!item.itemName.includes('ลูกหนี้')) {
+      console.log(`     → Skipped (not debtor)`)
+      return
+    }
+
+    console.log(`     ✅ Added as debtor`)
 
     // ✅ ตรวจสอบว่ามีข้อมูลการชำระใน note หรือไม่
     let paidAmount = 0
@@ -161,10 +186,16 @@ buildInitialDebtors(receipt: Receipt): Debtor[] {
           balance = parsed.balance || 0
           isCleared = parsed.isCleared || false
           history = parsed.history || []
+          console.log(`     💰 Has payment history:`, {
+            paidAmount,
+            balance,
+            isCleared
+          })
         }
       }
     } catch (e) {
       // ignore parse error
+      console.log(`     ℹ️ No payment history in note`)
     }
 
     list.push({
@@ -177,6 +208,7 @@ buildInitialDebtors(receipt: Receipt): Debtor[] {
     })
   })
 
+  console.log(`✅ Built ${list.length} debtors for receipt ${receipt.waybillNumber}`)
   return list
 },
     /* =========================

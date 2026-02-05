@@ -525,39 +525,140 @@ export function setupAxiosMock() {
 //===============================================
 //ClearDebtoer
 //===============================================
-mock.onPost('/clear-summaries').reply(config => {
-  const body = JSON.parse(config.data)
-  return [200, createClearSummary(body)]
+mock.onPost('/clear-summaries').reply((config) => {
+  console.log('📋 [Mock] POST /clear-summaries')
+  
+  try {
+    const body = JSON.parse(config.data)
+    const newSummary = createClearSummary(body)
+    
+    console.log('✅ [Mock] Created clear summary:', newSummary.id)
+    
+    // ✅ เปลี่ยนจาก return newSummary เป็น wrap ด้วย success object
+    return [201, {
+      success: true,
+      data: newSummary
+    }]
+  } catch (error) {
+    console.error('❌ [Mock] Error creating clear summary:', error)
+    return [500, {
+      success: false,
+      message: error.message || 'Internal server error'
+    }]
+  }
 })
 
-mock.onGet('/clear-summaries').reply(() => {
-  return [200, getClearSummaries()]
+// GET /clear-summaries (with optional query params)
+mock.onGet(/\/clear-summaries(?:\?.*)?$/).reply((config) => {
+  console.log('📋 [Mock] GET /clear-summaries')
+  
+  const url = new URL(config.url!, window.location.origin)
+  const affiliationId = url.searchParams.get('affiliationId')
+  const startDate = url.searchParams.get('startDate')
+  const endDate = url.searchParams.get('endDate')
+  
+  const filters: any = {}
+  if (affiliationId) filters.affiliationId = affiliationId
+  if (startDate) filters.startDate = startDate
+  if (endDate) filters.endDate = endDate
+  
+  const summaries = getClearSummaries(filters)
+  
+  console.log(`✅ [Mock] Returning ${summaries.length} clear summaries`)
+  
+  // ✅ Wrap ด้วย success object
+  return [200, {
+    success: true,
+    data: summaries,
+    total: summaries.length
+  }]
 })
 
-mock.onGet(/\/clear-summaries\/\w+/).reply(config => {
-  const id = config.url!.split('/').pop()!
+// GET /clear-summaries/:id (specific ID)
+mock.onGet(/\/clear-summaries\/[^/?]+(?:\?.*)?$/).reply((config) => {
+  const match = config.url?.match(/\/clear-summaries\/([^/?]+)/)
+  const id = match?.[1]
+  
   console.log(`🔍 [Mock] GET /clear-summaries/${id}`)
-
-  return [200, getClearSummaryById(id)]
+  
+  if (!id) {
+    return [400, {
+      success: false,
+      message: 'ID is required'
+    }]
+  }
+  
+  const summary = getClearSummaryById(id)
+  
+  if (!summary) {
+    return [404, {
+      success: false,
+      message: 'Clear summary not found',
+      data: null
+    }]
+  }
+  
+  // ✅ Wrap ด้วย success object
+  return [200, {
+    success: true,
+    data: summary
+  }]
 })
 
 // PUT /clear-summaries/:id
-mock.onPut(/\/clear-summaries\/[^/]+$/).reply(config => {
+mock.onPut(/\/clear-summaries\/[^/]+$/).reply((config) => {
   const id = config.url!.split('/').pop()!
-  const body = JSON.parse(config.data)
-
   console.log(`✏️ [Mock] PUT /clear-summaries/${id}`)
-
-  return [200, updateClearSummary(id, body)]
+  
+  try {
+    const body = JSON.parse(config.data)
+    const updated = updateClearSummary(id, body)
+    
+    if (!updated) {
+      return [404, {
+        success: false,
+        message: 'Clear summary not found'
+      }]
+    }
+    
+    console.log('✅ [Mock] Updated clear summary:', id)
+    
+    // ✅ Wrap ด้วย success object
+    return [200, {
+      success: true,
+      data: updated
+    }]
+  } catch (error) {
+    console.error('❌ [Mock] Error updating clear summary:', error)
+    return [500, {
+      success: false,
+      message: error.message || 'Internal server error'
+    }]
+  }
 })
 
 // DELETE /clear-summaries/:id
-mock.onDelete(/\/clear-summaries\/[^/]+$/).reply(config => {
+mock.onDelete(/\/clear-summaries\/[^/]+$/).reply((config) => {
   const id = config.url!.split('/').pop()!
-
   console.log(`🗑️ [Mock] DELETE /clear-summaries/${id}`)
-
-  return [200, deleteClearSummary(id)]
+  
+  try {
+    const result = deleteClearSummary(id)
+    
+    console.log('✅ [Mock] Deleted clear summary:', id)
+    
+    // ✅ Wrap ด้วย success object
+    return [200, {
+      success: true,
+      deleted: result.deleted
+    }]
+  } catch (error) {
+    console.error('❌ [Mock] Error deleting clear summary:', error)
+    return [500, {
+      success: false,
+      message: error.message || 'Internal server error'
+    }]
+  }
 })
   // ============================================
   // 🔐 Auth Endpoints
@@ -1777,306 +1878,6 @@ mock.onPost(/\/receipts\/([^/]+)\/reject$/).reply((config) => {
     console.log(`✅ summary/events - Found ${items.length} events`)
     return [200, { items }]
   })
-
-
-  //cleardebtor
-  mock.onGet('/debtors').reply(() => {
-  const receipts = loadReceipts()
-
-  const map = new Map<string, any>()
-
-  for (const r of receipts) {
-    if (!isDebtorNew(r) && !isClearDebtor(r)) continue
-
-    // key ลูกหนี้ (ใช้ fullName ตาม type ที่คุณมี)
-    const key = r.fullName
-    if (!key) continue
-
-    if (!map.has(key)) {
-      map.set(key, {
-        debtorKey: key,
-        fullName: r.fullName,
-        affiliationId: r.affiliationId,
-        affiliationName: r.affiliationName,
-        totalDebt: 0,
-        totalCleared: 0,
-      })
-    }
-
-    const row = map.get(key)
-
-    if (isDebtorNew(r)) {
-      row.totalDebt += toNum(r.netTotalAmount)
-    }
-
-    if (isClearDebtor(r)) {
-      row.totalCleared += toNum(r.netTotalAmount)
-    }
-  }
-
-  const items = Array.from(map.values())
-    .map((r) => ({
-      ...r,
-      balance: r.totalDebt - r.totalCleared,
-    }))
-    .filter((r) => r.balance > 0)
-    .sort((a, b) => b.balance - a.balance)
-
-  return [
-    200,
-    {
-      items,
-      total: items.length,
-    },
-  ]
-})
-
-mock.onGet('/debtors/history').reply(() => {
-  const receipts = loadReceipts()
-
-  const items = receipts
-    .filter(isClearDebtor)
-    .map((r: any) => ({
-      createdAt: r.createdAt,
-      waybillNumber: r.waybillNumber,
-      fullName: r.fullName,
-      affiliationId: r.affiliationId,
-      affiliationName: r.affiliationName,
-      amount: toNum(r.netTotalAmount),
-      fundName: r.fundName,
-    }))
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() -
-        new Date(a.createdAt).getTime()
-    )
-
-  return [
-    200,
-    {
-      items,
-      total: items.length,
-    },
-  ]
-})
-
-
-
-mock.onGet('/debtors/outstanding').reply(() => {
-  const receipts = loadReceipts()
-
-  const debtorMap = new Map<string, number>()
-  const affiliationMap = new Map<string, number>()
-
-  for (const r of receipts) {
-    if (!isDebtorNew(r) && !isClearDebtor(r)) continue
-
-    const key = r.fullName
-    if (!key) continue
-
-    const signedAmount = isDebtorNew(r)
-      ? toNum(r.netTotalAmount)
-      : -toNum(r.netTotalAmount)
-
-    debtorMap.set(
-      key,
-      (debtorMap.get(key) ?? 0) + signedAmount
-    )
-
-    if (r.affiliationId) {
-      affiliationMap.set(
-        r.affiliationId,
-        (affiliationMap.get(r.affiliationId) ?? 0) + signedAmount
-      )
-    }
-  }
-
-  const balances = Array.from(debtorMap.values()).filter(
-    (v) => v > 0
-  )
-
-  return [
-    200,
-    {
-      totalDebtors: balances.length,
-      totalOutstandingAmount: balances.reduce((a, b) => a + b, 0),
-      byAffiliation: Array.from(affiliationMap.entries())
-        .filter(([, amount]) => amount > 0)
-        .map(([affiliationId, amount]) => ({
-          affiliationId,
-          amount,
-        })),
-    },
-  ]
-})
-
-
-mock.onPost('/debtors/clear').reply((config) => {
-  try {
-    const body = JSON.parse(config.data || '{}')
-    const { targetWaybill, amount, note } = body
-
-    if (!targetWaybill || !amount || amount <= 0) {
-      return [400, { message: 'invalid payload' }]
-    }
-
-    const receipts = loadReceipts()
-
-    // หา receipt ลูกหนี้ต้นทาง
-    const debtorReceipt = receipts.find(
-      (r: any) => r.waybillNumber === targetWaybill
-    )
-
-    if (!debtorReceipt) {
-      return [404, { message: 'debtor receipt not found' }]
-    }
-
-    // ยอดหนี้คงเหลือ
-    const balance =
-      Number(debtorReceipt.netTotalAmount ?? 0) -
-      Number(debtorReceipt.totalPaymentAmount ?? 0)
-
-    if (amount > balance) {
-      return [
-        400,
-        {
-          message: 'amount exceeds balance',
-          balance,
-        },
-      ]
-    }
-
-    // สร้าง receipt clear debtor ใหม่
-    const clearReceipt = {
-      id: `CLR-${Date.now()}`,
-      waybillNumber: `CLR-${Date.now()}`,
-
-      fullName: debtorReceipt.fullName,
-      phone: debtorReceipt.phone,
-
-      fundName: debtorReceipt.fundName,
-      projectCode: debtorReceipt.projectCode,
-
-      affiliationId: debtorReceipt.affiliationId,
-      affiliationName: debtorReceipt.affiliationName,
-
-      moneyType: 'cash',
-      moneyTypeNote: 'CLEAR_DEBTOR',
-
-      netTotalAmount: amount,
-      totalPaymentAmount: amount,
-
-      receiptList: [
-        {
-          itemName: note ?? 'ล้างลูกหนี้',
-          amount,
-          type: 'income',
-        },
-      ],
-
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-
-    receipts.push(clearReceipt)
-
-    // update ยอดที่จ่ายแล้ว
-    debtorReceipt.totalPaymentAmount =
-      Number(debtorReceipt.totalPaymentAmount ?? 0) + amount
-    debtorReceipt.updatedAt = new Date().toISOString()
-
-    saveReceipts(receipts)
-
-    return [
-      200,
-      {
-        success: true,
-        clearedAmount: amount,
-        remainingBalance: balance - amount,
-        clearWaybill: clearReceipt.waybillNumber,
-      },
-    ]
-  } catch (e) {
-    console.error('[mock] clear debtor error', e)
-    return [500, { message: 'internal error' }]
-  }
-})
-
-
-mock.onPatch(/\/receipts\/([^/]+)\/debtor-list$/).reply((config) => {
-  const waybillNumber = config.url?.match(/\/receipts\/([^/]+)\/debtor-list$/)?.[1]
-
-  if (!waybillNumber) {
-    return [400, {
-      success: false,
-      message: 'waybillNumber is required'
-    }]
-  }
-
-  const decoded = decodeURIComponent(waybillNumber)
-  console.log('🧹 [Mock] PATCH /receipts/' + decoded + '/debtor-list')
-
-  try {
-    const { debtorList } = JSON.parse(config.data || '{}')
-
-    if (!Array.isArray(debtorList)) {
-      return [400, {
-        success: false,
-        message: 'debtorList must be an array'
-      }]
-    }
-
-    const db = loadReceipts().map(ensureReceiptFields)
-    const receiptIndex = db.findIndex(r => r.waybillNumber === decoded)
-
-    if (receiptIndex === -1) {
-      console.error('❌ Receipt not found:', decoded)
-      return [404, {
-        success: false,
-        message: 'Receipt not found'
-      }]
-    }
-
-    const receipt = db[receiptIndex]
-
-    // ✅ อัปเดตเฉพาะ debtorList
-    db[receiptIndex] = {
-      ...receipt,
-      debtorList: debtorList,
-      updatedAt: new Date().toISOString()
-    }
-
-    // ✅ บันทึกกลับทั้งสอง storages
-    saveReceipts(db)
-    saveToBothStorages(db[receiptIndex])
-
-    // ✅ Dispatch events
-    dispatchUpdateEvents({
-      action: 'update',
-      data: db[receiptIndex],
-      waybillNumber: decoded,
-      list: db
-    })
-
-    console.log('✅ [Mock] Updated debtorList:', decoded)
-    console.log('   📦 DebtorList items:', debtorList.length)
-    console.log('   🔍 Sample:', debtorList.slice(0, 2))
-
-    return [200, {
-      success: true,
-      data: serializeReceipt(normalizeBoth(db[receiptIndex])),
-      message: 'DebtorList updated successfully'
-    }]
-
-  } catch (error) {
-    console.error('❌ [Mock] Update debtorList error:', error)
-    return [500, {
-      success: false,
-      message: 'Internal server error'
-    }]
-  }
-})
-
 
 
 

@@ -1,11 +1,13 @@
 //Profile.ts
-import { roleType  } from "./user"
+import { roleType } from "./user"
+export type sendmoney = 'รายได้' | 'เงินโครงการ'
+
 
 export interface Profile {
   fullName: string
   phone: string
+  role:roleType
   fundName: string
-  role :roleType
   projectCode: string | null
   mainAffiliationId?: string
   mainAffiliationName?: string
@@ -15,6 +17,5 @@ export interface Profile {
   subAffiliationName2?: string
   affiliationId: string
   affiliationName: string
-    moneyType: string
-  sendmoney?: string
+  sendmoney?: sendmoney
 }

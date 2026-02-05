@@ -56,3 +56,4 @@ export interface ClearSummary {
   // สถานะ
   status: 'pending' | 'completed' | 'cancelled'
 }
+

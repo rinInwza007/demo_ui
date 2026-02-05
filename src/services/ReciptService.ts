@@ -316,12 +316,142 @@ calculateStats(receipts: Receipt[]): {
     cancelledItemsCount
   }
 }
+/**
+ * 💰 อัพเดทยอดหนี้ที่ชำระแล้ว (สำหรับระบบล้างหนี้)
+ */
+async applyDebtClearToReceipt(
+  waybillNumber: string,
+  itemName: string,
+  amountPaid: number,
+  ref?: string
+): Promise<Receipt | null> {
+  try {
+    console.log(`🔍 Applying debt clear: ${waybillNumber} - ${itemName} - ${amountPaid}`)
 
+    const receipt = await this.getById(waybillNumber)
+    if (!receipt) {
+      console.warn(`❌ Receipt not found: ${waybillNumber}`)
+      return null
+    }
+
+    // ✅ หา item ใน receiptList ที่เป็นลูกหนี้
+    const debtorItem = receipt.receiptList?.find(
+      item => item.type === 'income' &&
+              item.itemName.includes('ลูกหนี้') &&
+              item.itemName === itemName
+    )
+
+    if (!debtorItem) {
+      console.warn(`❌ Debtor item "${itemName}" not found in receipt ${waybillNumber}`)
+      return receipt
+    }
+
+    // ✅ เก็บข้อมูลการชำระไว้ใน note (เพราะไม่มี field paidAmount, balance)
+    const currentNote = debtorItem.note || ''
+    let paidHistory: any
+
+    try {
+      paidHistory = currentNote ? JSON.parse(currentNote) : null
+    } catch {
+      paidHistory = null
+    }
+
+    // ✅ สร้างหรืออัพเดทประวัติการชำระ
+    if (!paidHistory || typeof paidHistory !== 'object') {
+      paidHistory = {
+        originalAmount: debtorItem.amount,
+        paidAmount: 0,
+        balance: debtorItem.amount,
+        isCleared: false,
+        history: []
+      }
+    }
+
+    // ✅ อัพเดทยอดชำระ
+    paidHistory.paidAmount = (paidHistory.paidAmount || 0) + amountPaid
+    paidHistory.balance = Math.max(0, paidHistory.originalAmount - paidHistory.paidAmount)
+    paidHistory.isCleared = paidHistory.balance <= 0.01
+
+    // ✅ เพิ่มประวัติการชำระ
+    if (!Array.isArray(paidHistory.history)) {
+      paidHistory.history = []
+    }
+
+    paidHistory.history.push({
+      amount: amountPaid,
+      date: new Date().toISOString(),
+      ref: ref || `CLEAR-${Date.now()}`
+    })
+
+    // ✅ บันทึกกลับเข้าไปใน note
+    debtorItem.note = JSON.stringify(paidHistory)
+
+    // ✅ บันทึกกลับลง localStorage
+    const updated = await this.update(waybillNumber, receipt)
+
+    console.log(`✅ Updated receipt ${waybillNumber}:`, {
+      itemName,
+      paidAmount: paidHistory.paidAmount,
+      balance: paidHistory.balance,
+      isCleared: paidHistory.isCleared
+    })
+
+    return updated
+
+  } catch (error) {
+    console.error('❌ Error applying debt clear to receipt:', error)
+    return null
+  }
+}
+
+/**
+ * 📊 ดึงข้อมูลลูกหนี้จาก receipt (แปลงจาก receiptList)
+ */
+getDebtorsFromReceipt(receipt: Receipt): Array<{
+  itemName: string
+  originalAmount: number
+  paidAmount: number
+  balance: number
+  isCleared: boolean
+  history: Array<{
+    amount: number
+    date: string
+    ref?: string
+  }>
+}> {
+  if (!receipt.receiptList) return []
+
+  return receipt.receiptList
+    .filter(item => item.type === 'income' && item.itemName.includes('ลูกหนี้'))
+    .map(item => {
+      // ✅ พยายามแปลง note เป็น debt data
+      try {
+        if (item.note) {
+          const parsed = JSON.parse(item.note)
+          if (parsed.originalAmount !== undefined) {
+            return parsed
+          }
+        }
+      } catch (e) {
+        // ignore parse error
+      }
+
+      // ✅ ถ้าไม่มี note หรือ parse ไม่ได้ → สร้างใหม่
+      return {
+        itemName: item.itemName,
+        originalAmount: item.amount,
+        paidAmount: 0,
+        balance: item.amount,
+        isCleared: false,
+        history: []
+      }
+    })
+}
   /**
    * 🔔 แจ้งเตือนการอัปเดตข้อมูล (สำหรับ sync ระหว่างหน้า)
    */
   private notifyUpdate(
-    action: 'create' | 'update' | 'delete' | 'approve' 
+    action: 'create' | 'update' | 'delete' | 'approve'
   ): void {
     // อัปเดต localStorage timestamp
     localStorage.setItem('receipts_last_update', Date.now().toString())
@@ -357,3 +487,4 @@ export const reciptService = new ReciptService()
 
 // ✅ Export class สำหรับ testing
 export default ReciptService
+

@@ -2969,16 +2969,95 @@ const applyCSSToTomSelect = (selectEl) => {
 }
 
 const clearRowError = (rowIndex, field) => {
-  if (errors.value.rows?.[rowIndex]?.[field]) {
-    if (morelist.value[rowIndex][field]) {
-      delete errors.value.rows[rowIndex][field]
-
-      if (Object.keys(errors.value.rows[rowIndex]).length === 0) {
-        delete errors.value.rows[rowIndex]
-      }
-    }
+  if (!errors.value.rows?.[rowIndex]) return
+  
+  // ลบ error field นั้นๆ
+  if (errors.value.rows[rowIndex][field]) {
+    delete errors.value.rows[rowIndex][field]
+  }
+  
+  // ถ้าไม่มี error เหลือในรายการนี้ ให้ลบทั้ง object
+  if (Object.keys(errors.value.rows[rowIndex]).length === 0) {
+    delete errors.value.rows[rowIndex]
   }
 }
+watch(
+  () => morelist.value.map((row, index) => ({
+    index,
+    itemName: row.itemName,
+    amount: row.amount,
+    paymentTypes: row.paymentTypes,
+    cashAmount: row.cashDetails?.amount,
+    checkBankName: row.checkDetails?.bankName,
+    checkNumber: row.checkDetails?.checkNumber,
+    checkNumInCheck: row.checkDetails?.numInCheck,
+    checkAmount: row.checkDetails?.amount,
+    transferAccount: row.transferDetails?.accountData?.accountNumber,
+    transferAmount: row.transferDetails?.amount,
+  })),
+  (newRows) => {
+    newRows.forEach(row => {
+      const index = row.index
+      if (!errors.value.rows?.[index]) return
+      if (row.itemName && row.itemName.trim() !== '') {
+        clearRowError(index, 'itemName')
+      }
+      const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
+      if (cleanAmount > 0) {
+        clearRowError(index, 'amount')
+      }
+      if (row.paymentTypes?.cash || row.paymentTypes?.check || row.paymentTypes?.transfer) {
+        clearRowError(index, 'paymentTypes')
+      }
+      const cashAmount = parseFloat(String(row.cashAmount || '').replace(/,/g, ''))
+      if (cashAmount > 0) {
+        clearRowError(index, 'cashAmount')
+      }
+      if (row.checkBankName && row.checkBankName.trim() !== '') {
+        clearRowError(index, 'checkBankName')
+      }
+      if (row.checkNumber && row.checkNumber.trim() !== '') {
+        clearRowError(index, 'checkNumber')
+      }
+      if (row.checkNumInCheck && row.checkNumInCheck.trim() !== '') {
+        clearRowError(index, 'checkNumInCheck')
+      }
+      const checkAmount = parseFloat(String(row.checkAmount || '').replace(/,/g, ''))
+      if (checkAmount > 0) {
+        clearRowError(index, 'checkAmount')
+      }
+      if (row.transferAccount && row.transferAccount.trim() !== '') {
+        clearRowError(index, 'transferAccount')
+      }
+      const transferAmount = parseFloat(String(row.transferAmount || '').replace(/,/g, ''))
+      if (transferAmount > 0) {
+        clearRowError(index, 'transferAmount')
+      }
+      if (errors.value.rows[index]?.paymentMismatch) {
+        const totalPayment = 
+          (parseFloat(String(row.cashAmount || '0').replace(/,/g, '')) || 0) +
+          (parseFloat(String(row.checkAmount || '0').replace(/,/g, '')) || 0) +
+          (parseFloat(String(row.transferAmount || '0').replace(/,/g, '')) || 0)
+        const mainAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
+        if (Math.abs(totalPayment - mainAmount) <= 0.01) {
+          clearRowError(index, 'paymentMismatch')
+        }
+      }
+    })
+    const validRowsCount = newRows.filter(row => {
+      const hasItemName = row.itemName && row.itemName.trim() !== ''
+      const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
+      const hasAmount = cleanAmount && cleanAmount > 0
+      return hasItemName || hasAmount
+    }).length
+    
+    if (validRowsCount > 0 && errors.value.noItems) {
+      delete errors.value.noItems
+    }
+  },
+  { deep: true }
+)
+
 const netTotalAmount = computed(() => {
   let total = 0
   morelist.value.forEach((row) => {
@@ -3117,6 +3196,16 @@ const saveData = async () => {
     }
   } else {
     // ========================================
+    // ✅ กรองรายการที่ว่างเปล่าออก
+    // ========================================
+    const filteredRows = morelist.value.filter(row => {
+      const hasItemName = row.itemName && row.itemName.trim() !== ''
+      const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
+      const hasAmount = cleanAmount && cleanAmount > 0
+      return hasItemName || hasAmount // เก็บเฉพาะรายการที่มีข้อมูล
+    })
+
+    // ========================================
     // ✅ Validate ส่วนที่ 1: ข้อมูลพื้นฐาน
     // ========================================
     if (!formData.value.fullName) {
@@ -3153,34 +3242,24 @@ const saveData = async () => {
     }
 
     // ========================================
-    // ✅ Validate ส่วนที่ 2: รายการนำส่งเงิน
+    // ✅ Validate ส่วนที่ 2: รายการนำส่งเงิน (ใช้ filteredRows)
     // ========================================
     errors.value.rows = {}
     
-    // นับจำนวนรายการที่มีข้อมูล
-    const validRowsCount = morelist.value.filter(row => {
-      const hasItemName = row.itemName && row.itemName.trim() !== ''
-      const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
-      const hasAmount = cleanAmount && cleanAmount > 0
-      return hasItemName || hasAmount
-    }).length
-
-    // ✅ ตรวจสอบว่ามีรายการอย่างน้อย 1 รายการ
-    if (validRowsCount === 0) {
+    // ✅ ตรวจสอบว่ามีรายการอย่างน้อย 1 รายการหลังกรองแล้ว
+    if (filteredRows.length === 0) {
       errors.value.noItems = 'กรุณาเพิ่มรายการนำส่งเงินอย่างน้อย 1 รายการ'
       hasError = true
     }
 
-    // ✅ Validate แต่ละรายการ (ไม่ return ทันที)
-    morelist.value.forEach((row, index) => {
+    // ✅ Validate เฉพาะรายการที่มีข้อมูล (filteredRows)
+    filteredRows.forEach((row) => {
+      // หา index ของรายการนี้ใน morelist.value เพื่อแสดง error
+      const originalIndex = morelist.value.findIndex(r => r.id === row.id)
+      
       const hasItemName = row.itemName && row.itemName.trim() !== ''
       const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
       const hasAmount = cleanAmount && cleanAmount > 0
-
-      // ข้ามแถวที่ไม่มีข้อมูลเลย
-      if (!hasItemName && !hasAmount) {
-        return
-      }
 
       const rowErrors = {}
 
@@ -3196,7 +3275,7 @@ const saveData = async () => {
 
       // 3. Validate ช่องทางการชำระเงิน
       const isReceivableRow = row.itemName && isReceivableItem(row.itemName)
-      const isExpense = isExpenseRow(index)
+      const isExpense = row.type === 'expense'
       const needsPaymentType = !isExpense && !isReceivableRow
 
       if (needsPaymentType && hasItemName && hasAmount) {
@@ -3246,7 +3325,11 @@ const saveData = async () => {
           }
 
           // 5. Validate ยอดรวมจากช่องทางการชำระ
-          const totalPaymentAmount = calculatePaymentTotal(index)
+          const totalPaymentAmount = 
+            (row.paymentTypes?.cash ? parseFloat(String(row.cashDetails?.amount || '0').replace(/,/g, '')) : 0) +
+            (row.paymentTypes?.check ? parseFloat(String(row.checkDetails?.amount || '0').replace(/,/g, '')) : 0) +
+            (row.paymentTypes?.transfer ? parseFloat(String(row.transferDetails?.amount || '0').replace(/,/g, '')) : 0)
+          
           const mainAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
           
           if (Math.abs(totalPaymentAmount - mainAmount) > 0.01) {
@@ -3255,9 +3338,9 @@ const saveData = async () => {
         }
       }
 
-      // ✅ เก็บ errors ของรายการนี้
+      // ✅ เก็บ errors ของรายการนี้ (ใช้ originalIndex เพื่อแสดง error ที่ตำแหน่งเดิม)
       if (Object.keys(rowErrors).length > 0) {
-        errors.value.rows[index] = rowErrors
+        errors.value.rows[originalIndex] = rowErrors
         hasError = true
       }
     })
@@ -3347,7 +3430,7 @@ const saveData = async () => {
   }
 
   // ========================================
-  // ✅ ดำเนินการบันทึกข้อมูล
+  // ✅ ดำเนินการบันทึกข้อมูล (ใช้เฉพาะรายการที่มีข้อมูล)
   // ========================================
   Swal.fire({
     title: 'กำลังบันทึกการเปลี่ยนแปลง...',
@@ -3359,8 +3442,16 @@ const saveData = async () => {
 
   const currentDateTime = new Date().toISOString()
 
-  // ✅ สร้าง payload พร้อมสถานะการยกเลิก และเพิ่ม "(ยกเลิก)" ในเลขที่ใบเสร็จ
-  const validRows = morelist.value.map((row) => {
+  // ✅ กรองเฉพาะรายการที่มีข้อมูล
+  const rowsToSave = morelist.value.filter(row => {
+    const hasItemName = row.itemName && row.itemName.trim() !== ''
+    const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
+    const hasAmount = cleanAmount && cleanAmount > 0
+    return hasItemName || hasAmount
+  })
+
+  // ✅ สร้าง payload พร้อมสถานะการยกเลิก
+  const validRows = rowsToSave.map((row) => {
     const cleanAmount = parseFloat(String(row.amount || '').replace(/,/g, ''))
     const item = getItemByName(row.itemName)
 
@@ -3369,12 +3460,10 @@ const saveData = async () => {
 
     if (row.isCancelled) {
       if (referenceNo) {
-        // ถ้ามีเลขที่ใบเสร็จ ให้เพิ่ม "(ยกเลิก)" ต่อท้าย
         if (!referenceNo.includes('ยกเลิก')) {
           referenceNo = `${referenceNo} (ยกเลิก)`
         }
       } else {
-        // ✅ ถ้าไม่มีเลขที่ใบเสร็จ ให้ใส่ "(ยกเลิก)" เป็นค่าเริ่มต้น
         referenceNo = '(ยกเลิก)'
       }
     }

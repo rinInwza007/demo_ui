@@ -193,45 +193,28 @@ async getAll(): Promise<Receipt[]> {
   /**
    * ✅ อนุมัติใบนำส่ง (สำหรับกองคลัง)
    */
-  async approve(waybillNumber: string, approverName: string): Promise<Receipt> {
-    try {
-      // 1. ดึงข้อมูลปัจจุบัน
-      const current = await this.getById(waybillNumber)
+async approve(
+  waybillNumber: string,
+  approverName: string
+): Promise<Receipt> {
+  try {
+    const res = await axios.post(
+      `/receipts/${encodeURIComponent(waybillNumber)}/approve`,
+      { approverName }
+    )
 
-      // 2. ตรวจสอบสถานะ
-      if (current.approvalStatus === 'approved') {
-        throw new Error('ใบนำส่งนี้ได้รับการอนุมัติแล้ว')
-      }
+    this.notifyUpdate('approve')
 
-      if (current.isLocked) {
-        throw new Error('ไม่สามารถอนุมัติได้ เนื่องจากวันนี้ปิดยอดแล้ว')
-      }
+    return res.data.data // เพราะ mock wrap ด้วย { success, data }
+  } catch (error: any) {
+    console.error('❌ Error approving receipt:', error)
 
-      // 3. อัปเดตสถานะ
-      const approved: Receipt = {
-        ...current,
-        approvalStatus: 'approved',
-        // approverName, // ⚠️ ถ้า Receipt type ไม่มี approverName ให้เอาออก
-        // approvedAt: new Date().toISOString(), // ⚠️ ถ้า Receipt type ไม่มี approvedAt ให้เอาออก
-        updatedAt: new Date().toISOString(),
-      }
-
-      const response: AxiosResponse<Receipt> = await axios.post(
-        '/updateReceipt',
-        {
-          receipt: approved,
-        }
-      )
-
-      // ✅ แจ้งเตือนการอัปเดต
-      this.notifyUpdate('approve')
-
-      return response.data
-    } catch (error: any) {
-      console.error('❌ Error approving receipt:', error)
-      throw new Error(error.message || 'ไม่สามารถอนุมัติใบนำส่งได้')
-    }
+    throw new Error(
+      error.response?.data?.message || 'ไม่สามารถอนุมัติใบนำส่งได้'
+    )
   }
+}
+
   /**
    * 🔒 ตรวจสอบว่าใบนำส่งถูกล็อก (ปิดยอด) หรือไม่
    */
@@ -258,8 +241,10 @@ async getAll(): Promise<Receipt[]> {
   /**
    * 📊 กรองใบนำส่งตามสังกัด
    */
-  filterByAffiliation(receipts: Receipt[], affiliationId: string): Receipt[] {
-  return receipts.filter((r) => r && r.affiliationId === affiliationId)
+filterByAffiliation(receipts: Receipt[], affiliationId: string) {
+  return receipts.filter(
+    r => r?.profile?.affiliationId === affiliationId
+  )
 }
 
   /**
@@ -387,7 +372,9 @@ async applyDebtClearToReceipt(
     debtorItem.note = JSON.stringify(paidHistory)
 
     // ✅ บันทึกกลับลง localStorage
-    const updated = await this.update(waybillNumber, receipt)
+    const updated = await this.update(waybillNumber, {
+  receiptList: receipt.receiptList
+})
 
     console.log(`✅ Updated receipt ${waybillNumber}:`, {
       itemName,

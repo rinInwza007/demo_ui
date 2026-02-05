@@ -88,7 +88,7 @@ export interface Receipt {
   id: string
   profile:Profile
   waybillNumber: string
-  approvalStatus?: ApprovalStatus
+  approvalStatus: ApprovalStatus
   netTotalAmount: number
   receiptList: ReceiptItem[]
   isLocked?: boolean

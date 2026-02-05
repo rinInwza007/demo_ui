@@ -457,6 +457,7 @@ const formatCurrency = (amount: number | string) => {
 /* =========================
  * ✅ Load Data from Summary Store - แก้ไขให้ filter ตาม affiliationId
  * ========================= */
+
 const loadDataFromStore = async () => {
   console.log('📥 Loading data from summaryStore...')
   isLoading.value = true
@@ -478,14 +479,30 @@ const loadDataFromStore = async () => {
     const allReceipts = await reciptService.getAll()
     console.log('📦 Total receipts loaded:', allReceipts.length)
 
+    // ✅ Debug: แสดง structure ของ receipt แรก
+    if (allReceipts.length > 0) {
+      console.log('📋 Sample receipt structure:', {
+        waybillNumber: allReceipts[0].waybillNumber,
+        hasProfile: !!allReceipts[0].profile,
+        profileKeys: allReceipts[0].profile ? Object.keys(allReceipts[0].profile) : [],
+        sampleProfile: allReceipts[0].profile
+      })
+    }
+
     // ✅ Filter เฉพาะ receipts ที่ตรงกับหน่วยงานของ user
     const userReceipts = allReceipts.filter(receipt => {
-      // ตรวจสอบทั้ง affiliationId, mainAffiliationId
-      const receiptAffId = receipt.affiliationId || receipt.mainAffiliationId
+      // ✅ แก้ไข: ดึง affiliationId จาก profile object
+      const receiptAffId = receipt.profile?.affiliationId || 
+                          receipt.profile?.mainAffiliationId ||
+                          receipt.affiliationId || 
+                          receipt.mainAffiliationId
+      
       const matches = receiptAffId === userAffiliationId
 
       if (matches) {
         console.log('✅ Matched receipt:', receipt.waybillNumber, receiptAffId)
+      } else {
+        console.log('❌ Not matched:', receipt.waybillNumber, 'has:', receiptAffId, 'need:', userAffiliationId)
       }
 
       return matches
@@ -493,8 +510,27 @@ const loadDataFromStore = async () => {
 
     console.log('🔍 Filtered receipts for user affiliation:', userReceipts.length)
 
-    // ✅ Ingest เฉพาะ receipts ของหน่วยงานนี้
-    userReceipts.forEach(receipt => {
+    // ✅ แปลง Receipt ให้ตรงกับ format ที่ Summary Store ต้องการ
+    const normalizedReceipts = userReceipts.map(receipt => ({
+      ...receipt,
+      // ✅ แปลงข้อมูลจาก profile มาไว้ใน root level เพื่อให้ Summary Store ใช้งานได้
+      fullName: receipt.profile?.fullName || '',
+      phone: receipt.profile?.phone || '',
+      fundName: receipt.profile?.fundName || '',
+      projectCode: receipt.profile?.projectCode || '',
+      affiliationId: receipt.profile?.affiliationId || '',
+      affiliationName: receipt.profile?.affiliationName || '',
+      mainAffiliationId: receipt.profile?.mainAffiliationId || receipt.profile?.affiliationId || '',
+      mainAffiliationName: receipt.profile?.mainAffiliationName || receipt.profile?.affiliationName || '',
+      subAffiliationId1: receipt.profile?.subAffiliationId1 || '',
+      subAffiliationName1: receipt.profile?.subAffiliationName1 || '',
+      subAffiliationId2: receipt.profile?.subAffiliationId2 || '',
+      subAffiliationName2: receipt.profile?.subAffiliationName2 || '',
+      sendmoney: receipt.profile?.sendmoney || ''
+    }))
+
+    // ✅ Ingest receipts ที่แปลงแล้ว
+    normalizedReceipts.forEach(receipt => {
       summaryStore.ingestUpsert(receipt)
     })
 
@@ -504,6 +540,25 @@ const loadDataFromStore = async () => {
       debtorsCount: Object.keys(debtorsByDoc.value).length,
       ledgerCount: Object.keys(ledgerByDoc.value).length
     })
+
+    // ✅ Debug: แสดงตัวอย่าง debtor
+    if (Object.keys(debtorsByDoc.value).length > 0) {
+      const firstDoc = Object.keys(debtorsByDoc.value)[0]
+      const sampleDebtors = debtorsByDoc.value[firstDoc]
+      console.log('📋 Sample debtors for doc:', firstDoc)
+      console.log('   Total debtors:', sampleDebtors?.length || 0)
+      
+      if (sampleDebtors && sampleDebtors.length > 0) {
+        console.log('   First debtor:', sampleDebtors[0])
+        console.log('   Debtors details:', sampleDebtors.map(d => ({
+          itemName: d.itemName,
+          balance: d.balance,
+          isCleared: d.isCleared
+        })))
+      }
+    } else {
+      console.warn('⚠️ No debtors found after ingestion!')
+    }
 
   } catch (err) {
     console.error('❌ Load error:', err)

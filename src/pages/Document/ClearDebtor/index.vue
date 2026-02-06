@@ -913,9 +913,6 @@ const clearBankError = (index, field) => {
   }
 }
 
-// ส่วนที่ต้องแก้ไขในไฟล์ cleardebtor.vue
-// แทนที่ฟังก์ชัน clearAllDebts() เดิมด้วยโค้ดนี้
-
 async function clearAllDebts() {
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
@@ -935,14 +932,6 @@ async function clearAllDebts() {
       const paymentValue = parseFloat(String(item.paymentInput || '0').replace(/,/g, ''))
       if (paymentValue > 0) {
         const originalReceipt = item._originalReceipt
-
-        // ✅ Debug: ดูว่ามี waybillNumber หรือไม่
-        console.log('🔍 Checking item:', {
-          itemName: item.itemName,
-          _originalReceipt: originalReceipt,
-          waybillNumber: originalReceipt?.waybillNumber,
-          _originalWaybillNumber: originalReceipt?._originalWaybillNumber
-        })
 
         const waybillNumber = originalReceipt?._originalWaybillNumber ||
                               originalReceipt?.waybillNumber || ''
@@ -1090,8 +1079,8 @@ async function clearAllDebts() {
 
     console.log('✅ Clear summary created:', clearSummary.id)
 
-    // ✅ 9. อัพเดท receipts ที่มีอยู่จริง (ข้าม MERGED_ALL)
-    console.log('🔄 Updating receipts...')
+    // ✅ 9. อัพเดท Summary Store
+    console.log('🔄 Updating Summary Store...')
 
     const grouped = new Map()
     itemsToMark.forEach(item => {
@@ -1110,15 +1099,12 @@ async function clearAllDebts() {
         for (const item of items) {
           const ref = item.receiptNumber || clearSummary.referenceId
 
-          // อัพเดทใน summary store
+          // ✅ อัพเดทใน summary store
           summaryStore.applyDebtClear(waybillNumber, {
             itemName: item.itemName,
             amount: item.paymentAmount,
             ref: ref
           })
-
-          // ⚠️ ไม่ต้อง call applyDebtClearToReceipt เพราะอาจไม่มี receipt จริง
-          // แค่อัพเดทใน store ก็พอ
 
           totalMarkedCount++
           console.log(`      ✅ Cleared: ${item.itemName} - ${formatNumber(item.paymentAmount)} บาท`)
@@ -1130,15 +1116,19 @@ async function clearAllDebts() {
 
     console.log(`✅ Total: Marked ${totalMarkedCount} items`)
 
-    // ✅ 10. Dispatch event
+    // ✅ 10. บันทึกสถานะลง localStorage
+    summaryStore.saveToLocalStorage()
+    console.log('💾 Summary state saved to localStorage')
+
+    // ✅ 11. Dispatch event
     window.dispatchEvent(new CustomEvent('receipts-updated', {
       detail: { action: 'clear' }
     }))
 
-    // ✅ 11. เคลียร์ localStorage
+    // ✅ 12. เคลียร์ localStorage
     localStorage.removeItem('clearDebtorSummary')
 
-    // ✅ 12. แสดงผลสำเร็จ
+    // ✅ 13. แสดงผลสำเร็จ
     await Swal.fire({
       title: 'ล้างหนี้สำเร็จ!',
       html: `

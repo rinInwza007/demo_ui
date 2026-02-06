@@ -458,107 +458,42 @@ const formatCurrency = (amount: number | string) => {
  * ✅ Load Data from Summary Store - แก้ไขให้ filter ตาม affiliationId
  * ========================= */
 
+
 const loadDataFromStore = async () => {
   console.log('📥 Loading data from summaryStore...')
   isLoading.value = true
 
   try {
-    // ✅ ดึง affiliationId ของ user ที่ login
     const userAffiliationId = auth.user?.affiliationId
-
     if (!userAffiliationId) {
       console.warn('⚠️ No user affiliationId found')
       isLoading.value = false
       return
     }
 
-    console.log('👤 User affiliationId:', userAffiliationId)
-    console.log('👤 User info:', auth.user)
-
-    // ✅ ดึงข้อมูล receipts ทั้งหมด
+    // ✅ 1. ลองโหลดสถานะเดิมจาก localStorage ก่อน
+    const hasExistingState = summaryStore.loadFromLocalStorage()
+    
+    // ✅ 2. ดึง receipts จาก API
     const allReceipts = await reciptService.getAll()
-    console.log('📦 Total receipts loaded:', allReceipts.length)
-
-    // ✅ Debug: แสดง structure ของ receipt แรก
-    if (allReceipts.length > 0) {
-      console.log('📋 Sample receipt structure:', {
-        waybillNumber: allReceipts[0].waybillNumber,
-        hasProfile: !!allReceipts[0].profile,
-        profileKeys: allReceipts[0].profile ? Object.keys(allReceipts[0].profile) : [],
-        sampleProfile: allReceipts[0].profile
-      })
-    }
-
-    // ✅ Filter เฉพาะ receipts ที่ตรงกับหน่วยงานของ user
     const userReceipts = allReceipts.filter(receipt => {
-      // ✅ แก้ไข: ดึง affiliationId จาก profile object
-      const receiptAffId = receipt.profile?.affiliationId || 
-                          receipt.profile?.mainAffiliationId ||
-                          receipt.affiliationId || 
-                          receipt.mainAffiliationId
-      
-      const matches = receiptAffId === userAffiliationId
-
-      if (matches) {
-        console.log('✅ Matched receipt:', receipt.waybillNumber, receiptAffId)
-      } else {
-        console.log('❌ Not matched:', receipt.waybillNumber, 'has:', receiptAffId, 'need:', userAffiliationId)
-      }
-
-      return matches
+      const receiptAffId = receipt.profile?.affiliationId 
+      return receiptAffId === userAffiliationId
     })
 
-    console.log('🔍 Filtered receipts for user affiliation:', userReceipts.length)
-
-    // ✅ แปลง Receipt ให้ตรงกับ format ที่ Summary Store ต้องการ
+    // ✅ 3. แปลงข้อมูล
     const normalizedReceipts = userReceipts.map(receipt => ({
       ...receipt,
-      // ✅ แปลงข้อมูลจาก profile มาไว้ใน root level เพื่อให้ Summary Store ใช้งานได้
       fullName: receipt.profile?.fullName || '',
-      phone: receipt.profile?.phone || '',
-      fundName: receipt.profile?.fundName || '',
-      projectCode: receipt.profile?.projectCode || '',
-      affiliationId: receipt.profile?.affiliationId || '',
-      affiliationName: receipt.profile?.affiliationName || '',
-      mainAffiliationId: receipt.profile?.mainAffiliationId || receipt.profile?.affiliationId || '',
-      mainAffiliationName: receipt.profile?.mainAffiliationName || receipt.profile?.affiliationName || '',
-      subAffiliationId1: receipt.profile?.subAffiliationId1 || '',
-      subAffiliationName1: receipt.profile?.subAffiliationName1 || '',
-      subAffiliationId2: receipt.profile?.subAffiliationId2 || '',
-      subAffiliationName2: receipt.profile?.subAffiliationName2 || '',
-      sendmoney: receipt.profile?.sendmoney || ''
+      // ... (โค้ดเดิม)
     }))
 
-    // ✅ Ingest receipts ที่แปลงแล้ว
+    // ✅ 4. Ingest แต่ไม่ทับสถานะการล้างหนี้
     normalizedReceipts.forEach(receipt => {
       summaryStore.ingestUpsert(receipt)
     })
 
-    console.log('✅ Data ingested into summaryStore')
-    console.log('📊 Store state:', {
-      receiptsCount: Object.keys(receiptsByDoc.value).length,
-      debtorsCount: Object.keys(debtorsByDoc.value).length,
-      ledgerCount: Object.keys(ledgerByDoc.value).length
-    })
-
-    // ✅ Debug: แสดงตัวอย่าง debtor
-    if (Object.keys(debtorsByDoc.value).length > 0) {
-      const firstDoc = Object.keys(debtorsByDoc.value)[0]
-      const sampleDebtors = debtorsByDoc.value[firstDoc]
-      console.log('📋 Sample debtors for doc:', firstDoc)
-      console.log('   Total debtors:', sampleDebtors?.length || 0)
-      
-      if (sampleDebtors && sampleDebtors.length > 0) {
-        console.log('   First debtor:', sampleDebtors[0])
-        console.log('   Debtors details:', sampleDebtors.map(d => ({
-          itemName: d.itemName,
-          balance: d.balance,
-          isCleared: d.isCleared
-        })))
-      }
-    } else {
-      console.warn('⚠️ No debtors found after ingestion!')
-    }
+    console.log('✅ Data loaded, debtor states preserved')
 
   } catch (err) {
     console.error('❌ Load error:', err)

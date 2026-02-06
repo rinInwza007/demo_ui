@@ -393,7 +393,7 @@ import type { Debtor, Receipt } from '@/stores/summary'
 import { storeToRefs } from 'pinia'
 import { reciptService } from '@/services/ReciptService'
 import Swal from 'sweetalert2'
-
+import { isReceivableItem } from '@/components/data/ItemNameOption'
 /* =========================
  * Constants
  * ========================= */
@@ -471,32 +471,62 @@ const loadDataFromStore = async () => {
       return
     }
 
-    // ✅ 1. ลองโหลดสถานะเดิมจาก localStorage ก่อน
+    // ✅ 1. โหลดสถานะเดิมจาก localStorage
     const hasExistingState = summaryStore.loadFromLocalStorage()
     
     // ✅ 2. ดึง receipts จาก API
     const allReceipts = await reciptService.getAll()
+    
+    // ✅ 3. กรองเฉพาะ receipts ของหน่วยงานตัวเอง
     const userReceipts = allReceipts.filter(receipt => {
-      const receiptAffId = receipt.profile?.affiliationId 
+      const receiptAffId = receipt.profile?.affiliationId || receipt.affiliationId
       return receiptAffId === userAffiliationId
     })
 
-    // ✅ 3. แปลงข้อมูล
+    console.log('📦 Filtered receipts:', {
+      total: allReceipts.length,
+      userReceipts: userReceipts.length,
+      userAffiliation: userAffiliationId
+    })
+
+    // ✅ 4. แปลงและ normalize ข้อมูล
     const normalizedReceipts = userReceipts.map(receipt => ({
-      ...receipt,
+      id: receipt.id || receipt.waybillNumber,
+      waybillNumber: receipt.waybillNumber,
       fullName: receipt.profile?.fullName || '',
-      // ... (โค้ดเดิม)
+      affiliationId: receipt.profile?.affiliationId || receipt.affiliationId || '',
+      affiliationName: receipt.profile?.affiliationName || receipt.affiliationName || '',
+      mainAffiliationId: receipt.profile?.affiliationId || receipt.affiliationId || '',
+      subAffiliationName1: receipt.profile?.subAffiliationName1 || receipt.subAffiliationName1 || '',
+      subAffiliationId1: receipt.profile?.subAffiliationId1 || receipt.subAffiliationId1 || '',
+      subAffiliationName2: receipt.profile?.subAffiliationName2 || receipt.subAffiliationName2 || '',
+      subAffiliationId2: receipt.profile?.subAffiliationId2 || receipt.subAffiliationId2 || '',
+      fundName: receipt.profile?.fundName || receipt.fundName || '',
+      netTotalAmount: receipt.netTotalAmount || 0,
+      receiptList: receipt.receiptList || [],
+      createdAt: receipt.createdAt || new Date().toISOString(),
+      profile: receipt.profile
     }))
 
-    // ✅ 4. Ingest แต่ไม่ทับสถานะการล้างหนี้
+    // ✅ 5. Ingest ทุก receipt (จะรักษาสถานะเดิมไว้ถ้ามี)
     normalizedReceipts.forEach(receipt => {
       summaryStore.ingestUpsert(receipt)
     })
 
-    console.log('✅ Data loaded, debtor states preserved')
+    console.log('✅ Data loaded successfully:', {
+      receipts: Object.keys(summaryStore.receiptsByDoc).length,
+      debtors: Object.keys(summaryStore.debtorsByDoc).length,
+      hasExistingState
+    })
 
   } catch (err) {
     console.error('❌ Load error:', err)
+    await Swal.fire({
+      title: 'เกิดข้อผิดพลาด!',
+      text: 'ไม่สามารถโหลดข้อมูลได้',
+      icon: 'error',
+      confirmButtonColor: '#DC2626'
+    })
   } finally {
     isLoading.value = false
   }

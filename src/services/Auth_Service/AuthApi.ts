@@ -144,42 +144,59 @@ export const AuthAPI = {
   /**
    * Verify Token - ตรวจสอบว่า token ยังใช้งานได้หรือไม่
    */
-  async verifyToken(token: string): Promise<{ valid: boolean; user?: User }> {
-    const useMock = import.meta.env.VITE_USE_FAKE_API === 'true'
+/**
+ * Verify Token - ตรวจสอบว่า token ยังใช้งานได้หรือไม่
+ */
+async verifyToken(token: string): Promise<{ valid: boolean; user?: User }> {
+  const useMock = import.meta.env.VITE_USE_FAKE_API === 'true'
 
-    if (useMock) {
-      console.log('🧪 Mock: Verifying token')
-      
-      // ดึง user จาก localStorage
-      const userData = localStorage.getItem('auth_user')
-      if (!userData) {
-        return { valid: false }
-      }
-
-      try {
-        const user = JSON.parse(userData)
-        
-        // ตรวจสอบว่า token ยังไม่หมดอายุ (mock: ตรวจแค่ว่ามี user หรือไม่)
-        return { valid: true, user }
-      } catch {
-        return { valid: false }
-      }
+  if (useMock) {
+    console.log('🧪 Mock: Verifying token')
+    
+    // ✅ เช็คว่า token เป็น mock token ที่ถูกต้อง
+    if (!token.startsWith('mock_token_')) {
+      console.error('❌ Invalid mock token format')
+      return { valid: false }
     }
 
-    // Real API
-    try {
-      const res = await http.get('/auth/verify', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+    // ดึง user จาก localStorage
+    const userData = localStorage.getItem('auth_user')
+    const storedToken = localStorage.getItem('access_token')
+    
+    // ✅ เช็คว่า token ตรงกับที่เก็บไว้หรือไม่
+    if (!userData || storedToken !== token) {
+      console.error('❌ Token mismatch or no user data')
+      return { valid: false }
+    }
 
-      return {
-        valid: res.data.valid || false,
-        user: res.data.user
-      }
+    try {
+      const user = JSON.parse(userData)
+      console.log('✅ Mock token valid for user:', user.email)
+      return { valid: true, user }
     } catch {
       return { valid: false }
     }
-  },
+  }
+
+  // ✅ Real API - เพิ่ม Cache-Control headers
+  try {
+    const res = await http.get('/auth/verify', {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    })
+
+    return {
+      valid: res.data.valid !== false, // ✅ default เป็น true ถ้าไม่มี valid field
+      user: res.data.user
+    }
+  } catch (error: any) {
+    console.error('❌ Token verification failed:', error.message)
+    return { valid: false }
+  }
+},
 
   /**
    * Get Current User

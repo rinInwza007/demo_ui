@@ -1,15 +1,82 @@
 // src/fake/api/clearSummaryApi.ts
 
-import type { ClearSummary } from '@/types/summary'
-export let clearSummaryDB: ClearSummary[] = []
-/* Create */
-export function createClearSummary(data: ClearSummary) {
-  clearSummaryDB.push(data)
+import type { ClearSummary, CreateClearSummaryInput } from '@/types/summary'
 
-  return {
-    success: true,
-    data: newSummary
+const STORAGE_KEY = 'fakeApi.clearSummaries'
+
+/**
+ * Load DB from localStorage
+ */
+function loadDB(): ClearSummary[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch (error) {
+    console.error('❌ Error loading clear summaries DB:', error)
+    return []
   }
+}
+
+/**
+ * Save DB to localStorage
+ */
+function saveDB(db: ClearSummary[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db))
+  } catch (error) {
+    console.error('❌ Error saving clear summaries DB:', error)
+  }
+}
+
+/**
+ * Generate unique Reference ID
+ */
+function generateReferenceId(): string {
+  const timestamp = Date.now()
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
+  return `CLR-${timestamp}-${random}`
+}
+
+/**
+ * Create new clear summary
+ */
+export function createClearSummary(input: CreateClearSummaryInput): ClearSummary {
+  console.log('📝 Creating clear summary:', input)
+
+  const db = loadDB()
+
+  // ✅ สร้างออบเจ็กต์ใหม่ก่อน
+  const newSummary: ClearSummary = {
+    id: `cs_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    referenceId: generateReferenceId(),
+    fullName: input.fullName || '',
+    phone: input.phone || '',
+    mainAffiliationId: input.mainAffiliationId || '',
+    mainAffiliationName: input.mainAffiliationName || '',
+    subAffiliationId1: input.subAffiliationId1 || '',
+    subAffiliationName1: input.subAffiliationName1 || '',
+    subAffiliationId2: input.subAffiliationId2 || '',
+    subAffiliationName2: input.subAffiliationName2 || '',
+    fundName: input.fundName || '',
+    sendmoney: input.sendmoney || '',
+    projectCode: input.projectCode || '',
+    debtorList: input.debtorList || [],
+    payments: input.payments || [],
+    totalAmount: input.totalAmount || 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+
+  // ✅ เพิ่มเข้า array
+  db.unshift(newSummary)
+
+  // ✅ บันทึก
+  saveDB(db)
+
+  console.log('✅ Clear summary created:', newSummary.id, newSummary.referenceId)
+
+  // ✅ ตอนนี้ return ได้แล้ว
+  return newSummary
 }
 
 /**
@@ -19,7 +86,7 @@ export function getClearSummaries(filters?: {
   affiliationId?: string
   startDate?: string
   endDate?: string
-}) {
+}): ClearSummary[] {
   let db = loadDB()
 
   // Apply filters
@@ -39,64 +106,52 @@ export function getClearSummaries(filters?: {
 
   console.log('📋 Fetched clear summaries:', db.length)
 
-  return {
-    success: true,
-    data: db,
-    total: db.length
-  }
+  return db
 }
 
 /**
  * Get clear summary by ID
  */
-export function getClearSummaryById(id: string) {
+export function getClearSummaryById(id: string): ClearSummary | null {
   const db = loadDB()
   const found = db.find(s => s.id === id || s.referenceId === id)
 
   console.log('🔍 Fetched clear summary by ID:', id, found ? '✅' : '❌')
 
-  return {
-    success: !!found,
-    data: found || null
-  }
+  return found || null
 }
 
 /**
  * Update clear summary
  */
-export function updateClearSummary(id: string, payload: Partial<ClearSummary>) {
+export function updateClearSummary(id: string, payload: Partial<ClearSummary>): ClearSummary | null {
   const db = loadDB()
   const index = db.findIndex(s => s.id === id || s.referenceId === id)
 
   if (index === -1) {
     console.warn('⚠️ Clear summary not found:', id)
-    return {
-      success: false,
-      message: 'Summary not found'
-    }
+    return null
   }
 
   db[index] = {
     ...db[index],
     ...payload,
     id: db[index].id, // Keep original ID
-    referenceId: db[index].referenceId // Keep original referenceId
+    referenceId: db[index].referenceId, // Keep original referenceId
+    updatedAt: new Date().toISOString()
   }
 
   saveDB(db)
 
   console.log('✏️ Clear summary updated:', id)
 
-  return {
-    success: true,
-    data: db[index]
-  }
+  return db[index]
 }
 
 /**
  * Delete clear summary
  */
-export function deleteClearSummary(id: string) {
+export function deleteClearSummary(id: string): { success: boolean; deleted: number } {
   const db = loadDB()
   const before = db.length
 
@@ -116,15 +171,15 @@ export function deleteClearSummary(id: string) {
 /**
  * Get clear summaries by waybillNumber
  */
-export function getClearSummariesByWaybill(waybillNumber: string) {
+export function getClearSummariesByWaybill(waybillNumber: string): ClearSummary[] {
   const db = loadDB()
-  const found = db.filter(s => s.waybillNumbers?.includes(waybillNumber))
+  
+  // แก้ไข: ค้นหาจาก debtorList แทน waybillNumbers
+  const found = db.filter(s => 
+    s.debtorList?.some(d => d.waybillNumber === waybillNumber)
+  )
 
   console.log('🔍 Fetched clear summaries by waybill:', waybillNumber, found.length)
 
-  return {
-    success: true,
-    data: found,
-    total: found.length
-  }
+  return found
 }

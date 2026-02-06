@@ -114,7 +114,7 @@ class ReciptService {
         isLocked: false,
       }
 
-      const res = await http.post<Receipt>('/saveReceipt', receipt)
+      const res = await http.post<Receipt>('/receipts/save', receipt)
 
       this.notifyUpdate('create')
       return res.data
@@ -235,9 +235,11 @@ class ReciptService {
   /**
    * 📊 กรองใบนำส่งตามสังกัด
    */
-  filterByAffiliation(receipts: Receipt[], affiliationId: string): Receipt[] {
-    return receipts.filter(r => r && r.affiliationId === affiliationId)
-  }
+filterByAffiliation(receipts: Receipt[], affiliationId: string) {
+  return receipts.filter(
+    r => r?.profile?.affiliationId === affiliationId
+  )
+}
 
   /**
    * 📊 คำนวณสถิติ

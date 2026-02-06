@@ -1,7 +1,4 @@
-export type roleType = 'user' | 'treasury' | 'admin' | 'superadmin'
-
-
-
+export type roleType = 'User' | 'treasury' | 'Admin' | 'superadmin'
 
 export interface User {
   id: string

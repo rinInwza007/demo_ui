@@ -104,6 +104,7 @@ import { computed, ref, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore, type roleType } from '@/stores/auth'
 
+
 const auth = useAuthStore()
 const router = useRouter()
 
@@ -116,10 +117,10 @@ type MenuItem = {
 }
 
 const menuItems: MenuItem[] = [
-  { id: 'main', label: 'ใบนำส่งเงิน', icon: 'ph ph-files', routeName: 'main', roles: ['user','treasury','admin','superadmin'] },
-  { id: 'indexsavedebtor', label: 'ล้างลูกหนี้', icon: 'ph ph-files', routeName: 'indexsavedebtor', roles: ['user','admin','superadmin'] },
-  { id: 'Report_submit', label: 'รายงานสรุป', icon: 'ph ph-chart-bar', routeName: 'Report_submit', roles: ['treasury','admin','superadmin'] },
-  { id: 'daily_closing', label: 'สรุปยอดรายวัน', icon: 'ph ph-files', routeName: 'daily_closing', roles: ['treasury','admin','superadmin'] },
+  { id: 'main', label: 'ใบนำส่งเงิน', icon: 'ph ph-files', routeName: 'main', roles: ['User','treasury','Admin','superadmin'] },
+  { id: 'indexsavedebtor', label: 'ล้างลูกหนี้', icon: 'ph ph-files', routeName: 'indexsavedebtor', roles: ['User','Admin','superadmin'] },
+  { id: 'Report_submit', label: 'รายงานสรุป', icon: 'ph ph-chart-bar', routeName: 'Report_submit', roles: ['treasury','Admin','superadmin'] },
+  { id: 'daily_closing', label: 'สรุปยอดรายวัน', icon: 'ph ph-files', routeName: 'daily_closing', roles: ['treasury','Admin','superadmin'] },
 ]
 
 // ✅ แก้ให้ดึง role จาก userProfile

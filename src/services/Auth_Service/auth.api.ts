@@ -14,6 +14,15 @@ export interface LoginResponse {
   message?: string
 }
 
+// ✅ Response type จาก /auth/verify
+export interface VerifyTokenResponse {
+  isValid: boolean
+  user?: {
+    userId: string
+    email: string
+  }
+}
+
 // ✅ Response type จาก Backend
 export interface BackendUserResponse {
   id: string
@@ -60,12 +69,17 @@ export const AuthAPI = {
     await http.post('/auth/logout')
   },
 
-  async verifyToken(token: string): Promise<{ valid: boolean; user?: User }> {
+  /**
+   * ✅ Verify Token - เรียก GET /auth/verify
+   * Backend response: { isValid: boolean, user?: { userId, email } }
+   */
+  async verifyToken(): Promise<VerifyTokenResponse> {
     try {
-      const res = await http.post('/auth/verify', { token })
+      const res = await http.get<VerifyTokenResponse>('/auth/verify')
       return res.data
-    } catch {
-      return { valid: false }
+    } catch (error) {
+      console.warn('Token verification failed:', error)
+      return { isValid: false }
     }
   },
 
@@ -94,4 +108,3 @@ export const AuthAPI = {
     }
   },
 }
-

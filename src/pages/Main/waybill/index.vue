@@ -70,15 +70,15 @@
 
             <div class="flex items-center gap-3 flex-shrink-0">
               <div
-                v-if="auth.user"
-                class="hidden md:flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-white/50 border border-white/60"
-              >
-                <span class="font-medium text-slate-800">{{ auth.user.fullName }}</span>
-                <span class="text-slate-500">•</span>
-                <span class="text-slate-700">{{ auth.user.role }}</span>
-                <span class="text-slate-500">•</span>
-                <span class="text-slate-700 font-mono">{{ auth.user.affiliationId }}</span>
-              </div>
+  v-if="auth.user"
+  class="hidden md:flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-white/50 border border-white/60"
+>
+  <span class="font-medium text-slate-800">{{ auth.user.userProfile?.fullName || '-' }}</span>
+  <span class="text-slate-500">•</span>
+  <span class="text-slate-700">{{ auth.user.userProfile?.role?.name || '-' }}</span>
+  <span class="text-slate-500">•</span>
+  <span class="text-slate-700 font-mono">{{ auth.user.userProfile?.affiliation?.id || '-' }}</span>
+</div>
 
               <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
                 <i class="ph ph-bell text-xl"></i>
@@ -92,7 +92,7 @@
 
         <div class="px-8 py-4 flex-shrink-0">
           <div
-            v-if="auth.isRole('user')"
+            v-if="auth.isRole('User')"
             class="glass-panel p-4 rounded-2xl flex items-center justify-end shadow-sm"
           >
             <button
@@ -262,8 +262,8 @@
       >
         {{ page }}
       </button>
-      <span 
-        v-else-if="page === currentPage - 2 || page === currentPage + 2" 
+      <span
+        v-else-if="page === currentPage - 2 || page === currentPage + 2"
         class="text-slate-400 px-1"
       >
         ...
@@ -314,7 +314,7 @@ const selectedMain = ref('')
 const selectedSub1 = ref('')
 const selectedSub2 = ref('')
 
-const canCreateWaybill = computed(() => auth.isRole('user') && !dailyClose.isTodayClosed)
+const canCreateWaybill = computed(() => auth.isRole('User') && !dailyClose.isTodayClosed)
 const canApprove = computed(() => auth.isRole('treasury'))
 
 type ActionKey = 'view' | 'edit' | 'delete' | 'approve' | 'reject'
@@ -380,25 +380,25 @@ function mapReceiptToRow(r: any): TableRow {
 
   // ✅ เพิ่ม type assertion
   const profile = (r.profile || {}) as Partial<Profile>
-  
+
   return {
     id: r.waybillNumber || r.projectCode || r.id,
     status: r.approvalStatus || 'pending',
-    
+
     // ✅ ใช้ Optional chaining
     department: profile.mainAffiliationName || r.mainAffiliationName || profile.affiliationName || r.affiliationName || '-',
-    
+
     subDepartment: [
       profile.subAffiliationName1 || r.subAffiliationName1,
       profile.subAffiliationName2 || r.subAffiliationName2
     ].filter(Boolean).join(' / ') || '-',
-    
+
     time: formatThaiDateTime(lastDate),
     lastTimeMs: lastDate?.getTime() || 0,
-    
+
     project: profile.fundName || r.fundName || '-',
     responsible: profile.fullName || r.fullName || '-',
-    
+
     amount: Number(r.netTotalAmount ?? 0),
     createdAt,
     updatedAt,
@@ -422,7 +422,7 @@ const loadData = async () => {
 
         // ✅ เพิ่ม type assertion
         const profile = (r.profile || {}) as Partial<Profile>
-        
+
         return {
           ...r,
 
@@ -461,9 +461,12 @@ const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
   if (!auth.user) return []
 
- if (auth.user.role === 'user') {
-  if (!auth.user.affiliationId) return []
-  filtered = filtered.filter(r => r.affiliationId === auth.user.affiliationId)
+ const userRole = auth.user.userProfile?.role?.name
+  const userAffiliationId = auth.user.userProfile?.affiliation?.id
+
+  if (userRole === 'user') {
+  if (!userAffiliationId) return []
+  filtered = filtered.filter(r => r.affiliationId === userAffiliationId)
 }
 
 
@@ -472,8 +475,8 @@ const items = computed<TableRow[]>(() => {
     filtered = filtered.filter((r) => {
       const profile = (r.profile || {}) as Partial<Profile>
       const main = (
-        profile.mainAffiliationName || 
-        profile.affiliationName || 
+        profile.mainAffiliationName ||
+        profile.affiliationName ||
         ''
       ).trim()
       return main === selectedMain.value.trim()
@@ -504,8 +507,8 @@ const items = computed<TableRow[]>(() => {
     filtered = filtered.filter((r) => {
       const profile = (r.profile || {}) as Partial<Profile>
       const main = (
-        profile.mainAffiliationName || 
-        profile.affiliationName || 
+        profile.mainAffiliationName ||
+        profile.affiliationName ||
         ''
       ).toLowerCase()
       const sub1 = (profile.subAffiliationName1 || '').toLowerCase()
@@ -526,17 +529,17 @@ const items = computed<TableRow[]>(() => {
   rows.sort((a, b) => {
     const byStatus = rank(a.status) - rank(b.status)
     if (byStatus !== 0) return byStatus
-    
+
     // ✅ สำหรับ pending: เรียงจากใหม่ไปเก่า (updatedAt ล่าสุดก่อน)
     if (a.status === 'pending') {
       return (b.lastTimeMs ?? 0) - (a.lastTimeMs ?? 0)
     }
-    
+
     // ✅ สำหรับ approved: เรียงจากใหม่ไปเก่า (approvedAt ล่าสุดก่อน)
     if (a.status === 'approved') {
       return (b.lastTimeMs ?? 0) - (a.lastTimeMs ?? 0)
     }
-    
+
     // ✅ rejected: เรียงจากเก่าไปใหม่
     return (a.lastTimeMs ?? 0) - (b.lastTimeMs ?? 0)
   })
@@ -620,7 +623,7 @@ const rowPermissions = (row: TableRow): ActionKey[] => {
   const perms: ActionKey[] = ['view']
 
   // ✅ User สามารถแก้ไขได้ทั้ง pending และ approved (แต่ approved จะแก้ไขแบบจำกัด)
-  if (auth.isRole('user') && !row.isLocked) {
+  if (auth.isRole('User') && !row.isLocked) {
     if (row.status === 'pending') {
       perms.push('edit', 'delete')
     } else if (row.status === 'approved') {
@@ -785,7 +788,7 @@ const approveItem = async (row: TableRow) => {
   if (!result.isConfirmed) return
 
   try {
-    const approverName = auth.user?.fullName || 'เจ้าหน้าที่การเงิน'
+    const approverName = auth.user?.userProfile?.fullName || 'เจ้าหน้าที่การเงิน'
     await approveService.approve(row.id, approverName)
 
     await loadData()
@@ -852,7 +855,7 @@ const rejectItem = async (row: TableRow) => {
   if (!result.isConfirmed) return
 
   try {
-    const approverName = auth.user?.fullName || 'เจ้าหน้าที่การเงิน'
+    const approverName = auth.user?.userProfile?.fullName || 'เจ้าหน้าที่การเงิน'
     await approveService.reject(row.id, approverName)
 
     await loadData()

@@ -1,3 +1,4 @@
+// stores/auth.ts
 import { defineStore } from 'pinia'
 import { authService } from '@/services/Auth_Service/AuthService'
 import { User } from '@/types/user'
@@ -7,10 +8,15 @@ export type roleType = 'user' | 'treasury' | 'admin' | 'superadmin'
 interface AuthState {
   token: string | null
   user: User | null
+  lastVerified: number | null // ✅ เพิ่ม: timestamp ของการ verify ครั้งล่าสุด
 }
 
 const LS_TOKEN = 'access_token'
 const LS_USER = 'auth_user'
+const LS_LAST_VERIFIED = 'last_verified'
+
+// ✅ ตั้งเวลาที่ถือว่า token ยังใช้ได้โดยไม่ต้อง verify ใหม่ (5 นาที)
+const VERIFY_INTERVAL = 5 * 60 * 1000 // 5 minutes
 
 function safeJsonParse<T>(val: string | null): T | null {
   if (!val) return null
@@ -25,6 +31,7 @@ export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     token: localStorage.getItem(LS_TOKEN),
     user: safeJsonParse<User>(localStorage.getItem(LS_USER)),
+    lastVerified: Number(localStorage.getItem(LS_LAST_VERIFIED)) || null,
   }),
 
   getters: {
@@ -34,6 +41,13 @@ export const useAuthStore = defineStore('auth', {
     fullName: (s) => s.user?.userProfile?.fullName ?? null,
     phone: (s) => s.user?.userProfile?.phone ?? null,
     affiliation: (s) => s.user?.userProfile?.affiliation ?? null,
+
+    // ✅ เช็คว่าควร verify token หรือไม่
+    shouldVerifyToken: (s) => {
+      if (!s.token || !s.lastVerified) return true
+      const now = Date.now()
+      return (now - s.lastVerified) > VERIFY_INTERVAL
+    },
   },
 
   actions: {
@@ -44,20 +58,21 @@ export const useAuthStore = defineStore('auth', {
 
       this.token = response.token
       this.user = response.user
+      this.lastVerified = Date.now()
 
       localStorage.setItem(LS_TOKEN, response.token)
       localStorage.setItem(LS_USER, JSON.stringify(response.user))
+      localStorage.setItem(LS_LAST_VERIFIED, String(this.lastVerified))
 
       console.log('✅ [Auth Store] Login successful, token saved')
 
-      // ✅ เรียก /auth/me เพื่อดึงข้อมูล user ล่าสุดจาก Backend
+      // ✅ Login แล้วไม่ต้อง verify ทันที เพราะเพิ่ง login สำเร็จ
       try {
         console.log('📤 [Auth Store] Fetching user profile from /auth/me...')
         await this.refreshUser()
         console.log('✅ [Auth Store] User profile refreshed')
       } catch (error) {
         console.warn('⚠️ [Auth Store] Failed to refresh user after login:', error)
-        // ไม่ throw error เพราะ login สำเร็จแล้ว แค่ไม่ได้ข้อมูลเพิ่มเติม
       }
 
       return response
@@ -69,24 +84,60 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.token = null
         this.user = null
+        this.lastVerified = null
         localStorage.removeItem(LS_TOKEN)
         localStorage.removeItem(LS_USER)
+        localStorage.removeItem(LS_LAST_VERIFIED)
       }
     },
 
+    /**
+     * ✅ Verify Token - เรียกเฉพาะเมื่อจำเป็น
+     * - ตอนเปิดเว็บครั้งแรก
+     * - ครบ interval (5 นาที)
+     * - หลังจาก sensitive action
+     */
     async verifyToken(): Promise<boolean> {
-      if (!this.token) return false
+      if (!this.token) {
+        console.log('⚠️ [Auth Store] No token to verify')
+        return false
+      }
 
-      const result = await authService.verifyToken(this.token)
-
-      if (result.valid && result.user) {
-        this.user = result.user
-        localStorage.setItem(LS_USER, JSON.stringify(result.user))
+      // ✅ เช็คว่าเพิ่งจะ verify ไปหรือยัง
+      if (!this.shouldVerifyToken) {
+        console.log('⏭️ [Auth Store] Token recently verified, skip')
         return true
       }
 
-      await this.logout()
-      return false
+      console.log('🔍 [Auth Store] Verifying token...')
+
+      try {
+        const result = await authService.verifyToken()
+
+        if (result.valid) {
+          console.log('✅ [Auth Store] Token valid')
+
+          this.lastVerified = Date.now()
+          localStorage.setItem(LS_LAST_VERIFIED, String(this.lastVerified))
+
+          // ✅ ถ้ามี user data ใหม่ → อัปเดต
+          if (result.user) {
+            this.user = result.user
+            localStorage.setItem(LS_USER, JSON.stringify(result.user))
+          }
+
+          return true
+        }
+
+        console.warn('❌ [Auth Store] Token invalid')
+        await this.logout()
+        return false
+
+      } catch (error) {
+        console.error('❌ [Auth Store] Verify token error:', error)
+        await this.logout()
+        return false
+      }
     },
 
     async refreshUser() {

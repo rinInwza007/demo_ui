@@ -503,10 +503,7 @@ onMounted(async () => {
     const referenceId = route.params.id as string
     console.log('🔍 Looking for referenceId:', referenceId)
 
-    // ✅ Import service
     const { clearSummaryService } = await import('@/services/ClearDebtor/clearSummaryService')
-
-    // ✅ ดึงข้อมูลจาก service
     const foundHistory = await clearSummaryService.getByReferenceId(referenceId)
 
     if (!foundHistory) {
@@ -518,10 +515,11 @@ onMounted(async () => {
     console.log('✅ Found clear summary:', foundHistory)
     console.log('📋 DebtorList:', foundHistory.debtorList)
 
-    // ✅ โหลดข้อมูลผู้ทำรายการ (รูปแบบใหม่จาก ClearSummary)
+    // ✅ โหลดข้อมูลผู้ทำรายการ (แก้ไขส่วนนี้)
     receiptData.value = {
-        waybillNumber: foundHistory.waybillNumbers?.[0] || foundHistory.referenceId,
-        waybillNumbers: foundHistory.waybillNumbers || [],
+      // ✅ ใช้ waybillNumbers array หรือ referenceId
+      waybillNumber: foundHistory.waybillNumbers?.[0] || foundHistory.referenceId,
+      waybillNumbers: foundHistory.waybillNumbers || [], // เก็บ array ทั้งหมดไว้ใช้งาน
       referenceId: foundHistory.referenceId,
       fullName: foundHistory.fullName || 'ไม่ระบุ',
       phone: foundHistory.phone || '-',
@@ -539,7 +537,10 @@ onMounted(async () => {
       payments: foundHistory.payments || []
     }
 
-    // ✅ ล้าง rows และเติมข้อมูลใหม่จาก debtorList
+    console.log('📝 Loaded waybillNumber:', receiptData.value.waybillNumber)
+    console.log('📝 All waybillNumbers:', receiptData.value.waybillNumbers)
+
+    // ... ส่วนที่เหลือเหมือนเดิม
     rows.splice(0, rows.length)
 
     if (Array.isArray(foundHistory.debtorList) && foundHistory.debtorList.length > 0) {
@@ -555,11 +556,8 @@ onMounted(async () => {
       })
 
       console.log('✅ Created', rows.length, 'rows')
-    } else {
-      console.error('❌ debtorList is not a valid array')
     }
 
-    // ✅ คำนวณยอดรวม
     const total = foundHistory.totalAmount || 0
     summary.text = convertNumberToThaiText(total)
     summary.total = total.toLocaleString('th-TH', { minimumFractionDigits: 2 })

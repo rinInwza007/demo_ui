@@ -319,7 +319,6 @@ function createDocDefinition() {
   const { debtors, totalDebtor, hasDebtor } = separateDebtorItems()
 
   const isApproved = receipt.approvalStatus === 'approved'
-  const approverName = receipt.approverName || 'เจ้าหน้าที่การเงิน'
   const approvalDate = receipt.approvedAt
     ? new Date(receipt.approvedAt).toLocaleDateString('th-TH', {
         year: 'numeric',
@@ -367,7 +366,7 @@ function createDocDefinition() {
         stack: [
           {
             text: `${currentDate}`,
-            absolutePosition: { x: 440, y: 65 },
+            absolutePosition: { x: 425, y: 65 },
             fontSize: 13,
           },
           {
@@ -381,19 +380,19 @@ function createDocDefinition() {
           {
             // ✅ อ่านจาก profile
             text: `${profile.fullName || receipt.fullName || ''}`,
-            absolutePosition: { x: 95, y: 81.5 },
+            absolutePosition: { x: 93, y: 81.5 },
             fontSize: 13,
           },
           {
             // ✅ อ่านจาก profile
             text: `${profile.phone || receipt.phone || ''}`,
-            absolutePosition: { x: 270, y: 81.5 },
+            absolutePosition: { x: 262, y: 81.5 },
             fontSize: 13,
           },
           {
             // ✅ อ่านจาก profile
             text: `${profile.mainAffiliationName || receipt.mainAffiliationName || ''}`,
-            absolutePosition: { x: 370, y: 81.5 },
+            absolutePosition: { x: 375, y: 81.5 },
             fontSize: 13,
           },
           {
@@ -407,13 +406,13 @@ function createDocDefinition() {
           {
             // ✅ อ่านจาก profile
             text: `${profile.sendmoney || profile.moneyType || receipt.sendmoney || receipt.moneyType || ''}`,
-            absolutePosition: { x: 110, y: 98.5 },
+            absolutePosition: { x: 114, y: 98.5 },
             fontSize: 13,
           },
           {
             // ✅ อ่านจาก profile
             text: `${profile.fundName || receipt.fundName || ''}`,
-            absolutePosition: { x: 350, y: 98.5 },
+            absolutePosition: { x: 345, y: 98.5 },
             fontSize: 13,
           },
           {
@@ -794,7 +793,6 @@ function createDocDefinition() {
                   },
                 ],
               },
-              { text: '\n' },
             ]
           }]
         : []),
@@ -815,13 +813,13 @@ function createDocDefinition() {
                     margin: [40, 0, 0, 0],
                     alignment: 'left',
                   },
-                  {
-                    // ✅ อ่านจาก profile
-                    text: profile.fullName || receipt.fullName || '',
-                    alignment: 'center',
-                    margin: [40, 0, 0, -15],
-                    fontSize: 13,
-                  },
+                  // {
+                  //   // ✅ อ่านจาก profile
+                  //   text: profile.fullName || receipt.fullName || '',
+                  //   alignment: 'center',
+                  //   margin: [40, 0, 0, -15],
+                  //   fontSize: 13,
+                  // },
                   {
                     style: 'form',
                     text: '(........................................................................)',
@@ -834,12 +832,12 @@ function createDocDefinition() {
                     alignment: 'center',
                     margin: [40, 0, 0, 0],
                   },
-                  {
-                    text: currentDate,
-                    alignment: 'center',
-                    margin: [40, 0, 0, -15],
-                    fontSize: 13,
-                  },
+                  // {
+                  //   text: currentDate,
+                  //   alignment: 'center',
+                  //   margin: [40, 0, 0, -15],
+                  //   fontSize: 13,
+                  // },
                   {
                     style: 'form',
                     text: 'ลงวันที่.......................................................',
@@ -856,16 +854,6 @@ function createDocDefinition() {
                     margin: [0, 0, 225, 0],
                     alignment: 'center',
                   },
-                  ...(isApproved
-                    ? [
-                        {
-                          text: approverName,
-                          alignment: 'center',
-                          margin: [0, 0, 0, -15],
-                          fontSize: 13,
-                        },
-                      ]
-                    : []),
                   {
                     style: 'form',
                     text: '(........................................................................)',
@@ -877,16 +865,16 @@ function createDocDefinition() {
                     text: 'ผู้รับเงิน',
                     alignment: 'center',
                   },
-                  ...(isApproved
-                    ? [
-                        {
-                          text: approvalDate,
-                          alignment: 'center',
-                          margin: [0, 0, 0, -15],
-                          fontSize: 13,
-                        },
-                      ]
-                    : []),
+                  // ...(isApproved
+                  //   ? [
+                  //       {
+                  //         text: approvalDate,
+                  //         alignment: 'center',
+                  //         margin: [0, 0, 0, -15],
+                  //         fontSize: 13,
+                  //       },
+                  //     ]
+                  //   : []),
                   {
                     style: 'form',
                     text: 'ลงวันที่.......................................................',

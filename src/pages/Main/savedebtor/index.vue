@@ -479,7 +479,7 @@ const loadDataFromStore = async () => {
     
     // ✅ 3. กรองเฉพาะ receipts ของหน่วยงานตัวเอง
     const userReceipts = allReceipts.filter(receipt => {
-      const receiptAffId = receipt.profile?.affiliationId || receipt.affiliationId
+      const receiptAffId = receipt.profile?.affiliationId 
       return receiptAffId === userAffiliationId
     })
 
@@ -494,14 +494,14 @@ const loadDataFromStore = async () => {
       id: receipt.id || receipt.waybillNumber,
       waybillNumber: receipt.waybillNumber,
       fullName: receipt.profile?.fullName || '',
-      affiliationId: receipt.profile?.affiliationId || receipt.affiliationId || '',
-      affiliationName: receipt.profile?.affiliationName || receipt.affiliationName || '',
-      mainAffiliationId: receipt.profile?.affiliationId || receipt.affiliationId || '',
-      subAffiliationName1: receipt.profile?.subAffiliationName1 || receipt.subAffiliationName1 || '',
-      subAffiliationId1: receipt.profile?.subAffiliationId1 || receipt.subAffiliationId1 || '',
-      subAffiliationName2: receipt.profile?.subAffiliationName2 || receipt.subAffiliationName2 || '',
-      subAffiliationId2: receipt.profile?.subAffiliationId2 || receipt.subAffiliationId2 || '',
-      fundName: receipt.profile?.fundName || receipt.fundName || '',
+      affiliationId: receipt.profile?.affiliationId  || '',
+      affiliationName: receipt.profile?.affiliationName  || '',
+      mainAffiliationId: receipt.profile?.affiliationId ||  '',
+      subAffiliationName1: receipt.profile?.subAffiliationName1 ||  '',
+      subAffiliationId1: receipt.profile?.subAffiliationId1 ||  '',
+      subAffiliationName2: receipt.profile?.subAffiliationName2 ||  '',
+      subAffiliationId2: receipt.profile?.subAffiliationId2 || '',
+      fundName: receipt.profile?.fundName ||  '',
       netTotalAmount: receipt.netTotalAmount || 0,
       receiptList: receipt.receiptList || [],
       createdAt: receipt.createdAt || new Date().toISOString(),
@@ -537,38 +537,94 @@ const loadDataFromStore = async () => {
  * ========================= */
 const loadHistory = async () => {
   try {
-    // ✅ ดึงข้อมูลจาก clearSummaryService แทน localStorage
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔍 [loadHistory] Starting...')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    
     const { clearSummaryService } = await import('@/services/ClearDebtor/clearSummaryService')
 
-    // ✅ ดึง affiliationId ของ user
+    // ✅ ดึง affiliationId จาก user
     const userAffiliationId = auth.user?.affiliationId
+    const userAffiliationName = auth.user?.affiliation
+    
+    console.log('👤 Current User:')
+    console.log('   - Name:', auth.user?.fullName)
+    console.log('   - Affiliation Name:', userAffiliationName)
+    console.log('   - Affiliation ID:', userAffiliationId)
+    console.log('   - Role:', auth.user?.role)
 
-    // กรองตามหน่วยงาน (ถ้ามี)
-    const filters = userAffiliationId ? { affiliationId: userAffiliationId } : undefined
+    // ✅ Debug: ดู localStorage ทั้งหมดก่อน
+    const raw = localStorage.getItem('fakeApi.clearSummaries')
+    if (raw) {
+      const allData = JSON.parse(raw)
+      console.log('\n📦 Total in localStorage:', allData.length)
+      
+      if (allData.length > 0) {
+        console.log('\n📋 All Clear Summaries:')
+        allData.forEach((s: any, i: number) => {
+          const match = s.mainAffiliationId === userAffiliationId ? '✅' : '❌'
+          console.log(`${match} ${i + 1}. ${s.referenceId}`)
+          console.log(`   - Name: ${s.fullName}`)
+          console.log(`   - Affiliation: ${s.mainAffiliationName} (${s.mainAffiliationId})`)
+          console.log(`   - Date: ${new Date(s.createdAt).toLocaleString('th-TH')}`)
+          console.log(`   - Debtors: ${s.debtorList?.length || 0}`)
+        })
+        
+        // นับตาม affiliation
+        const byAffiliation = allData.reduce((acc: any, s: any) => {
+          const key = `${s.mainAffiliationName} (${s.mainAffiliationId})`
+          acc[key] = (acc[key] || 0) + 1
+          return acc
+        }, {})
+        
+        console.log('\n📊 Summary by Affiliation:')
+        console.table(byAffiliation)
+      }
+    }
+
+    // ✅ ใช้ affiliationId ในการ filter
+    const filters = userAffiliationId 
+      ? { affiliationId: userAffiliationId } 
+      : undefined
+    
+    console.log('\n🔍 Calling service with filters:', filters)
 
     const summaries = await clearSummaryService.getAll(filters)
+    
+    console.log('\n📥 Service returned:', summaries.length, 'summaries')
+    
+    if (summaries.length === 0) {
+      console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.warn('⚠️ No summaries after filtering!')
+      console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.warn('Possible causes:')
+      console.warn('1. Your affiliationId:', userAffiliationId)
+      console.warn('2. Summaries have different affiliationId')
+      console.warn('3. Check the table above for actual IDs')
+      console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    }
 
-    console.log('📦 Loaded clear summaries:', summaries.length)
-
-    // ✅ แปลงให้ตรงกับ format ที่ UI ต้องการ
+    // แปลงข้อมูล
     historyItems.value = summaries.map(summary => {
-      // สร้างข้อความแสดงรายการ
+      // จัดกลุ่มรายการ
       const debtorListGrouped = new Map()
 
-      summary.debtorList.forEach(debtor => {
-        const itemName = debtor.itemName
-        if (debtorListGrouped.has(itemName)) {
-          const existing = debtorListGrouped.get(itemName)
-          existing.amount += debtor.amount
-          existing.count += 1
-        } else {
-          debtorListGrouped.set(itemName, {
-            itemName,
-            amount: debtor.amount,
-            count: 1
-          })
-        }
-      })
+      if (summary.debtorList && Array.isArray(summary.debtorList)) {
+        summary.debtorList.forEach(debtor => {
+          const itemName = debtor.itemName
+          if (debtorListGrouped.has(itemName)) {
+            const existing = debtorListGrouped.get(itemName)
+            existing.amount += debtor.amount
+            existing.count += 1
+          } else {
+            debtorListGrouped.set(itemName, {
+              itemName,
+              amount: debtor.amount,
+              count: 1
+            })
+          }
+        })
+      }
 
       const mergedItems = Array.from(debtorListGrouped.values())
       const itemsText = mergedItems.map(item =>
@@ -595,14 +651,15 @@ const loadHistory = async () => {
       }
     })
 
-    console.log('✅ Loaded history from clearSummaryService:', {
-      total: historyItems.value.length,
-      userAffiliation: auth.user?.affiliation,
-      sample: historyItems.value[0]
-    })
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('✅ [loadHistory] Complete!')
+    console.log('   - Displayed items:', historyItems.value.length)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
   } catch (error) {
-    console.error('❌ Error loading history from clearSummaryService:', error)
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.error('❌ [loadHistory] Error:', error)
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     historyItems.value = []
   }
 }

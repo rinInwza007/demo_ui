@@ -540,22 +540,35 @@ onMounted(async () => {
     console.log('📝 Loaded waybillNumber:', receiptData.value.waybillNumber)
     console.log('📝 All waybillNumbers:', receiptData.value.waybillNumbers)
 
-    // ... ส่วนที่เหลือเหมือนเดิม
+    // ✅ สร้าง rows จาก debtorList โดยใช้ receiptNumber และ note ที่ user กรอก
     rows.splice(0, rows.length)
 
     if (Array.isArray(foundHistory.debtorList) && foundHistory.debtorList.length > 0) {
       console.log('✅ Processing', foundHistory.debtorList.length, 'items')
+      console.log('📋 Sample debtorList item:', foundHistory.debtorList[0])
 
       foundHistory.debtorList.forEach((item: any) => {
+        // ✅ ใช้ receiptNumber ที่ user กรอก (ไม่ fallback ไป waybillNumber)
+        const receiptRef = item.receiptNumber || ''
+        const itemNote = item.note || ''
+
+        console.log('📝 Processing item:', {
+          itemName: item.itemName,
+          receiptNumber: item.receiptNumber,
+          note: item.note,
+          waybillNumber: item.waybillNumber
+        })
+
         rows.push({
           item: item.itemName || '',
           amount: (item.amount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 }),
-          ref: item.receiptNumber || item.waybillNumber || '',
-          note: item.note || '',
+          ref: receiptRef,  // ✅ ใช้เฉพาะ receiptNumber ที่กรอก
+          note: itemNote,   // ✅ ใช้ note ที่กรอก
         })
       })
 
       console.log('✅ Created', rows.length, 'rows')
+      console.log('📊 Sample row:', rows[0])
     }
 
     const total = foundHistory.totalAmount || 0

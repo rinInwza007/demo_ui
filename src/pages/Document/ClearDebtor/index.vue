@@ -51,8 +51,12 @@
                   <InputText
                     v-model="formData.waybillNumber"
                     placeholder="เลขที่นำส่ง"
-                    class="transition-all duration-200 "
+                    class="transition-all duration-200"
                   />
+                  <span v-if="formErrors.form.waybillNumber" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <i class="ph ph-warning-circle"></i>
+                    {{ formErrors.form.waybillNumber }}
+                  </span>
                 </div>
 
                 <div class="flex flex-col gap-2">
@@ -64,6 +68,10 @@
                     placeholder="กรอกชื่อ-นามสกุล"
                     class="transition-all duration-200"
                   />
+                  <span v-if="formErrors.form.fullName" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <i class="ph ph-warning-circle"></i>
+                    {{ formErrors.form.fullName }}
+                  </span>
                 </div>
               </div>
 
@@ -80,6 +88,10 @@
                     class="transition-all duration-200"
                     @keypress="allowOnlyDigits"
                   />
+                  <span v-if="formErrors.form.phone" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <i class="ph ph-warning-circle"></i>
+                    {{ formErrors.form.phone }}
+                  </span>
                 </div>
 
                 <div class="flex flex-col gap-2">
@@ -92,6 +104,10 @@
                     placeholder="เลือกหน่วยงาน"
                     value-type="string"
                   />
+                  <span v-if="formErrors.form.mainCategory" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <i class="ph ph-warning-circle"></i>
+                    {{ formErrors.form.mainCategory }}
+                  </span>
                 </div>
               </div>
 
@@ -108,6 +124,10 @@
                       placeholder="เลือกกองทุน"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.fundName" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.fundName }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -126,6 +146,10 @@
                       ]"
                       :create-new-option="true"
                     />
+                    <span v-if="formErrors.form.sendmoney" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.sendmoney }}
+                    </span>
                   </div>
                 </div>
 
@@ -158,6 +182,10 @@
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.subCategory" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.subCategory }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -170,6 +198,10 @@
                       placeholder="เลือกกองทุน"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.fundName" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.fundName }}
+                    </span>
                   </div>
                 </div>
 
@@ -191,6 +223,10 @@
                       :create-new-option="true"
                       class="mt-[2.5px]"
                     />
+                    <span v-if="formErrors.form.sendmoney" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.sendmoney }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -220,6 +256,10 @@
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.subCategory" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.subCategory }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -234,6 +274,10 @@
                       placeholder="เลือกหน่วยงานย่อย"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.subCategory2" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.subCategory2 }}
+                    </span>
                   </div>
                 </div>
 
@@ -248,6 +292,10 @@
                       placeholder="เลือกกองทุน"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.fundName" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.fundName }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -266,6 +314,10 @@
                       ]"
                       :create-new-option="true"
                     />
+                    <span v-if="formErrors.form.sendmoney" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.sendmoney }}
+                    </span>
                   </div>
                 </div>
 
@@ -591,7 +643,7 @@ const mapAffiliationToMainCategory = (affiliationId: string) => {
     FIN: '', // กองคลัง ไม่ต้องเลือกให้
     UP: '', // มหาวิทยาลัย ไม่ต้องเลือกให้
   }
-  
+
   return mapping[affiliationId] || ''
 }
 // Computed for categories
@@ -797,7 +849,7 @@ onMounted(async () => {
       }
 
       // ❌ ไม่โหลดหน่วยงานหลักจาก receipt (ใช้ของ user แทน)
-      
+
       // ✅ โหลดหน่วยงานรอง (ถ้ามี)
       if (firstReceipt.subAffiliationId1) {
         subCategoryId.value = firstReceipt.subAffiliationId1
@@ -994,7 +1046,7 @@ const validateForm = () => {
   receipts.value.forEach((receipt, receiptIndex) => {
     receipt.items.forEach((item, itemIndex) => {
       const paymentValue = parseFloat(String(item.paymentInput || '0').replace(/,/g, ''))
-      
+
       if (paymentValue > 0) {
         // ถ้ากรอกจำนวนเงิน ต้องกรอกเลขที่ใบเสร็จด้วย
         if (!item.receiptNumber || item.receiptNumber.trim() === '') {
@@ -1013,43 +1065,46 @@ const validateForm = () => {
 
 async function clearAllDebts() {
     const validation = validateForm()
-  
+
   if (validation.hasError) {
+    // อัพเดท formErrors เพื่อให้แสดงใน UI
+    formErrors.value = validation.errors
+
     // สร้างข้อความ error
     let errorHTML = '<div class="text-left space-y-3">'
-    
+
     // แสดง error ข้อมูลผู้ทำรายการ
     if (Object.keys(validation.errors.form).length > 0) {
       errorHTML += '<div class="mb-4">'
       errorHTML += '<p class="font-semibold text-red-600 mb-2">📝 ข้อมูลผู้ทำรายการ:</p>'
       errorHTML += '<ul class="list-disc pl-5 text-sm space-y-1">'
-      
+
       Object.entries(validation.errors.form).forEach(([field, message]) => {
         errorHTML += `<li>${message}</li>`
       })
-      
+
       errorHTML += '</ul></div>'
     }
-    
+
     // แสดง error รายการที่ขาดเลขที่ใบเสร็จ
     const itemErrors = validation.errors.items.filter(e => e)
     if (itemErrors.length > 0) {
       errorHTML += '<div class="mb-4">'
       errorHTML += `<p class="font-semibold text-red-600 mb-2">💰 รายการนำส่งเงิน (${itemErrors.length} รายการ):</p>`
       errorHTML += '<ul class="list-disc pl-5 text-sm space-y-1">'
-      
+
       validation.errors.items.forEach((error, index) => {
         if (error?.receiptNumber) {
           const item = receipts.value[0]?.items[index]
           errorHTML += `<li><strong>รายการ "${item?.itemName}":</strong> ${error.receiptNumber}</li>`
         }
       })
-      
+
       errorHTML += '</ul></div>'
     }
-    
+
     errorHTML += '</div>'
-    
+
     await Swal.fire({
       icon: 'error',
       title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
@@ -1058,9 +1113,13 @@ async function clearAllDebts() {
       confirmButtonColor: '#DC2626',
       width: '600px'
     })
-    
+
     return
   }
+
+  // ✅ ถ้าผ่านการ validate ให้เคลียร์ errors
+  formErrors.value = { form: {}, items: [] }
+
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
@@ -1178,9 +1237,16 @@ async function clearAllDebts() {
       itemName: item.itemName,
       amount: item.paymentAmount,
       isCleared: true,
-      note: item.note || item.receiptNumber || '',
-      receiptNumber: item.receiptNumber
+      receiptNumber: item.receiptNumber || '',  // ✅ เลขที่ใบเสร็จ
+      note: item.note || ''                      // ✅ หมายเหตุ (แยกจาก receiptNumber)
     }))
+
+    console.log('📝 DebtorList to save:')
+    debtorList.forEach((d, i) => {
+      console.log(`   ${i + 1}. ${d.itemName}`)
+      console.log(`      - receiptNumber: "${d.receiptNumber}"`)
+      console.log(`      - note: "${d.note}"`)
+    })
 
     // ✅ 6. เตรียมข้อมูล payments
     const payments = getBankTransfersData().map(p => ({
@@ -1245,7 +1311,7 @@ if (!clearSummaryPayload.mainAffiliationId || !clearSummaryPayload.mainAffiliati
   console.error('   mainCategory:', mainCategory.value)
   console.error('   mainCategoryId:', mainCategoryId.value)
   console.error('   departmentOptions:', departmentOptions.value)
-  
+
   await Swal.fire({
     title: 'ข้อมูลไม่ครบ!',
     text: 'กรุณาเลือกหน่วยงาน',

@@ -51,9 +51,12 @@
                   <InputText
                     v-model="formData.waybillNumber"
                     placeholder="เลขที่นำส่ง"
-                    readonly
-                    class="transition-all duration-200 "
+                    class="transition-all duration-200"
                   />
+                  <span v-if="formErrors.form.waybillNumber" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <i class="ph ph-warning-circle"></i>
+                    {{ formErrors.form.waybillNumber }}
+                  </span>
                 </div>
 
                 <div class="flex flex-col gap-2">
@@ -65,6 +68,10 @@
                     placeholder="กรอกชื่อ-นามสกุล"
                     class="transition-all duration-200"
                   />
+                  <span v-if="formErrors.form.fullName" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <i class="ph ph-warning-circle"></i>
+                    {{ formErrors.form.fullName }}
+                  </span>
                 </div>
               </div>
 
@@ -81,6 +88,10 @@
                     class="transition-all duration-200"
                     @keypress="allowOnlyDigits"
                   />
+                  <span v-if="formErrors.form.phone" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <i class="ph ph-warning-circle"></i>
+                    {{ formErrors.form.phone }}
+                  </span>
                 </div>
 
                 <div class="flex flex-col gap-2">
@@ -93,6 +104,10 @@
                     placeholder="เลือกหน่วยงาน"
                     value-type="string"
                   />
+                  <span v-if="formErrors.form.mainCategory" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <i class="ph ph-warning-circle"></i>
+                    {{ formErrors.form.mainCategory }}
+                  </span>
                 </div>
               </div>
 
@@ -109,6 +124,10 @@
                       placeholder="เลือกกองทุน"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.fundName" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.fundName }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -127,6 +146,10 @@
                       ]"
                       :create-new-option="true"
                     />
+                    <span v-if="formErrors.form.sendmoney" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.sendmoney }}
+                    </span>
                   </div>
                 </div>
 
@@ -159,6 +182,10 @@
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.subCategory" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.subCategory }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -171,6 +198,10 @@
                       placeholder="เลือกกองทุน"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.fundName" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.fundName }}
+                    </span>
                   </div>
                 </div>
 
@@ -192,6 +223,10 @@
                       :create-new-option="true"
                       class="mt-[2.5px]"
                     />
+                    <span v-if="formErrors.form.sendmoney" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.sendmoney }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -221,6 +256,10 @@
                       placeholder="เลือกหน่วยงานรอง"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.subCategory" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.subCategory }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -235,6 +274,10 @@
                       placeholder="เลือกหน่วยงานย่อย"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.subCategory2" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.subCategory2 }}
+                    </span>
                   </div>
                 </div>
 
@@ -249,6 +292,10 @@
                       placeholder="เลือกกองทุน"
                       value-type="string"
                     />
+                    <span v-if="formErrors.form.fundName" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.fundName }}
+                    </span>
                   </div>
 
                   <div class="flex flex-col gap-2">
@@ -267,6 +314,10 @@
                       ]"
                       :create-new-option="true"
                     />
+                    <span v-if="formErrors.form.sendmoney" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <i class="ph ph-warning-circle"></i>
+                      {{ formErrors.form.sendmoney }}
+                    </span>
                   </div>
                 </div>
 
@@ -424,14 +475,13 @@
                 <div class="grid grid-cols-[1.2fr_1.2fr_1fr_0.2fr] gap-3 items-start">
                   <!-- เลขบัญชี -->
                   <div class="flex flex-col gap-1.5">
-                    <BankAccountSelect
-                      placeholder="กรอกเลขบัญชี"
-                      v-model="bank.accountData"
-                      :input-id="`bank-account-${bank.id}`"
-                      :error-message="errors.bankTransfers?.[index]?.accountNumber"
-                      :bank-account-options="bankAccountOptions"
-                      @change="() => clearBankError(index, 'accountNumber', errors)"
-                    />
+<BankAccountSelect
+  placeholder="กรอกเลขบัญชี"
+  v-model="bank.accountData"
+  :input-id="`bank-account-${bank.id}`"
+  :error-message="errors.bankTransfers?.[index]?.accountNumber"
+  @change="() => clearBankError(index, 'accountNumber', errors)"
+/>
                   </div>
 
                   <!-- จำนวนเงิน -->
@@ -532,7 +582,10 @@ import { useSummaryStore } from '@/stores/summary'
 import { reciptService } from '@/services/ReciptService'
 import AffiliationService from '@/services/affiliation/AffiliationService'
 import { departmentOptions, initializeDepartmentOptions } from '@/components/data/TSdepartments'
-
+import { useAuthStore } from '@/stores/auth'
+import { bankAccountOptions } from '@/components/utils/bankHelpers'
+// เพิ่มใน script setup
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const summaryStore = useSummaryStore()
@@ -549,20 +602,10 @@ const {
   formattedTotalBankAmount,
   getBankTransfersData,
 } = useBankTransferManager()
-
-const bankAccountOptions = ref([
-  {
-    accountNumber: '512-1-43488-6',
-    bankName: 'ธ.กรุงไทย',
-    accountName: 'มหาวิทยาลัยพะเยา สาขาพะเยา'
-  },
-  {
-    accountNumber: '891-2-00225-5',
-    bankName: 'ธ.ไทยพาณิชย์',
-    accountName: 'มหาวิทยาลัยพะเยา สาขามหาวิทยาลัย'
-  }
-])
-
+const formErrors = ref({
+  form: {},
+  items: []
+})
 const errors = ref({ bankTransfers: {} })
 const receipts = ref([])
 const allItems = ref([])
@@ -587,7 +630,22 @@ const subCategory2 = ref('')
 const mainCategoryId = ref('')
 const subCategoryId = ref('')
 const subCategoryId2 = ref('')
+// เพิ่มก่อน onMounted
+const mapAffiliationToMainCategory = (affiliationId: string) => {
+  const mapping: Record<string, string> = {
+    ENG: 'คณะวิศวกรรมศาสตร์',
+    NUR: 'คณะพยาบาลศาสตร์',
+    DEN: 'คณะทันตแพทยศาสตร์',
+    HOS: 'โรงพยาบาลมหาวิทยาลัยพะเยา',
+    MED: 'คณะแพทยศาสตร์',
+    PHA: 'คณะเภสัชศาสตร์',
+    ENE: 'คณะพลังงานและสิ่งแวดล้อม',
+    FIN: '', // กองคลัง ไม่ต้องเลือกให้
+    UP: '', // มหาวิทยาลัย ไม่ต้องเลือกให้
+  }
 
+  return mapping[affiliationId] || ''
+}
 // Computed for categories
 const mainCategoryOptions = computed(() => {
   if (!departmentOptions.value) return []
@@ -741,6 +799,18 @@ const loadDepartmentOptions = async () => {
 onMounted(async () => {
   await loadDepartmentOptions()
 
+  // ✅ โหลดหน่วยงานจาก user ก่อนเลย
+  if (authStore.user?.affiliationId) {
+    const defaultCategory = mapAffiliationToMainCategory(authStore.user.affiliationId)
+    if (defaultCategory) {
+      mainCategory.value = defaultCategory
+      const categoryData = departmentOptions.value[defaultCategory]
+      mainCategoryId.value = categoryData?.id || ''
+      console.log('✅ Auto-loaded faculty from user:', mainCategory.value)
+      await nextTick()
+    }
+  }
+
   const raw = localStorage.getItem('clearDebtorSummary')
 
   if (!raw) {
@@ -761,41 +831,43 @@ onMounted(async () => {
 
     const baseReceipts = Array.isArray(summary.receipts) ? summary.receipts : []
 
+    // ✅ โหลดเฉพาะข้อมูลที่ไม่ใช่หน่วยงานหลัก
     if (baseReceipts.length > 0) {
       const firstReceipt = baseReceipts[0]
 
+      // โหลดข้อมูลพื้นฐาน (ไม่รวมหน่วยงานหลัก)
       formData.value = {
-        waybillNumber: firstReceipt.waybillNumber || '',
-        fullName: firstReceipt.fullName || '',
-        phone: firstReceipt.phone || '',
-        affiliationName: firstReceipt.mainAffiliationName || firstReceipt.affiliationName || '',
+        waybillNumber: '',
+        fullName: '',
+        phone: '',
+        affiliationName: mainCategory.value, // ← ใช้ของ user
         subAffiliationName1: firstReceipt.subAffiliationName1 || '',
         subAffiliationName2: firstReceipt.subAffiliationName2 || '',
         fundName: firstReceipt.fundName || '',
-        sendmoney: firstReceipt.sendmoney || '',
-        projectCode: firstReceipt.projectCode || ''
+        sendmoney: '',
+        projectCode: ''
       }
 
-      if (firstReceipt.mainAffiliationId && firstReceipt.mainAffiliationName) {
-        mainCategoryId.value = firstReceipt.mainAffiliationId
-        mainCategory.value = firstReceipt.mainAffiliationName
-        await nextTick()
-      }
+      // ❌ ไม่โหลดหน่วยงานหลักจาก receipt (ใช้ของ user แทน)
 
+      // ✅ โหลดหน่วยงานรอง (ถ้ามี)
       if (firstReceipt.subAffiliationId1) {
         subCategoryId.value = firstReceipt.subAffiliationId1
         subCategory.value = firstReceipt.subAffiliationId1
+        console.log('✅ Loaded subCategory1:', subCategory.value)
         await nextTick()
       }
 
+      // ✅ โหลดหน่วยงานย่อย (ถ้ามี)
       if (firstReceipt.subAffiliationId2) {
         subCategoryId2.value = firstReceipt.subAffiliationId2
         subCategory2.value = firstReceipt.subAffiliationId2
+        console.log('✅ Loaded subCategory2:', subCategory2.value)
         await nextTick()
       }
     }
 
-    // ✅ แยกรายการออกแต่ละอัน (ไม่รวมกัน)
+    // ส่วนที่เหลือเหมือนเดิม
     const allSeparatedItems = []
 
     baseReceipts.forEach(receipt => {
@@ -834,11 +906,11 @@ onMounted(async () => {
     receipts.value = [{
       receiptId: 'MERGED_ALL',
       waybillNumber: 'MERGED_ALL',
-      department: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName || 'รายการรวมทั้งหมด',
+      department: mainCategory.value || 'รายการรวมทั้งหมด', // ← ใช้ของ user
       subDepartment: '',
       items: allSeparatedItems,
       totalDebtorAmount,
-      originalDepartment: baseReceipts[0]?.mainAffiliationName || baseReceipts[0]?.affiliationName,
+      originalDepartment: mainCategory.value, // ← ใช้ของ user
       originalSubDepartment: baseReceipts[0]?.subAffiliationName1,
       fullName: baseReceipts[0]?.fullName || '-',
       phone: baseReceipts[0]?.phone || '-',
@@ -847,8 +919,14 @@ onMounted(async () => {
       _allOriginalReceipts: baseReceipts
     }]
 
-    console.log('✅ Final receipts:', receipts.value.length)
-    console.log('✅ Total items (separated):', totalItemsCount.value)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('✅ Data loaded:')
+    console.log('   📋 Receipts:', receipts.value.length)
+    console.log('   📦 Total items:', totalItemsCount.value)
+    console.log('   🏢 Main category:', mainCategory.value)
+    console.log('   🏢 Main category ID:', mainCategoryId.value)
+    console.log('   💰 Fund name:', formData.value.fundName)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
   } catch (err) {
     console.error('❌ Error:', err)
@@ -913,10 +991,135 @@ const clearBankError = (index, field) => {
   }
 }
 
-// ส่วนที่ต้องแก้ไขในไฟล์ cleardebtor.vue
-// แทนที่ฟังก์ชัน clearAllDebts() เดิมด้วยโค้ดนี้
+// เพิ่มก่อนฟังก์ชัน clearAllDebts
+const validateForm = () => {
+  const errors = {
+    form: {},
+    items: []
+  }
+  let hasError = false
+
+  // ✅ 1. Validate ข้อมูลผู้ทำรายการ
+  if (!formData.value.waybillNumber?.trim()) {
+    errors.form.waybillNumber = 'กรุณากรอกเลขที่นำส่ง'
+    hasError = true
+  }
+
+  if (!formData.value.fullName?.trim()) {
+    errors.form.fullName = 'กรุณากรอกชื่อ-นามสกุล'
+    hasError = true
+  }
+
+  if (!formData.value.phone?.trim()) {
+    errors.form.phone = 'กรุณากรอกเบอร์โทรติดต่อ'
+    hasError = true
+  }
+
+  if (!mainCategory.value || mainCategory.value === 'เลือกทั้งหมด') {
+    errors.form.mainCategory = 'กรุณาเลือกหน่วยงาน'
+    hasError = true
+  }
+
+  if (hasAnySub.value && !subCategory.value) {
+    errors.form.subCategory = 'กรุณาเลือกหน่วยงานรอง'
+    hasError = true
+  }
+
+  if (hasSub2.value && !subCategory2.value) {
+    errors.form.subCategory2 = 'กรุณาเลือกหน่วยงานย่อย'
+    hasError = true
+  }
+
+  if (!formData.value.fundName?.trim()) {
+    errors.form.fundName = 'กรุณาเลือกกองทุน'
+    hasError = true
+  }
+
+  if (!formData.value.sendmoney?.trim()) {
+    errors.form.sendmoney = 'กรุณาเลือกขอนำส่งเงิน'
+    hasError = true
+  }
+
+  // หมายเหตุ: projectCode ไม่ต้อง validate (ไม่บังคับ)
+
+  // ✅ 2. Validate รายการที่มีการกรอกจำนวนเงิน
+  receipts.value.forEach((receipt, receiptIndex) => {
+    receipt.items.forEach((item, itemIndex) => {
+      const paymentValue = parseFloat(String(item.paymentInput || '0').replace(/,/g, ''))
+
+      if (paymentValue > 0) {
+        // ถ้ากรอกจำนวนเงิน ต้องกรอกเลขที่ใบเสร็จด้วย
+        if (!item.receiptNumber || item.receiptNumber.trim() === '') {
+          if (!errors.items[itemIndex]) {
+            errors.items[itemIndex] = {}
+          }
+          errors.items[itemIndex].receiptNumber = 'กรุณากรอกเลขที่ใบเสร็จ'
+          hasError = true
+        }
+      }
+    })
+  })
+
+  return { hasError, errors }
+}
 
 async function clearAllDebts() {
+    const validation = validateForm()
+
+  if (validation.hasError) {
+    // อัพเดท formErrors เพื่อให้แสดงใน UI
+    formErrors.value = validation.errors
+
+    // สร้างข้อความ error
+    let errorHTML = '<div class="text-left space-y-3">'
+
+    // แสดง error ข้อมูลผู้ทำรายการ
+    if (Object.keys(validation.errors.form).length > 0) {
+      errorHTML += '<div class="mb-4">'
+      errorHTML += '<p class="font-semibold text-red-600 mb-2">📝 ข้อมูลผู้ทำรายการ:</p>'
+      errorHTML += '<ul class="list-disc pl-5 text-sm space-y-1">'
+
+      Object.entries(validation.errors.form).forEach(([field, message]) => {
+        errorHTML += `<li>${message}</li>`
+      })
+
+      errorHTML += '</ul></div>'
+    }
+
+    // แสดง error รายการที่ขาดเลขที่ใบเสร็จ
+    const itemErrors = validation.errors.items.filter(e => e)
+    if (itemErrors.length > 0) {
+      errorHTML += '<div class="mb-4">'
+      errorHTML += `<p class="font-semibold text-red-600 mb-2">💰 รายการนำส่งเงิน (${itemErrors.length} รายการ):</p>`
+      errorHTML += '<ul class="list-disc pl-5 text-sm space-y-1">'
+
+      validation.errors.items.forEach((error, index) => {
+        if (error?.receiptNumber) {
+          const item = receipts.value[0]?.items[index]
+          errorHTML += `<li><strong>รายการ "${item?.itemName}":</strong> ${error.receiptNumber}</li>`
+        }
+      })
+
+      errorHTML += '</ul></div>'
+    }
+
+    errorHTML += '</div>'
+
+    await Swal.fire({
+      icon: 'error',
+      title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+      html: errorHTML,
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#DC2626',
+      width: '600px'
+    })
+
+    return
+  }
+
+  // ✅ ถ้าผ่านการ validate ให้เคลียร์ errors
+  formErrors.value = { form: {}, items: [] }
+
   const totalPaymentInputValue = totalPaymentInput.value
   const totalBankValue = totalBankAmount.value
   const paymentDifference = Math.abs(totalPaymentInputValue - totalBankValue)
@@ -935,14 +1138,6 @@ async function clearAllDebts() {
       const paymentValue = parseFloat(String(item.paymentInput || '0').replace(/,/g, ''))
       if (paymentValue > 0) {
         const originalReceipt = item._originalReceipt
-
-        // ✅ Debug: ดูว่ามี waybillNumber หรือไม่
-        console.log('🔍 Checking item:', {
-          itemName: item.itemName,
-          _originalReceipt: originalReceipt,
-          waybillNumber: originalReceipt?.waybillNumber,
-          _originalWaybillNumber: originalReceipt?._originalWaybillNumber
-        })
 
         const waybillNumber = originalReceipt?._originalWaybillNumber ||
                               originalReceipt?.waybillNumber || ''
@@ -1042,9 +1237,16 @@ async function clearAllDebts() {
       itemName: item.itemName,
       amount: item.paymentAmount,
       isCleared: true,
-      note: item.note || item.receiptNumber || '',
-      receiptNumber: item.receiptNumber
+      receiptNumber: item.receiptNumber || '',  // ✅ เลขที่ใบเสร็จ
+      note: item.note || ''                      // ✅ หมายเหตุ (แยกจาก receiptNumber)
     }))
+
+    console.log('📝 DebtorList to save:')
+    debtorList.forEach((d, i) => {
+      console.log(`   ${i + 1}. ${d.itemName}`)
+      console.log(`      - receiptNumber: "${d.receiptNumber}"`)
+      console.log(`      - note: "${d.note}"`)
+    })
 
     // ✅ 6. เตรียมข้อมูล payments
     const payments = getBankTransfersData().map(p => ({
@@ -1068,30 +1270,67 @@ async function clearAllDebts() {
       return found?.name || ''
     }
 
-    // ✅ 8. สร้าง ClearSummary ผ่าน service
-    console.log('💾 Creating clear summary via service...')
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+console.log('💾 Creating clear summary via service...')
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
-    const clearSummary = await clearSummaryService.create({
-      fullName: formData.value.fullName,
-      phone: formData.value.phone,
-      mainAffiliationId: mainCategoryId.value,
-      mainAffiliationName: mainCategory.value,
-      subAffiliationId1: subCategoryId.value,
-      subAffiliationName1: getSubName1(),
-      subAffiliationId2: subCategoryId2.value,
-      subAffiliationName2: getSubName2(),
-      fundName: formData.value.fundName,
-      sendmoney: formData.value.sendmoney,
-      projectCode: formData.value.projectCode,
-      debtorList,
-      payments,
-      totalAmount: totalPaymentInputValue
-    })
+// ✅ Debug: แสดงข้อมูลที่จะส่งไป
+const clearSummaryPayload = {
+  fullName: formData.value.fullName,
+  phone: formData.value.phone,
+  mainAffiliationId: mainCategoryId.value,        // ← ตรวจสอบค่านี้
+  mainAffiliationName: mainCategory.value,        // ← ตรวจสอบค่านี้
+  subAffiliationId1: subCategoryId.value,
+  subAffiliationName1: getSubName1(),
+  subAffiliationId2: subCategoryId2.value,
+  subAffiliationName2: getSubName2(),
+  fundName: formData.value.fundName,
+  sendmoney: formData.value.sendmoney,
+  projectCode: formData.value.projectCode,
+  debtorList,
+  payments,
+  totalAmount: totalPaymentInputValue
+}
 
-    console.log('✅ Clear summary created:', clearSummary.id)
+console.log('📋 Payload to send:')
+console.log('   - fullName:', clearSummaryPayload.fullName)
+console.log('   - phone:', clearSummaryPayload.phone)
+console.log('   - mainAffiliationId:', clearSummaryPayload.mainAffiliationId)     // ← สำคัญ!
+console.log('   - mainAffiliationName:', clearSummaryPayload.mainAffiliationName) // ← สำคัญ!
+console.log('   - subAffiliationId1:', clearSummaryPayload.subAffiliationId1)
+console.log('   - subAffiliationName1:', clearSummaryPayload.subAffiliationName1)
+console.log('   - debtorList:', clearSummaryPayload.debtorList.length, 'items')
+console.log('   - payments:', clearSummaryPayload.payments.length, 'items')
+console.log('   - totalAmount:', clearSummaryPayload.totalAmount)
 
-    // ✅ 9. อัพเดท receipts ที่มีอยู่จริง (ข้าม MERGED_ALL)
-    console.log('🔄 Updating receipts...')
+// ⚠️ ตรวจสอบว่า mainAffiliationId มีค่าหรือไม่
+if (!clearSummaryPayload.mainAffiliationId || !clearSummaryPayload.mainAffiliationName) {
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.error('❌ CRITICAL: Missing affiliation data!')
+  console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.error('   mainCategory:', mainCategory.value)
+  console.error('   mainCategoryId:', mainCategoryId.value)
+  console.error('   departmentOptions:', departmentOptions.value)
+
+  await Swal.fire({
+    title: 'ข้อมูลไม่ครบ!',
+    text: 'กรุณาเลือกหน่วยงาน',
+    icon: 'error',
+    confirmButtonColor: '#DC2626'
+  })
+  return
+}
+
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+const clearSummary = await clearSummaryService.create(clearSummaryPayload)
+
+console.log('✅ Clear summary created:')
+console.log('   - ID:', clearSummary.id)
+console.log('   - Reference:', clearSummary.referenceId)
+console.log('   - mainAffiliationId:', clearSummary.mainAffiliationId)
+console.log('   - mainAffiliationName:', clearSummary.mainAffiliationName)
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
     const grouped = new Map()
     itemsToMark.forEach(item => {
@@ -1110,15 +1349,12 @@ async function clearAllDebts() {
         for (const item of items) {
           const ref = item.receiptNumber || clearSummary.referenceId
 
-          // อัพเดทใน summary store
+          // ✅ อัพเดทใน summary store
           summaryStore.applyDebtClear(waybillNumber, {
             itemName: item.itemName,
             amount: item.paymentAmount,
             ref: ref
           })
-
-          // ⚠️ ไม่ต้อง call applyDebtClearToReceipt เพราะอาจไม่มี receipt จริง
-          // แค่อัพเดทใน store ก็พอ
 
           totalMarkedCount++
           console.log(`      ✅ Cleared: ${item.itemName} - ${formatNumber(item.paymentAmount)} บาท`)
@@ -1130,15 +1366,19 @@ async function clearAllDebts() {
 
     console.log(`✅ Total: Marked ${totalMarkedCount} items`)
 
-    // ✅ 10. Dispatch event
+    // ✅ 10. บันทึกสถานะลง localStorage
+    summaryStore.saveToLocalStorage()
+    console.log('💾 Summary state saved to localStorage')
+
+    // ✅ 11. Dispatch event
     window.dispatchEvent(new CustomEvent('receipts-updated', {
       detail: { action: 'clear' }
     }))
 
-    // ✅ 11. เคลียร์ localStorage
+    // ✅ 12. เคลียร์ localStorage
     localStorage.removeItem('clearDebtorSummary')
 
-    // ✅ 12. แสดงผลสำเร็จ
+    // ✅ 13. แสดงผลสำเร็จ
     await Swal.fire({
       title: 'ล้างหนี้สำเร็จ!',
       html: `

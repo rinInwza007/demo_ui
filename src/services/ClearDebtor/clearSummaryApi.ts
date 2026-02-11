@@ -1,4 +1,4 @@
-// src/fake/api/clearSummaryApi.ts
+// src//services/clearDebtor/clearSummaryApi.ts
 
 import type { ClearSummary, CreateClearSummaryInput } from '@/types/summary'
 
@@ -82,29 +82,76 @@ export function createClearSummary(input: CreateClearSummaryInput): ClearSummary
 /**
  * Get all clear summaries with optional filters
  */
+// src/fake/api/clearSummaryApi.ts
+
 export function getClearSummaries(filters?: {
   affiliationId?: string
   startDate?: string
   endDate?: string
 }): ClearSummary[] {
-  let db = loadDB()
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log('🔍 [getClearSummaries] Fetching...')
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log('   Filters:', filters)
 
-  // Apply filters
+  let db = loadDB()
+  console.log('   Total in DB:', db.length)
+
+  // ✅ แก้ไข: กรองทั้ง mainAffiliationId และ affiliationId
   if (filters?.affiliationId) {
-    db = db.filter(s => s.mainAffiliationId === filters.affiliationId)
+    const before = db.length
+    db = db.filter(s => {
+      // ✅ เช็คทั้ง mainAffiliationId (ใหม่) และ affiliationId (เก่า)
+      return s.mainAffiliationId === filters.affiliationId || 
+             (s as any).affiliationId === filters.affiliationId
+    })
+    console.log(`   → Filtered by affiliationId: ${before} → ${db.length}`)
+    console.log(`   → Looking for: "${filters.affiliationId}"`)
+    
+    // ✅ Debug: แสดงว่ามี affiliationId อะไรบ้าง
+    if (db.length === 0 && before > 0) {
+      console.warn('   ⚠️ No matches found. Available affiliationIds:')
+      const allAffIds = loadDB().map(s => ({
+        main: s.mainAffiliationId,
+        name: s.mainAffiliationName
+      }))
+      console.table(allAffIds)
+    }
   }
 
+  // Filter by date range
   if (filters?.startDate && filters?.endDate) {
     const start = new Date(filters.startDate).getTime()
     const end = new Date(filters.endDate).getTime()
+    const before = db.length
 
     db = db.filter(s => {
       const date = new Date(s.createdAt).getTime()
       return date >= start && date <= end
     })
+    
+    console.log(`   → Filtered by date: ${before} → ${db.length}`)
   }
 
-  console.log('📋 Fetched clear summaries:', db.length)
+  // Sort by date (newest first)
+  db.sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
+
+  console.log('✅ [getClearSummaries] Returning:', db.length, 'summaries')
+  
+  if (db.length > 0) {
+    console.log('   Sample:', {
+      id: db[0].id,
+      reference: db[0].referenceId,
+      name: db[0].fullName,
+      mainAffId: db[0].mainAffiliationId,
+      mainAffName: db[0].mainAffiliationName,
+      debtors: db[0].debtorList?.length || 0
+    })
+  }
+  
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
   return db
 }

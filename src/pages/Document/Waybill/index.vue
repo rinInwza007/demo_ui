@@ -1524,6 +1524,7 @@ const subId = ref('')
 const isApprovedMode = ref(false)
 const originalApprovalStatus = ref('pending')
 
+
 const {
   allowOnlyDigits,
   updateItemId,
@@ -1695,7 +1696,7 @@ const saveTemplate = () => {
       fundName: formData.value.fundName,
       sendmoney: formData.value.sendmoney,
       projectCode: formData.value.projectCode,
-      
+
       // ✅ เก็บข้อมูล Category
       mainCategoryId: mainCategoryId.value,
       mainCategory: mainCategory.value,
@@ -1703,7 +1704,7 @@ const saveTemplate = () => {
       subCategory: subCategory.value,
       subCategoryId2: subCategoryId2.value,
       subCategory2: subCategory2.value,
-      
+
       // ✅ เก็บรายการ
       receiptItems: receiptItems.map((item) => ({
         itemId: getItemByName(item.itemName)?.id,
@@ -1788,7 +1789,7 @@ const loadTemplate = async (template) => {
     addRow()
     addRow()
   }
-  
+
   await nextTick()
 
   showLoadDialog.value = false
@@ -2634,7 +2635,7 @@ const loadReceiptData = async () => {
 
     // ✅ 2. โหลดข้อมูลพื้นฐานจาก profile
     formData.value.waybillNumber = data.waybillNumber || data.id || ''
-    
+
     // ✅ อ่านจาก profile object (รองรับทั้งโครงสร้างเก่าและใหม่)
     formData.value.fullName = data.profile?.fullName || data.fullName || ''
     formData.value.phone = data.profile?.phone || data.phone || ''
@@ -2645,7 +2646,7 @@ const loadReceiptData = async () => {
     // ✅ 3. โหลด Main Category
     const mainAffId = data.profile?.mainAffiliationId || data.mainAffiliationId
     const mainAffName = data.profile?.mainAffiliationName || data.mainAffiliationName
-    
+
     if (mainAffId && mainAffName) {
       mainCategoryId.value = mainAffId
       mainCategory.value = mainAffName
@@ -2655,7 +2656,7 @@ const loadReceiptData = async () => {
 
     // ✅ 4. โหลด Sub Category 1
     const subAffId1 = data.profile?.subAffiliationId1 || data.subAffiliationId1
-    
+
     if (subAffId1) {
       subCategoryId.value = subAffId1
       subCategory.value = subAffId1
@@ -2665,7 +2666,7 @@ const loadReceiptData = async () => {
 
     // ✅ 5. โหลด Sub Category 2
     const subAffId2 = data.profile?.subAffiliationId2 || data.subAffiliationId2
-    
+
     if (subAffId2) {
       subCategoryId2.value = subAffId2
       subCategory2.value = subAffId2
@@ -2748,7 +2749,7 @@ const loadReceiptData = async () => {
       })
 
       await nextTick()
-      
+
       // ✅ 7. Format amount สำหรับทุกช่องทาง
       morelist.value.forEach((row, index) => {
         const isReceivable = isReceivableItem(row.itemName)
@@ -3156,7 +3157,7 @@ const saveData = async () => {
     // ✅ Validate ส่วนที่ 2: รายการนำส่งเงิน
     // ========================================
     errors.value.rows = {}
-    
+
     // นับจำนวนรายการที่มีข้อมูล
     const validRowsCount = morelist.value.filter(row => {
       const hasItemName = row.itemName && row.itemName.trim() !== ''
@@ -3207,7 +3208,7 @@ const saveData = async () => {
           rowErrors.paymentTypes = 'กรุณาเลือกช่องทางการชำระเงินอย่างน้อย 1 ช่องทาง'
         } else {
           // 4. Validate จำนวนเงินในแต่ละช่องทาง
-          
+
           // 4.1 เงินสด
           if (row.paymentTypes?.cash) {
             const cashAmount = parseFloat(String(row.cashDetails?.amount || '0').replace(/,/g, ''))
@@ -3239,7 +3240,7 @@ const saveData = async () => {
             if (!transferAmount || transferAmount <= 0) {
               rowErrors.transferAmount = 'กรุณากรอกจำนวนเงินโอน'
             }
-            if (!row.transferDetails?.accountData?.accountNumber || 
+            if (!row.transferDetails?.accountData?.accountNumber ||
                 row.transferDetails.accountData.accountNumber.trim() === '') {
               rowErrors.transferAccount = 'กรุณาเลือกบัญชีธนาคาร'
             }
@@ -3248,7 +3249,7 @@ const saveData = async () => {
           // 5. Validate ยอดรวมจากช่องทางการชำระ
           const totalPaymentAmount = calculatePaymentTotal(index)
           const mainAmount = parseFloat(String(row.amount || '0').replace(/,/g, ''))
-          
+
           if (Math.abs(totalPaymentAmount - mainAmount) > 0.01) {
             rowErrors.paymentMismatch = `ยอดรวมจากช่องทางการชำระ (${formatCurrency(totalPaymentAmount)} บาท) ไม่ตรงกับจำนวนเงินรวม (${formatCurrency(mainAmount)} บาท)`
           }
@@ -3268,7 +3269,7 @@ const saveData = async () => {
     if (hasError) {
       const section1Errors = []
       const section2ErrorCount = Object.keys(errors.value.rows || {}).length
-      
+
       // รวบรวม error ส่วนที่ 1
       if (errors.value.waybillNumber) section1Errors.push('เลขที่นำส่ง')
       if (errors.value.fullName) section1Errors.push('ชื่อ-นามสกุล')
@@ -3295,7 +3296,7 @@ const saveData = async () => {
       })
 
       let errorHTML = '<div class="text-left">'
-      
+
       // แสดง error ส่วนที่ 1
       if (section1Errors.length > 0) {
         errorHTML += `
@@ -3341,7 +3342,7 @@ const saveData = async () => {
           htmlContainer: 'text-left'
         }
       })
-      
+
       return
     }
   }
@@ -3420,6 +3421,7 @@ const saveData = async () => {
     }
   })
 
+
   const getSubName1 = () => {
     if (!subCategoryId.value) return ''
     const found = sub1OptionsArray.value.find((opt) => opt.id === subCategoryId.value)
@@ -3433,28 +3435,56 @@ const saveData = async () => {
   }
 
   const payload = {
-    waybillNumber: formData.value.waybillNumber,
-    profile: {
-      fullName: formData.value.fullName,
-      phone: formData.value.phone,
-      fundName: formData.value.fundName,
-      projectCode: formData.value.projectCode,
-      moneyType: formData.value.sendmoney,
-      sendmoney: formData.value.sendmoney,
-      affiliationId: authStore.user?.affiliationId || '',
-      affiliationName: authStore.user?.affiliation || mainCategory.value,
-      mainAffiliationId: mainCategoryId.value,
-      mainAffiliationName: mainCategory.value,
-      subAffiliationId1: subCategoryId.value,
-      subAffiliationName1: getSubName1(),
-      subAffiliationId2: subCategoryId2.value,
-      subAffiliationName2: getSubName2(),
-    },
+  waybillNumber: formData.value.waybillNumber,
+  fullName: formData.value.fullName,  // ✅ ย้ายออกมาจาก profile
+  phone: formData.value.phone || '',  // ✅ ย้ายออกมาจาก profile
 
-    netTotalAmount: netTotalAmount.value,
-    receiptList: validRows,
-    approvalStatus: originalApprovalStatus.value,
-  }
+ affiliationId: authStore.user?.affiliationId || mainCategoryId.value || '',
+
+  netTotalAmount: netTotalAmount.value,
+  totalPaymentAmount: netTotalAmount.value, // ✅ เพิ่ม (ใช้ค่าเดียวกับ netTotalAmount)
+
+  paymentMethods: {  // ✅ เพิ่ม - รวม payment methods ทั้งหมด
+    cash: validRows.some(r => r.paymentTypes?.cash),
+    check: validRows.some(r => r.paymentTypes?.check),
+    transfer: validRows.some(r => r.paymentTypes?.transfer)
+  },
+
+  bankTransfers: validRows
+    .filter(r => r.transferDetails?.accountData)
+    .map(r => r.transferDetails.accountData), // ✅ เพิ่ม
+
+  profile: {
+    fundName: formData.value.fundName,
+    projectCode: formData.value.projectCode,
+    moneyType: formData.value.sendmoney,
+    sendmoney: formData.value.sendmoney,
+    affiliationName: authStore.user?.affiliation || mainCategory.value,
+    mainAffiliationId: mainCategoryId.value,
+    mainAffiliationName: mainCategory.value,
+    subAffiliationId1: subCategoryId.value,
+    subAffiliationName1: getSubName1(),
+    subAffiliationId2: subCategoryId2.value,
+    subAffiliationName2: getSubName2(),
+  },
+
+  receiptList: validRows,
+  approvalStatus: originalApprovalStatus.value || 'pending', // ✅ ใส่ default
+}
+
+if (!payload.affiliationId) {
+  await Swal.fire({
+    icon: 'error',
+    title: 'ข้อมูลไม่ครบถ้วน',
+    text: 'ไม่สามารถระบุหน่วยงานได้ กรุณาตรวจสอบข้อมูล',
+    confirmButtonText: 'ตกลง',
+    confirmButtonColor: '#DC2626',
+  })
+  return
+}
+
+
+
 
   if (isEditMode.value) {
     payload.id = formData.value.waybillNumber

@@ -1,12 +1,10 @@
-// src/services/itemName/itemNameApi.ts
-import axios from 'axios'
-import type { Item } from '@/types/recipt'
+import type { Item, ItemType } from '@/types/recipt'
+import http from '@/lib/http'
 
 /**
  * ========================================
- * ItemName API Layer
- * - ทำหน้าที่เป็น API Client
- * - รองรับทั้ง Real API และ Mock API
+ * Item API Layer (Real API)
+ * Backend base route: /items
  * ========================================
  */
 
@@ -19,145 +17,152 @@ export interface ItemNameFilters {
 export interface ItemNameCreatePayload {
   name: string
   type: 'income' | 'receivable'
-  affiliationId?: string
+  affiliationId: string
+  userId: string
 }
 
 export interface ItemNameUpdatePayload {
-  id: number
+  id: string
   name?: string
   type?: 'income' | 'receivable'
   affiliationId?: string
 }
 
 /**
- * ✅ GET /item-names - ดึงรายการทั้งหมด
+ * ========================================
+ * Utils
+ * ========================================
  */
-export const fetchItemNames = async (filters?: ItemNameFilters): Promise<Item[]> => {
+const mapToBackendType = (type: 'income' | 'receivable'): ItemType =>
+  type === 'income' ? 'RECEIPT' : 'DEBTOR'
+
+/**
+ * ========================================
+ * API Functions
+ * ========================================
+ */
+
+/**
+ * ✅ GET /items
+ */
+export const fetchItemNames = async (
+  filters?: ItemNameFilters
+): Promise<Item[]> => {
   try {
     const params = new URLSearchParams()
-    
+
     if (filters?.type && filters.type !== 'all') {
-      params.append('type', filters.type)
+      params.append('type', mapToBackendType(filters.type))
     }
-    
+
     if (filters?.affiliationId) {
       params.append('affiliationId', filters.affiliationId)
     }
-    
+
     if (filters?.search) {
       params.append('search', filters.search)
     }
 
-    const queryString = params.toString()
-    const url = queryString ? `/item-names?${queryString}` : '/item-names'
-    
+    const query = params.toString()
+    const url = query ? `/items?${query}` : '/items'
+
     console.log('📡 [API] GET', url)
-    
-    const response = await axios.get<{ success: boolean; data: Item[] }>(url)
-    
-    console.log('✅ [API] Fetched items:', response.data.data.length)
-    
-    return response.data.data
+
+    const response = await http.get<Item[]>(url)
+
+    console.log('✅ [API] Fetched items:', response.data.length)
+
+    return response.data
   } catch (error) {
-    console.error('❌ [API] Error fetching item names:', error)
+    console.error('❌ [API] Error fetching items:', error)
     throw error
   }
 }
 
 /**
- * ✅ GET /item-names/:id - ดึงรายการตาม ID
+ * ✅ GET /items/:id
  */
-export const fetchItemNameById = async (id: number): Promise<Item> => {
+export const fetchItemNameById = async (id: string): Promise<Item> => {
   try {
-    console.log('📡 [API] GET /item-names/', id)
-    
-    const response = await axios.get<{ success: boolean; data: Item }>(`/item-names/${id}`)
-    
-    console.log('✅ [API] Fetched item:', response.data.data.name)
-    
-    return response.data.data
+    console.log('📡 [API] GET /items/', id)
+
+    const response = await http.get<Item>(`/items/${id}`)
+
+    console.log('✅ [API] Fetched item:', response.data.name)
+
+    return response.data
   } catch (error) {
-    console.error('❌ [API] Error fetching item name by ID:', error)
+    console.error('❌ [API] Error fetching item by ID:', error)
     throw error
   }
 }
 
 /**
- * ✅ POST /item-names - สร้างรายการใหม่
+ * ✅ POST /items
  */
-export const createItemName = async (payload: ItemNameCreatePayload): Promise<Item> => {
+export const createItemName = async (
+  payload: ItemNameCreatePayload
+): Promise<Item> => {
   try {
-    console.log('📡 [API] POST /item-names', payload)
-    
-    const response = await axios.post<{ success: boolean; data: Item }>('/item-names', payload)
-    
-    console.log('✅ [API] Created item:', response.data.data.name)
-    
-    return response.data.data
+    const body = {
+      ...payload,
+      type: mapToBackendType(payload.type),
+    }
+
+    console.log('📡 [API] POST /items', body)
+
+    const response = await http.post<Item>('/items', body)
+
+    console.log('✅ [API] Created item:', response.data.name)
+
+    return response.data
   } catch (error) {
-    console.error('❌ [API] Error creating item name:', error)
+    console.error('❌ [API] Error creating item:', error)
     throw error
   }
 }
 
 /**
- * ✅ PUT /item-names/:id - อัปเดตรายการ
+ * ✅ PUT /items/:id
  */
-export const updateItemName = async (payload: ItemNameUpdatePayload): Promise<Item> => {
+export const updateItemName = async (
+  payload: ItemNameUpdatePayload
+): Promise<Item> => {
   try {
-    console.log('📡 [API] PUT /item-names/', payload.id)
-    
-    const { id, ...updateData } = payload
-    
-    const response = await axios.put<{ success: boolean; data: Item }>(
-      `/item-names/${id}`,
-      updateData
-    )
-    
-    console.log('✅ [API] Updated item:', response.data.data.name)
-    
-    return response.data.data
+    const { id, type, ...rest } = payload
+
+    const body: any = { ...rest }
+
+    if (type) {
+      body.type = mapToBackendType(type)
+    }
+
+    console.log('📡 [API] PUT /items/', id, body)
+
+    const response = await http.put<Item>(`/items/${id}`, body)
+
+    console.log('✅ [API] Updated item:', response.data.name)
+
+    return response.data
   } catch (error) {
-    console.error('❌ [API] Error updating item name:', error)
+    console.error('❌ [API] Error updating item:', error)
     throw error
   }
 }
 
 /**
- * ✅ DELETE /item-names/:id - ลบรายการ
+ * ✅ DELETE /items/:id
  */
-export const deleteItemName = async (id: number): Promise<void> => {
+export const deleteItemName = async (id: string): Promise<void> => {
   try {
-    console.log('📡 [API] DELETE /item-names/', id)
-    
-    await axios.delete(`/item-names/${id}`)
-    
+    console.log('📡 [API] DELETE /items/', id)
+
+    await http.delete(`/items/${id}`)
+
     console.log('✅ [API] Deleted item:', id)
   } catch (error) {
-    console.error('❌ [API] Error deleting item name:', error)
+    console.error('❌ [API] Error deleting item:', error)
     throw error
   }
 }
 
-/**
- * ✅ GET /item-names/check-duplicate - ตรวจสอบชื่อซ้ำ
- */
-export const checkDuplicateItemName = async (name: string, excludeId?: number): Promise<boolean> => {
-  try {
-    const params = new URLSearchParams({ name })
-    if (excludeId) {
-      params.append('excludeId', excludeId.toString())
-    }
-    
-    console.log('📡 [API] GET /item-names/check-duplicate?', params.toString())
-    
-    const response = await axios.get<{ exists: boolean }>(`/item-names/check-duplicate?${params}`)
-    
-    console.log('✅ [API] Duplicate check result:', response.data.exists)
-    
-    return response.data.exists
-  } catch (error) {
-    console.error('❌ [API] Error checking duplicate:', error)
-    throw error
-  }
-}

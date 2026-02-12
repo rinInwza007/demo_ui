@@ -59,137 +59,155 @@
               </p>
             </div>
 
-            <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              <div class="col-span-3">รายการ</div>
-              <div class="col-span-3 text-right">ยอดหนี้เริ่มต้น</div>
-              <div class="col-span-3 text-right">ยอดที่ล้างแล้ว</div>
-              <div class="col-span-3 text-right">ยอดคงเหลือ</div>
-            </div>
-
-            <div class="overflow-y-auto flex-1 p-6">
-              <div v-if="filteredItems.length === 0" class="text-center py-12 text-slate-500">
-                <i class="ph ph-folder-open text-6xl mb-4 opacity-30"></i>
-                <p>ไม่พบรายการลูกหนี้ที่ยังไม่ได้ล้าง</p>
-              </div>
-
-              <div v-else class="space-y-2">
-                <div
-                  v-for="item in paginatedItemsNew"
-                  :key="item.id"
-                  @click="toggleSelectItem(item.id)"
-                  class="grid grid-cols-12 gap-4 px-4 py-3 cursor-pointer
-                       transition-colors duration-150
-                       rounded-xl items-center"
-                  :class="selectedItems.has(item.id)
-                    ? 'bg-blue-50'
-                    : 'hover:bg-slate-50'"
-                >
-                  <!-- Checkbox + รายการ (col-span-3) -->
-                  <div class="col-span-3 flex items-center gap-3">
-                    <div
-                      class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
-                             border transition-all duration-150"
-                      :class="selectedItems.has(item.id)
-                        ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                        : 'bg-white text-slate-400 border-slate-300 group-hover:border-green-400'"
-                    >
-                      <i
-                        class="ph-bold text-sm leading-none"
-                        :class="selectedItems.has(item.id) ? 'ph-check' : ''"
-                      ></i>
-                    </div>
-                    <div class="min-w-0">
-                      <p class="font-bold text-slate-800 text-sm truncate">
-                        {{ item.itemName }}
-                      </p>
-                      <p class="text-xs text-slate-500 truncate">
-                        {{ item.department }} • {{ item.subDepartment }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <!-- ยอดหนี้เริ่มต้น (col-span-3) -->
-                  <div class="col-span-3 text-right">
-                    <p class="text-base font-bold text-slate-700">
-                       {{ formatCurrency(item.originalAmount || 0) }}
-                    </p>
-                  </div>
-
-                  <!-- ยอดที่ล้างแล้ว (col-span-3) -->
-                  <div class="col-span-3 text-right">
-                    <p class="text-base font-bold text-green-600">
-                       {{ formatCurrency(item.paidAmount || 0) }}
-                    </p>
-                  </div>
-
-                  <!-- ยอดคงเหลือ (col-span-3) -->
-                  <div class="col-span-3 text-right">
-                    <p class="text-base font-bold text-red-600">
-                      {{ formatCurrency(item.balance || 0) }}
-                    </p>
+            <!-- ✅ Loading State for New Tab -->
+            <div v-if="isLoading" class="flex-1 flex items-center justify-center">
+              <div class="flex flex-col items-center gap-4">
+                <div class="relative">
+                  <!-- Spinner Circle -->
+                  <div class="w-16 h-16 rounded-full border-4 border-green-200 border-t-green-600 animate-spin"></div>
+                  <!-- Inner Circle -->
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="ph ph-money text-2xl text-green-600 animate-pulse"></i>
                   </div>
                 </div>
+                <p class="text-sm text-slate-600 font-medium animate-pulse">กำลังโหลดรายการลูกหนี้...</p>
               </div>
             </div>
 
-            <!-- Pagination Controls for New Tab -->
-            <div v-if="totalPagesNew > 1" class="px-6 py-3 border-t border-white/40 bg-white/5 flex items-center justify-center flex-shrink-0">
-              <div class="flex items-center gap-2">
-                <button
-                  @click="goToPageNew(currentPageNew - 1)"
-                  :disabled="currentPageNew === 1"
-                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  <i class="ph ph-caret-left text-lg"></i>
-                </button>
+            <!-- ✅ Data Content -->
+            <div v-else class="flex-1 flex flex-col min-h-0">
+              <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/40 bg-white/10 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div class="col-span-3">รายการ</div>
+                <div class="col-span-3 text-right">ยอดหนี้เริ่มต้น</div>
+                <div class="col-span-3 text-right">ยอดที่ล้างแล้ว</div>
+                <div class="col-span-3 text-right">ยอดคงเหลือ</div>
+              </div>
 
-                <template v-for="page in totalPagesNew" :key="page">
-                  <button
-                    v-if="page === 1 || page === totalPagesNew || (page >= currentPageNew - 1 && page <= currentPageNew + 1)"
-                    @click="goToPageNew(page)"
-                    class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
-                    :class="currentPageNew === page
-                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md'
-                      : 'glass-input text-slate-600 hover:text-purple-600'"
+              <div class="overflow-y-auto flex-1 p-6">
+                <div v-if="filteredItems.length === 0" class="text-center py-12 text-slate-500">
+                  <i class="ph ph-folder-open text-6xl mb-4 opacity-30"></i>
+                  <p>ไม่พบรายการลูกหนี้ที่ยังไม่ได้ล้าง</p>
+                </div>
+
+                <div v-else class="space-y-2">
+                  <div
+                    v-for="item in paginatedItemsNew"
+                    :key="item.id"
+                    @click="toggleSelectItem(item.id)"
+                    class="grid grid-cols-12 gap-4 px-4 py-3 cursor-pointer
+                         transition-colors duration-150
+                         rounded-xl items-center"
+                    :class="selectedItems.has(item.id)
+                      ? 'bg-blue-50'
+                      : 'hover:bg-slate-50'"
                   >
-                    {{ page }}
-                  </button>
-                  <span v-else-if="page === currentPageNew - 2 || page === currentPageNew + 2" class="text-slate-400 px-1">...</span>
-                </template>
+                    <!-- Checkbox + รายการ (col-span-3) -->
+                    <div class="col-span-3 flex items-center gap-3">
+                      <div
+                        class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
+                               border transition-all duration-150"
+                        :class="selectedItems.has(item.id)
+                          ? 'bg-green-600 text-white border-green-600 shadow-sm'
+                          : 'bg-white text-slate-400 border-slate-300 group-hover:border-green-400'"
+                      >
+                        <i
+                          class="ph-bold text-sm leading-none"
+                          :class="selectedItems.has(item.id) ? 'ph-check' : ''"
+                        ></i>
+                      </div>
+                      <div class="min-w-0">
+                        <p class="font-bold text-slate-800 text-sm truncate">
+                          {{ item.itemName }}
+                        </p>
+                        <p class="text-xs text-slate-500 truncate">
+                          {{ item.department }} • {{ item.subDepartment }}
+                        </p>
+                      </div>
+                    </div>
 
-                <button
-                  @click="goToPageNew(currentPageNew + 1)"
-                  :disabled="currentPageNew === totalPagesNew"
-                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  <i class="ph ph-caret-right text-lg"></i>
-                </button>
-              </div>
-            </div>
+                    <!-- ยอดหนี้เริ่มต้น (col-span-3) -->
+                    <div class="col-span-3 text-right">
+                      <p class="text-base font-bold text-slate-700">
+                         {{ formatCurrency(item.originalAmount || 0) }}
+                      </p>
+                    </div>
 
-            <div class="px-6 py-4 border-t border-white/40 bg-white/10 flex-shrink-0">
-              <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-6">
-                  <div class="text-center">
-                    <p class="text-xs text-slate-500 mb-1">รายการที่เลือก</p>
-                    <p class="text-2xl font-bold text-blue-600">{{ selectedItems.size }}</p>
-                  </div>
-                  <div class="h-12 w-px bg-slate-300"></div>
-                  <div class="text-center">
-                    <p class="text-xs text-slate-500 mb-1">ยอดรวม</p>
-                    <p class="text-2xl font-bold text-red-600">{{ formatCurrency(selectedTotal) }}</p>
+                    <!-- ยอดที่ล้างแล้ว (col-span-3) -->
+                    <div class="col-span-3 text-right">
+                      <p class="text-base font-bold text-green-600">
+                         {{ formatCurrency(item.paidAmount || 0) }}
+                      </p>
+                    </div>
+
+                    <!-- ยอดคงเหลือ (col-span-3) -->
+                    <div class="col-span-3 text-right">
+                      <p class="text-base font-bold text-red-600">
+                        {{ formatCurrency(item.balance || 0) }}
+                      </p>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <button
-                  @click="clearSelectedDebtors"
-                  :disabled="selectedItems.size === 0"
-                  class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white"
-                >
-                  <i class="ph ph-broom text-lg"></i>
-                  ดำเนินการล้างหนี้
-                </button>
+              <!-- Pagination Controls for New Tab -->
+              <div v-if="totalPagesNew > 1" class="px-6 py-3 border-t border-white/40 bg-white/5 flex items-center justify-center flex-shrink-0">
+                <div class="flex items-center gap-2">
+                  <button
+                    @click="goToPageNew(currentPageNew - 1)"
+                    :disabled="currentPageNew === 1"
+                    class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    <i class="ph ph-caret-left text-lg"></i>
+                  </button>
+
+                  <template v-for="page in totalPagesNew" :key="page">
+                    <button
+                      v-if="page === 1 || page === totalPagesNew || (page >= currentPageNew - 1 && page <= currentPageNew + 1)"
+                      @click="goToPageNew(page)"
+                      class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
+                      :class="currentPageNew === page
+                        ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md'
+                        : 'glass-input text-slate-600 hover:text-purple-600'"
+                    >
+                      {{ page }}
+                    </button>
+                    <span v-else-if="page === currentPageNew - 2 || page === currentPageNew + 2" class="text-slate-400 px-1">...</span>
+                  </template>
+
+                  <button
+                    @click="goToPageNew(currentPageNew + 1)"
+                    :disabled="currentPageNew === totalPagesNew"
+                    class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    <i class="ph ph-caret-right text-lg"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="px-6 py-4 border-t border-white/40 bg-white/10 flex-shrink-0">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div class="flex items-center gap-6">
+                    <div class="text-center">
+                      <p class="text-xs text-slate-500 mb-1">รายการที่เลือก</p>
+                      <p class="text-2xl font-bold text-blue-600">{{ selectedItems.size }}</p>
+                    </div>
+                    <div class="h-12 w-px bg-slate-300"></div>
+                    <div class="text-center">
+                      <p class="text-xs text-slate-500 mb-1">ยอดรวม</p>
+                      <p class="text-2xl font-bold text-red-600">{{ formatCurrency(selectedTotal) }}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    @click="clearSelectedDebtors"
+                    :disabled="selectedItems.size === 0"
+                    class="px-8 py-3 rounded-xl font-medium shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white"
+                  >
+                    <i class="ph ph-broom text-lg"></i>
+                    ดำเนินการล้างหนี้
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -378,6 +396,8 @@
     </div>
   </div>
 </template>
+
+
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, onActivated } from 'vue'
@@ -593,7 +613,7 @@ const selectedTotal = computed(() =>
  * ========================= */
 const clearSelectedDebtors = async () => {
   console.log('🚀 clearSelectedDebtors called')
-  
+
   if (selectedItems.value.size === 0) {
     await Swal.fire({
       title: 'ไม่พบรายการ',
@@ -747,7 +767,7 @@ onMounted(async () => {
 
 onActivated(async () => {
   console.log('🔄 Component activated - reloading data')
-  
+
   selectedItems.value.clear()
   await loadDataFromStore()
   loadHistory()

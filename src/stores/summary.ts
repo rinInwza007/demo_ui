@@ -1,31 +1,18 @@
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
+import type { Receipt } from '@/types/recipt' // ✅ import จาก types หลัก
 
 /* =========================
-   Types (ปรับตามโปรเจคมึงได้)
+   Types (เฉพาะที่ summary ใช้เอง)
 ========================= */
 export interface ReceiptItem {
   type: string
   itemName: string
   amount: number
+  isCancelled?: boolean // ✅ เพิ่มถ้า ReciptService ใช้
 }
 
-export interface Receipt {
-  id: string
-  waybillNumber: string
-
-  fullName: string
-
-  affiliationId: string
-  affiliationName: string
-
-  subAffiliationName1?: string
-  subAffiliationName2?: string
-
-  netTotalAmount: number
-
-  receiptList: ReceiptItem[]
-}
+// ✅ ลบ Receipt interface ออก - ใช้จาก @/types/recipt แทน
 
 export interface Debtor {
   itemName: string
@@ -118,7 +105,7 @@ export const useSummaryStore = defineStore('summary', {
        Ingest Receipt (ครั้งแรก / update receipt)
     ========================= */
 
-    ingestUpsert(receipt: Receipt) {
+    ingestUpsert(receipt: Receipt, action?: string) {
       const docKey = receipt.id || receipt.waybillNumber
       if (!docKey) return
 
@@ -137,23 +124,52 @@ export const useSummaryStore = defineStore('summary', {
     },
 
     /* =========================
+       ✅ Ingest Many Receipts
+    ========================= */
+
+    ingestMany(receipts: Receipt[]) {
+      receipts.forEach((receipt) => {
+        this.ingestUpsert(receipt)
+      })
+    },
+
+    /* =========================
+       ✅ Delete Receipt
+    ========================= */
+
+    ingestDelete(docKey: string) {
+      // rollback ledger ก่อน
+      if (this.ledgerByDoc[docKey]) {
+        this.rollbackLedger(this.ledgerByDoc[docKey])
+      }
+
+      // ลบออกจาก storage
+      delete this.receiptsByDoc[docKey]
+      delete this.debtorsByDoc[docKey]
+      delete this.ledgerByDoc[docKey]
+    },
+
+    /* =========================
        Build debtor ครั้งแรกจาก receipt
     ========================= */
 
     buildInitialDebtors(receipt: Receipt): Debtor[] {
       const list: Debtor[] = []
 
-      receipt.receiptList.forEach((item) => {
+      // ✅ ใช้ optional chaining เพราะ receiptList อาจเป็น array ของ type ต่างกัน
+      if (!Array.isArray(receipt.receiptList)) return list
+
+      receipt.receiptList.forEach((item: any) => {
         // filter ตามระบบมึง
         if (item.type !== 'income') return
-        if (!item.itemName.includes('ลูกหนี้')) return
+        if (!item.itemName?.includes('ลูกหนี้')) return
 
         list.push({
           itemName: item.itemName,
 
-          originalAmount: item.amount,
+          originalAmount: Number(item.amount) || 0,
           paidAmount: 0,
-          balance: item.amount,
+          balance: Number(item.amount) || 0,
 
           isCleared: false,
 
@@ -230,13 +246,13 @@ export const useSummaryStore = defineStore('summary', {
         debtClear += d.paidAmount
       })
 
-      const income = receipt.netTotalAmount
+      const income = Number(receipt.netTotalAmount) || 0
 
       const ledger: LedgerEntry = {
         docKey,
 
-        unitKey: receipt.affiliationId,
-        faculty: receipt.affiliationName,
+        unitKey: receipt.affiliationId || '',
+        faculty: receipt.affiliationName || '',
 
         sub1: receipt.subAffiliationName1,
         sub2: receipt.subAffiliationName2,
@@ -252,8 +268,8 @@ export const useSummaryStore = defineStore('summary', {
 
         signed: income - debtClear,
 
-        fullName: receipt.fullName,
-        affiliationId: receipt.affiliationId
+        fullName: receipt.fullName || '',
+        affiliationId: receipt.affiliationId || ''
       }
 
       this.applyLedger(ledger)
@@ -280,10 +296,10 @@ export const useSummaryStore = defineStore('summary', {
     },
 
     /* =========================
-       Reset (optional)
+       ✅ Reset
     ========================= */
 
-    resetAll() {
+    reset() {
       this.receiptsByDoc = {}
       this.debtorsByDoc = {}
       this.ledgerByDoc = {}

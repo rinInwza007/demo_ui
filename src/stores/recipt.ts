@@ -105,8 +105,8 @@ export const useReceiptStore = defineStore('Receipt', {
       const msg =
         typeof err === 'string'
           ? err
-          : (err as any)?.response?.data?.message || 
-            (err as any)?.message || 
+          : (err as any)?.response?.data?.message ||
+            (err as any)?.message ||
             'Unexpected error'
       this.error = String(msg)
     },
@@ -151,7 +151,7 @@ export const useReceiptStore = defineStore('Receipt', {
       // ✅ ใช้ reciptService.onUpdate() แทน addEventListener โดยตรง
       reciptService.onUpdate((action) => {
         this.pushLog(`event: receipts-updated (${action})`)
-        
+
         // Auto refresh ถ้าต้องการ
         if (action === 'create' || action === 'update' || action === 'delete') {
           // this.getReceipt('all') // ถ้าต้องการ auto refresh
@@ -185,7 +185,7 @@ export const useReceiptStore = defineStore('Receipt', {
         // ✅ ใช้ reciptService.getAll()
         const data = await reciptService.getAll()
         if (!data) throw new Error('Empty response')
-        
+
         this.receiptList = data
 
         // ส่งเข้า SummaryStore
@@ -195,6 +195,11 @@ export const useReceiptStore = defineStore('Receipt', {
         return data
       })
     },
+    ingestMany(receipts: Receipt[]) {
+  receipts.forEach((receipt) => {
+    this.ingestUpsert(receipt)
+  })
+},
 
     /** ✅ single - ดึงข้อมูลรายการเดียว */
     async findOneReceipt(waybillNumber: string): Promise<ActionResult<Receipt>> {
@@ -203,7 +208,7 @@ export const useReceiptStore = defineStore('Receipt', {
         // ✅ ใช้ reciptService.getById()
         const data = await reciptService.getById(waybillNumber)
         if (!data) throw new Error('Empty response')
-        
+
         this.receipt = data
 
         // sync summary
@@ -218,7 +223,7 @@ export const useReceiptStore = defineStore('Receipt', {
     async saveReceipt(payload: Receipt): Promise<ActionResult<Receipt>> {
       this.ensureListening()
       return this.run(
-        `Saved receipt "${payload.waybillNumber || payload.fullName}"`, 
+        `Saved receipt "${payload.waybillNumber || payload.fullName}"`,
         async () => {
           // ✅ ใช้ reciptService.create()
           const data = await reciptService.create(payload as any)
@@ -241,9 +246,9 @@ export const useReceiptStore = defineStore('Receipt', {
       this.ensureListening()
       const id = payload.waybillNumber || payload.id
       if (!id) {
-        return { 
-          ok: false, 
-          error: 'Missing waybillNumber or id for update' 
+        return {
+          ok: false,
+          error: 'Missing waybillNumber or id for update'
         }
       }
 
@@ -282,7 +287,7 @@ export const useReceiptStore = defineStore('Receipt', {
 
     /** ✅ approve - อนุมัติ */
     async approveReceipt(
-      waybillNumber: string, 
+      waybillNumber: string,
       approverName: string
     ): Promise<ActionResult<Receipt>> {
       this.ensureListening()

@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { authService } from '@/services/Auth_Service/AuthService'
 import { User } from '@/types/user'
 
-export type roleType = 'user' | 'treasury' | 'admin' | 'superadmin'
+export type roleType = 'User' | 'treasury' | 'admin' | 'superadmin'
 
 interface AuthState {
   token: string | null

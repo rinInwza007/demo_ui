@@ -2,6 +2,8 @@
 import http from '@/lib/http'
 import type { ApprovalStatus, Receipt } from '@/types/recipt'
 
+
+
 /**
  * DTO สำหรับการสร้างใบนำส่งใหม่
  */
@@ -114,7 +116,7 @@ class ReciptService {
         isLocked: false,
       }
 
-      const res = await http.post<Receipt>('/saveReceipt', receipt)
+      const res = await http.post<Receipt>('/receipts/save', receipt)
 
       this.notifyUpdate('create')
       return res.data
@@ -233,7 +235,7 @@ class ReciptService {
   }
 
   /**
-   * 📊 กรองใบนำส่งตามสังกัด
+     * 📊 กรองใบนำส่งตามสังกัด
    */
   filterByAffiliation(receipts: Receipt[], affiliationId: string): Receipt[] {
     return receipts.filter(r => r && r.affiliationId === affiliationId)

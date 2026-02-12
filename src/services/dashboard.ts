@@ -46,7 +46,7 @@ export async function checkDelNumber(delNumber: string) {
 
 /** ➕ Create receipt */
 export async function createReceipt(payload: Receipt) {
-  const res = await http.post<Receipt>('/saveReceipt', payload)
+  const res = await http.post<Receipt>('/receipts/save', payload)
   return res.data
 }
 

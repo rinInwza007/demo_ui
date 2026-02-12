@@ -70,15 +70,15 @@
 
             <div class="flex items-center gap-3 flex-shrink-0">
               <div
-  v-if="auth.user"
-  class="hidden md:flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-white/50 border border-white/60"
->
-  <span class="font-medium text-slate-800">{{ auth.user.userProfile?.fullName || '-' }}</span>
-  <span class="text-slate-500">•</span>
-  <span class="text-slate-700">{{ auth.user.userProfile?.role?.name || '-' }}</span>
-  <span class="text-slate-500">•</span>
-  <span class="text-slate-700 font-mono">{{ auth.user.userProfile?.affiliation?.id || '-' }}</span>
-</div>
+                v-if="auth.user"
+                class="hidden md:flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-white/50 border border-white/60"
+              >
+                <span class="font-medium text-slate-800">{{ auth.user.userProfile?.fullName || '-' }}</span>
+                <span class="text-slate-500">•</span>
+                <span class="text-slate-700">{{ auth.user.userProfile?.role?.name || '-' }}</span>
+                <span class="text-slate-500">•</span>
+                <span class="text-slate-700 font-mono">{{ auth.user.userProfile?.affiliation?.id || '-' }}</span>
+              </div>
 
               <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
                 <i class="ph ph-bell text-xl"></i>
@@ -154,7 +154,23 @@
               <div class="col-span-2 text-center">จัดการ</div>
             </div>
 
-            <div class="flex-1 overflow-y-auto px-2">
+            <!-- ✅ Loading State -->
+            <div v-if="isLoading" class="flex-1 flex items-center justify-center">
+              <div class="flex flex-col items-center gap-4">
+                <div class="relative">
+                  <!-- Spinner Circle -->
+                  <div class="w-16 h-16 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin"></div>
+                  <!-- Inner Circle -->
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="ph ph-files text-2xl text-purple-600 animate-pulse"></i>
+                  </div>
+                </div>
+                <p class="text-sm text-slate-600 font-medium animate-pulse">กำลังโหลดข้อมูล...</p>
+              </div>
+            </div>
+
+            <!-- ✅ Data Table -->
+            <div v-else class="flex-1 overflow-y-auto px-2">
               <div
                 v-for="(row, index) in paginatedItems"
                 :key="row.id ?? index"
@@ -239,47 +255,47 @@
               </div>
             </div>
 
-<div v-if="totalPages > 1" class="px-6 py-3 border-t border-white/40 bg-white/5 flex items-center justify-center flex-shrink-0">
-  <div class="flex items-center gap-2">
-    <!-- Previous Button -->
-    <button
-      @click="prevPage"
-      :disabled="currentPage === 1"
-      class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-    >
-      <i class="ph ph-caret-left text-lg"></i>
-    </button>
+            <div v-if="!isLoading && totalPages > 1" class="px-6 py-3 border-t border-white/40 bg-white/5 flex items-center justify-center flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <!-- Previous Button -->
+                <button
+                  @click="prevPage"
+                  :disabled="currentPage === 1"
+                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <i class="ph ph-caret-left text-lg"></i>
+                </button>
 
-    <!-- Page Numbers -->
-    <template v-for="page in totalPages" :key="page">
-      <button
-        v-if="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
-        @click="goToPage(page)"
-        class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
-        :class="currentPage === page
-          ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md'
-          : 'glass-input text-slate-600 hover:text-purple-600'"
-      >
-        {{ page }}
-      </button>
-      <span
-        v-else-if="page === currentPage - 2 || page === currentPage + 2"
-        class="text-slate-400 px-1"
-      >
-        ...
-      </span>
-    </template>
+                <!-- Page Numbers -->
+                <template v-for="page in totalPages" :key="page">
+                  <button
+                    v-if="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
+                    @click="goToPage(page)"
+                    class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
+                    :class="currentPage === page
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md'
+                      : 'glass-input text-slate-600 hover:text-purple-600'"
+                  >
+                    {{ page }}
+                  </button>
+                  <span
+                    v-else-if="page === currentPage - 2 || page === currentPage + 2"
+                    class="text-slate-400 px-1"
+                  >
+                    ...
+                  </span>
+                </template>
 
-    <!-- Next Button -->
-    <button
-      @click="nextPage"
-      :disabled="currentPage === totalPages"
-      class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-    >
-      <i class="ph ph-caret-right text-lg"></i>
-    </button>
-  </div>
-</div>
+                <!-- Next Button -->
+                <button
+                  @click="nextPage"
+                  :disabled="currentPage === totalPages"
+                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <i class="ph ph-caret-right text-lg"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -301,6 +317,8 @@ import { departmentOptions } from '@/components/data/TSdepartments'
 import { reciptService } from '@/services/ReciptService'
 import { approveService } from '@/services/Apporve_service/ApproveService'
 import type { Profile } from '@/types/Profile'
+import  { roleType } from '@/types/user'
+
 
 const isLoading = ref(false)
 const router = useRouter()
@@ -415,35 +433,58 @@ const loadData = async () => {
   try {
     const receipts = await reciptService.getAll()
 
+    // ✅ ดูข้อมูลดิบที่ได้จาก API
+    console.log('📥 Raw receipts from API:', receipts)
+    console.log('📊 Total receipts:', receipts?.length)
+
     rawData.value = (receipts ?? [])
       .map((r: any) => {
         const kind = getReceiptKind(r)
-        if (kind !== 'WAYBILL') return null
 
-        // ✅ เพิ่ม type assertion
+        // ✅ ดูว่าแต่ละรายการได้ kind อะไร
+        console.log('🔍 Processing receipt:', {
+          id: r.id,
+          name: r.name,
+          type: r.type,
+          moneyTypeNote: r.moneyTypeNote,
+          kind: kind
+        })
+
+        // ✅ เช็คว่าถูก filter หรือไม่
+        if (kind !== 'WAYBILL') {
+          console.log('❌ FILTERED OUT - kind is not WAYBILL:', r.id)
+          return null
+        }
+
+        const affiliation = r.affiliation || {}
         const profile = (r.profile || {}) as Partial<Profile>
 
-        return {
+        const mapped = {
           ...r,
-
-          // ✅ Normalize fields จาก profile สำหรับ UI
-          affiliationId: profile.affiliationId || r.affiliationId || '',
-          affiliationName: profile.affiliationName || r.affiliationName || '',
-          mainAffiliationId: profile.mainAffiliationId || r.mainAffiliationId || '',
-          mainAffiliationName: profile.mainAffiliationName || r.mainAffiliationName || profile.affiliationName || r.affiliationName || '',
+          affiliationId: r.affiliationId || '',
+          affiliationName: affiliation.name || profile.affiliationName || r.affiliationName || '',
+          mainAffiliationId: affiliation.id || profile.mainAffiliationId || r.mainAffiliationId || '',
+          mainAffiliationName: affiliation.name || profile.mainAffiliationName || profile.affiliationName || r.affiliationName || '',
           subAffiliationId1: profile.subAffiliationId1 || r.subAffiliationId1 || '',
           subAffiliationName1: profile.subAffiliationName1 || r.subAffiliationName1 || '',
           subAffiliationId2: profile.subAffiliationId2 || r.subAffiliationId2 || '',
           subAffiliationName2: profile.subAffiliationName2 || r.subAffiliationName2 || '',
           fullName: profile.fullName || r.fullName || '',
           fundName: profile.fundName || r.fundName || '',
-
+          waybillNumber: r.waybillNumber || r.id,
+          projectCode: r.projectCode || r.id,
+          approvalStatus: r.approvalStatus || 'pending',
+          netTotalAmount: r.netTotalAmount || r.amount || 0,
           __kind: kind,
         }
+
+        console.log('✅ Mapped receipt:', mapped)
+        return mapped
       })
       .filter(Boolean)
 
     console.log('[loadData] waybills', rawData.value)
+    console.log('✅ Final rawData length:', rawData.value.length)
   } catch (err) {
     console.error('[loadData] failed', err)
     rawData.value = []
@@ -606,12 +647,25 @@ function getReceiptKind(r: any): 'WAYBILL' | 'DEBT_NEW' | 'DEBT_CLEAR' | 'UNKNOW
   if (note === 'DEBT_NEW') return 'DEBT_NEW'
   if (note === 'CLEAR_DEBTOR' || note === 'DEBT_CLEAR') return 'DEBT_CLEAR'
 
+  // ✅ เพิ่ม: ถ้ามี waybillNumber แสดงว่าเป็น WAYBILL
+  if (r.waybillNumber) {
+    console.log('✅ Detected waybillNumber, treating as WAYBILL:', r.waybillNumber)
+    return 'WAYBILL'
+  }
+
+  // ✅ เพิ่ม: ถ้า type === 'RECEIPT' ให้ถือว่าเป็น WAYBILL
+  if (r.type === 'RECEIPT') {
+    console.log('✅ Detected RECEIPT type, treating as WAYBILL')
+    return 'WAYBILL'
+  }
+
   // fallback จาก receiptList
   if (Array.isArray(r.receiptList)) {
     if (r.receiptList.some((i: any) => i.type === 'income')) return 'WAYBILL'
     if (r.receiptList.some((i: any) => i.type === 'receivable')) return 'DEBT_NEW'
   }
 
+  console.log('⚠️ Unknown receipt kind for:', r)
   return 'UNKNOWN'
 }
 
@@ -1039,7 +1093,7 @@ body {
   background: #7918f2;
   top: 40%;
   left: 40%;
-  animation-delay: 4s;
+  animation-delay: 3s;
 }
 
 @keyframes float {

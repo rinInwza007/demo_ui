@@ -2,13 +2,16 @@
 import { User } from './user'
 import { Affiliation } from './affiliation'
 import {Profile} from './Profile'
+import {CashReceiptType,CheckReceiptType,TransferReceiptType} from './payment'
 export type moneySource = 'นำส่ง' | 'ลูกหนี้' | 'วิจัย'
 
 export type nagativeMoneyType = 'add' | 'other'
-export type MoneyType = 'bank' | 'cash' | 'transfer' | 'debtor' | 'other'
 export type ItemType = 'income' | 'receivable' | 'research'
 export type ReceiptItemType = 'income' | 'expense'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
+export type PaymentType = CashReceiptType | CheckReceiptType | TransferReceiptType
+export type PaymentMethodType = PaymentType['paymentMethod']  // 'cash' | 'check' | 'transfer'
+
 
 export interface indexsavedebtor {
   id: number
@@ -34,54 +37,9 @@ export interface ReceiptItem {
   note?: string
   referenceNo?: string
   amount: number
-  subtotal?: number
   type: ReceiptItemType
   isCancelled?: boolean
-  
-  // ✅ เพิ่มฟิลด์สำหรับประเภทการชำระ
-  paymentTypes?: {
-    cash: boolean
-    check: boolean
-    transfer: boolean
-  }
-  
- cashDetails?: {
-    amount: string | number
-  }
-  
-  // ✅ แก้ไข checkDetails ให้มี amount
-  checkDetails?: {
-    amount: string | number
-    bankName: string
-    checkNumber: string
-    numInCheck: string
-  }
-  
-  // ✅ แก้ไข transferDetails ให้มี amount
-  transferDetails?: {
-    amount: string | number
-    accountData: {
-      accountNumber: string
-      bankName: string
-      accountName: string
-    }
-  }
-}
-
-export interface PaymentMethod {
-  checked: boolean
-  amount: number | string
-  bankName?: string
-  checkNumber?: string
-  NumIncheck?: string
-  name?: string
-}
-
-export interface PaymentMethods {
-  cash?: PaymentMethod
-  check?: PaymentMethod
-  debtor?: PaymentMethod
-  other?: PaymentMethod
+  receiptType?: PaymentType[]
 }
 
 export interface Receipt {

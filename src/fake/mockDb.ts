@@ -1,4 +1,4 @@
-import type { Receipt, ReceiptItem } from '@/types/recipt';
+import type { Receipt, ReceiptItem,PaymentType } from '@/types/recipt';
 
 const LS_KEY = 'fakeApi.receipts';
 
@@ -7,17 +7,13 @@ function defaultSeed(): Receipt[] {
     {
       id: "WB-001",
       waybillNumber: "WB-001",
-
       createdAt: "2025-10-05T14:22:10.000Z",
       updatedAt: "2025-10-05T14:22:10.000Z",
-
-      // ✅ ย้ายข้อมูลเข้า profile
       profile: {
         fullName: "จตุพล สิงห์คำ",
         phone: "0869988776",
         fundName: "กองทุนพิเศษ",
         projectCode: "DEN-001",
-        moneyType: "รายได้",
         sendmoney: "รายได้",
         affiliationId: "DEN",
         affiliationName: "คณะทันตแพทยศาสตร์",
@@ -27,12 +23,10 @@ function defaultSeed(): Receipt[] {
         subAffiliationName1: "",
         subAffiliationId2: "",
         subAffiliationName2: "",
+        role: "user"
       },
-
       netTotalAmount: 4500,
-
       approvalStatus: "pending",
-
       receiptList: [
         {
           itemName: "ลูกหนี้ค่ารักษาทันตกรรม",
@@ -41,37 +35,140 @@ function defaultSeed(): Receipt[] {
           amount: 4500,
           type: "income",
           isCancelled: false,
-          paymentTypes: {
-            cash: true,
-            transfer: false,
-            check: false
-          },
-          cashDetails: {
-            amount: 4500
-          },
-          checkDetails: {
-            amount: "",
-            bankName: "",
-            checkNumber: "",
-            numInCheck: ""
-          },
-          transferDetails: {
-            amount: "",
-            accountData: {
-              accountNumber: "",
-              bankName: "",
-              accountName: ""
+          receiptType: [
+            {
+              paymentMethod: 'cash',
+              amount: 4500
             }
-          }
+          ]
         }
       ],
-
+      isLocked: false
+    },
+    {
+      id: "WB-002",
+      waybillNumber: "WB-002",
+      createdAt: "2025-10-05T14:22:10.000Z",
+      updatedAt: "2025-10-05T14:22:10.000Z",
+      profile: {
+        fullName: "จตุพล สิงหาคม",
+        phone: "0869988776",
+        fundName: "กองทุนพิเศษ",
+        projectCode: "DEN-001",
+        sendmoney: "รายได้",
+        affiliationId: "DEN",
+        affiliationName: "คณะทันตแพทยศาสตร์",
+        mainAffiliationId: "DEN",
+        mainAffiliationName: "คณะทันตแพทยศาสตร์",
+        subAffiliationId1: "",
+        subAffiliationName1: "",
+        subAffiliationId2: "",
+        subAffiliationName2: "",
+        role: "user"
+      },
+      netTotalAmount: 9000,
+      approvalStatus: "pending",
+      receiptList: [
+        {
+          itemName: "ใบนำส่งที่1",
+          note: "รอบไตรมาสสุดท้าย",
+          referenceNo: "INV-001",
+          amount: 4500,
+          type: "income",
+          isCancelled: false,
+          receiptType: [
+            {
+              paymentMethod: 'cash',
+              amount: 4500
+            }
+          ]
+        },
+        {
+          itemName: "ลูกหนี้ค่ารักษาทันตกรรม",
+          note: "รอบไตรมาสสุดท้าย",
+          referenceNo: "INV-002",
+          amount: 4500,
+          type: "income",
+          isCancelled: false,
+          receiptType: [
+            {
+              paymentMethod: 'cash',
+              amount: 4500
+            }
+          ]
+        }
+      ],
       isLocked: false
     }
   ]
 }
 
 export function sanitizeItem(it: any): ReceiptItem {
+  let receiptType: PaymentType[] = []
+  
+  // ✅ กรณีที่ 1: มี receiptType array อยู่แล้ว (โครงสร้างใหม่)
+  if (it.receiptType && Array.isArray(it.receiptType)) {
+    receiptType = it.receiptType.map((payment: any) => {
+      if (payment.paymentMethod === 'cash') {
+        return {
+          paymentMethod: 'cash',
+          amount: payment.amount || ''
+        }
+      } else if (payment.paymentMethod === 'check') {
+        return {
+          paymentMethod: 'check',
+          amount: payment.amount || '',
+          bankName: String(payment.bankName || '').trim(),
+          checkNumber: String(payment.checkNumber || '').trim(),
+          numInCheck: String(payment.numInCheck || '').trim()  // ✅ ใช้ numInCheck (i ตัวเล็ก)
+        }
+      } else if (payment.paymentMethod === 'transfer') {
+        return {
+          paymentMethod: 'transfer',
+          amount: payment.amount || '',
+          accountData: {
+            accountNumber: String(payment.accountData?.accountNumber || '').trim(),
+            bankName: String(payment.accountData?.bankName || '').trim(),
+            accountName: String(payment.accountData?.accountName || '').trim()
+          }
+        }
+      }
+      return payment
+    })
+  }
+  // ✅ กรณีที่ 2: ยังเป็นโครงสร้างเก่า (paymentTypes) ให้แปลง
+  else if (it.paymentTypes) {
+    if (it.paymentTypes.cash && it.cashDetails) {
+      receiptType.push({
+        paymentMethod: 'cash',
+        amount: it.cashDetails.amount || ''
+      })
+    }
+    
+    if (it.paymentTypes.check && it.checkDetails) {
+      receiptType.push({
+        paymentMethod: 'check',
+        amount: it.checkDetails.amount || '',
+        bankName: String(it.checkDetails.bankName || '').trim(),
+        checkNumber: String(it.checkDetails.checkNumber || '').trim(),
+        // ✅ รองรับทั้ง numInCheck และ NumIncheck
+        numInCheck: String(it.checkDetails.numInCheck || it.checkDetails.NumIncheck || '').trim()
+      })
+    }
+    
+    if (it.paymentTypes.transfer && it.transferDetails) {
+      receiptType.push({
+        paymentMethod: 'transfer',
+        amount: it.transferDetails.amount || '',
+        accountData: {
+          accountNumber: String(it.transferDetails.accountData?.accountNumber || '').trim(),
+          bankName: String(it.transferDetails.accountData?.bankName || '').trim(),
+          accountName: String(it.transferDetails.accountData?.accountName || '').trim()
+        }
+      })
+    }
+  }
+  
   return {
     itemName: (it.itemName ?? '').trim(),
     itemId: it.itemId ?? undefined,
@@ -80,50 +177,7 @@ export function sanitizeItem(it: any): ReceiptItem {
     amount: Number.isFinite(it.amount) ? it.amount : 0,
     type: it.type || 'income',
     isCancelled: it.isCancelled || false,
-    
-    paymentTypes: it.paymentTypes ? {
-      cash: it.paymentTypes.cash || false,
-      check: it.paymentTypes.check || false,
-      transfer: it.paymentTypes.transfer || false
-    } : {
-      cash: false,
-      check: false,
-      transfer: false
-    },
-    
-    cashDetails: it.cashDetails ? {
-      amount: it.cashDetails.amount || ''
-    } : {
-      amount: ''
-    },
-    
-    checkDetails: it.checkDetails ? {
-      amount: it.checkDetails.amount || '',
-      bankName: String(it.checkDetails.bankName || '').trim(),
-      checkNumber: String(it.checkDetails.checkNumber || '').trim(),
-      numInCheck: String(it.checkDetails.numInCheck || '').trim()
-    } : {
-      amount: '',
-      bankName: '',
-      checkNumber: '',
-      numInCheck: ''
-    },
-    
-    transferDetails: it.transferDetails ? {
-      amount: it.transferDetails.amount || '',
-      accountData: {
-        accountNumber: String(it.transferDetails.accountData?.accountNumber || '').trim(),
-        bankName: String(it.transferDetails.accountData?.bankName || '').trim(),
-        accountName: String(it.transferDetails.accountData?.accountName || '').trim()
-      }
-    } : {
-      amount: '',
-      accountData: {
-        accountNumber: '',
-        bankName: '',
-        accountName: ''
-      }
-    }
+    receiptType: receiptType
   }
 }
 

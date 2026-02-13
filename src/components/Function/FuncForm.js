@@ -11,28 +11,7 @@ const morelist = ref([
     referenceNo: '',
     note: '',
     amount: '',
-    paymentTypes: {
-      cash: false,
-      check: false,
-      transfer: false
-    },
-cashDetails: {
-        amount: '',
-      },
-      checkDetails: {
-        amount: '',
-        bankName: '',
-        checkNumber: '',
-        numInCheck: '',
-      },
-      transferDetails: {
-        amount: '',
-        accountData: {
-          accountNumber: '',
-          bankName: '',
-          accountName: '',
-        },
-      },
+    receiptType: [],
   },
 ])
 
@@ -52,24 +31,7 @@ const addRow = () => {
     referenceNo: '',
     note: '',
     amount: '',
-    paymentTypes: {
-      cash: false,
-      check: false,
-      transfer: false
-    },
-    // ✅ เพิ่มฟิลด์เริ่มต้นสำหรับแถวใหม่
-    checkDetails: {
-      bankName: '',
-      checkNumber: '',
-      numInCheck: ''
-    },
-    transferDetails: {
-      accountData: {
-        accountNumber: '',
-        bankName: '',
-        accountName: ''
-      }
-    }
+    receiptType: [],
   })
 }
 

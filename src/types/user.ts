@@ -1,5 +1,7 @@
 // src/types/user.ts
-export type roleType = 'user' | 'treasury' | 'admin' | 'superadmin';
+import { Profile } from "./Profile";
+
+export type roleType = 'User' | 'treasury' | 'admin' | 'superadmin';
 
 export interface User {
   /** User ID */
@@ -16,4 +18,6 @@ export interface User {
   email: string;
   /** User phone */
   phone: string;
+
+  userProfile: Profile
 }

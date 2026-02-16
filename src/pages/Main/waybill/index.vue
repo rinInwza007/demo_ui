@@ -262,8 +262,8 @@
       >
         {{ page }}
       </button>
-      <span 
-        v-else-if="page === currentPage - 2 || page === currentPage + 2" 
+      <span
+        v-else-if="page === currentPage - 2 || page === currentPage + 2"
         class="text-slate-400 px-1"
       >
         ...
@@ -314,7 +314,7 @@ const selectedMain = ref('')
 const selectedSub1 = ref('')
 const selectedSub2 = ref('')
 
-const canCreateWaybill = computed(() => auth.isRole('user') && !dailyClose.isTodayClosed)
+const canCreateWaybill = computed(() => auth.isRole('User') && !dailyClose.isTodayClosed)
 const canApprove = computed(() => auth.isRole('treasury'))
 
 type ActionKey = 'view' | 'edit' | 'delete' | 'approve' | 'reject'
@@ -380,25 +380,25 @@ function mapReceiptToRow(r: any): TableRow {
 
   // ✅ เพิ่ม type assertion
   const profile = (r.profile || {}) as Partial<Profile>
-  
+
   return {
     id: r.waybillNumber || r.projectCode || r.id,
     status: r.approvalStatus || 'pending',
-    
+
     // ✅ ใช้ Optional chaining
     department: profile.mainAffiliationName || r.mainAffiliationName || profile.affiliationName || r.affiliationName || '-',
-    
+
     subDepartment: [
       profile.subAffiliationName1 || r.subAffiliationName1,
       profile.subAffiliationName2 || r.subAffiliationName2
     ].filter(Boolean).join(' / ') || '-',
-    
+
     time: formatThaiDateTime(lastDate),
     lastTimeMs: lastDate?.getTime() || 0,
-    
+
     project: profile.fundName || r.fundName || '-',
     responsible: profile.fullName || r.fullName || '-',
-    
+
     amount: Number(r.netTotalAmount ?? 0),
     createdAt,
     updatedAt,
@@ -422,7 +422,7 @@ const loadData = async () => {
 
         // ✅ เพิ่ม type assertion
         const profile = (r.profile || {}) as Partial<Profile>
-        
+
         return {
           ...r,
 
@@ -461,7 +461,7 @@ const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
   if (!auth.user) return []
 
- if (auth.user.role === 'user') {
+ if (auth.user.role === 'User') {
   if (!auth.user.affiliationId) return []
   filtered = filtered.filter(r => r.affiliationId === auth.user.affiliationId)
 }
@@ -472,8 +472,8 @@ const items = computed<TableRow[]>(() => {
     filtered = filtered.filter((r) => {
       const profile = (r.profile || {}) as Partial<Profile>
       const main = (
-        profile.mainAffiliationName || 
-        profile.affiliationName || 
+        profile.mainAffiliationName ||
+        profile.affiliationName ||
         ''
       ).trim()
       return main === selectedMain.value.trim()
@@ -504,8 +504,8 @@ const items = computed<TableRow[]>(() => {
     filtered = filtered.filter((r) => {
       const profile = (r.profile || {}) as Partial<Profile>
       const main = (
-        profile.mainAffiliationName || 
-        profile.affiliationName || 
+        profile.mainAffiliationName ||
+        profile.affiliationName ||
         ''
       ).toLowerCase()
       const sub1 = (profile.subAffiliationName1 || '').toLowerCase()
@@ -526,17 +526,17 @@ const items = computed<TableRow[]>(() => {
   rows.sort((a, b) => {
     const byStatus = rank(a.status) - rank(b.status)
     if (byStatus !== 0) return byStatus
-    
+
     // ✅ สำหรับ pending: เรียงจากใหม่ไปเก่า (updatedAt ล่าสุดก่อน)
     if (a.status === 'pending') {
       return (b.lastTimeMs ?? 0) - (a.lastTimeMs ?? 0)
     }
-    
+
     // ✅ สำหรับ approved: เรียงจากใหม่ไปเก่า (approvedAt ล่าสุดก่อน)
     if (a.status === 'approved') {
       return (b.lastTimeMs ?? 0) - (a.lastTimeMs ?? 0)
     }
-    
+
     // ✅ rejected: เรียงจากเก่าไปใหม่
     return (a.lastTimeMs ?? 0) - (b.lastTimeMs ?? 0)
   })

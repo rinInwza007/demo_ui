@@ -120,29 +120,19 @@ function calculatePaymentTypeTotals() {
   if (!receiptData.value?.receiptList) return totals
 
   receiptData.value.receiptList.forEach((item) => {
-    // ✅ ตรวจสอบสถานะการยกเลิก - ถ้ายกเลิกแล้วให้ข้ามไป
+    // ✅ ข้ามรายการที่ยกเลิก
     if (item.status === 'cancelled' || item.isCancelled === true) {
       console.log(`  🚫 Cancelled item (skip): ${item.itemName}`)
-      return // ข้ามรายการที่ยกเลิก
+      return
     }
-const cleanAmount = Number(
-  item.amount?.toString().replace(/,/g, '') || 0
-)
-  const cashAmount = Number(item.cashDetails?.amount || 0)
-const checkAmount = Number(item.checkDetails?.amount || 0)
-const transferAmount = Number(item.transferDetails?.amount || 0)
-    
-    // ✅ ตรวจสอบว่าเป็นค่าธรรมเนียมหรือไม่ (จากชื่อรายการ)
-    const isFeeItem = item.itemName && (
-      item.itemName.includes('ค่าธรรมเนียม') || 
-      item.itemName.includes('ส่วนลด') ||
-      item.itemName.includes('หัก')
+
+    const cleanAmount = Number(
+      item.amount?.toString().replace(/,/g, '') || 0
     )
-    
-    // ✅ จัดการเงินลบ หรือ รายการที่เป็นค่าธรรมเนียม
-    if (cleanAmount < 0 || (isFeeItem && cleanAmount > 0)) {
-      const feeAmount = isFeeItem && cleanAmount > 0 ? -cleanAmount : cleanAmount
-      
+
+    // ✅ จัดการเงินลบ (รายจ่าย)
+    if (item.type === 'expense' || cleanAmount < 0) {
+      const feeAmount = cleanAmount > 0 ? -cleanAmount : cleanAmount
       totals.negative += feeAmount
       totals.negativeCount++
       totals.negativeDetails.push({
@@ -151,69 +141,68 @@ const transferAmount = Number(item.transferDetails?.amount || 0)
         note: item.note || '',
         referenceNo: item.referenceNo || ''
       })
-      
-      console.log(`  ✅ Detected fee item: ${item.itemName} = ${feeAmount}`)
+      console.log(`  ✅ Expense/Negative item: ${item.itemName} = ${feeAmount}`)
       return
     }
-    
-    // ตรวจสอบว่าเป็นลูกหนี้หรือไม่
+
+    // ✅ ตรวจสอบว่าเป็นลูกหนี้หรือไม่
     const isDebtor = isReceivableItem(item.itemName)
-    
-    // ✅ ถ้าเป็นลูกหนี้ ไม่ต้องนับใน payment types
     if (isDebtor) {
       console.log(`  ℹ️ Debtor item (skip payment): ${item.itemName}`)
       return
     }
-    
-    // ✅ จัดการเงินบวกตามปกติ (ไม่ใช่ลูกหนี้ และไม่ใช่ค่าธรรมเนียม)
-    if (cleanAmount > 0 && item.paymentTypes) {
-      // เงินสด
-      if (item.paymentTypes.cash && cashAmount > 0) {
-        totals.cash += cashAmount
-        totals.cashCount++
-        console.log(`  💵 Cash: ${cleanAmount}`)
-      }
-      
-      // เช็ค
-      if (item.paymentTypes.check && checkAmount > 0) {
-        totals.check += checkAmount
-        totals.checkCount++
-        
-        if (item.checkDetails && item.checkDetails.bankName) {
-          totals.checkDetails.push({
-            bankName: item.checkDetails.bankName,
-            checkNumber: item.checkDetails.checkNumber,
-            numInCheck: item.checkDetails.numInCheck,
-            amount: checkAmount
-          })
-        }
-        console.log(`  📝 Check: ${cleanAmount}`)
-      }
-      
-      // เงินโอน
-      if (item.paymentTypes.transfer && transferAmount > 0) {
-        totals.transfer += transferAmount
-        totals.transferCount++
-        
-        if (item.transferDetails?.accountData?.accountNumber) {
-          const account = item.transferDetails.accountData
-          const existingIndex = totals.transferDetails.findIndex(
-            t => t.accountNumber === account.accountNumber
-          )
-          
-          if (existingIndex >= 0) {
-            totals.transferDetails[existingIndex].amount += transferAmount
-          } else {
-            totals.transferDetails.push({
-              accountNumber: account.accountNumber,
-              bankName: account.bankName,
-              accountName: account.accountName,
-              amount: transferAmount
+
+    // ✅ โครงสร้างใหม่: ใช้ receiptType array
+    if (cleanAmount > 0 && item.receiptType && Array.isArray(item.receiptType)) {
+      item.receiptType.forEach((payment) => {
+        const payAmount = Number(
+          payment.amount?.toString().replace(/,/g, '') || 0
+        )
+        if (!payAmount || payAmount <= 0) return
+
+        if (payment.paymentMethod === 'cash') {
+          totals.cash += payAmount
+          totals.cashCount++
+          console.log(`  💵 Cash: ${payAmount}`)
+
+        } else if (payment.paymentMethod === 'check') {
+          totals.check += payAmount
+          totals.checkCount++
+
+          if (payment.bankName) {
+            totals.checkDetails.push({
+              bankName: payment.bankName,
+              checkNumber: payment.checkNumber || '',
+              numInCheck: payment.numInCheck || '',
+              amount: payAmount
             })
           }
+          console.log(`  📝 Check: ${payAmount}`)
+
+        } else if (payment.paymentMethod === 'transfer') {
+          totals.transfer += payAmount
+          totals.transferCount++
+
+          if (payment.accountData?.accountNumber) {
+            const account = payment.accountData
+            const existingIndex = totals.transferDetails.findIndex(
+              t => t.accountNumber === account.accountNumber
+            )
+
+            if (existingIndex >= 0) {
+              totals.transferDetails[existingIndex].amount += payAmount
+            } else {
+              totals.transferDetails.push({
+                accountNumber: account.accountNumber,
+                bankName: account.bankName,
+                accountName: account.accountName,
+                amount: payAmount
+              })
+            }
+          }
+          console.log(`  🏦 Transfer: ${payAmount}`)
         }
-        console.log(`  🏦 Transfer: ${cleanAmount}`)
-      }
+      })
     }
   })
 

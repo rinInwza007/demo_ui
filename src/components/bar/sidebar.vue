@@ -44,10 +44,10 @@
 
         <div class="hidden lg:block text-left flex-1">
           <p class="text-sm font-semibold text-slate-800">
-            {{ auth.user?.fullName ?? 'ผู้ใช้งาน' }}
+            {{ displayFullName }}
           </p>
           <p class="text-xs text-slate-500">
-            {{ auth.user?.affiliation ?? '-' }} • {{ auth.user?.role ?? '-' }}
+            {{ displayAffiliation }} • {{ displayRole }}
           </p>
         </div>
 
@@ -104,6 +104,7 @@ import { computed, ref, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore, type roleType } from '@/stores/auth'
 
+
 const auth = useAuthStore()
 const router = useRouter()
 
@@ -116,23 +117,42 @@ type MenuItem = {
 }
 
 const menuItems: MenuItem[] = [
-  { id: 'main', label: 'ใบนำส่งเงิน', icon: 'ph ph-files', routeName: 'main', roles: ['user','treasury','admin','superadmin'] },
-  { id: 'indexsavedebtor', label: 'ล้างลูกหนี้', icon: 'ph ph-files', routeName: 'indexsavedebtor', roles: ['user','admin','superadmin'] },
-  { id: 'Report_submit', label: 'รายงานสรุป', icon: 'ph ph-chart-bar', routeName: 'Report_submit', roles: ['treasury','admin','superadmin'] },
-  { id: 'daily_closing', label: 'สรุปยอดรายวัน', icon: 'ph ph-files', routeName: 'daily_closing', roles: ['treasury','admin','superadmin'] },
+  { id: 'main', label: 'ใบนำส่งเงิน', icon: 'ph ph-files', routeName: 'main', roles: ['User','treasury','Admin','superadmin'] },
+  { id: 'indexsavedebtor', label: 'ล้างลูกหนี้', icon: 'ph ph-files', routeName: 'indexsavedebtor', roles: ['User','Admin','superadmin'] },
+  { id: 'Report_submit', label: 'รายงานสรุป', icon: 'ph ph-chart-bar', routeName: 'Report_submit', roles: ['treasury','Admin','superadmin'] },
+  { id: 'daily_closing', label: 'สรุปยอดรายวัน', icon: 'ph ph-files', routeName: 'daily_closing', roles: ['treasury','Admin','superadmin'] },
 ]
 
+// ✅ แก้ให้ดึง role จาก userProfile
 const filteredMenuItems = computed(() => {
   if (!auth.user) return []
-  const role = auth.user.role
+
+  // ✅ เข้าถึง role ผ่าน nested structure
+  const userRole = auth.user.userProfile?.role?.name as roleType
+
+  if (!userRole) return []
+
   return menuItems.filter((item) => {
     if (!item.roles || item.roles.length === 0) return true
-    return item.roles.includes(role)
+    return item.roles.includes(userRole)
   })
 })
 
+// ✅ Computed properties สำหรับแสดงข้อมูล user
+const displayFullName = computed(() => {
+  return auth.user?.userProfile?.fullName ?? 'ผู้ใช้งาน'
+})
+
+const displayAffiliation = computed(() => {
+  return auth.user?.userProfile?.affiliation?.name ?? '-'
+})
+
+const displayRole = computed(() => {
+  return auth.user?.userProfile?.role?.name ?? '-'
+})
+
 const avatarUrl = computed(() => {
-  const name = encodeURIComponent(auth.user?.fullName || 'User')
+  const name = encodeURIComponent(displayFullName.value)
   return `https://ui-avatars.com/api/?name=${name}&background=0D8ABC&color=fff`
 })
 
@@ -166,14 +186,8 @@ onBeforeUnmount(() => {
 const handleLogout = async () => {
   closeMenu()
 
-  // ถ้ามี auth.logout() ใช้ได้เลย
-  if (typeof (auth as any).logout === 'function') {
-    await (auth as any).logout()
-  } else {
-    // fallback เผื่อยังไม่ทำ logout ใน store
-    ;(auth as any).token = ''
-    ;(auth as any).user = null
-  }
+  // ✅ เรียก logout จาก store
+  await auth.logout()
 
   router.push({ name: 'testlogin' })
 }

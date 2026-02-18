@@ -73,11 +73,11 @@
                 v-if="auth.user"
                 class="hidden md:flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-white/50 border border-white/60"
               >
-                <span class="font-medium text-slate-800">{{ auth.user.fullName }}</span>
+                <span class="font-medium text-slate-800">{{ auth.user.userProfile?.fullName || '-' }}</span>
                 <span class="text-slate-500">•</span>
-                <span class="text-slate-700">{{ auth.user.role }}</span>
+                <span class="text-slate-700">{{ auth.user.userProfile?.role?.name || '-' }}</span>
                 <span class="text-slate-500">•</span>
-                <span class="text-slate-700 font-mono">{{ auth.user.affiliationId }}</span>
+                <span class="text-slate-700 font-mono">{{ auth.user.userProfile?.affiliation?.id || '-' }}</span>
               </div>
 
               <button class="w-10 h-10 rounded-full glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 shadow-sm">
@@ -92,7 +92,7 @@
 
         <div class="px-8 py-4 flex-shrink-0">
           <div
-            v-if="auth.isRole('user')"
+            v-if="auth.isRole('User')"
             class="glass-panel p-4 rounded-2xl flex items-center justify-end shadow-sm"
           >
             <button
@@ -154,7 +154,23 @@
               <div class="col-span-2 text-center">จัดการ</div>
             </div>
 
-            <div class="flex-1 overflow-y-auto px-2">
+            <!-- ✅ Loading State -->
+            <div v-if="isLoading" class="flex-1 flex items-center justify-center">
+              <div class="flex flex-col items-center gap-4">
+                <div class="relative">
+                  <!-- Spinner Circle -->
+                  <div class="w-16 h-16 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin"></div>
+                  <!-- Inner Circle -->
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="ph ph-files text-2xl text-purple-600 animate-pulse"></i>
+                  </div>
+                </div>
+                <p class="text-sm text-slate-600 font-medium animate-pulse">กำลังโหลดข้อมูล...</p>
+              </div>
+            </div>
+
+            <!-- ✅ Data Table -->
+            <div v-else class="flex-1 overflow-y-auto px-2">
               <div
                 v-for="(row, index) in paginatedItems"
                 :key="row.id ?? index"
@@ -239,47 +255,47 @@
               </div>
             </div>
 
-<div v-if="totalPages > 1" class="px-6 py-3 border-t border-white/40 bg-white/5 flex items-center justify-center flex-shrink-0">
-  <div class="flex items-center gap-2">
-    <!-- Previous Button -->
-    <button
-      @click="prevPage"
-      :disabled="currentPage === 1"
-      class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-    >
-      <i class="ph ph-caret-left text-lg"></i>
-    </button>
+            <div v-if="!isLoading && totalPages > 1" class="px-6 py-3 border-t border-white/40 bg-white/5 flex items-center justify-center flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <!-- Previous Button -->
+                <button
+                  @click="prevPage"
+                  :disabled="currentPage === 1"
+                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <i class="ph ph-caret-left text-lg"></i>
+                </button>
 
-    <!-- Page Numbers -->
-    <template v-for="page in totalPages" :key="page">
-      <button
-        v-if="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
-        @click="goToPage(page)"
-        class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
-        :class="currentPage === page
-          ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md'
-          : 'glass-input text-slate-600 hover:text-purple-600'"
-      >
-        {{ page }}
-      </button>
-      <span
-        v-else-if="page === currentPage - 2 || page === currentPage + 2"
-        class="text-slate-400 px-1"
-      >
-        ...
-      </span>
-    </template>
+                <!-- Page Numbers -->
+                <template v-for="page in totalPages" :key="page">
+                  <button
+                    v-if="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
+                    @click="goToPage(page)"
+                    class="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-all"
+                    :class="currentPage === page
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md'
+                      : 'glass-input text-slate-600 hover:text-purple-600'"
+                  >
+                    {{ page }}
+                  </button>
+                  <span
+                    v-else-if="page === currentPage - 2 || page === currentPage + 2"
+                    class="text-slate-400 px-1"
+                  >
+                    ...
+                  </span>
+                </template>
 
-    <!-- Next Button -->
-    <button
-      @click="nextPage"
-      :disabled="currentPage === totalPages"
-      class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-    >
-      <i class="ph ph-caret-right text-lg"></i>
-    </button>
-  </div>
-</div>
+                <!-- Next Button -->
+                <button
+                  @click="nextPage"
+                  :disabled="currentPage === totalPages"
+                  class="w-9 h-9 rounded-lg glass-input flex items-center justify-center text-slate-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <i class="ph ph-caret-right text-lg"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -301,6 +317,8 @@ import { departmentOptions } from '@/components/data/TSdepartments'
 import { reciptService } from '@/services/ReciptService'
 import { approveService } from '@/services/Apporve_service/ApproveService'
 import type { Profile } from '@/types/Profile'
+import  { roleType } from '@/types/user'
+
 
 const isLoading = ref(false)
 const router = useRouter()
@@ -314,8 +332,25 @@ const selectedMain = ref('')
 const selectedSub1 = ref('')
 const selectedSub2 = ref('')
 
-const canCreateWaybill = computed(() => auth.isRole('User') && !dailyClose.isTodayClosed)
-const canApprove = computed(() => auth.isRole('treasury'))
+const canCreateWaybill = computed(() => {
+  const role = auth.user?.userProfile?.role?.name?.toLowerCase()
+  const isUser = role === 'user'
+  const canCreate = isUser && !dailyClose.isTodayClosed
+
+  console.log('🔍 canCreateWaybill:', {
+    role: auth.user?.userProfile?.role?.name,
+    isUser,
+    isTodayClosed: dailyClose.isTodayClosed,
+    canCreate
+  })
+
+  return canCreate
+})
+
+const canApprove = computed(() => {
+  const role = auth.user?.userProfile?.role?.name?.toLowerCase()
+  return role === 'treasury'
+})
 
 type ActionKey = 'view' | 'edit' | 'delete' | 'approve' | 'reject'
 
@@ -415,35 +450,58 @@ const loadData = async () => {
   try {
     const receipts = await reciptService.getAll()
 
+    // ✅ ดูข้อมูลดิบที่ได้จาก API
+    console.log('📥 Raw receipts from API:', receipts)
+    console.log('📊 Total receipts:', receipts?.length)
+
     rawData.value = (receipts ?? [])
       .map((r: any) => {
         const kind = getReceiptKind(r)
-        if (kind !== 'WAYBILL') return null
 
-        // ✅ เพิ่ม type assertion
+        // ✅ ดูว่าแต่ละรายการได้ kind อะไร
+        console.log('🔍 Processing receipt:', {
+          id: r.id,
+          name: r.name,
+          type: r.type,
+          moneyTypeNote: r.moneyTypeNote,
+          kind: kind
+        })
+
+        // ✅ เช็คว่าถูก filter หรือไม่
+        if (kind !== 'WAYBILL') {
+          console.log('❌ FILTERED OUT - kind is not WAYBILL:', r.id)
+          return null
+        }
+
+        const affiliation = r.affiliation || {}
         const profile = (r.profile || {}) as Partial<Profile>
 
-        return {
+        const mapped = {
           ...r,
-
-          // ✅ Normalize fields จาก profile สำหรับ UI
-          affiliationId: profile.affiliationId || r.affiliationId || '',
-          affiliationName: profile.affiliationName || r.affiliationName || '',
-          mainAffiliationId: profile.mainAffiliationId || r.mainAffiliationId || '',
-          mainAffiliationName: profile.mainAffiliationName || r.mainAffiliationName || profile.affiliationName || r.affiliationName || '',
+          affiliationId: r.affiliationId || '',
+          affiliationName: affiliation.name || profile.affiliationName || r.affiliationName || '',
+          mainAffiliationId: affiliation.id || profile.mainAffiliationId || r.mainAffiliationId || '',
+          mainAffiliationName: affiliation.name || profile.mainAffiliationName || profile.affiliationName || r.affiliationName || '',
           subAffiliationId1: profile.subAffiliationId1 || r.subAffiliationId1 || '',
           subAffiliationName1: profile.subAffiliationName1 || r.subAffiliationName1 || '',
           subAffiliationId2: profile.subAffiliationId2 || r.subAffiliationId2 || '',
           subAffiliationName2: profile.subAffiliationName2 || r.subAffiliationName2 || '',
           fullName: profile.fullName || r.fullName || '',
           fundName: profile.fundName || r.fundName || '',
-
+          waybillNumber: r.waybillNumber || r.id,
+          projectCode: r.projectCode || r.id,
+          approvalStatus: r.approvalStatus || 'pending',
+          netTotalAmount: r.netTotalAmount || r.amount || 0,
           __kind: kind,
         }
+
+        console.log('✅ Mapped receipt:', mapped)
+        return mapped
       })
       .filter(Boolean)
 
     console.log('[loadData] waybills', rawData.value)
+    console.log('✅ Final rawData length:', rawData.value.length)
   } catch (err) {
     console.error('[loadData] failed', err)
     rawData.value = []
@@ -461,9 +519,12 @@ const items = computed<TableRow[]>(() => {
   let filtered: Receipt[] = [...rawData.value]
   if (!auth.user) return []
 
- if (auth.user.role === 'User') {
-  if (!auth.user.affiliationId) return []
-  filtered = filtered.filter(r => r.affiliationId === auth.user.affiliationId)
+ const userRole = auth.user.userProfile?.role?.name
+  const userAffiliationId = auth.user.userProfile?.affiliation?.id
+
+  if (userRole === 'User') {
+  if (!userAffiliationId) return []
+  filtered = filtered.filter(r => r.affiliationId === userAffiliationId)
 }
 
 
@@ -603,12 +664,25 @@ function getReceiptKind(r: any): 'WAYBILL' | 'DEBT_NEW' | 'DEBT_CLEAR' | 'UNKNOW
   if (note === 'DEBT_NEW') return 'DEBT_NEW'
   if (note === 'CLEAR_DEBTOR' || note === 'DEBT_CLEAR') return 'DEBT_CLEAR'
 
+  // ✅ เพิ่ม: ถ้ามี waybillNumber แสดงว่าเป็น WAYBILL
+  if (r.waybillNumber) {
+    console.log('✅ Detected waybillNumber, treating as WAYBILL:', r.waybillNumber)
+    return 'WAYBILL'
+  }
+
+  // ✅ เพิ่ม: ถ้า type === 'RECEIPT' ให้ถือว่าเป็น WAYBILL
+  if (r.type === 'RECEIPT') {
+    console.log('✅ Detected RECEIPT type, treating as WAYBILL')
+    return 'WAYBILL'
+  }
+
   // fallback จาก receiptList
   if (Array.isArray(r.receiptList)) {
     if (r.receiptList.some((i: any) => i.type === 'income')) return 'WAYBILL'
     if (r.receiptList.some((i: any) => i.type === 'receivable')) return 'DEBT_NEW'
   }
 
+  console.log('⚠️ Unknown receipt kind for:', r)
   return 'UNKNOWN'
 }
 
@@ -620,7 +694,7 @@ const rowPermissions = (row: TableRow): ActionKey[] => {
   const perms: ActionKey[] = ['view']
 
   // ✅ User สามารถแก้ไขได้ทั้ง pending และ approved (แต่ approved จะแก้ไขแบบจำกัด)
-  if (auth.isRole('user') && !row.isLocked) {
+  if (auth.isRole('User') && !row.isLocked) {
     if (row.status === 'pending') {
       perms.push('edit', 'delete')
     } else if (row.status === 'approved') {
@@ -726,21 +800,35 @@ const edit = (row: TableRow) => {
 }
 
 const gotowaybil = () => {
-  if (!canCreateWaybill.value) {
-    if (dailyClose.isTodayClosed) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'ไม่สามารถสร้างใบนำส่งได้',
-        text: 'วันนี้ปิดยอดแล้ว ไม่สามารถสร้างใบนำส่งใหม่ได้',
-        confirmButtonText: 'รับทราบ',
-      })
-    } else {
-      Swal.fire('ไม่มีสิทธิ์', 'เฉพาะผู้ใช้ (user) เท่านั้นที่สามารถเพิ่มใบนำส่งเงินได้', 'warning')
-    }
+  console.log('🚀 gotowaybil called')
+
+  // ✅ เช็คสิทธิ์แบบละเอียด
+  const role = auth.user?.userProfile?.role?.name?.toLowerCase()
+
+  if (dailyClose.isTodayClosed) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ไม่สามารถสร้างใบนำส่งได้',
+      text: 'วันนี้ปิดยอดแล้ว ไม่สามารถสร้างใบนำส่งใหม่ได้',
+      confirmButtonText: 'รับทราบ',
+    })
     return
   }
+
+  if (role !== 'user') {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ไม่มีสิทธิ์',
+      text: 'เฉพาะผู้ใช้ (User) เท่านั้นที่สามารถเพิ่มใบนำส่งเงินได้',
+      confirmButtonText: 'รับทราบ',
+    })
+    return
+  }
+
+  console.log('✅ Navigating to /waybill')
   router.push('/waybill')
 }
+
 
 /**
  * ✅ อนุมัติใบนำส่ง (ใช้ ApproveService)
@@ -785,7 +873,7 @@ const approveItem = async (row: TableRow) => {
   if (!result.isConfirmed) return
 
   try {
-    const approverName = auth.user?.fullName || 'เจ้าหน้าที่การเงิน'
+    const approverName = auth.user?.userProfile?.fullName || 'เจ้าหน้าที่การเงิน'
     await approveService.approve(row.id, approverName)
 
     await loadData()
@@ -852,7 +940,7 @@ const rejectItem = async (row: TableRow) => {
   if (!result.isConfirmed) return
 
   try {
-    const approverName = auth.user?.fullName || 'เจ้าหน้าที่การเงิน'
+    const approverName = auth.user?.userProfile?.fullName || 'เจ้าหน้าที่การเงิน'
     await approveService.reject(row.id, approverName)
 
     await loadData()
@@ -1036,7 +1124,7 @@ body {
   background: #7918f2;
   top: 40%;
   left: 40%;
-  animation-delay: 4s;
+  animation-delay: 3s;
 }
 
 @keyframes float {

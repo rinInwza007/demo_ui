@@ -1,23 +1,21 @@
-// src/types/user.ts
-import { Profile } from "./Profile";
-
-export type roleType = 'User' | 'treasury' | 'admin' | 'superadmin';
+export type roleType = 'User' | 'treasury' | 'Admin' | 'superadmin'
 
 export interface User {
-  /** User ID */
-  id: string;
-  /** User full name */
-  fullName: string;
-  /** User affiliation */
-  affiliation: string;
-  /** User affiliation ID */
-  affiliationId: string;
-  /** User role */
-  role: roleType;
-  /** User email */
-  email: string;
-  /** User phone */
-  phone: string;
-
-  userProfile: Profile
+  id: string
+  email: string
+  name: string
+  createdAt: string
+  userProfile: {
+    fullName: string
+    phone: string
+    role: {
+      id: string
+      name: string
+    }
+    affiliation: {
+      id: string
+      name: string
+      type: string
+    }
+  }
 }

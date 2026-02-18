@@ -3,10 +3,10 @@ import type { Affiliation } from '@/types/affiliation'
 import { defaultAffiliation } from '@/components/data/Affiliation'
 import { departmentOptions, initializeDepartmentOptions } from '@/components/data/TSdepartments'
 import * as AffiliationApi from './affiliationApi'
-import type { 
-  AffiliationFilters, 
-  AffiliationCreatePayload, 
-  AffiliationUpdatePayload 
+import type {
+  AffiliationFilters,
+  AffiliationCreatePayload,
+  AffiliationUpdatePayload
 } from './affiliationApi'
 
 /**
@@ -34,9 +34,9 @@ console.log('🔧 AffiliationService initialized:', useMockAPI ? 'MOCK MODE' : '
 export const getAffiliations = async (filters?: AffiliationFilters): Promise<Affiliation[]> => {
   if (useMockAPI) {
     console.log('🧪 [Mock] Getting affiliations from Affiliation.ts')
-    
+
     let items = [...defaultAffiliation]
-    
+
     // Filter ตาม type
     if (filters?.type) {
       items = items.filter(item => item.type === filters.type)
@@ -54,7 +54,7 @@ export const getAffiliations = async (filters?: AffiliationFilters): Promise<Aff
     // Filter ตาม search
     if (filters?.search) {
       const searchLower = filters.search.toLowerCase()
-      items = items.filter(item => 
+      items = items.filter(item =>
         item.name.toLowerCase().includes(searchLower) ||
         item.id.toLowerCase().includes(searchLower)
       )
@@ -162,12 +162,12 @@ export const deleteAffiliation = async (id: string): Promise<void> => {
  * ✅ ตรวจสอบ ID ซ้ำ
  */
 export const checkDuplicateId = async (
-  id: string, 
+  id: string,
   excludeId?: string
 ): Promise<boolean> => {
   if (useMockAPI) {
     console.log('🧪 [Mock] Checking duplicate ID:', id)
-    const exists = defaultAffiliation.some(a => 
+    const exists = defaultAffiliation.some(a =>
       a.id === id && (!excludeId || a.id !== excludeId)
     )
     console.log('✅ [Mock] Duplicate check:', exists)
@@ -208,11 +208,11 @@ export const generateDepartmentOptions = async (): Promise<Record<string, any>> 
 
     options[faculty.name] = {
       id: faculty.id,
-      main: directChildren.length > 0 
-        ? directChildren.map(c => ({ id: c.id, name: c.name })) 
+      main: directChildren.length > 0
+        ? directChildren.map(c => ({ id: c.id, name: c.name }))
         : null,
-      subs: grandchildren.length > 0 
-        ? grandchildren.map(gc => ({ id: gc.id, name: gc.name })) 
+      subs: grandchildren.length > 0
+        ? grandchildren.map(gc => ({ id: gc.id, name: gc.name }))
         : []
     }
   })
@@ -220,7 +220,7 @@ export const generateDepartmentOptions = async (): Promise<Record<string, any>> 
   // ✅ อัพเดท departmentOptions
   departmentOptions.value = options
   console.log('✅ Generated departmentOptions:', options)
-  
+
   return options
 }
 

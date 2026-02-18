@@ -38,13 +38,13 @@ const routes = [
     path: '/waybill',
     name: 'waybill',
     component: Waybill,
-    meta: { requiresAuth: true, roles: ['user'] },
+    meta: { requiresAuth: true, roles: ['User'] },
   },
   {
     path: '/waybill/edit/:id',
     name: 'waybill-edit',
     component: Waybill,
-    meta: { requiresAuth: true, roles: ['user', 'treasury'] },
+    meta: { requiresAuth: true, roles: ['User', 'treasury'] },
   },
   {
     path: '/waybillresearch',
@@ -80,7 +80,7 @@ const routes = [
     path: '/cleardebtor/multi',
     name: 'cleardebtor-multi',
     component: ClearDebtor,
-    meta: { requiresAuth: true, roles: ['user'] },
+    meta: { requiresAuth: true, roles: ['User'] },
   },
   {
     path: '/indexwaybilldebtor',

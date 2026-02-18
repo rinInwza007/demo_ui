@@ -473,42 +473,51 @@ const loadDataFromStore = async () => {
 
     // ✅ 1. โหลดสถานะเดิมจาก localStorage
     const hasExistingState = summaryStore.loadFromLocalStorage()
-    
+
     // ✅ 2. ดึง receipts จาก API
     const allReceipts = await reciptService.getAll()
-    
+
     // ✅ 3. กรองเฉพาะ receipts ของหน่วยงานตัวเอง
+    // 🔧 แก้ไข: ใช้ affiliationId ที่ root level แทน profile.affiliationId
     const userReceipts = allReceipts.filter(receipt => {
-      const receiptAffId = receipt.profile?.affiliationId 
+      const receiptAffId = receipt.affiliationId
       return receiptAffId === userAffiliationId
     })
 
     console.log('📦 Filtered receipts:', {
       total: allReceipts.length,
       userReceipts: userReceipts.length,
-      userAffiliation: userAffiliationId
+      userAffiliation: userAffiliationId,
+      sample: userReceipts[0] // ✅ ดูตัวอย่างข้อมูล
     })
 
     // ✅ 4. แปลงและ normalize ข้อมูล
+    // 🔧 แก้ไข: ดึงข้อมูลจาก root level แทน profile
     const normalizedReceipts = userReceipts.map(receipt => ({
       id: receipt.id || receipt.waybillNumber,
       waybillNumber: receipt.waybillNumber,
-      fullName: receipt.profile?.fullName || '',
-      affiliationId: receipt.profile?.affiliationId  || '',
-      affiliationName: receipt.profile?.affiliationName  || '',
-      mainAffiliationId: receipt.profile?.affiliationId ||  '',
-      subAffiliationName1: receipt.profile?.subAffiliationName1 ||  '',
-      subAffiliationId1: receipt.profile?.subAffiliationId1 ||  '',
-      subAffiliationName2: receipt.profile?.subAffiliationName2 ||  '',
-      subAffiliationId2: receipt.profile?.subAffiliationId2 || '',
-      fundName: receipt.profile?.fundName ||  '',
+      fullName: receipt.fullName || '',  // ✅ ดึงจาก root
+      affiliationId: receipt.affiliationId || '',  // ✅ ดึงจาก root
+      affiliationName: receipt.user?.name || '',  // ✅ ใช้ user.name แทน
+      mainAffiliationId: receipt.affiliationId || '',
+      subAffiliationName1: '',  // ❌ ไม่มีใน response
+      subAffiliationId1: '',
+      subAffiliationName2: '',
+      subAffiliationId2: '',
+      fundName: '',  // ❌ ไม่มีใน response
       netTotalAmount: receipt.netTotalAmount || 0,
-      receiptList: receipt.receiptList || [],
+      receiptList: receipt.receiptItems || [],  // ✅ ใช้ receiptItems แทน receiptList
       createdAt: receipt.createdAt || new Date().toISOString(),
-      profile: receipt.profile
+
+      // ✅ เก็บข้อมูลดิบไว้ใช้
+      profile: {
+        fullName: receipt.fullName,
+        affiliationId: receipt.affiliationId,
+        affiliationName: receipt.user?.name
+      }
     }))
 
-    // ✅ 5. Ingest ทุก receipt (จะรักษาสถานะเดิมไว้ถ้ามี)
+    // ✅ 5. Ingest ทุก receipt
     normalizedReceipts.forEach(receipt => {
       summaryStore.ingestUpsert(receipt)
     })
@@ -516,8 +525,15 @@ const loadDataFromStore = async () => {
     console.log('✅ Data loaded successfully:', {
       receipts: Object.keys(summaryStore.receiptsByDoc).length,
       debtors: Object.keys(summaryStore.debtorsByDoc).length,
-      hasExistingState
+      hasExistingState,
+      normalizedSample: normalizedReceipts[0] // ✅ ดูตัวอย่างข้อมูลที่ normalize แล้ว
     })
+    console.log('🔍 First normalized receipt:', normalizedReceipts[0])
+    console.log('🔍 Store state:', {
+  receipts: summaryStore.receiptsByDoc,
+  debtors: summaryStore.debtorsByDoc
+})
+
 
   } catch (err) {
     console.error('❌ Load error:', err)
@@ -540,13 +556,13 @@ const loadHistory = async () => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log('🔍 [loadHistory] Starting...')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    
+
     const { clearSummaryService } = await import('@/services/ClearDebtor/clearSummaryService')
 
     // ✅ ดึง affiliationId จาก user
     const userAffiliationId = auth.user?.affiliationId
     const userAffiliationName = auth.user?.affiliation
-    
+
     console.log('👤 Current User:')
     console.log('   - Name:', auth.user?.fullName)
     console.log('   - Affiliation Name:', userAffiliationName)
@@ -556,43 +572,49 @@ const loadHistory = async () => {
     // ✅ Debug: ดู localStorage ทั้งหมดก่อน
     const raw = localStorage.getItem('fakeApi.clearSummaries')
     if (raw) {
-      const allData = JSON.parse(raw)
-      console.log('\n📦 Total in localStorage:', allData.length)
-      
-      if (allData.length > 0) {
-        console.log('\n📋 All Clear Summaries:')
-        allData.forEach((s: any, i: number) => {
-          const match = s.mainAffiliationId === userAffiliationId ? '✅' : '❌'
-          console.log(`${match} ${i + 1}. ${s.referenceId}`)
-          console.log(`   - Name: ${s.fullName}`)
-          console.log(`   - Affiliation: ${s.mainAffiliationName} (${s.mainAffiliationId})`)
-          console.log(`   - Date: ${new Date(s.createdAt).toLocaleString('th-TH')}`)
-          console.log(`   - Debtors: ${s.debtorList?.length || 0}`)
-        })
-        
-        // นับตาม affiliation
-        const byAffiliation = allData.reduce((acc: any, s: any) => {
-          const key = `${s.mainAffiliationName} (${s.mainAffiliationId})`
-          acc[key] = (acc[key] || 0) + 1
-          return acc
-        }, {})
-        
-        console.log('\n📊 Summary by Affiliation:')
-        console.table(byAffiliation)
+      try {
+        const allData = JSON.parse(raw)
+        console.log('\n📦 Total in localStorage:', allData.length)
+
+        if (allData.length > 0) {
+          console.log('\n📋 All Clear Summaries:')
+          allData.forEach((s: any, i: number) => {
+            const match = s.mainAffiliationId === userAffiliationId ? '✅' : '❌'
+            console.log(`${match} ${i + 1}. ${s.referenceId}`)
+            console.log(`   - Name: ${s.fullName}`)
+            console.log(`   - Affiliation: ${s.mainAffiliationName} (${s.mainAffiliationId})`)
+            console.log(`   - Date: ${new Date(s.createdAt).toLocaleString('th-TH')}`)
+            console.log(`   - Debtors: ${s.debtorList?.length || 0}`)
+          })
+
+          // นับตาม affiliation
+          const byAffiliation = allData.reduce((acc: any, s: any) => {
+            const key = `${s.mainAffiliationName} (${s.mainAffiliationId})`
+            acc[key] = (acc[key] || 0) + 1
+            return acc
+          }, {})
+
+          console.log('\n📊 Summary by Affiliation:')
+          console.table(byAffiliation)
+        }
+      } catch (parseError) {
+        console.error('❌ Error parsing localStorage:', parseError)
       }
+    } else {
+      console.log('⚠️ No data in localStorage (fakeApi.clearSummaries)')
     }
 
     // ✅ ใช้ affiliationId ในการ filter
-    const filters = userAffiliationId 
-      ? { affiliationId: userAffiliationId } 
+    const filters = userAffiliationId
+      ? { affiliationId: userAffiliationId }
       : undefined
-    
+
     console.log('\n🔍 Calling service with filters:', filters)
 
     const summaries = await clearSummaryService.getAll(filters)
-    
+
     console.log('\n📥 Service returned:', summaries.length, 'summaries')
-    
+
     if (summaries.length === 0) {
       console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
       console.warn('⚠️ No summaries after filtering!')
@@ -604,7 +626,7 @@ const loadHistory = async () => {
       console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     }
 
-    // แปลงข้อมูล
+    // ✅ แปลงข้อมูล summaries เป็น historyItems
     historyItems.value = summaries.map(summary => {
       // จัดกลุ่มรายการ
       const debtorListGrouped = new Map()
@@ -660,7 +682,23 @@ const loadHistory = async () => {
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.error('❌ [loadHistory] Error:', error)
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+    // ✅ แสดง error ที่ละเอียดขึ้น
+    if (error instanceof Error) {
+      console.error('   - Message:', error.message)
+      console.error('   - Stack:', error.stack)
+    }
+
+    // ✅ Reset historyItems เป็น array ว่าง
     historyItems.value = []
+
+    // ✅ แสดง error ให้ user (optional)
+    await Swal.fire({
+      title: 'เกิดข้อผิดพลาด!',
+      text: 'ไม่สามารถโหลดประวัติการล้างลูกหนี้ได้',
+      icon: 'error',
+      confirmButtonColor: '#DC2626'
+    })
   }
 }
 

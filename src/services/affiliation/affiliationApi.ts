@@ -11,7 +11,7 @@ import type { Affiliation } from '@/types/affiliation'
  */
 
 export interface AffiliationFilters {
-  type?: string 
+  type?: string
   parentId?: string | null
   search?: string
 }
@@ -36,31 +36,65 @@ export interface AffiliationUpdatePayload {
 export const fetchAffiliations = async (filters?: AffiliationFilters): Promise<Affiliation[]> => {
   try {
     const params = new URLSearchParams()
-
-    if (filters?.type) {
-      params.append('type', filters.type)
-    }
-
-    if (filters?.parentId !== undefined) {
-      params.append('parentId', filters.parentId || '')
-    }
-
-    if (filters?.search) {
-      params.append('search', filters.search)
-    }
+    if (filters?.type) params.append('type', filters.type)
+    if (filters?.parentId !== undefined) params.append('parentId', filters.parentId || '')
+    if (filters?.search) params.append('search', filters.search)
 
     const queryString = params.toString()
     const url = queryString ? `/affiliations?${queryString}` : '/affiliations'
 
     console.log('📡 [API] GET', url)
+    const response = await axios.get(url)
 
-    const response = await axios.get<{ success: boolean; data: Affiliation[] }>(url)
+    // ✅ รองรับทั้ง array ตรงๆ และ wrapper
+    let items = []
+    if (Array.isArray(response.data)) {
+      items = response.data
+    } else if (Array.isArray(response.data?.data)) {
+      items = response.data.data
+    } else {
+      console.warn('⚠️ Unexpected response format:', response.data)
+      items = []
+    }
 
-    console.log('✅ [API] Fetched affiliations:', response.data.data.length)
-
-    return response.data.data
+    console.log('✅ [API] Fetched affiliations:', items.length)
+    return items
   } catch (error) {
     console.error('❌ [API] Error fetching affiliations:', error)
+    throw error
+  }
+}
+
+export const fetchAffiliationById = async (id: string): Promise<Affiliation> => {
+  try {
+    const response = await axios.get(`/affiliations/${id}`)
+
+    // ✅ รองรับทั้งสองแบบ
+    const item = response.data?.data ?? response.data
+    console.log('✅ [API] Fetched affiliation:', item?.name)
+    return item
+  } catch (error) {
+    console.error('❌ [API] Error fetching affiliation by ID:', error)
+    throw error
+  }
+}
+
+export const fetchChildrenAffiliations = async (parentId: string): Promise<Affiliation[]> => {
+  try {
+    const response = await axios.get(`/affiliations/children/${parentId}`)
+
+    // ✅ รองรับทั้งสองแบบ
+    let items = []
+    if (Array.isArray(response.data)) {
+      items = response.data
+    } else if (Array.isArray(response.data?.data)) {
+      items = response.data.data
+    }
+
+    console.log('✅ [API] Fetched children:', items.length)
+    return items
+  } catch (error) {
+    console.error('❌ [API] Error fetching children affiliations:', error)
     throw error
   }
 }
@@ -68,40 +102,7 @@ export const fetchAffiliations = async (filters?: AffiliationFilters): Promise<A
 /**
  * ✅ GET /affiliations/:id - ดึงรายการตาม ID
  */
-export const fetchAffiliationById = async (id: string): Promise<Affiliation> => {
-  try {
-    console.log('📡 [API] GET /affiliations/', id)
 
-    const response = await axios.get<{ success: boolean; data: Affiliation }>(`/affiliations/${id}`)
-
-    console.log('✅ [API] Fetched affiliation:', response.data.data.name)
-
-    return response.data.data
-  } catch (error) {
-    console.error('❌ [API] Error fetching affiliation by ID:', error)
-    throw error
-  }
-}
-
-/**
- * ✅ GET /affiliations/children/:parentId - ดึงหน่วยงานลูก
- */
-export const fetchChildrenAffiliations = async (parentId: string): Promise<Affiliation[]> => {
-  try {
-    console.log('📡 [API] GET /affiliations/children/', parentId)
-
-    const response = await axios.get<{ success: boolean; data: Affiliation[] }>(
-      `/affiliations/children/${parentId}`
-    )
-
-    console.log('✅ [API] Fetched children:', response.data.data.length)
-
-    return response.data.data
-  } catch (error) {
-    console.error('❌ [API] Error fetching children affiliations:', error)
-    throw error
-  }
-}
 
 /**
  * ✅ POST /affiliations - สร้างรายการใหม่

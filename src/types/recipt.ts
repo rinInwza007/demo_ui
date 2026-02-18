@@ -8,7 +8,7 @@ import { BankAccount ,BankTransfer} from './BankTypes'
 export type moneySource = 'นำส่ง' | 'ลูกหนี้' | 'วิจัย'
 
 export type nagativeMoneyType = 'add' | 'other'
-export type ItemType = "DEBTOR"|"RECEIPT"
+export type ItemType = 'RECEIPT' | 'DEBTOR'
 export type ReceiptItemType = 'income' | 'expense'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 export type PaymentType = CashReceiptType | CheckReceiptType | TransferReceiptType
@@ -30,9 +30,17 @@ export interface Item {
   name: string
   type: ItemType
   affiliationId: string
-  createdAt: Date
-  updatedAt: Date
+  userId?: string
+  affiliation?: {
+    id: string
+    name: string
+    type: string
+  }
+  createdAt: string
+  updatedAt: string
 }
+
+
 
 export interface ReceiptItem {
   itemId?: number
@@ -50,8 +58,8 @@ export interface Receipt {
   waybillNumber: string
 
   // ✅ Required fields สำหรับ backend
-  fullName: string           // ชื่อผู้นำส่ง/รับเงิน (required)
-  phone?: string             // เบอร์โทรศัพท์
+  fullName: string
+  phone?: string
 
   // ✅ Foreign Keys
   affiliationId?: string     // รหัสสังกัด

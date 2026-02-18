@@ -188,23 +188,31 @@ export const checkDuplicateId = async (
  */
 export const generateDepartmentOptions = async (): Promise<Record<string, any>> => {
   if (useMockAPI) {
-    console.log('🧪 [Mock] Generating departmentOptions from static data')
-    // ✅ Re-initialize เพื่อให้แน่ใจว่าข้อมูลถูกต้อง
     return initializeDepartmentOptions()
   }
 
-  // ✅ Real API Mode
   console.log('📡 [API] Generating departmentOptions from API')
   const affiliations = await getAffiliations()
   const options: Record<string, any> = {}
 
-  const faculties = affiliations.filter(a => !a.parentId)
+  if (!affiliations || affiliations.length === 0) {
+    console.warn('⚠️ No affiliations found')
+    departmentOptions.value = options
+    return options
+  }
+
+  // ✅ แยก root (ไม่มี parentId) กับ children (มี parentId)
+  const roots = affiliations.filter(a => !a.parentId)
+  const children = affiliations.filter(a => !!a.parentId)
+
+  // ✅ ถ้าไม่มี parentId เลย ให้ถือว่าทุกอันเป็น root
+  const faculties = roots.length > 0 ? roots : affiliations
 
   faculties.forEach(faculty => {
-    const directChildren = affiliations.filter(a => a.parentId === faculty.id)
-    const grandchildren = affiliations.filter(a => {
-      return a.parentId && directChildren.some(dc => dc.id === a.parentId)
-    })
+    const directChildren = children.filter(a => a.parentId === faculty.id)
+    const grandchildren = children.filter(a =>
+      directChildren.some(dc => dc.id === a.parentId)
+    )
 
     options[faculty.name] = {
       id: faculty.id,
@@ -217,10 +225,8 @@ export const generateDepartmentOptions = async (): Promise<Record<string, any>> 
     }
   })
 
-  // ✅ อัพเดท departmentOptions
   departmentOptions.value = options
-  console.log('✅ Generated departmentOptions:', options)
-
+  console.log('✅ Generated departmentOptions:', Object.keys(options).length, 'faculties')
   return options
 }
 

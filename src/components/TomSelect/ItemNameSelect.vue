@@ -6,30 +6,31 @@
     </div>
 
     <select
-      :id="inputId"
-      v-model="localValue"
-      class="w-full px-2 text-sm"
-      :disabled="isLoading"
+  :id="inputId"
+  v-model="localValue"
+  class="w-full px-2 text-sm"
+  :disabled="isLoading"
+>
+  <option value=""></option>
+  <!-- ✅ เพิ่ม v-if ป้องกัน group เป็น undefined -->
+  <template v-for="group in groupedOptions" :key="group.value">
+    <optgroup
+      v-if="group && group.options && group.options.length > 0"
+      :label="group.label"
+      :data-value="group.value"
     >
-      <option value=""></option>
-      <!-- ✅ แบ่งหมวดตาม type: income และ receivable -->
-      <optgroup 
-        v-for="group in groupedOptions" 
-        :key="group.value"
-        :label="group.label"
-        :data-value="group.value"
+      <option
+        v-for="option in group.options"
+        :key="option.id"
+        :value="option.name"
+        :data-item-id="option.id"
+        :data-optgroup="group.value"
       >
-        <option
-          v-for="option in group.options"
-          :key="option.id"
-          :value="option.name"
-          :data-item-id="option.id"
-          :data-optgroup="group.value"
-        >
-          {{ option.name }}
-        </option>
-      </optgroup>
-    </select>
+        {{ option.name }}
+      </option>
+    </optgroup>
+  </template>
+</select>
 
     <!-- ไอคอนในช่อง -->
     <div class="absolute right-2 top-1/2 -translate-y-1/2 z-20 pointer-events-auto">
@@ -91,7 +92,7 @@ const loadItems = async () => {
     const items = await ItemNameService.getItemNamesForUser(auth, props.waybillType)
     itemOptions.value = items
     console.log('✅ Loaded', items.length, 'items')
-    
+
     if (tomSelectInstance) {
       await nextTick()
       updateTomSelectOptions()
@@ -108,22 +109,27 @@ const loadItems = async () => {
  * ✅ แบ่งกลุ่ม options
  */
 const groupedOptions = computed(() => {
-  const groups = {
-    income: { 
-      value: 'income',
-      label: '💰 รายการนำส่งเงิน', 
-      options: [],
-      order: 1 
-    },
-    receivable: { 
-      value: 'receivable',
-      label: '📄 รายการลูกหนี้', 
-      options: [],
-      order: 2 
-    }
+  // ✅ ป้องกัน itemOptions ยังไม่พร้อม
+  if (!itemOptions.value || !Array.isArray(itemOptions.value)) {
+    return []
+  }
+
+  const receiptGroup = {
+    value: 'RECEIPT',
+    label: '💰 รายการนำส่งเงิน',
+    options: [],
+    order: 1
+  }
+  const debtorGroup = {
+    value: 'DEBTOR',
+    label: '📄 รายการลูกหนี้',
+    options: [],
+    order: 2
   }
 
   itemOptions.value.forEach(opt => {
+    if (!opt || !opt.type) return
+
     const mapped = {
       id: opt.id,
       name: opt.name,
@@ -131,15 +137,15 @@ const groupedOptions = computed(() => {
       affiliationId: opt.affiliationId
     }
 
-    if (opt.type === 'income') {
-      groups.income.options.push(mapped)
-    } else if (opt.type === 'receivable') {
-      groups.receivable.options.push(mapped)
+    if (opt.type === 'RECEIPT') {
+      receiptGroup.options.push(mapped)
+    } else if (opt.type === 'DEBTOR') {
+      debtorGroup.options.push(mapped)
     }
   })
 
-  return Object.values(groups)
-    .filter(g => g.options.length > 0)
+  return [receiptGroup, debtorGroup]
+    .filter(g => g && Array.isArray(g.options) && g.options.length > 0)
     .sort((a, b) => a.order - b.order)
 })
 
@@ -149,18 +155,24 @@ const groupedOptions = computed(() => {
 const updateTomSelectOptions = () => {
   if (!tomSelectInstance) return
 
+  if (!groupedOptions.value || groupedOptions.value.length === 0) {
+    console.warn('⚠️ No grouped options to update')
+    return
+  }
+
   console.log('🔄 Updating TomSelect options...')
-  
+
   tomSelectInstance.clearOptions()
   tomSelectInstance.clearOptionGroups()
-  
+
   // เพิ่ม optgroups
   groupedOptions.value.forEach(group => {
+    if (!group || !group.options) return
     tomSelectInstance.addOptionGroup(group.value, {
       label: group.label
     })
   })
-  
+
   // เพิ่ม options
   groupedOptions.value.forEach(group => {
     group.options.forEach(option => {
@@ -174,9 +186,11 @@ const updateTomSelectOptions = () => {
       })
     })
   })
-  
+
   tomSelectInstance.refreshOptions(false)
-  console.log('✅ TomSelect options updated')
+  console.log('✅ TomSelect options updated:',
+    groupedOptions.value.reduce((sum, g) => sum + g.options.length, 0), 'items'
+  )
 }
 
 /**
@@ -184,14 +198,14 @@ const updateTomSelectOptions = () => {
  */
 watch(() => props.disabled, (newVal) => {
   if (!tomSelectInstance) return
-  
+
   if (newVal) {
     tomSelectInstance.disable()
   } else {
     tomSelectInstance.enable()
   }
 }, { immediate: true })
- 
+
 watch(() => props.modelValue, (newVal) => {
   localValue.value = newVal
   if (tomSelectInstance && tomSelectInstance.getValue() !== newVal) {
@@ -206,10 +220,10 @@ watch(() => props.waybillType, () => {
 watch(localValue, (newVal) => {
   emit('update:modelValue', newVal)
   emit('input', newVal)
-  
+
   const allOptions = groupedOptions.value.flatMap(g => g.options)
   const selectedItem = allOptions.find(opt => opt.name === newVal)
-  
+
   if (selectedItem) {
     emit('item-selected', selectedItem)
   }
@@ -220,10 +234,10 @@ watch(localValue, (newVal) => {
  */
 onMounted(async () => {
   console.log('🚀 Component mounted, loading items...')
-  
+
   await loadItems()
   await nextTick()
-  
+
   const el = document.getElementById(props.inputId)
 
   if (el && !el.tomselect) {
@@ -235,7 +249,7 @@ onMounted(async () => {
       create: props.allowCreate,
       placeholder: props.placeholder,
       allowEmptyOption: true,
-      
+
       // ✅ สำคัญ: ต้องมีทั้ง 3 อย่างนี้
       lockOptgroupOrder: true,
       optgroupField: 'optgroup',
@@ -243,11 +257,11 @@ onMounted(async () => {
         value: g.value,
         label: g.label
       })),
-      
+
       onChange(value) {
         localValue.value = value
       },
-      
+
       // ✅ Custom render - สำคัญมาก!
       render: {
         // Render optgroup header
@@ -256,14 +270,14 @@ onMounted(async () => {
             ${escape(data.label)}
           </div>`
         },
-        
+
         // Render option
         option: function(data, escape) {
           return `<div class="option">
             ${escape(data.text)}
           </div>`
         },
-        
+
         // Render item (selected)
         item: function(data, escape) {
           return `<div class="item">${escape(data.text)}</div>`
@@ -357,13 +371,13 @@ onBeforeUnmount(() => {
 }
 
 /* ✅ แยกสีตามกลุ่ม - ใช้ data-group */
-.ts-dropdown .optgroup-header[data-group="income"] {
+.ts-dropdown .optgroup-header[data-group="RECEIPT"] {
   background: linear-gradient(to right, #d1fae5, #a7f3d0);
   border-bottom-color: #86efac;
   color: #047857;
 }
 
-.ts-dropdown .optgroup-header[data-group="receivable"] {
+.ts-dropdown .optgroup-header[data-group="DEBTOR"] {
   background: linear-gradient(to right, #fed7aa, #fde68a);
   border-bottom-color: #fbbf24;
   color: #c2410c;

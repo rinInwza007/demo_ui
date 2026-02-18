@@ -1,14 +1,11 @@
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
 import { isReceivableItem } from '@/components/data/ItemNameOption'
+import { ReceiptItem ,ReceiptItemType } from '@/types/recipt'
 /* =========================
    Types
 ========================= */
-export interface ReceiptItem {
-  type: 'income' | 'receivable' 
-  itemName: string
-  amount: number
-}
+
 
 export interface Receipt {
   id: string
@@ -21,7 +18,7 @@ export interface Receipt {
   fundName?: string
   netTotalAmount: number
   receiptList: ReceiptItem[]
-  
+
   // ✅ เพิ่ม profile support
   profile?: {
     affiliationId?: string
@@ -83,7 +80,7 @@ export const useSummaryStore = defineStore('summary', {
     debtorsByDoc: {} as Record<string, Debtor[]>,
     ledgerByDoc: {} as Record<string, LedgerEntry>,
     totals: emptyTotals(),
-    
+
     clearHistory: {} as Record<string, Array<{
       itemName: string
       amount: number
@@ -311,14 +308,14 @@ buildInitialDebtors(receipt: Receipt): Debtor[] {
         if (!raw) return false
 
         const data = JSON.parse(raw)
-        
+
         this.debtorsByDoc = data.debtorsByDoc || {}
         this.clearHistory = data.clearHistory || {}
-        
+
         console.log('📦 Summary state loaded from localStorage')
         console.log('   Debtors:', Object.keys(this.debtorsByDoc).length)
         console.log('   Clear history:', Object.keys(this.clearHistory).length)
-        
+
         return true
       } catch (error) {
         console.error('❌ Error loading summary state:', error)

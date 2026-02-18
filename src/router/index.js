@@ -38,13 +38,13 @@ const routes = [
     path: '/waybill',
     name: 'waybill',
     component: Waybill,
-    meta: { requiresAuth: true, roles: ['user'] },
+    meta: { requiresAuth: true, roles: ['User'] },
   },
   {
     path: '/waybill/edit/:id',
     name: 'waybill-edit',
     component: Waybill,
-    meta: { requiresAuth: true, roles: ['user', 'treasury'] },
+    meta: { requiresAuth: true, roles: ['User', 'treasury'] },
   },
   {
     path: '/waybillresearch',
@@ -80,7 +80,7 @@ const routes = [
     path: '/cleardebtor/multi',
     name: 'cleardebtor-multi',
     component: ClearDebtor,
-    meta: { requiresAuth: true, roles: ['user'] },
+    meta: { requiresAuth: true, roles: ['User'] },
   },
   {
     path: '/indexwaybilldebtor',
@@ -117,71 +117,71 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
+  const requiresAuth = to.meta.requiresAuth === true
+
   console.log('🔍 Router Guard:', {
-    from: from.name,
     to: to.name,
-    requiresAuth: to.meta.requiresAuth,
+    requiresAuth,
     isLoggedIn: authStore.isLoggedIn,
   })
 
-  // ✅ ถ้าเป็นหน้าที่ต้อง Login
-  if (to.meta.requiresAuth) {
-    // ✅ ตรวจสอบว่า Login แล้วหรือยัง
-    if (!authStore.isLoggedIn) {
-      console.warn('⚠️ Not logged in - Redirecting to login')
-      return next({
-        name: 'testlogin',
-        query: { redirect: to.fullPath },
-      })
+  // ✅ ถ้า route ไม่ต้อง auth → ผ่านเลย
+  if (!requiresAuth) {
+    // แต่ถ้า login แล้วพยายามเข้า login page
+    if (to.name === 'testlogin' && authStore.isLoggedIn) {
+      return next({ name: 'main' })
     }
 
-    // ✅ ตรวจสอบ Token ว่ายังใช้งานได้หรือไม่
+    return next()
+  }
+
+  // ✅ ถ้าไม่มี token → redirect ทันที (ไม่ต้อง verify)
+  if (!authStore.token) {
+    return next({
+      name: 'testlogin',
+      query: { redirect: to.fullPath },
+    })
+  }
+
+  // ✅ ถ้า login state ยังไม่มี user (เช่น reload หน้า)
+  if (!authStore.user) {
     try {
-      const isValid = await authStore.verifyToken()
+      await authStore.refreshUser()
+    } catch {
+      await authStore.logout()
+      return next({ name: 'testlogin' })
+    }
+  }
 
-      if (!isValid) {
-        console.error('❌ Token invalid - Redirecting to login')
-        return next({
-          name: 'testlogin',
-          query: { redirect: to.fullPath },
-        })
-      }
-    } catch (error) {
-      console.error('❌ Token verification failed:', error)
+  // ✅ verify เฉพาะเมื่อ shouldVerifyToken = true
+  if (authStore.shouldVerifyToken) {
+    const isValid = await authStore.verifyToken()
+
+    if (!isValid) {
       return next({
         name: 'testlogin',
         query: { redirect: to.fullPath },
       })
     }
+  }
 
-    // ✅ ตรวจสอบสิทธิ์ตาม Role (ถ้ามี)
-    if (to.meta.roles && Array.isArray(to.meta.roles)) {
-      const hasRole = authStore.isRole(...to.meta.roles)
+  // ✅ ตรวจสอบ role
+  if (to.meta.roles && Array.isArray(to.meta.roles)) {
+    if (!authStore.isRole(...to.meta.roles)) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'ไม่มีสิทธิ์เข้าถึง',
+        text: 'คุณไม่มีสิทธิ์ในการเข้าถึงหน้านี้',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#DC2626',
+      })
 
-      if (!hasRole) {
-        console.error('❌ Insufficient permissions')
-        
-        await Swal.fire({
-          icon: 'error',
-          title: 'ไม่มีสิทธิ์เข้าถึง',
-          text: 'คุณไม่มีสิทธิ์ในการเข้าถึงหน้านี้',
-          confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#DC2626',
-        })
-
-        return next({ name: 'main' })
-      }
+      return next({ name: 'main' })
     }
   }
 
-  // ✅ ถ้า Login แล้วแต่พยายามเข้าหน้า Login
-  if (to.name === 'testlogin' && authStore.isLoggedIn) {
-    console.log('✅ Already logged in - Redirecting to main')
-    return next({ name: 'main' })
-  }
-
-  // ✅ อนุญาตให้ผ่าน
-  next()
+  return next()
 })
+
 
 export default router

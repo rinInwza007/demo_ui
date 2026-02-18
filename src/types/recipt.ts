@@ -3,14 +3,17 @@ import { User } from './user'
 import { Affiliation } from './affiliation'
 import {Profile} from './Profile'
 import {CashReceiptType,CheckReceiptType,TransferReceiptType} from './payment'
+import { BankAccount ,BankTransfer} from './BankTypes'
+
 export type moneySource = 'นำส่ง' | 'ลูกหนี้' | 'วิจัย'
 
 export type nagativeMoneyType = 'add' | 'other'
-export type ItemType = 'income' | 'receivable' | 'research'
+export type ItemType = "DEBTOR"|"RECEIPT"
 export type ReceiptItemType = 'income' | 'expense'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 export type PaymentType = CashReceiptType | CheckReceiptType | TransferReceiptType
 export type PaymentMethodType = PaymentType['paymentMethod']  // 'cash' | 'check' | 'transfer'
+
 
 
 export interface indexsavedebtor {
@@ -23,7 +26,7 @@ export interface indexsavedebtor {
 }
 
 export interface Item {
-  id: number
+  id: string
   name: string
   type: ItemType
   affiliationId: string
@@ -44,12 +47,35 @@ export interface ReceiptItem {
 
 export interface Receipt {
   id: string
-  profile:Profile
   waybillNumber: string
+
+  // ✅ Required fields สำหรับ backend
+  fullName: string           // ชื่อผู้นำส่ง/รับเงิน (required)
+  phone?: string             // เบอร์โทรศัพท์
+
+  // ✅ Foreign Keys
+  affiliationId?: string     // รหัสสังกัด
+  userId?: string            // รหัสผู้ใช้
+
+  // ✅ Profile (optional)
+  profile?: Profile
+
+  // ✅ Approval
   approvalStatus?: ApprovalStatus
-  netTotalAmount: number
-  receiptList: ReceiptItem[]
   isLocked?: boolean
+
+  // ✅ Amounts
+  netTotalAmount: number
+  totalPaymentAmount?: number
+
+  // ✅ Payment Details
+  paymentMethods?: PaymentMethodType
+  bankTransfers?: BankTransfer[]
+
+  // ✅ Receipt Items
+  receiptList: ReceiptItem[]
+
+  // ✅ Timestamps
   createdAt: string
   updatedAt: string
 }

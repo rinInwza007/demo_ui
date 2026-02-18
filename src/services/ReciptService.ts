@@ -99,35 +99,50 @@ class ReciptService {
    * ➕ สร้างใบนำส่งใหม่
    */
   async create(input: CreateReceiptInput): Promise<Receipt> {
-    try {
-      const exists = await this.checkWaybillNumber(input.waybillNumber)
-      if (exists) {
-        throw new Error(`เลขที่นำส่ง "${input.waybillNumber}" มีอยู่ในระบบแล้ว`)
-      }
-
-      const receipt: Receipt = {
-        ...input,
-        id: input.waybillNumber,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        approvalStatus: 'pending',
-        isLocked: false,
-      }
-
-      const res = await http.post<Receipt>('/receipts/save', receipt)
-
-      this.notifyUpdate('create')
-      return res.data
-    } catch (error: any) {
-      console.error('❌ Error creating receipt:', error)
-
-      if (error.response?.status === 409) {
-        throw new Error('เลขที่นำส่งนี้มีอยู่ในระบบแล้ว')
-      }
-
-      throw new Error(error.message || 'ไม่สามารถบันทึกใบนำส่งได้')
+  try {
+    const exists = await this.checkWaybillNumber(input.waybillNumber)
+    if (exists) {
+      throw new Error(`เลขที่นำส่ง "${input.waybillNumber}" มีอยู่ในระบบแล้ว`)
     }
+
+    const profile = (input as any).profile
+
+    const receipt = {
+      ...input,
+      id: input.waybillNumber,
+
+      // ✅ fallback จาก profile ถ้า root ว่าง
+      fullName: input.fullName || profile?.fullName || '',
+      phone: input.phone || profile?.phone || '',
+      affiliationId: input.affiliationId || profile?.affiliationId || '',
+      userId: input.userId || '',
+
+      // ✅ NOT NULL fields
+      netTotalAmount: input.netTotalAmount || 0,
+      totalPaymentAmount: (input as any).totalPaymentAmount ?? input.netTotalAmount ?? 0,
+      paymentMethods: (input as any).paymentMethods ?? {},
+      bankTransfers: input.bankTransfers || [],
+
+      approvalStatus: 'pending' as const,
+      isLocked: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+
+    // ✅ Log ก่อนส่งเพื่อ debug
+    console.log('📤 Sending receipt payload:', JSON.stringify(receipt, null, 2))
+
+    const res = await http.post<Receipt>('/receipts/save', receipt)
+    this.notifyUpdate('create')
+    return res.data
+  } catch (error: any) {
+    console.error('❌ Error creating receipt:', error)
+    if (error.response?.status === 409) {
+      throw new Error('เลขที่นำส่งนี้มีอยู่ในระบบแล้ว')
+    }
+    throw new Error(error.message || 'ไม่สามารถบันทึกใบนำส่งได้')
   }
+}
 
   /**
    * ✏️ แก้ไขใบนำส่ง

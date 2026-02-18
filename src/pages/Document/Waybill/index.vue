@@ -3393,27 +3393,48 @@ if (needsPaymentType && hasItemName && hasAmount) {
   }
 
   const payload = {
-    waybillNumber: formData.value.waybillNumber,
-    profile: {
-      fullName: formData.value.fullName,
-      phone: formData.value.phone,
-      fundName: formData.value.fundName,
-      projectCode: formData.value.projectCode,
-      sendmoney: formData.value.sendmoney,
-      affiliationId: authStore.user?.affiliationId || '',
-      affiliationName: authStore.user?.affiliation || mainCategory.value,
-      mainAffiliationId: mainCategoryId.value,
-      mainAffiliationName: mainCategory.value,
-      subAffiliationId1: subCategoryId.value,
-      subAffiliationName1: getSubName1(),
-      subAffiliationId2: subCategoryId2.value,
-      subAffiliationName2: getSubName2(),
-    },
+  id: formData.value.waybillNumber,
+  waybillNumber: formData.value.waybillNumber,
 
-    netTotalAmount: netTotalAmount.value,
-    receiptList: validRows,
-    approvalStatus: originalApprovalStatus.value,
-  }
+  // ✅ NOT NULL fields
+  fullName: formData.value.fullName,
+  phone: formData.value.phone || '',
+  affiliationId: authStore.user?.affiliationId || mainCategoryId.value || '',
+  userId: authStore.user?.id || '',
+
+  // ✅ Amounts — NOT NULL
+  netTotalAmount: netTotalAmount.value || 0,
+  totalPaymentAmount: netTotalAmount.value || 0,
+
+  // ✅ paymentMethods — NOT NULL JSONB ส่งเป็น object ว่างแทน undefined
+  paymentMethods: {},
+
+  // ✅ bankTransfers — nullable
+  bankTransfers: [],
+
+  // ✅ Status
+  approvalStatus: originalApprovalStatus.value || 'pending',
+  isLocked: false,
+
+  // ✅ Profile สำหรับ UI
+  profile: {
+    fullName: formData.value.fullName,
+    phone: formData.value.phone || '',
+    fundName: formData.value.fundName,
+    projectCode: formData.value.projectCode,
+    sendmoney: formData.value.sendmoney,
+    affiliationId: authStore.user?.affiliationId || '',
+    affiliationName: authStore.user?.affiliation || mainCategory.value,
+    mainAffiliationId: mainCategoryId.value,
+    mainAffiliationName: mainCategory.value,
+    subAffiliationId1: subCategoryId.value,
+    subAffiliationName1: getSubName1(),
+    subAffiliationId2: subCategoryId2.value,
+    subAffiliationName2: getSubName2(),
+  },
+
+  receiptList: validRows,
+}
 
   if (isEditMode.value) {
     payload.id = formData.value.waybillNumber

@@ -36,7 +36,7 @@ console.log('🔧 ItemNameService initialized:', useMockAPI ? 'MOCK MODE' : 'API
 export const getItemNames = async (filters?: ItemNameFilters): Promise<Item[]> => {
   if (useMockAPI) {
     console.log('🧪 [Mock] Getting items from ItemNameOption.ts')
-    
+
     // ถ้าไม่มี filter ให้คืนทั้งหมด
     if (!filters) {
       return getAllOptions()
@@ -44,7 +44,7 @@ export const getItemNames = async (filters?: ItemNameFilters): Promise<Item[]> =
 
     // Filter ตาม type
     let items = getAllOptions()
-    
+
     if (filters.type && filters.type !== 'all') {
       items = items.filter(item => item.type === filters.type)
     }
@@ -57,7 +57,7 @@ export const getItemNames = async (filters?: ItemNameFilters): Promise<Item[]> =
     // Filter ตาม search
     if (filters.search) {
       const searchLower = filters.search.toLowerCase()
-      items = items.filter(item => 
+      items = items.filter(item =>
         item.name.toLowerCase().includes(searchLower)
       )
     }
@@ -73,7 +73,7 @@ export const getItemNames = async (filters?: ItemNameFilters): Promise<Item[]> =
 /**
  * ✅ ดึงรายการตาม ID
  */
-export const getItemNameById = async (id: number): Promise<Item | null> => {
+export const getItemNameById = async (id: string): Promise<Item | null> => {
   if (useMockAPI) {
     console.log('🧪 [Mock] Getting item by ID:', id)
     const item = getItemById(id)
@@ -114,7 +114,7 @@ export const getItemNameByName = async (name: string): Promise<Item | null> => {
  * ✅ ดึงรายการตามสิทธิ์ผู้ใช้
  */
 export const getItemNamesForUser = async (
-  auth: any, 
+  auth: any,
   waybillType: string = 'all'
 ): Promise<Item[]> => {
   if (useMockAPI) {
@@ -168,7 +168,7 @@ export const updateItemName = async (payload: ItemNameUpdatePayload): Promise<It
 /**
  * ✅ ลบรายการ
  */
-export const deleteItemName = async (id: number): Promise<void> => {
+export const deleteItemName = async (id: string): Promise<void> => {
   if (useMockAPI) {
     console.error('❌ [Mock] Cannot delete items in mock mode')
     throw new Error('Delete operation not supported in mock mode. Please use real API.')
@@ -180,11 +180,11 @@ export const deleteItemName = async (id: number): Promise<void> => {
 /**
  * ✅ ตรวจสอบชื่อซ้ำ
  */
-export const checkDuplicateName = async (name: string, excludeId?: number): Promise<boolean> => {
+export const checkDuplicateName = async (name: string, excludeId?: string): Promise<boolean> => {
   if (useMockAPI) {
     console.log('🧪 [Mock] Checking duplicate name:', name)
     const allItems = getAllOptions()
-    const exists = allItems.some(item => 
+    const exists = allItems.some(item =>
       item.name === name && (!excludeId || item.id !== excludeId)
     )
     console.log('✅ [Mock] Duplicate check:', exists)
@@ -205,7 +205,7 @@ export const checkDuplicateName = async (name: string, excludeId?: number): Prom
  * @param itemId - ID ของรายการ
  * @returns Promise<boolean>
  */
-export const checkIsReceivableItem = async (itemId: number): Promise<boolean> => {
+export const checkIsReceivableItem = async (itemId: string): Promise<boolean> => {
   if (useMockAPI) {
     return isReceivableItem(itemId)
   }
@@ -225,7 +225,7 @@ export const checkIsReceivableItem = async (itemId: number): Promise<boolean> =>
  * @param itemId - ID ของรายการ
  * @returns Promise<string>
  */
-export const getType = async (itemId: number): Promise<string> => {
+export const getType = async (itemId: string): Promise<string> => {
   if (useMockAPI) {
     return getItemType(itemId)
   }
@@ -245,7 +245,7 @@ export const getType = async (itemId: number): Promise<string> => {
  * @param itemId - ID ของรายการ
  * @returns Promise<string>
  */
-export const getAffiliationId = async (itemId: number): Promise<string> => {
+export const getAffiliationId = async (itemId: string): Promise<string> => {
   if (useMockAPI) {
     return getItemAffiliationId(itemId)
   }
@@ -278,12 +278,12 @@ export default {
   updateItemName,
   deleteItemName,
   checkDuplicateName,
-  
+
   // Helpers
   checkIsReceivableItem,
   getType,
   getAffiliationId,
-  
+
   // Config
   useMockAPI,
 }

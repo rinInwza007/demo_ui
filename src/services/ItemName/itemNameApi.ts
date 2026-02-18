@@ -1,80 +1,64 @@
 // src/services/itemName/itemNameApi.ts
 import axios from 'axios'
-import type { Item } from '@/types/recipt'
-
-/**
- * ========================================
- * ItemName API Layer
- * - ทำหน้าที่เป็น API Client
- * - รองรับทั้ง Real API และ Mock API
- * ========================================
- */
+import type { Item, ItemType } from '@/types/recipt'
 
 export interface ItemNameFilters {
-  type?: 'income' | 'receivable' | 'all'
+  type?: ItemType | 'all'
   affiliationId?: string
   search?: string
 }
 
 export interface ItemNameCreatePayload {
   name: string
-  type: 'income' | 'receivable'
+  type: ItemType
   affiliationId?: string
+  userId?: string
 }
 
 export interface ItemNameUpdatePayload {
-  id: number
+  id: string          // ✅ string, not number
   name?: string
-  type?: 'income' | 'receivable'
+  type?: ItemType
   affiliationId?: string
 }
 
-/**
- * ✅ GET /item-names - ดึงรายการทั้งหมด
- */
+/** GET /items */
 export const fetchItemNames = async (filters?: ItemNameFilters): Promise<Item[]> => {
   try {
     const params = new URLSearchParams()
-    
-    if (filters?.type && filters.type !== 'all') {
-      params.append('type', filters.type)
-    }
-    
-    if (filters?.affiliationId) {
-      params.append('affiliationId', filters.affiliationId)
-    }
-    
-    if (filters?.search) {
-      params.append('search', filters.search)
-    }
+    if (filters?.type && filters.type !== 'all') params.append('type', filters.type)
+    if (filters?.affiliationId) params.append('affiliationId', filters.affiliationId)
+    if (filters?.search) params.append('search', filters.search)
 
     const queryString = params.toString()
-    const url = queryString ? `/item-names?${queryString}` : '/item-names'
-    
+    const url = queryString ? `/items?${queryString}` : '/items'
+
     console.log('📡 [API] GET', url)
-    
-    const response = await axios.get<{ success: boolean; data: Item[] }>(url)
-    
-    console.log('✅ [API] Fetched items:', response.data.data.length)
-    
-    return response.data.data
+    const response = await axios.get(url)
+
+    // ✅ รองรับทุก format
+    let items: Item[] = []
+    if (Array.isArray(response.data)) {
+      items = response.data                      // ← backend ส่ง array ตรงๆ ✅
+    } else if (Array.isArray(response.data?.data)) {
+      items = response.data.data
+    } else {
+      console.warn('⚠️ Unexpected response format:', response.data)
+      items = []
+    }
+
+    console.log('✅ [API] Fetched items:', items.length)
+    return items
   } catch (error) {
     console.error('❌ [API] Error fetching item names:', error)
     throw error
   }
 }
 
-/**
- * ✅ GET /item-names/:id - ดึงรายการตาม ID
- */
-export const fetchItemNameById = async (id: number): Promise<Item> => {
+/** GET /items/:id */
+export const fetchItemNameById = async (id: string): Promise<Item> => {  // ✅ string id
   try {
-    console.log('📡 [API] GET /item-names/', id)
-    
-    const response = await axios.get<{ success: boolean; data: Item }>(`/item-names/${id}`)
-    
-    console.log('✅ [API] Fetched item:', response.data.data.name)
-    
+    const response = await axios.get<{ success: boolean; data: Item }>(`/items/${id}`)
     return response.data.data
   } catch (error) {
     console.error('❌ [API] Error fetching item name by ID:', error)
@@ -82,17 +66,10 @@ export const fetchItemNameById = async (id: number): Promise<Item> => {
   }
 }
 
-/**
- * ✅ POST /item-names - สร้างรายการใหม่
- */
+/** POST /items */
 export const createItemName = async (payload: ItemNameCreatePayload): Promise<Item> => {
   try {
-    console.log('📡 [API] POST /item-names', payload)
-    
-    const response = await axios.post<{ success: boolean; data: Item }>('/item-names', payload)
-    
-    console.log('✅ [API] Created item:', response.data.data.name)
-    
+    const response = await axios.post<{ success: boolean; data: Item }>('/items', payload)
     return response.data.data
   } catch (error) {
     console.error('❌ [API] Error creating item name:', error)
@@ -100,22 +77,11 @@ export const createItemName = async (payload: ItemNameCreatePayload): Promise<It
   }
 }
 
-/**
- * ✅ PUT /item-names/:id - อัปเดตรายการ
- */
+/** PUT /items/:id */
 export const updateItemName = async (payload: ItemNameUpdatePayload): Promise<Item> => {
   try {
-    console.log('📡 [API] PUT /item-names/', payload.id)
-    
     const { id, ...updateData } = payload
-    
-    const response = await axios.put<{ success: boolean; data: Item }>(
-      `/item-names/${id}`,
-      updateData
-    )
-    
-    console.log('✅ [API] Updated item:', response.data.data.name)
-    
+    const response = await axios.put<{ success: boolean; data: Item }>(`/items/${id}`, updateData)
     return response.data.data
   } catch (error) {
     console.error('❌ [API] Error updating item name:', error)
@@ -123,15 +89,10 @@ export const updateItemName = async (payload: ItemNameUpdatePayload): Promise<It
   }
 }
 
-/**
- * ✅ DELETE /item-names/:id - ลบรายการ
- */
-export const deleteItemName = async (id: number): Promise<void> => {
+/** DELETE /items/:id */
+export const deleteItemName = async (id: string): Promise<void> => {  // ✅ string id
   try {
-    console.log('📡 [API] DELETE /item-names/', id)
-    
-    await axios.delete(`/item-names/${id}`)
-    
+    await axios.delete(`/items/${id}`)
     console.log('✅ [API] Deleted item:', id)
   } catch (error) {
     console.error('❌ [API] Error deleting item name:', error)
@@ -139,22 +100,12 @@ export const deleteItemName = async (id: number): Promise<void> => {
   }
 }
 
-/**
- * ✅ GET /item-names/check-duplicate - ตรวจสอบชื่อซ้ำ
- */
-export const checkDuplicateItemName = async (name: string, excludeId?: number): Promise<boolean> => {
+/** GET /items/check-duplicate */
+export const checkDuplicateItemName = async (name: string, excludeId?: string): Promise<boolean> => {
   try {
     const params = new URLSearchParams({ name })
-    if (excludeId) {
-      params.append('excludeId', excludeId.toString())
-    }
-    
-    console.log('📡 [API] GET /item-names/check-duplicate?', params.toString())
-    
-    const response = await axios.get<{ exists: boolean }>(`/item-names/check-duplicate?${params}`)
-    
-    console.log('✅ [API] Duplicate check result:', response.data.exists)
-    
+    if (excludeId) params.append('excludeId', excludeId)
+    const response = await axios.get<{ exists: boolean }>(`/items/check-duplicate?${params}`)
     return response.data.exists
   } catch (error) {
     console.error('❌ [API] Error checking duplicate:', error)
